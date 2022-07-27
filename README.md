@@ -5,7 +5,7 @@ I've created my own little Game/Rendering Engine using Vulkan API.
 ## Getting Started
 Visual Studio 2022 is recommended
 
-<ins>1. Downloading the repository**</ins>
+<ins>1. Downloading the repository:</ins>
 
 Start by cloning the repository with `git clone --recursive https://github.com/PrakarshPanwar/VulkanEngine`.
 
