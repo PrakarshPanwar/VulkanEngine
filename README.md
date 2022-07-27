@@ -9,4 +9,4 @@ Start by cloning the repository with `git clone --recursive https://github.com/P
 
 1. Run the [VkGenProjects.bat](https://github.com/PrakarshPanwar/VulkanEngine/blob/master/VkGenProjects.bat) file found in main repository.
 2. One prerequisite is the Vulkan SDK. If it is not installed, then install [VulkanSDK here](https://vulkan.lunarg.com/).
-3. After installation, copy all the folders of VulkanSDK in [VulkanCore/vendor](https://github.com/PrakarshPanwar/VulkanEngine/tree/master/VulkanCore/vendor).
+3. After installation, create a folder `VulkanSDK` and copy all the folders of VulkanSDK in [VulkanCore/vendor/VulkanSDK](https://github.com/PrakarshPanwar/VulkanEngine/tree/master/VulkanCore/vendor).
