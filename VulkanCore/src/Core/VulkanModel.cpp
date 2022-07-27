@@ -1,0 +1,290 @@
+#include "vulkanpch.h"
+#include "VulkanModel.h"
+
+#include "HashCombine.h"
+
+#include "Assert.h"
+#include "Log.h"
+#include "Timer.h"
+#include <filesystem>
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tinyobjloader.h>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
+
+namespace std {
+
+	template<>
+	struct hash<VulkanCore::Vertex>
+	{
+		size_t operator()(const VulkanCore::Vertex& vertex) const
+		{
+			size_t seed = 0;
+			VulkanCore::HashCombine(seed, vertex.Position, vertex.Color, vertex.Normal, vertex.TexCoord);
+			return seed;
+		}
+	};
+
+}
+
+namespace VulkanCore {
+
+	VulkanModel::VulkanModel(VulkanDevice& device, const ModelBuilder& builder)
+		: m_VulkanDevice(device)
+	{
+		CreateVertexBuffers(builder.vertices);
+		CreateIndexBuffers(builder.indices);
+	}
+
+	VulkanModel::~VulkanModel()
+	{
+	}
+
+	void VulkanModel::Bind(VkCommandBuffer commandBuffer)
+	{
+		VkBuffer buffers[] = { m_VertexBuffer->GetBuffer() };
+		VkDeviceSize offsets[] = { 0 };
+
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+
+		if (m_HasIndexBuffer)
+			vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+	}
+
+	void VulkanModel::Draw(VkCommandBuffer commandBuffer)
+	{
+		if (m_HasIndexBuffer)
+			vkCmdDrawIndexed(commandBuffer, m_IndexCount, 1, 0, 0, 0);
+
+		else
+			vkCmdDraw(commandBuffer, m_VertexCount, 1, 0, 0);
+	}
+
+	std::shared_ptr<VulkanModel> VulkanModel::CreateModelFromFile(VulkanDevice& device, const std::string& filepath)
+	{
+		ModelBuilder builder{};
+		builder.LoadModel(filepath);
+
+		std::filesystem::path modelFilepath = filepath;
+		//std::filesystem::path materialFilePath = modelFilepath.replace_extension(".mtl");
+
+		VK_CORE_TRACE("Loading Model: {0}", modelFilepath.filename());
+		VK_CORE_TRACE("\tVertex Count: {0}", builder.vertices.size());
+		VK_CORE_TRACE("\tIndex Count: {0}", builder.indices.size());
+		return std::make_shared<VulkanModel>(device, builder);
+	}
+
+	std::shared_ptr<VulkanModel> VulkanModel::CreateModelFromFile(VulkanDevice& device, const std::string& filepath, const glm::vec3& modelColor)
+	{
+		return nullptr;
+	}
+
+	std::shared_ptr<VulkanModel> VulkanModel::CreateModelFromFile(VulkanDevice& device, const std::string& filepath, int texID)
+	{
+		ModelBuilder builder{};
+		builder.LoadModel(filepath, texID);
+
+		std::filesystem::path modelFilepath = filepath;
+		//std::filesystem::path materialFilePath = modelFilepath.replace_extension(".mtl");
+
+		VK_CORE_TRACE("Loading Model: {0}", modelFilepath.filename());
+		VK_CORE_TRACE("\tVertex Count: {0}", builder.vertices.size());
+		VK_CORE_TRACE("\tIndex Count: {0}", builder.indices.size());
+		return std::make_shared<VulkanModel>(device, builder);
+	}
+
+	void VulkanModel::CreateVertexBuffers(const std::vector<Vertex>& vertices)
+	{
+		m_VertexCount = (uint32_t)vertices.size();
+		VK_CORE_ASSERT(m_VertexCount >= 3, "Vertex Count should be at least greater than or equal to 3!");
+
+		VkDeviceSize bufferSize = sizeof(vertices[0]) * m_VertexCount;
+		uint32_t vertexSize = sizeof(vertices[0]);
+
+		VulkanBuffer stagingBuffer{ m_VulkanDevice, vertexSize, m_VertexCount,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
+
+		stagingBuffer.Map();
+		stagingBuffer.WriteToBuffer((void*)vertices.data());
+
+		m_VertexBuffer = std::make_unique<VulkanBuffer>(m_VulkanDevice, vertexSize, m_VertexCount,
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		m_VulkanDevice.CopyBuffer(stagingBuffer.GetBuffer(), m_VertexBuffer->GetBuffer(), bufferSize);
+	}
+
+	void VulkanModel::CreateIndexBuffers(const std::vector<uint32_t>& indices)
+	{
+		m_IndexCount = (uint32_t)indices.size();
+		m_HasIndexBuffer = m_IndexCount > 0;
+
+		if (!m_HasIndexBuffer)
+			return;
+
+		VkDeviceSize bufferSize = sizeof(indices[0]) * m_IndexCount;
+		uint32_t indexSize = sizeof(indices[0]);
+
+		VulkanBuffer stagingBuffer{ m_VulkanDevice, indexSize, m_IndexCount, 
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
+
+		stagingBuffer.Map();
+		stagingBuffer.WriteToBuffer((void*)indices.data());
+
+		m_IndexBuffer = std::make_unique<VulkanBuffer>(m_VulkanDevice, indexSize, m_IndexCount,
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		m_VulkanDevice.CopyBuffer(stagingBuffer.GetBuffer(), m_IndexBuffer->GetBuffer(), bufferSize);
+	}
+
+	std::vector<VkVertexInputBindingDescription> Vertex::GetBindingDescriptions()
+	{
+		std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
+		bindingDescriptions[0].binding = 0;
+		bindingDescriptions[0].stride = sizeof(Vertex);
+		bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		return bindingDescriptions;
+	}
+
+	std::vector<VkVertexInputAttributeDescription> Vertex::GetAttributeDescriptions()
+	{
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+
+		attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Position) });
+		attributeDescriptions.push_back({ 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Color) });
+		attributeDescriptions.push_back({ 2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Normal) });
+		attributeDescriptions.push_back({ 3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, TexCoord) });
+		attributeDescriptions.push_back({ 4, 0, VK_FORMAT_R32_SINT, offsetof(Vertex, TexID) });
+
+		return attributeDescriptions;
+	}
+
+	void ModelBuilder::LoadModel(const std::string& filepath)
+	{
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
+		std::string warn, err;
+
+		VK_CORE_ASSERT(tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str()), warn + err);
+
+		vertices.clear();
+		indices.clear();
+
+		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+		for (const auto& shape : shapes)
+		{
+			for (const auto& index : shape.mesh.indices)
+			{
+				Vertex vertex{};
+
+				if (index.vertex_index >= 0)
+				{
+					vertex.Position = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2] };
+
+					vertex.Color = {
+					attrib.colors[3 * index.vertex_index + 0],
+					attrib.colors[3 * index.vertex_index + 1],
+					attrib.colors[3 * index.vertex_index + 2] };
+				}
+
+				if (index.normal_index >= 0)
+				{
+					vertex.Normal = { 
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2] };
+				}
+
+				if (index.texcoord_index >= 0)
+				{
+					vertex.TexCoord = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					attrib.texcoords[2 * index.texcoord_index + 1] };
+				}
+
+				vertex.TexID = 0;
+
+				if (uniqueVertices.count(vertex) == 0)
+				{
+					uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+					vertices.push_back(vertex);
+				}
+
+				indices.push_back(uniqueVertices[vertex]);
+			}
+		}
+	}
+
+	void ModelBuilder::LoadModel(const std::string& filepath, int texID)
+	{
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
+		std::string warn, err;
+
+		VK_CORE_ASSERT(tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str()), warn + err);
+
+		vertices.clear();
+		indices.clear();
+
+		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+		for (const auto& shape : shapes)
+		{
+			for (const auto& index : shape.mesh.indices)
+			{
+				Vertex vertex{};
+
+				if (index.vertex_index >= 0)
+				{
+					vertex.Position = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2] };
+
+					vertex.Color = {
+					attrib.colors[3 * index.vertex_index + 0],
+					attrib.colors[3 * index.vertex_index + 1],
+					attrib.colors[3 * index.vertex_index + 2] };
+				}
+
+				if (index.normal_index >= 0)
+				{
+					vertex.Normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2] };
+				}
+
+				if (index.texcoord_index >= 0)
+				{
+					vertex.TexCoord = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					attrib.texcoords[2 * index.texcoord_index + 1] };
+				}
+
+				vertex.TexID = texID;
+
+				if (uniqueVertices.count(vertex) == 0)
+				{
+					uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+					vertices.push_back(vertex);
+				}
+
+				indices.push_back(uniqueVertices[vertex]);
+			}
+		}
+	}
+
+}
