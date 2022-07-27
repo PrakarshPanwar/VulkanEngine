@@ -1,0 +1,16 @@
+# Blender MTL File: 'brass_vase_03_2k.blend'
+# Material Count: 1
+
+newmtl brass_vase_03
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump D:\\PrakarshAssets\\Models\\brass_vase_03_2k.blend\\textures\\brass_vase_03_nor_gl_2k.exr
+map_Kd D:\\PrakarshAssets\\Models\\brass_vase_03_2k.blend\\textures\\brass_vase_03_diff_2k.jpg
+map_Ns D:\\PrakarshAssets\\Models\\brass_vase_03_2k.blend\\textures\\brass_vase_03_rough_2k.exr
+refl D:\\PrakarshAssets\\Models\\brass_vase_03_2k.blend\\textures\\brass_vase_03_metal_2k.exr
