@@ -95,7 +95,7 @@ namespace VulkanCore {
 		descriptorPoolBuilder.SetMaxSets(VulkanSwapChain::MaxFramesInFlight).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VulkanSwapChain::MaxFramesInFlight);
 		m_GlobalPool = descriptorPoolBuilder.Build();
 
-		m_ImGuiLayer = std::make_unique<ImGuiLayer>();
+		//m_ImGuiLayer = std::make_unique<ImGuiLayer>();
 		LoadEntities();
 	}
 
