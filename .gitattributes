@@ -1,0 +1,6 @@
+VulkanCore/assets/**/*.png filter=lfs diff=lfs merge=lfs -text
+VulkanCore/assets/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+VulkanCore/assets/**/*.hdr filter=lfs diff=lfs merge=lfs -text
+VulkanCore/assets/**/*.fbx filter=lfs diff=lfs merge=lfs -text
+VulkanCore/assets/**/*.gltf filter=lfs diff=lfs merge=lfs -text
+VulkanCore/assets/**/*.bin filter=lfs diff=lfs merge=lfs -text
