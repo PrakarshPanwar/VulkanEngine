@@ -1,0 +1,12 @@
+I've created my own Game Engine using Vulkan API.
+
+## Getting Started
+Visual Studio 2022 is recommended
+
+<ins>1. Downloading the repository**</ins>
+
+Start by cloning the repository with `git clone --recursive https://github.com/PrakarshPanwar/VulkanEngine`.
+
+1. Run the [VkGenProjects.bat](https://github.com/PrakarshPanwar/VulkanEngine) file found in main repository.
+2. One prerequisite is the Vulkan SDK. If it is not installed, then install [VulkanSDK here](https://vulkan.lunarg.com/).
+3. After installation, copy all the folders of VulkanSDK in [VulkanCore/vendor](https://github.com/PrakarshPanwar/VulkanEngine/VulkanCore/vendor).
