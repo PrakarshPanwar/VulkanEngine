@@ -36,9 +36,7 @@ project "VulkanCore"
 		"%{IncludeDir.stb_image}"
 	}
 
-	libdirs { "vendor/VulkanSDK/Lib" }
-
-	links { "GLFW", "vulkan-1.lib", "ImGui" }
+	links { "GLFW", "%{Library.Vulkan}", "ImGui" }
 
 	filter "system:windows"
 		systemversion "latest"
@@ -46,10 +44,10 @@ project "VulkanCore"
 
 	filter "configurations:Debug"
 		defines { "VK_DEBUG" }
-		links { "shaderc_sharedd.lib", "spirv-cross-cored.lib", "spirv-cross-glsld.lib" }
+		links { "%{Library.ShaderC_Debug}", "%{Library.SPIRV_Cross_Debug}", "%{Library.SPIRV_Cross_GLSL_Debug}" }
 		symbols "On"
 
 	filter "configurations:Release"
 		defines { "VK_RELEASE" }
-		links { "shaderc_shared.lib", "spirv-cross-core.lib", "spirv-cross-glsl.lib" }
+		links { "%{Library.ShaderC_Release}", "%{Library.SPIRV_Cross_Release}", "%{Library.SPIRV_Cross_GLSL_Release}" }
 		optimize "On"
