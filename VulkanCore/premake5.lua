@@ -33,7 +33,8 @@ project "VulkanCore"
 		"%{IncludeDir.TinyObjLoader}",
 		"%{IncludeDir.entt}",
 		"%{IncludeDir.ImGui}",
-		"%{IncludeDir.stb_image}"
+		"%{IncludeDir.stb_image}",
+		"%{IncludeDir.Assimp}"
 	}
 
 	links { "GLFW", "%{Library.Vulkan}", "ImGui" }
@@ -44,10 +45,10 @@ project "VulkanCore"
 
 	filter "configurations:Debug"
 		defines { "VK_DEBUG" }
-		links { "%{Library.ShaderC_Debug}", "%{Library.SPIRV_Cross_Debug}", "%{Library.SPIRV_Cross_GLSL_Debug}" }
+		links { "%{Library.ShaderC_Debug}", "%{Library.SPIRV_Cross_Debug}", "%{Library.SPIRV_Cross_GLSL_Debug}", "%{Library.AssimpLibDebug}" }
 		symbols "On"
 
 	filter "configurations:Release"
 		defines { "VK_RELEASE" }
-		links { "%{Library.ShaderC_Release}", "%{Library.SPIRV_Cross_Release}", "%{Library.SPIRV_Cross_GLSL_Release}" }
+		links { "%{Library.ShaderC_Release}", "%{Library.SPIRV_Cross_Release}", "%{Library.SPIRV_Cross_GLSL_Release}", "%{Library.AssimpLibRelease}" }
 		optimize "On"
