@@ -3,6 +3,7 @@
 #include "VulkanBuffer.h"
 
 #include <glm/glm.hpp>
+#include <assimp/scene.h>
 
 namespace VulkanCore {
 
@@ -23,13 +24,18 @@ namespace VulkanCore {
 		}
 	};
 
+
 	struct ModelBuilder
 	{
-		std::vector<Vertex> vertices{};
-		std::vector<uint32_t> indices{};
+		std::vector<Vertex> Vertices{};
+		std::vector<uint32_t> Indices{};
+		int TextureID;
 
 		void LoadModel(const std::string& filepath);
 		void LoadModel(const std::string& filepath, int texID);
+		void LoadModelFromAssimp(const std::string& filepath, int texID);
+		void ProcessNode(aiNode* node, const aiScene* scene);
+		void ProcessMesh(aiMesh* mesh, const aiScene* scene);
 	};
 
 	class VulkanModel
@@ -47,6 +53,7 @@ namespace VulkanCore {
 		static std::shared_ptr<VulkanModel> CreateModelFromFile(VulkanDevice& device, const std::string& filepath);
 		static std::shared_ptr<VulkanModel> CreateModelFromFile(VulkanDevice& device, const std::string& filepath, const glm::vec3& modelColor);
 		static std::shared_ptr<VulkanModel> CreateModelFromFile(VulkanDevice& device, const std::string& filepath, int texID);
+		static std::shared_ptr<VulkanModel> CreateModelFromAssimp(VulkanDevice& device, const std::string& filepath, int texID);
 	private:
 		void CreateVertexBuffers(const std::vector<Vertex>& vertices);
 		void CreateIndexBuffers(const std::vector<uint32_t>& indices);

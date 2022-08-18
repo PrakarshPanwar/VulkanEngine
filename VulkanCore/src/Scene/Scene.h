@@ -3,6 +3,7 @@
 #include "Core/glfw_vulkan.h"
 #include "Core/VulkanPipeline.h"
 #include "Core/Components.h"
+#include "Core/VulkanDescriptor.h"
 
 namespace VulkanCore {
 
@@ -14,6 +15,7 @@ namespace VulkanCore {
 		VulkanPipeline* ScenePipeline;
 		VkPipelineLayout PipelineLayout;
 		VkDescriptorSet SceneDescriptorSet;
+		VulkanDescriptorWriter* SceneDescriptorWriter;
 	};
 
 	class Scene

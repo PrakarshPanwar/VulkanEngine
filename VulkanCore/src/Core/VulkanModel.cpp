@@ -14,6 +14,10 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 namespace std {
 
 	template<>
@@ -34,8 +38,8 @@ namespace VulkanCore {
 	VulkanModel::VulkanModel(VulkanDevice& device, const ModelBuilder& builder)
 		: m_VulkanDevice(device)
 	{
-		CreateVertexBuffers(builder.vertices);
-		CreateIndexBuffers(builder.indices);
+		CreateVertexBuffers(builder.Vertices);
+		CreateIndexBuffers(builder.Indices);
 	}
 
 	VulkanModel::~VulkanModel()
@@ -71,8 +75,8 @@ namespace VulkanCore {
 		//std::filesystem::path materialFilePath = modelFilepath.replace_extension(".mtl");
 
 		VK_CORE_TRACE("Loading Model: {0}", modelFilepath.filename());
-		VK_CORE_TRACE("\tVertex Count: {0}", builder.vertices.size());
-		VK_CORE_TRACE("\tIndex Count: {0}", builder.indices.size());
+		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
+		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
 		return std::make_shared<VulkanModel>(device, builder);
 	}
 
@@ -90,8 +94,19 @@ namespace VulkanCore {
 		//std::filesystem::path materialFilePath = modelFilepath.replace_extension(".mtl");
 
 		VK_CORE_TRACE("Loading Model: {0}", modelFilepath.filename());
-		VK_CORE_TRACE("\tVertex Count: {0}", builder.vertices.size());
-		VK_CORE_TRACE("\tIndex Count: {0}", builder.indices.size());
+		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
+		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
+		return std::make_shared<VulkanModel>(device, builder);
+	}
+
+	std::shared_ptr<VulkanModel> VulkanModel::CreateModelFromAssimp(VulkanDevice& device, const std::string& filepath, int texID)
+	{
+		ModelBuilder builder{};
+		builder.LoadModelFromAssimp(filepath, texID);
+
+		VK_CORE_TRACE("Loading Model: {0}", filepath);
+		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
+		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
 		return std::make_shared<VulkanModel>(device, builder);
 	}
 
@@ -174,8 +189,8 @@ namespace VulkanCore {
 
 		VK_CORE_ASSERT(tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str()), warn + err);
 
-		vertices.clear();
-		indices.clear();
+		Vertices.clear();
+		Indices.clear();
 
 		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
@@ -217,11 +232,11 @@ namespace VulkanCore {
 
 				if (uniqueVertices.count(vertex) == 0)
 				{
-					uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-					vertices.push_back(vertex);
+					uniqueVertices[vertex] = static_cast<uint32_t>(Vertices.size());
+					Vertices.push_back(vertex);
 				}
 
-				indices.push_back(uniqueVertices[vertex]);
+				Indices.push_back(uniqueVertices[vertex]);
 			}
 		}
 	}
@@ -235,8 +250,8 @@ namespace VulkanCore {
 
 		VK_CORE_ASSERT(tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str()), warn + err);
 
-		vertices.clear();
-		indices.clear();
+		Vertices.clear();
+		Indices.clear();
 
 		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
@@ -278,12 +293,90 @@ namespace VulkanCore {
 
 				if (uniqueVertices.count(vertex) == 0)
 				{
-					uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-					vertices.push_back(vertex);
+					uniqueVertices[vertex] = static_cast<uint32_t>(Vertices.size());
+					Vertices.push_back(vertex);
 				}
 
-				indices.push_back(uniqueVertices[vertex]);
+				Indices.push_back(uniqueVertices[vertex]);
 			}
+		}
+	}
+
+	void ModelBuilder::LoadModelFromAssimp(const std::string& filepath, int texID)
+	{
+		Assimp::Importer modelImporter;
+		const aiScene* mScene = modelImporter.ReadFile(filepath,
+			//aiProcess_Triangulate |
+			aiProcess_GenUVCoords |
+			aiProcess_FlipUVs |
+			aiProcess_GenSmoothNormals |
+			aiProcess_CalcTangentSpace
+		);
+
+		VK_CORE_ASSERT(mScene && !(mScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) && mScene->mRootNode, modelImporter.GetErrorString());
+
+		Vertices.clear();
+		Indices.clear();
+		TextureID = texID;
+
+		ProcessNode(mScene->mRootNode, mScene);
+	}
+
+	void ModelBuilder::ProcessNode(aiNode* node, const aiScene* scene)
+	{
+		for (uint32_t i = 0; i < node->mNumMeshes; i++)
+		{
+			aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+			ProcessMesh(mesh, scene);
+		}
+
+		for (uint32_t i = 0; i < node->mNumChildren; i++)
+		{
+			ProcessNode(node->mChildren[i], scene);
+		}
+	}
+
+	void ModelBuilder::ProcessMesh(aiMesh* mesh, const aiScene* scene)
+	{
+		for (uint32_t i = 0; i < mesh->mNumVertices; i++)
+		{
+			Vertex vertex;
+			glm::vec3 mVector;
+			mVector.x = mesh->mVertices[i].x;
+			mVector.y = mesh->mVertices[i].y;
+			mVector.z = mesh->mVertices[i].z;
+			vertex.Position = mVector;
+
+			if (mesh->HasNormals())
+			{
+				mVector.x = mesh->mNormals[i].x;
+				mVector.y = mesh->mNormals[i].y;
+				mVector.z = mesh->mNormals[i].z;
+				vertex.Normal = mVector;
+			}
+
+			if (mesh->mTextureCoords[0])
+			{
+				glm::vec2 mTexCoords;
+				mTexCoords.x = mesh->mTextureCoords[0][i].x;
+				mTexCoords.y = mesh->mTextureCoords[0][i].y;
+				vertex.TexCoord = mTexCoords;
+			}
+
+			else
+				vertex.TexCoord = glm::vec2(0.0f, 0.0f);
+
+			vertex.TexID = TextureID;
+
+			Vertices.push_back(vertex);
+		}
+
+		for (uint32_t i = 0; i < mesh->mNumFaces; i++)
+		{
+			aiFace face = mesh->mFaces[i];
+
+			for (uint32_t j = 0; j < face.mNumIndices; j++)
+				Indices.push_back(face.mIndices[j]);
 		}
 	}
 

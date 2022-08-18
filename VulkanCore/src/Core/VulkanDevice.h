@@ -3,6 +3,8 @@
 
 #define MULTISAMPLING 0
 
+#include <vma/vk_mem_alloc.h>
+
 namespace VulkanCore {
 
 	struct SwapChainSupportDetails
@@ -93,6 +95,8 @@ namespace VulkanCore {
 		VkQueue m_vkGraphicsQueue;
 		VkQueue m_vkPresentQueue;
 
+		VmaAllocator m_VMAAllocator;
+
 		const std::vector<const char*> m_ValidationLayers = { "VK_LAYER_KHRONOS_validation" };
 		const std::vector<const char*> m_DeviceExtensions = { 
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -101,6 +105,7 @@ namespace VulkanCore {
 		static VulkanDevice* s_Instance;
 
 		friend class ImGuiLayer;
+		void CreateVMAAllocatorInstance();
 	};
 
 }

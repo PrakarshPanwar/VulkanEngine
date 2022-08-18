@@ -29,3 +29,6 @@ Library["SPIRV_Cross_GLSL_Release"] = "%{LibraryDir.VulkanSDK}/spirv-cross-glsl.
 
 Library["AssimpLibDebug"] = "%{LibraryDir.Assimp}/Debug/assimp-vc143-mtd.lib"
 Library["AssimpLibRelease"] = "%{LibraryDir.Assimp}/Release/assimp-vc143-mt.lib"
+
+Library["AssimpZlibDebug"] = "%{LibraryDir.Assimp}/Debug/zlibd.lib"
+Library["AssimpZlibRelease"] = "%{LibraryDir.Assimp}/Release/zlib.lib"

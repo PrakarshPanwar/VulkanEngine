@@ -2,6 +2,7 @@
 #include "Scene.h"
 #include "Entity.h"
 #include "Core/VulkanModel.h"
+#include "Core/VulkanDescriptor.h"
 
 namespace VulkanCore {
 
@@ -58,6 +59,8 @@ namespace VulkanCore {
 
 		vkCmdBindDescriptorSets(sceneInfo.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sceneInfo.PipelineLayout,
 			0, 1, &sceneInfo.SceneDescriptorSet, 0, nullptr);
+
+		//sceneInfo.SceneDescriptorWriter->Overwrite(sceneInfo.SceneDescriptorSet);
 
 		auto view = m_Registry.view<TransformComponent>();
 

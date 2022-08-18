@@ -1,4 +1,6 @@
 #include "vulkanpch.h"
+
+#define VMA_IMPLEMENTATION
 #include "VulkanDevice.h"
 
 #include "Log.h"
@@ -133,6 +135,7 @@ namespace VulkanCore {
 		PickPhysicalDevice();
 		CreateLogicalDevice();
 		CreateCommandPool();
+		//CreateVMAAllocatorInstance();
 	}
 
 	VulkanDevice::~VulkanDevice()
@@ -625,6 +628,24 @@ namespace VulkanCore {
 		}
 
 		return details;
+	}
+
+	void VulkanDevice::CreateVMAAllocatorInstance()
+	{
+		VmaVulkanFunctions vulkanFunctions = {};
+		vulkanFunctions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
+		vulkanFunctions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
+
+		VmaAllocatorCreateInfo allocatorInfo;
+		allocatorInfo.device = m_vkDevice;
+		allocatorInfo.instance = m_vkInstance;
+		allocatorInfo.physicalDevice = m_PhysicalDevice;
+		allocatorInfo.pVulkanFunctions = nullptr;
+		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+		allocatorInfo.pAllocationCallbacks = nullptr;
+		allocatorInfo.pDeviceMemoryCallbacks = nullptr;
+
+		vmaCreateAllocator(&allocatorInfo, &m_VMAAllocator);
 	}
 
 }

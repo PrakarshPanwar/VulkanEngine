@@ -45,10 +45,10 @@ project "VulkanCore"
 
 	filter "configurations:Debug"
 		defines { "VK_DEBUG" }
-		links { "%{Library.ShaderC_Debug}", "%{Library.SPIRV_Cross_Debug}", "%{Library.SPIRV_Cross_GLSL_Debug}", "%{Library.AssimpLibDebug}" }
+		links { "%{Library.ShaderC_Debug}", "%{Library.SPIRV_Cross_Debug}", "%{Library.SPIRV_Cross_GLSL_Debug}", "%{Library.AssimpLibDebug}", "%{Library.AssimpZlibDebug}" }
 		symbols "On"
 
 	filter "configurations:Release"
 		defines { "VK_RELEASE" }
-		links { "%{Library.ShaderC_Release}", "%{Library.SPIRV_Cross_Release}", "%{Library.SPIRV_Cross_GLSL_Release}", "%{Library.AssimpLibRelease}" }
+		links { "%{Library.ShaderC_Release}", "%{Library.SPIRV_Cross_Release}", "%{Library.SPIRV_Cross_GLSL_Release}", "%{Library.AssimpLibRelease}", "%{Library.AssimpZlibRelease}" }
 		optimize "On"
