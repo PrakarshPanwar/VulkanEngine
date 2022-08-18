@@ -45,6 +45,7 @@ namespace VulkanCore {
 		VkCommandBuffer commandBuffer = VulkanDevice::GetDevice()->BeginSingleTimeCommands();
 		ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
+		VulkanDevice::GetDevice()->EndSingleTimeCommands(commandBuffer);
 	}
 
 	void ImGuiLayer::OnDetach()

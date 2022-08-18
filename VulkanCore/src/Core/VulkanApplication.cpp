@@ -16,6 +16,8 @@
 #include "Scene/Entity.h"
 #include "imgui.h"
 
+#include <numbers>
+
 namespace VulkanCore {
 
 	VulkanApplication* VulkanApplication::s_Instance;
@@ -24,7 +26,7 @@ namespace VulkanCore {
 	{
 		ModelBuilder modelBuilder{};
 
-		modelBuilder.vertices = {
+		modelBuilder.Vertices = {
 
 			// Left Face
 			{ { -0.5f, -0.5f, -0.5f }, { 0.9f, 0.9f, 0.9f } },
@@ -63,10 +65,10 @@ namespace VulkanCore {
 			{ {  0.5f, -0.5f, -0.5f }, { 0.1f, 0.8f, 0.1f } }
 		};
 
-		for (auto& v : modelBuilder.vertices)
+		for (auto& v : modelBuilder.Vertices)
 			v.Position += offset;
 
-		modelBuilder.indices = { 0,  1,  2,  0,  3,  1,  4,  5,  6,  4,  7,  5,  8,  9,  10, 8,  11, 9,
+		modelBuilder.Indices = { 0,  1,  2,  0,  3,  1,  4,  5,  6,  4,  7,  5,  8,  9,  10, 8,  11, 9,
 						  12, 13, 14, 12, 15, 13, 16, 17, 18, 16, 19, 17, 20, 21, 22, 20, 23, 21 };
 
 		return std::make_shared<VulkanModel>(device, modelBuilder);
@@ -147,18 +149,19 @@ namespace VulkanCore {
 		auto globalSetLayout = descriptorSetLayoutBuilder.Build();
 
 		std::vector<VkDescriptorSet> globalDescriptorSets(VulkanSwapChain::MaxFramesInFlight);
+		std::vector<VulkanDescriptorWriter> vkGlobalDescriptorWriter(VulkanSwapChain::MaxFramesInFlight, { *globalSetLayout, *m_GlobalPool });
 
 		for (int i = 0; i < globalDescriptorSets.size(); i++)
 		{
 			auto bufferInfo = UniformBuffers[i]->DescriptorInfo();
 
-			VulkanDescriptorWriter vkDescriptorWriter(*globalSetLayout, *m_GlobalPool);
-			vkDescriptorWriter.WriteBuffer(0, &bufferInfo);
-			vkDescriptorWriter.WriteImage(1, DiffuseMaps);
-			vkDescriptorWriter.WriteImage(2, NormalMaps);
-			vkDescriptorWriter.WriteImage(3, SpecularMaps);
+			//VulkanDescriptorWriter vkDescriptorWriter(*globalSetLayout, *m_GlobalPool);
+			vkGlobalDescriptorWriter[i].WriteBuffer(0, &bufferInfo);
+			vkGlobalDescriptorWriter[i].WriteImage(1, DiffuseMaps);
+			vkGlobalDescriptorWriter[i].WriteImage(2, NormalMaps);
+			vkGlobalDescriptorWriter[i].WriteImage(3, SpecularMaps);
 
-			vkDescriptorWriter.Build(globalDescriptorSets[i]);
+			vkGlobalDescriptorWriter[i].Build(globalDescriptorSets[i]);
 		}
 
 		RenderSystem renderSystem{ *m_VulkanDevice, m_Renderer->GetSwapChainRenderPass(), globalSetLayout->GetDescriptorSetLayout() };
@@ -175,6 +178,8 @@ namespace VulkanCore {
 
 		m_EditorCamera = EditorCamera(glm::radians(50.0f), m_Renderer->GetAspectRatio(), 0.1f, 100.0f);
 
+		VK_CORE_TRACE("{0}", typeid(m_EditorCamera).name());
+
 		while (m_Running)
 		{
 			m_Window->OnUpdate();
@@ -186,6 +191,7 @@ namespace VulkanCore {
 
 				SceneRender.SceneDescriptorSet = globalDescriptorSets[frameIndex];
 				SceneRender.CommandBuffer = commandBuffer;
+				SceneRender.SceneDescriptorWriter = &vkGlobalDescriptorWriter[frameIndex];
 
 				PointLightScene.SceneDescriptorSet = globalDescriptorSets[frameIndex];
 				PointLightScene.CommandBuffer = commandBuffer;
@@ -274,8 +280,10 @@ namespace VulkanCore {
 		FlatPlane.AddComponent<ModelComponent>(VulkanModel::CreateModelFromFile(*m_VulkanDevice, "assets/models/FlatPlane.obj", 2));
 
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase Model");
-		BrassVase.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 7.5f });
-		BrassVase.AddComponent<ModelComponent>(VulkanModel::CreateModelFromFile(*m_VulkanDevice, "assets/models/BrassVase.obj", 1));
+		auto& brassTransform = BrassVase.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 7.5f });
+		brassTransform.Rotation = glm::vec3(-0.5f * (float)std::numbers::pi, 0.0f, 0.0f);
+		BrassVase.AddComponent<ModelComponent>(VulkanModel::CreateModelFromAssimp(*m_VulkanDevice, "assets/models/BrassVase2K/BrassVase.fbx", 1));
+		//BrassVase.AddComponent<ModelComponent>(VulkanModel::CreateModelFromFile(*m_VulkanDevice, "assets/models/BrassVase.obj", 1));
 
 		Entity CubeModel = m_Scene->CreateEntity("Basic Cube Model");
 		CubeModel.AddComponent<TransformComponent>(glm::vec3{ 1.5f, 0.0f, -5.5f }, glm::vec3{ 1.5f });
