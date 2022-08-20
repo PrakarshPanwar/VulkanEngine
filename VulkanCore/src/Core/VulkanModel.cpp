@@ -306,7 +306,7 @@ namespace VulkanCore {
 	{
 		Assimp::Importer modelImporter;
 		const aiScene* mScene = modelImporter.ReadFile(filepath,
-			//aiProcess_Triangulate |
+			aiProcess_Triangulate |
 			aiProcess_GenUVCoords |
 			aiProcess_FlipUVs |
 			aiProcess_GenSmoothNormals |
