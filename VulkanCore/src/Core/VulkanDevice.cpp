@@ -373,17 +373,6 @@ namespace VulkanCore {
 		VK_CORE_INFO("Physical Device: {0}", m_DeviceProperties.deviceName);
 
 		auto sampleCount = m_DeviceProperties.limits.framebufferColorSampleCounts & m_DeviceProperties.limits.framebufferDepthSampleCounts;
-	
-		if (sampleCount & VK_SAMPLE_COUNT_1_BIT)
-			m_SampleCount = VK_SAMPLE_COUNT_1_BIT;
-		if (sampleCount & VK_SAMPLE_COUNT_2_BIT)
-			m_SampleCount = VK_SAMPLE_COUNT_2_BIT;
-		if (sampleCount & VK_SAMPLE_COUNT_4_BIT)
-			m_SampleCount = VK_SAMPLE_COUNT_4_BIT;
-		if (sampleCount & VK_SAMPLE_COUNT_8_BIT)
-			m_SampleCount = VK_SAMPLE_COUNT_8_BIT;
-		if (sampleCount & VK_SAMPLE_COUNT_16_BIT)
-			m_SampleCount = VK_SAMPLE_COUNT_16_BIT;
 	}
 
 	void VulkanDevice::CreateLogicalDevice()
@@ -633,17 +622,21 @@ namespace VulkanCore {
 	void VulkanDevice::CreateVMAAllocatorInstance()
 	{
 		VmaVulkanFunctions vulkanFunctions = {};
-		vulkanFunctions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
-		vulkanFunctions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
+		vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+		vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+
+		VkPhysicalDeviceMemoryProperties memProperties;
+		vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
 
 		VmaAllocatorCreateInfo allocatorInfo;
 		allocatorInfo.device = m_vkDevice;
 		allocatorInfo.instance = m_vkInstance;
 		allocatorInfo.physicalDevice = m_PhysicalDevice;
-		allocatorInfo.pVulkanFunctions = nullptr;
+		allocatorInfo.pVulkanFunctions = &vulkanFunctions;
 		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
 		allocatorInfo.pAllocationCallbacks = nullptr;
 		allocatorInfo.pDeviceMemoryCallbacks = nullptr;
+		allocatorInfo.pHeapSizeLimit = nullptr;
 
 		vmaCreateAllocator(&allocatorInfo, &m_VMAAllocator);
 	}
