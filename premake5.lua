@@ -3,10 +3,7 @@ workspace "VulkanCore"
 	startproject "VulkanCore"
 	configurations { "Debug", "Release" }
 
-	flags
-	{
-		"MultiProcessorCompile"
-	}
+	flags { "MultiProcessorCompile" }
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
