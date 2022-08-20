@@ -1,9 +1,10 @@
 #pragma once
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
+#include <vma/vk_mem_alloc.h>
 #include "Platform/Windows/WindowsWindow.h"
 
 #define MULTISAMPLING 0
-
-#include <vma/vk_mem_alloc.h>
 
 namespace VulkanCore {
 
@@ -71,6 +72,7 @@ namespace VulkanCore {
 		void PickPhysicalDevice();
 		void CreateLogicalDevice();
 		void CreateCommandPool();
+		void CreateVMAAllocatorInstance();
 
 		bool IsDeviceSuitable(VkPhysicalDevice device);
 		std::vector<const char*> GetRequiredExtensions();
@@ -105,7 +107,6 @@ namespace VulkanCore {
 		static VulkanDevice* s_Instance;
 
 		friend class ImGuiLayer;
-		void CreateVMAAllocatorInstance();
 	};
 
 }
