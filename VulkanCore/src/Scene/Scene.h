@@ -15,7 +15,6 @@ namespace VulkanCore {
 		VulkanPipeline* ScenePipeline;
 		VkPipelineLayout PipelineLayout;
 		VkDescriptorSet SceneDescriptorSet;
-		VulkanDescriptorWriter* SceneDescriptorWriter;
 	};
 
 	class Scene

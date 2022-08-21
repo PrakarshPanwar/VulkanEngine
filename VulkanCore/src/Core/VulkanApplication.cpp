@@ -154,8 +154,6 @@ namespace VulkanCore {
 		for (int i = 0; i < globalDescriptorSets.size(); i++)
 		{
 			auto bufferInfo = UniformBuffers[i]->DescriptorInfo();
-
-			//VulkanDescriptorWriter vkDescriptorWriter(*globalSetLayout, *m_GlobalPool);
 			vkGlobalDescriptorWriter[i].WriteBuffer(0, &bufferInfo);
 			vkGlobalDescriptorWriter[i].WriteImage(1, DiffuseMaps);
 			vkGlobalDescriptorWriter[i].WriteImage(2, NormalMaps);
@@ -189,7 +187,6 @@ namespace VulkanCore {
 
 				SceneRender.SceneDescriptorSet = globalDescriptorSets[frameIndex];
 				SceneRender.CommandBuffer = commandBuffer;
-				SceneRender.SceneDescriptorWriter = &vkGlobalDescriptorWriter[frameIndex];
 
 				PointLightScene.SceneDescriptorSet = globalDescriptorSets[frameIndex];
 				PointLightScene.CommandBuffer = commandBuffer;
