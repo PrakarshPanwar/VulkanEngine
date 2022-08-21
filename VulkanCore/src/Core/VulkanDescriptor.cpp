@@ -176,6 +176,7 @@ namespace VulkanCore {
 		write.dstBinding = binding;
 		write.pImageInfo = imagesInfo.data();
 		write.descriptorCount = (uint32_t)imagesInfo.size();
+		write.dstArrayElement = 0;
 
 		m_Writes.push_back(write);
 		return *this;

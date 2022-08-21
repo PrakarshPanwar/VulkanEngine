@@ -135,7 +135,7 @@ namespace VulkanCore {
 		PickPhysicalDevice();
 		CreateLogicalDevice();
 		CreateCommandPool();
-		//CreateVMAAllocatorInstance();
+		CreateVMAAllocatorInstance();
 	}
 
 	VulkanDevice::~VulkanDevice()
@@ -637,6 +637,7 @@ namespace VulkanCore {
 		allocatorInfo.pAllocationCallbacks = nullptr;
 		allocatorInfo.pDeviceMemoryCallbacks = nullptr;
 		allocatorInfo.pHeapSizeLimit = nullptr;
+		allocatorInfo.pTypeExternalMemoryHandleTypes = nullptr;
 
 		vmaCreateAllocator(&allocatorInfo, &m_VMAAllocator);
 	}

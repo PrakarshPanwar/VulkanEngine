@@ -143,9 +143,9 @@ namespace VulkanCore {
 
 		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder(*m_VulkanDevice);
 		descriptorSetLayoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);
-		descriptorSetLayoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 8);
-		descriptorSetLayoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 8);
-		descriptorSetLayoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 8);
+		descriptorSetLayoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
+		descriptorSetLayoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
+		descriptorSetLayoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
 		auto globalSetLayout = descriptorSetLayoutBuilder.Build();
 
 		std::vector<VkDescriptorSet> globalDescriptorSets(VulkanSwapChain::MaxFramesInFlight);
@@ -177,8 +177,6 @@ namespace VulkanCore {
 		PointLightScene.PipelineLayout = pointLightSystem.GetPipelineLayout();
 
 		m_EditorCamera = EditorCamera(glm::radians(50.0f), m_Renderer->GetAspectRatio(), 0.1f, 100.0f);
-
-		VK_CORE_TRACE("{0}", typeid(m_EditorCamera).name());
 
 		while (m_Running)
 		{
