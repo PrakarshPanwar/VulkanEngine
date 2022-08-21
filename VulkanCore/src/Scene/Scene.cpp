@@ -60,8 +60,6 @@ namespace VulkanCore {
 		vkCmdBindDescriptorSets(sceneInfo.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sceneInfo.PipelineLayout,
 			0, 1, &sceneInfo.SceneDescriptorSet, 0, nullptr);
 
-		//sceneInfo.SceneDescriptorWriter->Overwrite(sceneInfo.SceneDescriptorSet);
-
 		auto view = m_Registry.view<TransformComponent>();
 
 		for (auto ent : view)
