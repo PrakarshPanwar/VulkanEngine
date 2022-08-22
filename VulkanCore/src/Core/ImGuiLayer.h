@@ -1,5 +1,6 @@
 #pragma once
 #include "glfw_vulkan.h"
+#include "VulkanDescriptor.h"
 
 namespace VulkanCore {
 
@@ -20,7 +21,9 @@ namespace VulkanCore {
 		void DestroyImGuiFonts();
 		static void CheckVkResult(VkResult error);
 	private:
-		//VkDescriptorPool m_ImGuiPool = VK_NULL_HANDLE;
+		void SetDarkThemeColor();
+	private:
+		std::unique_ptr<VulkanDescriptorPool> m_GlobalPool;
 	};
 
 }

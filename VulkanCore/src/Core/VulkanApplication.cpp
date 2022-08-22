@@ -85,6 +85,7 @@ namespace VulkanCore {
 
 	VulkanApplication::~VulkanApplication()
 	{
+		m_ImGuiLayer->ShutDown();
 	}
 
 	void VulkanApplication::Init()
@@ -97,7 +98,7 @@ namespace VulkanCore {
 		descriptorPoolBuilder.SetMaxSets(VulkanSwapChain::MaxFramesInFlight).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VulkanSwapChain::MaxFramesInFlight);
 		m_GlobalPool = descriptorPoolBuilder.Build();
 
-		//m_ImGuiLayer = std::make_unique<ImGuiLayer>();
+		m_ImGuiLayer = std::make_unique<ImGuiLayer>();
 		LoadEntities();
 	}
 
@@ -128,7 +129,7 @@ namespace VulkanCore {
 		VulkanTexture NormalMap3(*m_VulkanDevice, "assets/textures/Marble/MarbleNormalGL.png");
 		VulkanTexture SpecularMap3(*m_VulkanDevice, "assets/textures/Marble/MarbleSpec.jpg");
 
-		//m_ImGuiLayer->OnAttach();
+		m_ImGuiLayer->OnAttach();
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
 		DiffuseMaps.push_back(DiffuseMap.GetDescriptorImageInfo());
@@ -202,13 +203,14 @@ namespace VulkanCore {
 				m_Renderer->BeginSwapChainRenderPass(commandBuffer);
 				m_Scene->OnUpdate(SceneRender);
 				m_Scene->OnUpdateLights(PointLightScene);
-				m_Renderer->EndSwapChainRenderPass(commandBuffer);
-				m_Renderer->EndFrame();
 
-				/*m_ImGuiLayer->ImGuiBegin();
+				m_ImGuiLayer->ImGuiBegin();
 				ImGui::ShowDemoWindow((bool*)true);
 				m_ImGuiLayer->ImGuiRender();
-				m_ImGuiLayer->ImGuiEnd(commandBuffer);*/
+				m_ImGuiLayer->ImGuiEnd(commandBuffer);
+
+				m_Renderer->EndSwapChainRenderPass(commandBuffer);
+				m_Renderer->EndFrame();
 			}
 		}
 
