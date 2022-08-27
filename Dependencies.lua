@@ -36,3 +36,6 @@ Library["AssimpZlibRelease"] = "%{LibraryDir.Assimp}/Release/zlib.lib"
 
 Library["AssimpDLLDebug"] = "%{LibraryDir.AssimpBin}/Debug/assimp-vc143-mtd.dll"
 Library["AssimpDLLRelease"] = "%{LibraryDir.AssimpBin}/Release/assimp-vc143-mt.dll"
+
+Library["ZlibDLLDebug"] = "%{LibraryDir.AssimpBin}/Debug/zlibd.dll"
+Library["ZlibDLLRelease"] = "%{LibraryDir.AssimpBin}/Release/zlib.dll"

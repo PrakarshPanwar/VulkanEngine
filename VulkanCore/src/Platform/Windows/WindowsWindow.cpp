@@ -1,14 +1,19 @@
 #include "vulkanpch.h"
 #include "WindowsWindow.h"
 
-#include "Core/Assert.h"
-#include "Core/Log.h"
+#include "VulkanCore/Core/Assert.h"
+#include "VulkanCore/Core/Log.h"
 
-#include "Events/ApplicationEvent.h"
-#include "Events/MouseEvent.h"
-#include "Events/KeyEvent.h"
+#include "VulkanCore/Events/ApplicationEvent.h"
+#include "VulkanCore/Events/MouseEvent.h"
+#include "VulkanCore/Events/KeyEvent.h"
 
 namespace VulkanCore {
+
+	Window* Window::Create(const WindowSpecs& specs)
+	{
+		return new WindowsWindow(specs);
+	}
 
 	WindowsWindow::WindowsWindow(const WindowSpecs& specs)
 		: m_WindowSpecs(specs)
