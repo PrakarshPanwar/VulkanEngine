@@ -1,6 +1,6 @@
 workspace "VulkanCore"
 	architecture "x64"
-	startproject "VulkanCore"
+	startproject "EditorLayer"
 	configurations { "Debug", "Release" }
 
 	flags { "MultiProcessorCompile" }
@@ -15,3 +15,4 @@ group "Dependencies"
 group ""
 
 include "VulkanCore"
+include "EditorLayer"

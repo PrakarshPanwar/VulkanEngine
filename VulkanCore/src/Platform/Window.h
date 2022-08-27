@@ -1,7 +1,18 @@
 #pragma once
-#include "Events/Event.h"
+#include "VulkanCore/Events/Event.h"
 
 namespace VulkanCore {
+
+	struct WindowSpecs
+	{
+		int Width, Height;
+		std::string Name;
+		bool FramebufferResize = false;
+
+		WindowSpecs() = default;
+		WindowSpecs(int width, int height, const std::string& name)
+			: Width(width), Height(height), Name(name) {}
+	};
 
 	class Window
 	{
@@ -17,6 +28,8 @@ namespace VulkanCore {
 
 		virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
 		virtual void* GetNativeWindow() { return nullptr; }
+
+		static Window* Create(const WindowSpecs& specs = WindowSpecs());
 	};
 
 }

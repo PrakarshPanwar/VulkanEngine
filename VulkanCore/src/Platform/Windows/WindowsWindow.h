@@ -1,21 +1,10 @@
 #pragma once
-#include "Core/glfw_vulkan.h"
+#include "VulkanCore/Core/glfw_vulkan.h"
 #include "Platform/Window.h"
 
 namespace VulkanCore {
 
-	struct WindowSpecs
-	{
-		int Width, Height;
-		std::string Name;
-		bool FramebufferResize = false;
-
-		WindowSpecs() = default;
-		WindowSpecs(int width, int height, const std::string& name)
-			: Width(width), Height(height), Name(name) {}
-	};
-
-	class WindowsWindow
+	class WindowsWindow : public Window
 	{
 	public:
 		WindowsWindow() = default;
@@ -25,17 +14,17 @@ namespace VulkanCore {
 
 		using EventCallbackFn = std::function<void(Event&)>;
 
-		void OnUpdate();
+		void OnUpdate() override;
 
 		inline std::string& GetWindowName() { return m_WindowSpecs.Name; }
 		inline bool IsWindowResize() { return m_WindowSpecs.FramebufferResize; }
 		void ResetWindowResizeFlag() { m_WindowSpecs.FramebufferResize = false; };
-		void SetEventCallback(const EventCallbackFn& callback) { m_Data.EventCallback = callback; };
+		void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; };
 
-		uint32_t GetWidth() const { return m_WindowSpecs.Width; }
-		uint32_t GetHeight() const { return m_WindowSpecs.Height; }
+		uint32_t GetWidth() const override { return m_WindowSpecs.Width; }
+		uint32_t GetHeight() const override { return m_WindowSpecs.Height; }
 		inline VkExtent2D GetExtent() { return { (uint32_t)m_WindowSpecs.Width, (uint32_t)m_WindowSpecs.Height }; }
-		inline void* GetNativeWindow() { return m_Window; }
+		inline void* GetNativeWindow() override { return m_Window; }
 	private:
 		static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
 
