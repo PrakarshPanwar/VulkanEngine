@@ -22,6 +22,12 @@ project "VulkanCore"
 		"assets/shaders/*.geom"
 	}
 
+	removefiles {
+		"src/Platform/Vulkan/VulkanGameObject.h",
+		"src/Platform/Vulkan/VulkanGameObject.cpp",
+		"src/VulkanCore/Core/FrameInfo.h"
+	}
+
 	includedirs {
 		"src",
 		"vendor/spdlog/include",

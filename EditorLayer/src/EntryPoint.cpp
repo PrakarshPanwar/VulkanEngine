@@ -19,5 +19,5 @@ namespace VulkanCore {
 int main()
 {
 	std::unique_ptr<VulkanCore::Application> app = std::make_unique<VulkanCore::EditorApp>();
-	app->RunEditor();
+	app->Run();
 }
