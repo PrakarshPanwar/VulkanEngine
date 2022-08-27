@@ -23,8 +23,7 @@ namespace VulkanCore {
 		virtual ~Application();
 
 		void Init();
-		/*void Run();*/
-		void RunEditor();
+		void Run();
 
 		void OnEvent(Event& e);
 		void PushLayer(Layer* layer);
@@ -36,8 +35,6 @@ namespace VulkanCore {
 
 		inline VulkanDescriptorPool* GetVulkanDescriptorPool() { return m_GlobalPool.get(); }
 	private:
-		void LoadEntities();
-
 		bool OnWindowClose(WindowCloseEvent& window);
 		bool OnWindowResize(WindowResizeEvent& window);
 	private:
@@ -46,12 +43,9 @@ namespace VulkanCore {
 		std::unique_ptr<VulkanRenderer> m_Renderer;
 		std::unique_ptr<VulkanDescriptorPool> m_GlobalPool;
 		std::unique_ptr<ImGuiLayer> m_ImGuiLayer;
-		std::shared_ptr<Scene> m_Scene;
-		EditorCamera m_EditorCamera;
 		bool m_Running = true, m_GammaCorrection = false;
 
 		LayerStack m_LayerStack;
-		Entity m_ModelEntity;
 
 		static Application* s_Instance;
 	};
