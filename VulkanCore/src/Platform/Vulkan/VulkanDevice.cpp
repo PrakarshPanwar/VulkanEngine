@@ -146,6 +146,7 @@ namespace VulkanCore {
 
 		vkDestroySurfaceKHR(m_vkInstance, m_vkSurface, nullptr);
 		vkDestroyInstance(m_vkInstance, nullptr);
+		vmaDestroyAllocator(m_VMAAllocator);
 	}
 
 	uint32_t VulkanDevice::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
@@ -199,6 +200,25 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkAllocateMemory(m_vkDevice, &allocInfo, nullptr, &bufferMemory), "Failed to Allocate Buffer Memory!");
 
 		vkBindBufferMemory(m_vkDevice, buffer, bufferMemory, 0);
+	}
+
+	VmaAllocation VulkanDevice::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer)
+	{
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = size;
+		bufferInfo.usage = usage;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VmaAllocationCreateInfo vmaAllocInfo{};
+		vmaAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+		vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+		vmaAllocInfo.preferredFlags = properties;
+
+		VmaAllocation allocation;
+
+		VK_CHECK_RESULT(vmaCreateBuffer(m_VMAAllocator, &bufferInfo, &vmaAllocInfo, &buffer, &allocation, nullptr), "Failed to Create Buffer");
+		return allocation;
 	}
 
 	VkCommandBuffer VulkanDevice::BeginSingleTimeCommands()
@@ -395,6 +415,7 @@ namespace VulkanCore {
 		deviceFeatures.samplerAnisotropy = VK_TRUE;
 		deviceFeatures.geometryShader = VK_TRUE;
 		deviceFeatures.shaderInt64 = VK_TRUE;
+		deviceFeatures.multiViewport = VK_TRUE;
 
 		VkDeviceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -632,7 +653,7 @@ namespace VulkanCore {
 		allocatorInfo.physicalDevice = m_PhysicalDevice;
 		allocatorInfo.pVulkanFunctions = &vulkanFunctions;
 		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
-		allocatorInfo.pAllocationCallbacks = &m_AllocationCallbacks;
+		allocatorInfo.pAllocationCallbacks = nullptr;
 		allocatorInfo.pDeviceMemoryCallbacks = nullptr;
 		allocatorInfo.pHeapSizeLimit = nullptr;
 		allocatorInfo.pTypeExternalMemoryHandleTypes = nullptr;

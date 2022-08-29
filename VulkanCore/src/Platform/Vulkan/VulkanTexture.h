@@ -9,6 +9,7 @@ namespace VulkanCore {
 	public:
 		VulkanTexture() = default;
 		VulkanTexture(const std::string& filepath);
+		VulkanTexture(VkImageView imageView);
 		~VulkanTexture();
 
 		inline VkImage GetVulkanImage() { return m_TextureImage; }

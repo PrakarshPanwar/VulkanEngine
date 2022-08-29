@@ -10,10 +10,13 @@ namespace VulkanCore {
 		~VulkanBuffer();
 
 		VkResult Map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+		VkResult MapVMA();
 		void Unmap();
+		void UnmapVMA();
 
 		void WriteToBuffer(void* data, VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 		VkResult FlushBuffer(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+		VkResult FlushBufferVMA(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 		VkDescriptorBufferInfo DescriptorInfo(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 		VkResult Invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
@@ -37,6 +40,7 @@ namespace VulkanCore {
 		void* m_dstMapped = nullptr;
 		VkBuffer m_Buffer = VK_NULL_HANDLE;
 		VkDeviceMemory m_Memory = VK_NULL_HANDLE;
+		VmaAllocation m_VMAAllocation;
 
 		VkDeviceSize m_BufferSize;
 		uint32_t m_InstanceCount;

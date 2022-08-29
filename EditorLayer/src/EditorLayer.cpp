@@ -4,13 +4,14 @@
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Scene/Entity.h"
+#include "VulkanCore/Renderer/VulkanRenderer.h"
 
 #include "Platform/Vulkan/VulkanModel.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 
-#include "VulkanCore/Renderer/VulkanRenderer.h"
-
 #include <imgui.h>
+#include <imgui_impl_vulkan.h>
+
 #include <numbers>
 #include <filesystem>
 
@@ -39,7 +40,7 @@ namespace VulkanCore {
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-			UniformBuffer->Map();
+			UniformBuffer->MapVMA();
 		}
 
 #define TEXTURE_SYSTEM 1
@@ -55,6 +56,9 @@ namespace VulkanCore {
 		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleDiff.png");
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
 		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
+
+		//m_SwapChainImage = std::make_shared<VulkanTexture>(VulkanSwapChain::GetSwapChain()->GetImageView(0));
+		//m_SwapChainTexID = ImGui_ImplVulkan_AddTexture(m_SwapChainImage->GetTextureSampler(), m_SwapChainImage->GetVulkanImageView(), VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
 		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
@@ -121,7 +125,12 @@ namespace VulkanCore {
 		uniformBuffer.InverseView = glm::inverse(m_EditorCamera.GetViewMatrix());
 		m_Scene->UpdateUniformBuffer(uniformBuffer);
 		m_UniformBuffers[frameIndex]->WriteToBuffer(&uniformBuffer);
+
+#if !USE_VMA
 		m_UniformBuffers[frameIndex]->FlushBuffer();
+#else
+		m_UniformBuffers[frameIndex]->FlushBufferVMA();
+#endif
 
 		m_Scene->OnUpdate(m_SceneRender);
 		m_Scene->OnUpdateLights(m_PointLightScene);
@@ -129,6 +138,8 @@ namespace VulkanCore {
 
 	void EditorLayer::OnEvent(Event& e)
 	{
+		m_EditorCamera.OnEvent(e);
+
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnKeyEvent));
 	}
@@ -136,6 +147,10 @@ namespace VulkanCore {
 	void EditorLayer::OnImGuiRender()
 	{
 		ImGui::ShowDemoWindow((bool*)true);
+
+		/*ImGui::Begin("Viewport");
+		ImGui::Image(m_SwapChainTexID, { 200.0f, 200.0f });
+		ImGui::End();*/
 	}
 
 	bool EditorLayer::OnKeyEvent(KeyPressedEvent& keyevent)
