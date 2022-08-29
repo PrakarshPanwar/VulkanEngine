@@ -3,11 +3,10 @@
 #include "VulkanCore/Events/KeyEvent.h"
 #include "VulkanCore/Events/MouseEvent.h"
 #include "VulkanCore/Scene/Scene.h"
-
 #include "VulkanCore/Systems/RenderSystem.h"
 #include "VulkanCore/Systems/PointLightSystem.h"
-
 #include "VulkanCore/Renderer/EditorCamera.h"
+
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanBuffer.h"
 #include "Platform/Vulkan/VulkanTexture.h"
@@ -42,6 +41,9 @@ namespace VulkanCore {
 
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap, m_DiffuseMap2, m_NormalMap2,
 			m_SpecularMap2, m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
+
+		std::shared_ptr<VulkanTexture> m_SwapChainImage;
+		VkDescriptorSet m_SwapChainTexID;
 	};
 
 }

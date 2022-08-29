@@ -3,6 +3,7 @@
 #include "Platform/Windows/WindowsWindow.h"
 
 #define MULTISAMPLING 0
+#define USE_VMA 1
 
 namespace VulkanCore {
 
@@ -48,6 +49,7 @@ namespace VulkanCore {
 		inline VkQueue GetPresentQueue() { return m_vkPresentQueue; }
 		inline VkPhysicalDeviceProperties& GetPhysicalDeviceProperties() { return m_DeviceProperties; }
 		inline VkSampleCountFlagBits GetSampleCount() { return m_SampleCount; }
+		inline VmaAllocator GetVMAAllocator() { return m_VMAAllocator; }
 
 		void Init();
 		SwapChainSupportDetails GetSwapChainSupport() { return QuerySwapChainSupport(m_PhysicalDevice); }
@@ -56,6 +58,7 @@ namespace VulkanCore {
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+		VmaAllocation CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer);
 		VkCommandBuffer BeginSingleTimeCommands();
 		void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
 		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);

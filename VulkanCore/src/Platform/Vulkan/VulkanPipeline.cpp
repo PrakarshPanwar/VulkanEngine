@@ -204,7 +204,6 @@ namespace VulkanCore {
 		VkPipelineShaderStageCreateInfo* shaderStages;
 
 		const uint32_t shaderStageCount = shader->CheckIfGeometryShaderExists() ? 3 : 2;
-		//shaderStages = (VkPipelineShaderStageCreateInfo*)alloca(sizeof(VkPipelineShaderStageCreateInfo) * shaderStageCount);
 		shaderStages = new VkPipelineShaderStageCreateInfo[shaderStageCount];
 
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

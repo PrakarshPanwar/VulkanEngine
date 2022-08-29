@@ -24,6 +24,14 @@ namespace VulkanCore {
 		m_DescriptorImagesInfo.emplace_back(m_TextureSampler, m_TextureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
+	VulkanTexture::VulkanTexture(VkImageView imageView)
+		: m_TextureImageView(imageView)
+	{
+		CreateTextureSampler();
+
+		m_TextureCount++;
+	}
+
 	VulkanTexture::~VulkanTexture()
 	{
 		vkDestroySampler(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureSampler, nullptr);
@@ -42,9 +50,15 @@ namespace VulkanCore {
 		VulkanBuffer stagingBuffer{ *VulkanDevice::GetDevice(), imageSize, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
 
-		stagingBuffer.Map(imageSize);
+#if !USE_VMA
+		stagingBuffer.Map();
 		stagingBuffer.WriteToBuffer(m_Pixels, imageSize);
 		stagingBuffer.Unmap();
+#else
+		stagingBuffer.MapVMA();
+		stagingBuffer.WriteToBuffer(m_Pixels, imageSize);
+		stagingBuffer.UnmapVMA();
+#endif
 
 		free(m_Pixels);
 
