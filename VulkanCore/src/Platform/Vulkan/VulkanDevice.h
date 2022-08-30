@@ -49,7 +49,7 @@ namespace VulkanCore {
 		inline VkQueue GetPresentQueue() { return m_vkPresentQueue; }
 		inline VkPhysicalDeviceProperties& GetPhysicalDeviceProperties() { return m_DeviceProperties; }
 		inline VkSampleCountFlagBits GetSampleCount() { return m_SampleCount; }
-		inline VmaAllocator GetVMAAllocator() { return m_VMAAllocator; }
+		inline VmaAllocator GetVulkanAllocator() { return m_VMAAllocator; }
 
 		void Init();
 		SwapChainSupportDetails GetSwapChainSupport() { return QuerySwapChainSupport(m_PhysicalDevice); }
@@ -65,6 +65,7 @@ namespace VulkanCore {
 		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
 
 		void CreateImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+		VmaAllocation CreateImage(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image);
 	private:
 		void CreateInstance();
 		void SetupDebugMessenger();

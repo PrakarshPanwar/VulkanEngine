@@ -122,7 +122,7 @@ namespace VulkanCore {
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
 
-		stagingBuffer.MapVMA();
+		stagingBuffer.Map();
 		stagingBuffer.WriteToBuffer((void*)vertices.data());
 
 		m_VertexBuffer = std::make_unique<VulkanBuffer>(m_VulkanDevice, vertexSize, m_VertexCount,
@@ -147,7 +147,7 @@ namespace VulkanCore {
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
 
-		stagingBuffer.MapVMA();
+		stagingBuffer.Map();
 		stagingBuffer.WriteToBuffer((void*)indices.data());
 
 		m_IndexBuffer = std::make_unique<VulkanBuffer>(m_VulkanDevice, indexSize, m_IndexCount,

@@ -12,39 +12,28 @@ namespace VulkanCore {
 	{
 		m_AlignmentSize = GetAlignment(m_InstanceSize, minOffsetAlignment);
 		m_BufferSize = m_AlignmentSize * m_InstanceCount;
-
-#if !USE_VMA
-		m_VulkanDevice.CreateBuffer(m_BufferSize, m_UsageFlags, m_MemoryPropertyFlags, m_Buffer, m_Memory);
-#else
 		m_VMAAllocation = m_VulkanDevice.CreateBuffer(m_BufferSize, m_UsageFlags, m_MemoryPropertyFlags, m_Buffer);
-#endif
 	}
 
 	VulkanBuffer::~VulkanBuffer()
 	{
-#if !USE_VMA
 		Unmap();
-		vkDestroyBuffer(m_VulkanDevice.GetVulkanDevice(), m_Buffer, nullptr);
-		vkFreeMemory(m_VulkanDevice.GetVulkanDevice(), m_Memory, nullptr);
-#else
-		UnmapVMA();
-		vmaDestroyBuffer(m_VulkanDevice.GetVMAAllocator(), m_Buffer, m_VMAAllocation);
-#endif
+		vmaDestroyBuffer(m_VulkanDevice.GetVulkanAllocator(), m_Buffer, m_VMAAllocation);
 	}
 
-	VkResult VulkanBuffer::Map(VkDeviceSize size, VkDeviceSize offset)
+	VkResult VulkanBuffer::MapOld(VkDeviceSize size, VkDeviceSize offset)
 	{
 		VK_CORE_ASSERT(m_Buffer && m_Memory, "Called Map on Buffer before its creation!");
 		return vkMapMemory(m_VulkanDevice.GetVulkanDevice(), m_Memory, offset, size, 0, &m_dstMapped);
 	}
 
-	VkResult VulkanBuffer::MapVMA()
+	VkResult VulkanBuffer::Map()
 	{
 		VK_CORE_ASSERT(m_Buffer, "Called Map on Buffer before its creation!");
-		return vmaMapMemory(m_VulkanDevice.GetVMAAllocator(), m_VMAAllocation, &m_dstMapped);
+		return vmaMapMemory(m_VulkanDevice.GetVulkanAllocator(), m_VMAAllocation, &m_dstMapped);
 	}
 
-	void VulkanBuffer::Unmap()
+	void VulkanBuffer::UnmapOld()
 	{
 		if (m_dstMapped)
 		{
@@ -53,11 +42,11 @@ namespace VulkanCore {
 		}
 	}
 
-	void VulkanBuffer::UnmapVMA()
+	void VulkanBuffer::Unmap()
 	{
 		if (m_dstMapped)
 		{
-			vmaUnmapMemory(m_VulkanDevice.GetVMAAllocator(), m_VMAAllocation);
+			vmaUnmapMemory(m_VulkanDevice.GetVulkanAllocator(), m_VMAAllocation);
 			m_dstMapped = nullptr;
 		}
 	}
@@ -77,7 +66,7 @@ namespace VulkanCore {
 		}
 	}
 
-	VkResult VulkanBuffer::FlushBuffer(VkDeviceSize size, VkDeviceSize offset)
+	VkResult VulkanBuffer::FlushBufferOld(VkDeviceSize size, VkDeviceSize offset)
 	{
 		VkMappedMemoryRange mappedRange = {};
 		mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
@@ -87,14 +76,9 @@ namespace VulkanCore {
 		return vkFlushMappedMemoryRanges(m_VulkanDevice.GetVulkanDevice(), 1, &mappedRange);
 	}
 
-	VkResult VulkanBuffer::FlushBufferVMA(VkDeviceSize size, VkDeviceSize offset)
+	VkResult VulkanBuffer::FlushBuffer(VkDeviceSize size, VkDeviceSize offset)
 	{
-		VkMappedMemoryRange mappedRange = {};
-		mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-		mappedRange.memory = m_Memory;
-		mappedRange.offset = offset;
-		mappedRange.size = size;
-		return vmaFlushAllocation(m_VulkanDevice.GetVMAAllocator(), m_VMAAllocation, offset, size);
+		return vmaFlushAllocation(m_VulkanDevice.GetVulkanAllocator(), m_VMAAllocation, offset, size);
 	}
 
 	VkDescriptorBufferInfo VulkanBuffer::DescriptorInfo(VkDeviceSize size, VkDeviceSize offset)
@@ -119,7 +103,7 @@ namespace VulkanCore {
 
 	VkResult VulkanBuffer::FlushIndex(int index)
 	{
-		return FlushBuffer(m_AlignmentSize, index * m_AlignmentSize);
+		return FlushBufferOld(m_AlignmentSize, index * m_AlignmentSize);
 	}
 
 	VkDescriptorBufferInfo VulkanBuffer::DescriptorInfoForIndex(int index)

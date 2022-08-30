@@ -44,6 +44,7 @@ namespace VulkanCore {
 
 		std::shared_ptr<VulkanTexture> m_SwapChainImage;
 		VkDescriptorSet m_SwapChainTexID;
+		bool m_ImGuiShowWindow = true;
 	};
 
 }

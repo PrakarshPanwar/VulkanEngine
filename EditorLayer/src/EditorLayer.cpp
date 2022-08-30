@@ -15,6 +15,8 @@
 #include <numbers>
 #include <filesystem>
 
+#define SHOW_FRAMERATES ImGui::Text("Application Stats:\n\t Frame Time: %.3f ms\n\t Frames Per Second: %.2f FPS", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate)
+
 namespace VulkanCore {
 
 	EditorLayer::EditorLayer()
@@ -40,7 +42,7 @@ namespace VulkanCore {
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-			UniformBuffer->MapVMA();
+			UniformBuffer->Map();
 		}
 
 #define TEXTURE_SYSTEM 1
@@ -57,8 +59,9 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
 		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
 
-		//m_SwapChainImage = std::make_shared<VulkanTexture>(VulkanSwapChain::GetSwapChain()->GetImageView(0));
-		//m_SwapChainTexID = ImGui_ImplVulkan_AddTexture(m_SwapChainImage->GetTextureSampler(), m_SwapChainImage->GetVulkanImageView(), VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
+		m_SwapChainImage = std::make_shared<VulkanTexture>(VulkanSwapChain::GetSwapChain()->GetSwapChainImage(0),
+			VulkanSwapChain::GetSwapChain()->GetImageView(0));
+		m_SwapChainTexID = ImGui_ImplVulkan_AddTexture(m_SwapChainImage->GetTextureSampler(), m_SwapChainImage->GetVulkanImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
 		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
@@ -125,12 +128,7 @@ namespace VulkanCore {
 		uniformBuffer.InverseView = glm::inverse(m_EditorCamera.GetViewMatrix());
 		m_Scene->UpdateUniformBuffer(uniformBuffer);
 		m_UniformBuffers[frameIndex]->WriteToBuffer(&uniformBuffer);
-
-#if !USE_VMA
 		m_UniformBuffers[frameIndex]->FlushBuffer();
-#else
-		m_UniformBuffers[frameIndex]->FlushBufferVMA();
-#endif
 
 		m_Scene->OnUpdate(m_SceneRender);
 		m_Scene->OnUpdateLights(m_PointLightScene);
@@ -146,11 +144,16 @@ namespace VulkanCore {
 
 	void EditorLayer::OnImGuiRender()
 	{
-		ImGui::ShowDemoWindow((bool*)true);
+		ImGui::ShowDemoWindow(&m_ImGuiShowWindow);
 
-		/*ImGui::Begin("Viewport");
-		ImGui::Image(m_SwapChainTexID, { 200.0f, 200.0f });
-		ImGui::End();*/
+		ImGui::Begin("Application Stats");
+		SHOW_FRAMERATES;
+		ImGui::Checkbox("Show ImGui Demo Window", &m_ImGuiShowWindow);
+		ImGui::End();
+
+		ImGui::Begin("Viewport");
+		ImGui::Image(m_SwapChainTexID, { 400.0f, 400.0f });
+		ImGui::End();
 	}
 
 	bool EditorLayer::OnKeyEvent(KeyPressedEvent& keyevent)
