@@ -305,22 +305,24 @@ namespace VulkanCore {
 	void ModelBuilder::LoadModelFromAssimp(const std::string& filepath, int texID)
 	{
 		Assimp::Importer modelImporter;
-		const aiScene* mScene = modelImporter.ReadFile(filepath,
+		const aiScene* modelScene = modelImporter.ReadFile(filepath,
 			aiProcess_Triangulate |
 			aiProcess_CalcTangentSpace |
 			aiProcess_JoinIdenticalVertices |
 			aiProcess_GenUVCoords |
-			aiProcess_GenNormals
+			aiProcess_GenNormals |
+			aiProcess_SortByPType |
+			aiProcess_ValidateDataStructure
 		);
 
-		VK_CORE_ASSERT(mScene && !(mScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) && mScene->mRootNode, modelImporter.GetErrorString());
+		VK_CORE_ASSERT(modelScene && !(modelScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) && modelScene->mRootNode, modelImporter.GetErrorString());
 		//VK_CORE_WARN(modelImporter.)
 
 		Vertices.clear();
 		Indices.clear();
 		TextureID = texID;
 
-		ProcessNode(mScene->mRootNode, mScene);
+		ProcessNode(modelScene->mRootNode, modelScene);
 	}
 
 	void ModelBuilder::ProcessNode(aiNode* node, const aiScene* scene)
@@ -362,7 +364,9 @@ namespace VulkanCore {
 				vertex.Normal = mVector;
 			}
 
-			if (mesh->mTextureCoords[0] != nullptr)
+			vertex.Color = glm::vec3{ 1.0f };
+
+			if (mesh->HasTextureCoords(0))
 			{
 				glm::vec2 mTexCoords = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
 				vertex.TexCoord = mTexCoords;
@@ -370,20 +374,9 @@ namespace VulkanCore {
 
 			vertex.TexID = TextureID;
 
-#if MAP_VERTICES
-			if (uniqueVertices.count(vertex) == 0)
-			{
-				uniqueVertices[vertex] = static_cast<uint32_t>(Vertices.size());
-				Vertices.push_back(vertex);
-			}
-
-			Indices.push_back(uniqueVertices[vertex]);
-#else
 			Vertices.push_back(vertex);
-#endif
 		}
 
-#if !MAP_VERTICES
 		for (uint32_t i = 0; i < mesh->mNumFaces; i++)
 		{
 			aiFace face = mesh->mFaces[i];
@@ -391,7 +384,6 @@ namespace VulkanCore {
 			for (uint32_t j = 0; j < face.mNumIndices; j++)
 				Indices.push_back(face.mIndices[j]);
 		}
-#endif
 	}
 
 }

@@ -139,6 +139,7 @@ namespace VulkanCore {
 	VulkanDevice::~VulkanDevice()
 	{
 		vkDestroyCommandPool(m_vkDevice, m_CommandPool, nullptr);
+		vmaDestroyAllocator(m_VMAAllocator);
 		vkDestroyDevice(m_vkDevice, nullptr);
 
 		if (m_EnableValidation)
@@ -146,7 +147,6 @@ namespace VulkanCore {
 
 		vkDestroySurfaceKHR(m_vkInstance, m_vkSurface, nullptr);
 		vkDestroyInstance(m_vkInstance, nullptr);
-		vmaDestroyAllocator(m_VMAAllocator);
 	}
 
 	uint32_t VulkanDevice::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
@@ -213,7 +213,7 @@ namespace VulkanCore {
 		VmaAllocationCreateInfo allocInfo{};
 		allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 		allocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-		allocInfo.preferredFlags = properties;
+		//allocInfo.preferredFlags = properties;
 
 		VmaAllocation allocation;
 

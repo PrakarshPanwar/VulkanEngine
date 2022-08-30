@@ -30,10 +30,12 @@ namespace VulkanCore {
 		void OnUpdateLights(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VulkanPipeline* pipeline, VkDescriptorSet descriptorSet);
 		void OnUpdateLights(SceneInfo& sceneInfo);
 		void UpdateUniformBuffer(UniformBufferDataComponent& ubo);
+		void DestroyEntity(Entity entity);
 	private:
 		entt::registry m_Registry;
 
 		friend class Entity;
+		friend class SceneHierarchyPanel;
 	};
 
 }

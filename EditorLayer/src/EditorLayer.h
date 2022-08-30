@@ -11,6 +11,8 @@
 #include "Platform/Vulkan/VulkanBuffer.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 
+#include "Panels/SceneHierarchyPanel.h"
+
 namespace VulkanCore {
 
 	class EditorLayer : public Layer
@@ -45,6 +47,8 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanTexture> m_SwapChainImage;
 		VkDescriptorSet m_SwapChainTexID;
 		bool m_ImGuiShowWindow = true;
+
+		SceneHierarchyPanel m_SceneHierarchyPanel;
 	};
 
 }
