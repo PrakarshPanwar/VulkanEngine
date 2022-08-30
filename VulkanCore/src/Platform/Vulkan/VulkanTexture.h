@@ -9,7 +9,7 @@ namespace VulkanCore {
 	public:
 		VulkanTexture() = default;
 		VulkanTexture(const std::string& filepath);
-		VulkanTexture(VkImageView imageView);
+		VulkanTexture(VkImage image, VkImageView imageView);
 		~VulkanTexture();
 
 		inline VkImage GetVulkanImage() { return m_TextureImage; }
@@ -36,6 +36,7 @@ namespace VulkanCore {
 		VkImageView m_TextureImageView;
 		VkSampler m_TextureSampler;
 		VkDeviceMemory m_TextureImageMemory;
+		VmaAllocation m_TextureImageAlloc;
 
 		stbi_uc* m_Pixels;
 		int m_Width, m_Height, m_Channels;

@@ -210,14 +210,14 @@ namespace VulkanCore {
 		bufferInfo.usage = usage;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		VmaAllocationCreateInfo vmaAllocInfo{};
-		vmaAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-		vmaAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-		vmaAllocInfo.preferredFlags = properties;
+		VmaAllocationCreateInfo allocInfo{};
+		allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+		allocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+		allocInfo.preferredFlags = properties;
 
 		VmaAllocation allocation;
 
-		VK_CHECK_RESULT(vmaCreateBuffer(m_VMAAllocator, &bufferInfo, &vmaAllocInfo, &buffer, &allocation, nullptr), "Failed to Create Buffer");
+		VK_CHECK_RESULT(vmaCreateBuffer(m_VMAAllocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr), "Failed to Create Buffer");
 		return allocation;
 	}
 
@@ -304,6 +304,17 @@ namespace VulkanCore {
 
 		VK_CHECK_RESULT(vkAllocateMemory(m_vkDevice, &allocInfo, nullptr, &imageMemory), "Failed to Allocate Image Memory!");
 		VK_CHECK_RESULT(vkBindImageMemory(m_vkDevice, image, imageMemory, 0), "Failed to Bind Image Memory!");
+	}
+
+	VmaAllocation VulkanDevice::CreateImage(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image)
+	{
+		VmaAllocationCreateInfo allocInfo{};
+		allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+		allocInfo.preferredFlags = properties;
+
+		VmaAllocation imageAllocation;
+		VK_CHECK_RESULT(vmaCreateImage(m_VMAAllocator, &imageInfo, &allocInfo, &image, &imageAllocation, nullptr), "Failed to Create Image!");
+		return imageAllocation;
 	}
 
 	void VulkanDevice::CreateInstance()

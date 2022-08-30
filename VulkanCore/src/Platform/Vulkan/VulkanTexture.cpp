@@ -24,9 +24,10 @@ namespace VulkanCore {
 		m_DescriptorImagesInfo.emplace_back(m_TextureSampler, m_TextureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
-	VulkanTexture::VulkanTexture(VkImageView imageView)
-		: m_TextureImageView(imageView)
+	VulkanTexture::VulkanTexture(VkImage image, VkImageView imageView)
+		: m_TextureImage(image), m_TextureImageView(imageView)
 	{
+		CreateTextureImageView();
 		CreateTextureSampler();
 
 		m_TextureCount++;
@@ -36,8 +37,7 @@ namespace VulkanCore {
 	{
 		vkDestroySampler(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureSampler, nullptr);
 		vkDestroyImageView(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureImageView, nullptr);
-		vkDestroyImage(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureImage, nullptr);
-		vkFreeMemory(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureImageMemory, nullptr);
+		vmaDestroyImage(VulkanDevice::GetDevice()->GetVulkanAllocator(), m_TextureImage, m_TextureImageAlloc);
 	}
 
 	void VulkanTexture::CreateTextureImage()
@@ -50,15 +50,9 @@ namespace VulkanCore {
 		VulkanBuffer stagingBuffer{ *VulkanDevice::GetDevice(), imageSize, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
 
-#if !USE_VMA
 		stagingBuffer.Map();
 		stagingBuffer.WriteToBuffer(m_Pixels, imageSize);
 		stagingBuffer.Unmap();
-#else
-		stagingBuffer.MapVMA();
-		stagingBuffer.WriteToBuffer(m_Pixels, imageSize);
-		stagingBuffer.UnmapVMA();
-#endif
 
 		free(m_Pixels);
 
@@ -88,7 +82,11 @@ namespace VulkanCore {
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
+#if !USE_VMA
 		VulkanDevice::GetDevice()->CreateImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage, m_TextureImageMemory);
+#else
+		m_TextureImageAlloc = VulkanDevice::GetDevice()->CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage);
+#endif
 	}
 
 	void VulkanTexture::TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout)
@@ -176,7 +174,6 @@ namespace VulkanCore {
 		imageViewInfo.subresourceRange.baseArrayLayer = 0;
 		imageViewInfo.subresourceRange.layerCount = 1;
 
-		VkImageView imageView;
 		VK_CHECK_RESULT(vkCreateImageView(VulkanDevice::GetDevice()->GetVulkanDevice(), &imageViewInfo, nullptr, &m_TextureImageView), "Failed to Create Texture Image View!");
 	}
 

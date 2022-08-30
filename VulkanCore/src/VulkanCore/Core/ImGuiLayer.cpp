@@ -64,8 +64,14 @@ namespace VulkanCore {
 
 		ImGuiIO& io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-		//VK_CORE_INFO("Current Directory Path: {0}", std::filesystem::current_path());
+		ImGuiStyle& style = ImGui::GetStyle();
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			style.WindowRounding = 0.0f;
+			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+		}
 
 		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", 18.0f);
 		SetDarkThemeColor();
@@ -90,8 +96,25 @@ namespace VulkanCore {
 
 	void ImGuiLayer::ImGuiRenderandEnd(VkCommandBuffer commandBuffer)
 	{
+#define IMGUI_VIEWPORTS 0
+#if IMGUI_VIEWPORTS
+		ImGuiIO& io = ImGui::GetIO();
+		Application* app = Application::Get();
+		io.DisplaySize = ImVec2{ (float)app->GetWindow()->GetWidth(), (float)app->GetWindow()->GetHeight() };
+#endif
+
 		ImGui::Render();
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
+#if IMGUI_VIEWPORTS
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			GLFWwindow* backup_current_context = glfwGetCurrentContext();
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+			glfwMakeContextCurrent(backup_current_context);
+		}
+#endif
 	}
 
 	void ImGuiLayer::ShutDown()
@@ -122,6 +145,7 @@ namespace VulkanCore {
 		glm::vec3 colorCode4 = glm::pow(glm::vec3(0.2f, 0.205f, 0.21f), gammaVal);
 		glm::vec3 colorCode5 = glm::pow(glm::vec3(0.38f, 0.3805f, 0.381f), gammaVal);
 		glm::vec3 colorCode6 = glm::pow(glm::vec3(0.28f, 0.2805f, 0.281f), gammaVal);
+		glm::vec3 colorCode7 = glm::pow(glm::vec3(0.08f, 0.08f, 0.08f), gammaVal);
 
 		colors[ImGuiCol_WindowBg] = ImVec4{ colorCode1.x, colorCode1.y, colorCode1.z, 1.0f };
 
@@ -148,6 +172,7 @@ namespace VulkanCore {
 		colors[ImGuiCol_TitleBgCollapsed] = ImVec4{ colorCode3.x, colorCode3.y, colorCode3.z, 1.0f };
 
 		colors[ImGuiCol_MenuBarBg] = ImVec4{ colorCode1.x, colorCode1.y, colorCode1.z, 1.0f };
+		colors[ImGuiCol_PopupBg] = ImVec4{ colorCode7.x, colorCode7.y, colorCode7.z, 0.94f };
 #else
 		colors[ImGuiCol_WindowBg] = ImVec4{ 0.011f, 0.0105f, 0.011f, 1.0f };
 
