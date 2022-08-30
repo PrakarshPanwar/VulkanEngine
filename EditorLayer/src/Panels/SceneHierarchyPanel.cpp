@@ -94,8 +94,8 @@ namespace VulkanCore {
 			float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
 			ImGui::Separator();
 			bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, name.c_str());
-			ImGui::PopStyleVar(
-			);
+			ImGui::PopStyleVar();
+
 			ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
 			if (ImGui::Button("+", ImVec2{ lineHeight, lineHeight }))
 			{
@@ -140,7 +140,7 @@ namespace VulkanCore {
 		ImGui::SameLine();
 		ImGui::PushItemWidth(-1);
 
-		/*if (ImGui::Button("Add Component"))
+		/*if (ImGui::Button("Add Component")) // TODO: Add Different Components
 			ImGui::OpenPopup("AddComponent");
 
 		if (ImGui::BeginPopup("AddComponent"))
