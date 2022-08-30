@@ -16,6 +16,7 @@
 #include <filesystem>
 
 #define SHOW_FRAMERATES ImGui::Text("Application Stats:\n\t Frame Time: %.3f ms\n\t Frames Per Second: %.2f FPS", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate)
+#define USE_IMGUI_VIEWPORTS 0
 
 namespace VulkanCore {
 
@@ -59,9 +60,12 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
 		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
 
+#if USE_IMGUI_VIEWPORTS
 		m_SwapChainImage = std::make_shared<VulkanTexture>(VulkanSwapChain::GetSwapChain()->GetSwapChainImage(0),
 			VulkanSwapChain::GetSwapChain()->GetImageView(0));
-		m_SwapChainTexID = ImGui_ImplVulkan_AddTexture(m_SwapChainImage->GetTextureSampler(), m_SwapChainImage->GetVulkanImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		m_SwapChainTexID = ImGui_ImplVulkan_AddTexture(m_SwapChainImage->GetTextureSampler(),
+			m_SwapChainImage->GetVulkanImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+#endif
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
 		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
@@ -95,6 +99,7 @@ namespace VulkanCore {
 			vkGlobalDescriptorWriter[i].Build(m_GlobalDescriptorSets[i]);
 		}
 
+		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 		m_RenderSystem = std::make_shared<RenderSystem>(vulkanDevice, vkRenderer->GetSwapChainRenderPass(), globalSetLayout->GetDescriptorSetLayout());
 		m_PointLightSystem = std::make_shared<PointLightSystem>(vulkanDevice, vkRenderer->GetSwapChainRenderPass(), globalSetLayout->GetDescriptorSetLayout());
 
@@ -114,6 +119,8 @@ namespace VulkanCore {
 
 	void EditorLayer::OnUpdate()
 	{
+		m_EditorCamera.OnUpdate();
+
 		int frameIndex = VulkanRenderer::Get()->GetFrameIndex();
 
 		m_SceneRender.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
@@ -151,9 +158,13 @@ namespace VulkanCore {
 		ImGui::Checkbox("Show ImGui Demo Window", &m_ImGuiShowWindow);
 		ImGui::End();
 
+#if USE_IMGUI_VIEWPORTS
 		ImGui::Begin("Viewport");
 		ImGui::Image(m_SwapChainTexID, { 400.0f, 400.0f });
 		ImGui::End();
+#endif
+
+		m_SceneHierarchyPanel.OnImGuiRender();
 	}
 
 	bool EditorLayer::OnKeyEvent(KeyPressedEvent& keyevent)
@@ -183,13 +194,13 @@ namespace VulkanCore {
 #if LOAD_THROUGH_ASSIMP
 		Entity CrateModel = m_Scene->CreateEntity("Wooden Crate");
 		auto& brassTransform = CrateModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 7.5f });
-		brassTransform.Rotation = glm::vec3(-0.5f * (float)std::numbers::pi, 0.0f, 0.0f);
+		brassTransform.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 		CrateModel.AddComponent<ModelComponent>(VulkanModel::CreateModelFromAssimp(*VulkanDevice::GetDevice(), "assets/models/WoodenCrate/WoodenCrate.gltf", 1));
 #else
 		Entity BrassModel = m_Scene->CreateEntity("Brass Vase");
 		auto& brassTransform = BrassModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 7.5f });
 		brassTransform.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-		BrassModel.AddComponent<ModelComponent>(VulkanModel::CreateModelFromFile(vulkanDevice, "assets/models/BrassVase.obj", 1));
+		BrassModel.AddComponent<ModelComponent>(VulkanModel::CreateModelFromFile(*VulkanDevice::GetDevice(), "assets/models/BrassVase.obj", 1));
 #endif
 
 		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");
