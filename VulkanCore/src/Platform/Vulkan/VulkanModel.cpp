@@ -305,7 +305,7 @@ namespace VulkanCore {
 	void ModelBuilder::LoadModelFromAssimp(const std::string& filepath, int texID)
 	{
 		Assimp::Importer modelImporter;
-		const aiScene* modelScene = modelImporter.ReadFile(filepath,
+		const aiScene* mScene = modelImporter.ReadFile(filepath,
 			aiProcess_Triangulate |
 			aiProcess_CalcTangentSpace |
 			aiProcess_JoinIdenticalVertices |
@@ -315,14 +315,13 @@ namespace VulkanCore {
 			aiProcess_ValidateDataStructure
 		);
 
-		VK_CORE_ASSERT(modelScene && !(modelScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) && modelScene->mRootNode, modelImporter.GetErrorString());
-		//VK_CORE_WARN(modelImporter.)
+		VK_CORE_ASSERT(mScene && !(mScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) && mScene->mRootNode, modelImporter.GetErrorString());
 
 		Vertices.clear();
 		Indices.clear();
 		TextureID = texID;
 
-		ProcessNode(modelScene->mRootNode, modelScene);
+		ProcessNode(mScene->mRootNode, mScene);
 	}
 
 	void ModelBuilder::ProcessNode(aiNode* node, const aiScene* scene)
@@ -341,12 +340,6 @@ namespace VulkanCore {
 
 	void ModelBuilder::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 	{
-#define MAP_VERTICES 0
-
-#if MAP_VERTICES
-		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-#endif
-
 		for (uint32_t i = 0; i < mesh->mNumVertices; i++)
 		{
 			Vertex vertex;

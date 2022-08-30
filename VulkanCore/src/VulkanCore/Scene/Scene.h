@@ -24,7 +24,6 @@ namespace VulkanCore {
 		~Scene();
 
 		Entity CreateEntity(const std::string& name);
-		entt::registry& GetRegistry() { return m_Registry; }
 		void OnUpdate(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VulkanPipeline* pipeline, VkDescriptorSet descriptorSet);
 		void OnUpdate(SceneInfo& sceneInfo);
 		void OnUpdateLights(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VulkanPipeline* pipeline, VkDescriptorSet descriptorSet);
