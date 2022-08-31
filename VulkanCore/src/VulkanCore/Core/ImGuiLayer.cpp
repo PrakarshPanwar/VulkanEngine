@@ -18,12 +18,10 @@ namespace VulkanCore {
 
 	ImGuiLayer::ImGuiLayer()
 	{
-
 	}
 
 	ImGuiLayer::~ImGuiLayer()
 	{
-
 	}
 
 	void ImGuiLayer::OnAttach()
@@ -104,6 +102,11 @@ namespace VulkanCore {
 		Application* app = Application::Get();
 		io.DisplaySize = ImVec2{ (float)app->GetWindow()->GetWidth(), (float)app->GetWindow()->GetHeight() };
 #endif
+		if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
+			m_BlockEvents = true;
+
+		else
+			m_BlockEvents = false;
 
 		ImGui::Render();
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);

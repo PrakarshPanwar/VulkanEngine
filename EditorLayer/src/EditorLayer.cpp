@@ -143,7 +143,8 @@ namespace VulkanCore {
 
 	void EditorLayer::OnEvent(Event& e)
 	{
-		m_EditorCamera.OnEvent(e);
+		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents())
+			m_EditorCamera.OnEvent(e);
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnKeyEvent));
@@ -189,19 +190,15 @@ namespace VulkanCore {
 		FlatPlane.AddComponent<TransformComponent>(glm::vec3{ 0.0f, 1.6f, 0.0f }, glm::vec3{ 0.5f });
 		FlatPlane.AddComponent<ModelComponent>(VulkanModel::CreateModelFromFile(*VulkanDevice::GetDevice(), "assets/models/FlatPlane.obj", 2));
 
-#define LOAD_THROUGH_ASSIMP 1
-
-#if LOAD_THROUGH_ASSIMP
 		Entity CrateModel = m_Scene->CreateEntity("Wooden Crate");
-		auto& brassTransform = CrateModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 7.5f });
-		brassTransform.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+		auto& crateTransform = CrateModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 1.5f });
+		crateTransform.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 		CrateModel.AddComponent<ModelComponent>(VulkanModel::CreateModelFromAssimp(*VulkanDevice::GetDevice(), "assets/models/WoodenCrate/WoodenCrate.gltf", 1));
-#else
-		Entity BrassModel = m_Scene->CreateEntity("Brass Vase");
-		auto& brassTransform = BrassModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 7.5f });
-		brassTransform.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-		BrassModel.AddComponent<ModelComponent>(VulkanModel::CreateModelFromFile(*VulkanDevice::GetDevice(), "assets/models/BrassVase.obj", 1));
-#endif
+
+		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
+		auto& brassTransform = BrassVase.AddComponent<TransformComponent>(glm::vec3{ 1.5f, 0.0f, 1.5f }, glm::vec3{ 6.0f });
+		brassTransform.Rotation = glm::vec3(-0.5f * std::numbers::pi_v<float>, 0.0f, 0.0f);
+		BrassVase.AddComponent<ModelComponent>(VulkanModel::CreateModelFromAssimp(*VulkanDevice::GetDevice(), "assets/models/BrassVase2K/BrassVase.fbx", 0));
 
 		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");
 		auto& blueLightTransform = BluePointLight.AddComponent<TransformComponent>(glm::vec3{ -1.0f, 0.0f, 4.5f }, glm::vec3{ 0.1f });

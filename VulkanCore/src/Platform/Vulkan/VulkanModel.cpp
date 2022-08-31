@@ -102,6 +102,9 @@ namespace VulkanCore {
 	std::shared_ptr<VulkanModel> VulkanModel::CreateModelFromAssimp(VulkanDevice& device, const std::string& filepath, int texID)
 	{
 		ModelBuilder builder{};
+		std::filesystem::path modelFilepath = filepath;
+		Timer timer(fmt::format("\tProcessing Mesh {0}", modelFilepath.filename()));
+
 		builder.LoadModelFromAssimp(filepath, texID);
 
 		VK_CORE_TRACE("Loading Model: {0}", filepath);
@@ -304,8 +307,8 @@ namespace VulkanCore {
 
 	void ModelBuilder::LoadModelFromAssimp(const std::string& filepath, int texID)
 	{
-		Assimp::Importer modelImporter;
-		const aiScene* mScene = modelImporter.ReadFile(filepath,
+		Assimp::Importer mImporter;
+		const aiScene* mScene = mImporter.ReadFile(filepath,
 			aiProcess_Triangulate |
 			aiProcess_CalcTangentSpace |
 			aiProcess_JoinIdenticalVertices |
@@ -315,7 +318,7 @@ namespace VulkanCore {
 			aiProcess_ValidateDataStructure
 		);
 
-		VK_CORE_ASSERT(mScene && !(mScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) && mScene->mRootNode, modelImporter.GetErrorString());
+		VK_CORE_ASSERT(mScene && !(mScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) && mScene->mRootNode, mImporter.GetErrorString());
 
 		Vertices.clear();
 		Indices.clear();

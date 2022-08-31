@@ -18,10 +18,13 @@ namespace VulkanCore {
 		void ShutDown();
 
 		static void CheckVkResult(VkResult error);
+
+		bool GetBlockEvents() const { return m_BlockEvents; }
 	private:
 		void SetDarkThemeColor();
 	private:
 		std::unique_ptr<VulkanDescriptorPool> m_GlobalPool;
+		bool m_BlockEvents = false;
 	};
 
 }
