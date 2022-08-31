@@ -31,6 +31,7 @@ namespace VulkanCore {
 
 		Window* GetWindow() { return m_Window.get(); }
 		WindowsWindow* GetWindowsWindow() { return std::dynamic_pointer_cast<WindowsWindow>(m_Window).get(); }
+		ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer.get(); }
 		static Application* Get() { return s_Instance; }
 
 		inline VulkanDescriptorPool* GetVulkanDescriptorPool() { return m_GlobalPool.get(); }
