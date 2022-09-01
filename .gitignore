@@ -1,0 +1,19 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/VulkanCore
+/bin
+/bin-int
+*.vcxproj
+*.user
+*.sln
+*.filters
+/VulkanCore/VulkanEngine.log
+/VulkanCore/assets/cache
+/VulkanCore/vendor/VulkanSDK
+/VulkanCore/vendor/Assimp
+/VulkanCore/vendor
+/VulkanCore/dna.txt
+/VulkanCore/imgui.ini
+/EditorLayer/VulkanEngine.log

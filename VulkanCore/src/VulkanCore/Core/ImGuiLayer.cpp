@@ -177,7 +177,7 @@ namespace VulkanCore {
 		colors[ImGuiCol_TitleBgCollapsed] = ImVec4{ colorCode3.x, colorCode3.y, colorCode3.z, 1.0f };
 
 		colors[ImGuiCol_MenuBarBg] = ImVec4{ colorCode1.x, colorCode1.y, colorCode1.z, 1.0f };
-		colors[ImGuiCol_PopupBg] = ImVec4{ colorCode7.x, colorCode7.y, colorCode7.z, 0.94f };
+		colors[ImGuiCol_PopupBg] = ImVec4{ colorCode7.x, colorCode7.y, colorCode7.z, 0.97f };
 #else
 		colors[ImGuiCol_WindowBg] = ImVec4{ 0.011f, 0.0105f, 0.011f, 1.0f };
 
