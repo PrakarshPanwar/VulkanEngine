@@ -2,7 +2,7 @@
 #include <vma/vk_mem_alloc.h>
 #include "Platform/Windows/WindowsWindow.h"
 
-#define MULTISAMPLING 0
+#define MULTISAMPLING 1
 #define USE_VMA 1
 
 namespace VulkanCore {
@@ -48,7 +48,7 @@ namespace VulkanCore {
 		inline VkQueue GetGraphicsQueue() { return m_vkGraphicsQueue; }
 		inline VkQueue GetPresentQueue() { return m_vkPresentQueue; }
 		inline VkPhysicalDeviceProperties& GetPhysicalDeviceProperties() { return m_DeviceProperties; }
-		inline VkSampleCountFlagBits GetSampleCount() { return m_SampleCount; }
+		inline VkSampleCountFlagBits GetMSAASampleCount() { return m_MSAASamples; }
 		inline VmaAllocator GetVulkanAllocator() { return m_VMAAllocator; }
 
 		void Init();
@@ -90,7 +90,7 @@ namespace VulkanCore {
 		VkAllocationCallbacks m_AllocationCallbacks;
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 		VkPhysicalDeviceProperties m_DeviceProperties;
-		VkSampleCountFlagBits m_SampleCount = VK_SAMPLE_COUNT_1_BIT;
+		VkSampleCountFlagBits m_MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 		WindowsWindow& m_Window;
 		VkCommandPool m_CommandPool;
 
@@ -104,7 +104,9 @@ namespace VulkanCore {
 		const std::vector<const char*> m_ValidationLayers = { "VK_LAYER_KHRONOS_validation" };
 		const std::vector<const char*> m_DeviceExtensions = { 
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-			VK_NV_RAY_TRACING_EXTENSION_NAME };
+			VK_NV_RAY_TRACING_EXTENSION_NAME,
+			VK_NV_FRAMEBUFFER_MIXED_SAMPLES_EXTENSION_NAME 
+		};
 
 		static VulkanDevice* s_Instance;
 

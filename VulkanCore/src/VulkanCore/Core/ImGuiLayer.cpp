@@ -43,6 +43,13 @@ namespace VulkanCore {
 
 		ImGui::CreateContext();
 
+#define IMGUI_VIEWPORTS 0
+		ImGuiIO& io = ImGui::GetIO();
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+#if IMGUI_VIEWPORTS
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+#endif
+
 		GLFWwindow* window = (GLFWwindow*)Application::Get()->GetWindow()->GetNativeWindow();
 		ImGui_ImplGlfw_InitForVulkan(window, true);
 
@@ -53,23 +60,19 @@ namespace VulkanCore {
 		init_info.Queue = VulkanDevice::GetDevice()->GetGraphicsQueue();
 		init_info.DescriptorPool = m_GlobalPool->GetDescriptorPool();
 		init_info.MinImageCount = 2;
-		init_info.ImageCount = 2;
+		init_info.ImageCount = 3;
 		init_info.CheckVkResultFn = CheckVkResult;
-		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+		init_info.MSAASamples = VulkanDevice::GetDevice()->GetMSAASampleCount();
 
-		ImGui_ImplVulkan_Init(&init_info, VulkanSwapChain::GetSwapChain()->GetRenderPass());
 		//ImGui::StyleColorsDark();
-
-		ImGuiIO& io = ImGui::GetIO();
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-
 		ImGuiStyle& style = ImGui::GetStyle();
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
 			style.WindowRounding = 0.0f;
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
+
+		ImGui_ImplVulkan_Init(&init_info, VulkanSwapChain::GetSwapChain()->GetRenderPass());
 
 		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", 18.0f);
 		io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", 18.0f);
@@ -96,13 +99,12 @@ namespace VulkanCore {
 
 	void ImGuiLayer::ImGuiRenderandEnd(VkCommandBuffer commandBuffer)
 	{
-#define IMGUI_VIEWPORTS 0
 #if IMGUI_VIEWPORTS
 		ImGuiIO& io = ImGui::GetIO();
 		Application* app = Application::Get();
 		io.DisplaySize = ImVec2{ (float)app->GetWindow()->GetWidth(), (float)app->GetWindow()->GetHeight() };
 #endif
-		if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
+		if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) && ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow))
 			m_BlockEvents = true;
 
 		else
@@ -114,10 +116,10 @@ namespace VulkanCore {
 #if IMGUI_VIEWPORTS
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
-			GLFWwindow* backup_current_context = glfwGetCurrentContext();
+			//GLFWwindow* backup_current_context = glfwGetCurrentContext();
 			ImGui::UpdatePlatformWindows();
 			ImGui::RenderPlatformWindowsDefault();
-			glfwMakeContextCurrent(backup_current_context);
+			//glfwMakeContextCurrent(backup_current_context);
 		}
 #endif
 	}
