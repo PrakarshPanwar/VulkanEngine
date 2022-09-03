@@ -327,7 +327,7 @@ namespace VulkanCore {
 		pipelineConfigInfo.MultisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		pipelineConfigInfo.MultisampleInfo.sampleShadingEnable = VK_FALSE;
 #if MULTISAMPLING
-		pipelineConfigInfo.MultisampleInfo.rasterizationSamples = VulkanDevice::GetDevice()->GetSampleCount();
+		pipelineConfigInfo.MultisampleInfo.rasterizationSamples = VulkanDevice::GetDevice()->GetMSAASampleCount();
 #else
 		pipelineConfigInfo.MultisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 #endif

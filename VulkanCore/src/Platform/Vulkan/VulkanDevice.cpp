@@ -402,6 +402,7 @@ namespace VulkanCore {
 		VK_CORE_INFO("Physical Device: {0}", m_DeviceProperties.deviceName);
 
 		auto sampleCount = m_DeviceProperties.limits.framebufferColorSampleCounts & m_DeviceProperties.limits.framebufferDepthSampleCounts;
+		m_MSAASamples = VK_SAMPLE_COUNT_8_BIT; // TODO: Get this through some function
 	}
 
 	void VulkanDevice::CreateLogicalDevice()

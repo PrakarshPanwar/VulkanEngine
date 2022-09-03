@@ -36,6 +36,7 @@ namespace VulkanCore {
 		void Init();
 		void CreateSwapChain();
 		void CreateImageViews();
+		void CreateColorResources(); // Only for MSAA
 		void CreateDepthResources();
 		void CreateRenderPass();
 		void CreateFramebuffers();
@@ -52,9 +53,17 @@ namespace VulkanCore {
 		std::vector<VkFramebuffer> m_SwapChainFramebuffers;
 		VkRenderPass m_RenderPass;
 
+		// Only for MSAA
+		std::vector<VkImage> m_ColorImages;
+		std::vector<VmaAllocation> m_ColorImageMemories;
+		std::vector<VkImageView> m_ColorImageViews;
+
+		// Required for Depth
 		std::vector<VkImage> m_DepthImages;
 		std::vector<VkDeviceMemory> m_DepthImageMemories;
 		std::vector<VkImageView> m_DepthImageViews;
+
+		// Required to receive images from Swap Chain
 		std::vector<VkImage> m_SwapChainImages;
 		std::vector<VkImageView> m_SwapChainImageViews;
 

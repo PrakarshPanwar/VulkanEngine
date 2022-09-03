@@ -26,6 +26,18 @@ namespace VulkanCore {
 
 	VulkanSwapChain::~VulkanSwapChain()
 	{
+#if MULTISAMPLING
+		for (int i = 0; i < m_ColorImages.size(); i++)
+		{
+			/*vkDestroyImageView(m_VulkanDevice.GetVulkanDevice(), m_ColorImageViews[i], nullptr);
+			vkDestroyImage(m_VulkanDevice.GetVulkanDevice(), m_ColorImages[i], nullptr);
+			vkFreeMemory(m_VulkanDevice.GetVulkanDevice(), m_ColorImageMemories[i], nullptr);*/
+
+			vkDestroyImageView(m_VulkanDevice.GetVulkanDevice(), m_ColorImageViews[i], nullptr);
+			vmaDestroyImage(m_VulkanDevice.GetVulkanAllocator(), m_ColorImages[i], m_ColorImageMemories[i]);
+		}
+#endif
+
 		for (auto imageView : m_SwapChainImageViews)
 			vkDestroyImageView(m_VulkanDevice.GetVulkanDevice(), imageView, nullptr);
 
@@ -37,7 +49,8 @@ namespace VulkanCore {
 			m_SwapChain = nullptr;
 		}
 
-		for (int i = 0; i < m_DepthImages.size(); i++) 
+
+		for (int i = 0; i < m_DepthImages.size(); i++)
 		{
 			vkDestroyImageView(m_VulkanDevice.GetVulkanDevice(), m_DepthImageViews[i], nullptr);
 			vkDestroyImage(m_VulkanDevice.GetVulkanDevice(), m_DepthImages[i], nullptr);
@@ -132,6 +145,9 @@ namespace VulkanCore {
 		CreateSwapChain();
 		CreateImageViews();
 		CreateRenderPass();
+#if MULTISAMPLING
+		CreateColorResources();
+#endif
 		CreateDepthResources();
 		CreateFramebuffers();
 		CreateSyncObjects();
@@ -220,6 +236,51 @@ namespace VulkanCore {
 		}
 	}
 
+	void VulkanSwapChain::CreateColorResources()
+	{
+		VkFormat format = GetSwapChainImageFormat();
+		VkExtent2D swapChainExtent = GetSwapChainExtent();
+
+		m_ColorImages.resize(GetImageCount());
+		m_ColorImageMemories.resize(GetImageCount());
+		m_ColorImageViews.resize(GetImageCount());
+
+		for (int i = 0; i < m_ColorImages.size(); i++)
+		{
+			VkImageCreateInfo imageInfo{};
+			imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+			imageInfo.imageType = VK_IMAGE_TYPE_2D;
+			imageInfo.extent.width = swapChainExtent.width;
+			imageInfo.extent.height = swapChainExtent.height;
+			imageInfo.extent.depth = 1;
+			imageInfo.mipLevels = 1;
+			imageInfo.arrayLayers = 1;
+			imageInfo.format = format;
+			imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+			imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			imageInfo.usage =  VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+			imageInfo.samples = m_VulkanDevice.GetMSAASampleCount();
+			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			imageInfo.flags = 0;
+
+			// TODO: Use VMA method/allocator
+			m_ColorImageMemories[i] = m_VulkanDevice.CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_ColorImages[i]);
+		
+			VkImageViewCreateInfo viewInfo{};
+			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			viewInfo.image = m_ColorImages[i];
+			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			viewInfo.format = format;
+			viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			viewInfo.subresourceRange.baseMipLevel = 0;
+			viewInfo.subresourceRange.levelCount = 1;
+			viewInfo.subresourceRange.baseArrayLayer = 0;
+			viewInfo.subresourceRange.layerCount = 1;
+
+			VK_CHECK_RESULT(vkCreateImageView(m_VulkanDevice.GetVulkanDevice(), &viewInfo, nullptr, &m_ColorImageViews[i]), "Failed to Create Texture Image View!");
+		}
+	}
+
 	void VulkanSwapChain::CreateDepthResources()
 	{
 		VkFormat depthFormat = FindDepthFormat();
@@ -245,14 +306,14 @@ namespace VulkanCore {
 			imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 #if MULTISAMPLING
-			auto deviceProps = m_VulkanDevice.GetPhysicalDeviceProperties();
-			imageInfo.samples = (VkSampleCountFlagBits)deviceProps.limits.framebufferDepthSampleCounts;
+			imageInfo.samples = m_VulkanDevice.GetMSAASampleCount();
 #else
 			imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 #endif
 			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			imageInfo.flags = 0;
 
+			// TODO: Use VMA method/allocator
 			m_VulkanDevice.CreateImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImages[i], m_DepthImageMemories[i]);
 
 			VkImageViewCreateInfo viewInfo{};
@@ -275,8 +336,7 @@ namespace VulkanCore {
 		VkAttachmentDescription depthAttachment{};
 		depthAttachment.format = FindDepthFormat();
 #if MULTISAMPLING
-		auto deviceProps = m_VulkanDevice.GetPhysicalDeviceProperties();
-		depthAttachment.samples = (VkSampleCountFlagBits)deviceProps.limits.framebufferDepthSampleCounts;
+		depthAttachment.samples = m_VulkanDevice.GetMSAASampleCount();
 #else
 		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 #endif
@@ -294,7 +354,7 @@ namespace VulkanCore {
 		VkAttachmentDescription colorAttachment = {};
 		colorAttachment.format = GetSwapChainImageFormat();
 #if MULTISAMPLING
-		colorAttachment.samples = (VkSampleCountFlagBits)deviceProps.limits.framebufferColorSampleCounts;
+		colorAttachment.samples = m_VulkanDevice.GetMSAASampleCount();
 #else
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 #endif
@@ -303,17 +363,41 @@ namespace VulkanCore {
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+#if MULTISAMPLING
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+#else
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+#endif
 
 		VkAttachmentReference colorAttachmentRef = {};
 		colorAttachmentRef.attachment = 0;
 		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+#if MULTISAMPLING
+		VkAttachmentDescription colorAttachmentResolve;
+		colorAttachmentResolve.format = GetSwapChainImageFormat();
+		colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		colorAttachmentResolve.flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
+
+		VkAttachmentReference colorAttachmentResolveRef{};
+		colorAttachmentResolveRef.attachment = 2;
+		colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+#endif
 
 		VkSubpassDescription subpass = {};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorAttachmentRef;
 		subpass.pDepthStencilAttachment = &depthAttachmentRef;
+#if MULTISAMPLING
+		subpass.pResolveAttachments = &colorAttachmentResolveRef;
+#endif
 
 		VkSubpassDependency dependency = {};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -323,7 +407,11 @@ namespace VulkanCore {
 		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
+#if MULTISAMPLING
+		std::array<VkAttachmentDescription, 3> attachments = { colorAttachment, depthAttachment, colorAttachmentResolve };
+#else
 		std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
+#endif
 		VkRenderPassCreateInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -342,7 +430,11 @@ namespace VulkanCore {
 
 		for (size_t i = 0; i < GetImageCount(); i++)
 		{
+#if MULTISAMPLING
+			std::array<VkImageView, 3> attachments = { m_ColorImageViews[i], m_DepthImageViews[i], m_SwapChainImageViews[i]};
+#else
 			std::array<VkImageView, 2> attachments = { m_SwapChainImageViews[i], m_DepthImageViews[i] };
+#endif
 
 			VkExtent2D swapChainExtent = GetSwapChainExtent();
 			VkFramebufferCreateInfo framebufferInfo = {};
