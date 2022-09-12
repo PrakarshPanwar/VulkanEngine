@@ -10,6 +10,30 @@
 
 namespace VulkanCore {
 
+	namespace Utils {
+
+		void InsertImageMemoryBarrier(VkCommandBuffer cmdBuf, VkImage image,
+			VkAccessFlags srcFlags, VkAccessFlags dstFlags,
+			VkImageLayout oldLayout, VkImageLayout newLayout,
+			VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
+			VkImageSubresourceRange subresourceRange)
+		{
+			VkImageMemoryBarrier barrier{};
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barrier.oldLayout = oldLayout;
+			barrier.newLayout = newLayout;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = image;
+			barrier.subresourceRange = subresourceRange;
+			barrier.srcAccessMask = srcFlags;
+			barrier.dstAccessMask = dstFlags;
+
+			vkCmdPipelineBarrier(cmdBuf, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+		}
+
+	}
+
 	uint32_t VulkanTexture::m_TextureCount = 0;
 	std::vector<VkDescriptorImageInfo> VulkanTexture::m_DescriptorImagesInfo;
 
@@ -24,20 +48,11 @@ namespace VulkanCore {
 		m_DescriptorImagesInfo.emplace_back(m_TextureSampler, m_TextureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
-	VulkanTexture::VulkanTexture(VkImage image, VkImageView imageView)
-		: m_TextureImage(image), m_TextureImageView(imageView)
-	{
-		CreateTextureImageView();
-		CreateTextureSampler();
-
-		m_TextureCount++;
-	}
-
 	VulkanTexture::~VulkanTexture()
 	{
 		vkDestroySampler(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureSampler, nullptr);
 		vkDestroyImageView(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureImageView, nullptr);
-		vmaDestroyImage(VulkanDevice::GetDevice()->GetVulkanAllocator(), m_TextureImage, m_TextureImageAlloc);
+		vmaDestroyImage(VulkanDevice::GetDevice()->GetVulkanAllocator(), m_TextureImage, m_ImageAlloc);
 	}
 
 	void VulkanTexture::CreateTextureImage()
@@ -85,7 +100,7 @@ namespace VulkanCore {
 #if !USE_VMA
 		VulkanDevice::GetDevice()->CreateImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage, m_TextureImageMemory);
 #else
-		m_TextureImageAlloc = VulkanDevice::GetDevice()->CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage);
+		m_ImageAlloc = VulkanDevice::GetDevice()->CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage);
 #endif
 	}
 

@@ -29,10 +29,6 @@ namespace VulkanCore {
 #if MULTISAMPLING
 		for (int i = 0; i < m_ColorImages.size(); i++)
 		{
-			/*vkDestroyImageView(m_VulkanDevice.GetVulkanDevice(), m_ColorImageViews[i], nullptr);
-			vkDestroyImage(m_VulkanDevice.GetVulkanDevice(), m_ColorImages[i], nullptr);
-			vkFreeMemory(m_VulkanDevice.GetVulkanDevice(), m_ColorImageMemories[i], nullptr);*/
-
 			vkDestroyImageView(m_VulkanDevice.GetVulkanDevice(), m_ColorImageViews[i], nullptr);
 			vmaDestroyImage(m_VulkanDevice.GetVulkanAllocator(), m_ColorImages[i], m_ColorImageMemories[i]);
 		}
@@ -478,6 +474,8 @@ namespace VulkanCore {
 	{
 		for (const auto& availableFormat : availableFormats)
 		{
+			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
+				return availableFormat;
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 				return availableFormat;
 		}

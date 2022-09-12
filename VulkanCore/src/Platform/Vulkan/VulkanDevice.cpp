@@ -211,9 +211,11 @@ namespace VulkanCore {
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		VmaAllocationCreateInfo allocInfo{};
-		allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+		allocInfo.usage = (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 2 ?
+			VMA_MEMORY_USAGE_AUTO_PREFER_HOST : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+
 		allocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-		//allocInfo.preferredFlags = properties;
+		allocInfo.preferredFlags = properties;
 
 		VmaAllocation allocation;
 

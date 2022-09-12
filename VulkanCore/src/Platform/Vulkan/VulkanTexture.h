@@ -4,12 +4,19 @@
 
 namespace VulkanCore {
 
+	namespace Utils {
+		void InsertImageMemoryBarrier(VkCommandBuffer cmdBuf, VkImage image,
+			VkAccessFlags srcFlags, VkAccessFlags dstFlags,
+			VkImageLayout oldLayout, VkImageLayout newLayout,
+			VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
+			VkImageSubresourceRange subresourceRange);
+	}
+
 	class VulkanTexture
 	{
 	public:
 		VulkanTexture() = default;
 		VulkanTexture(const std::string& filepath);
-		VulkanTexture(VkImage image, VkImageView imageView);
 		~VulkanTexture();
 
 		inline VkImage GetVulkanImage() { return m_TextureImage; }
@@ -36,7 +43,7 @@ namespace VulkanCore {
 		VkImageView m_TextureImageView;
 		VkSampler m_TextureSampler;
 		VkDeviceMemory m_TextureImageMemory;
-		VmaAllocation m_TextureImageAlloc;
+		VmaAllocation m_ImageAlloc;
 
 		stbi_uc* m_Pixels;
 		int m_Width, m_Height, m_Channels;
