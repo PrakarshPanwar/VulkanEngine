@@ -1,6 +1,7 @@
 #pragma once
 
 #pragma warning(push, 0)
+#pragma warning(disable : 2500)
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 #pragma warning(pop)
