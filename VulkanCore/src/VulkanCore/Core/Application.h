@@ -3,13 +3,12 @@
 
 #include "Platform/Windows/WindowsWindow.h"
 #include "Platform/Vulkan/VulkanModel.h"
-#include "VulkanCore/Renderer/VulkanRenderer.h"
-#include "Platform/Vulkan/VulkanGameObject.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 
 #include "VulkanCore/Scene/Scene.h"
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Events/ApplicationEvent.h"
+#include "VulkanCore/Renderer/VulkanRenderer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
 #include "ImGuiLayer.h"
 #include "LayerStack.h"

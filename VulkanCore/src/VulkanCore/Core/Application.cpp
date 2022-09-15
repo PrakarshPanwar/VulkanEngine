@@ -10,13 +10,13 @@
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Camera.h"
-#include <chrono>
-
 #include "VulkanCore/Scene/Entity.h"
+
 #include "imgui.h"
+#include "imgui_impl_vulkan.h"
 
 #include <numbers>
-#include "imgui_impl_vulkan.h"
+#include <chrono>
 #include <filesystem>
 
 namespace VulkanCore {
@@ -118,9 +118,6 @@ namespace VulkanCore {
 			{
 				m_Renderer->BeginSwapChainRenderPass(commandBuffer);
 
-				for (Layer* layer : m_LayerStack)
-					layer->OnUpdate();
-
 				m_ImGuiLayer->ImGuiBegin();
 				for (Layer* layer : m_LayerStack)
 					layer->OnImGuiRender();
@@ -129,6 +126,17 @@ namespace VulkanCore {
 				m_Renderer->EndSwapChainRenderPass(commandBuffer);
 				m_Renderer->EndFrame();
 			}
+
+			if (auto commandBuffer = m_Renderer->BeginSceneFrame())
+			{
+				m_Renderer->BeginSceneRenderPass(commandBuffer);
+				for (Layer* layer : m_LayerStack)
+					layer->OnUpdate();
+				m_Renderer->EndSceneRenderPass(commandBuffer);
+				m_Renderer->EndSceneFrame();
+			}
+
+			m_Renderer->FinalQueueSubmit();
 		}
 	}
 
