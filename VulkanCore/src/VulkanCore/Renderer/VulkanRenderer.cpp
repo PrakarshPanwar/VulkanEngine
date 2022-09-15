@@ -1,5 +1,6 @@
 #include "vulkanpch.h"
 #include "VulkanRenderer.h"
+#include "../Core/ImGuiLayer.h"
 
 namespace VulkanCore {
 
@@ -55,10 +56,14 @@ namespace VulkanCore {
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndFrame() while frame is not in progress!");
 
 		auto commandBuffer = GetCurrentCommandBuffer();
-
 		VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer), "Failed to Record Command Buffer!");
-
+#if !VIEWPORT_SUPPORT
+		// TODO: Maybe it does not need a vector, array can be used
+	#if 1
+		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers.data(), &m_CurrentImageIndex);
+	#else
 		auto result = m_SwapChain->SubmitCommandBuffers(&commandBuffer, &m_CurrentImageIndex);
+	#endif
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window.IsWindowResize())
 		{
@@ -71,6 +76,24 @@ namespace VulkanCore {
 
 		IsFrameStarted = false;
 		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;
+#endif
+	}
+
+	VkCommandBuffer VulkanRenderer::BeginSceneFrame()
+	{
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+		auto commandBuffer = ImGuiLayer::Get()->GetCommandBuffers(m_CurrentFrameIndex);
+
+		VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo), "Failed to Begin Recording Command Buffer!");
+		return commandBuffer;
+	}
+
+	void VulkanRenderer::EndSceneFrame()
+	{
+		auto commandBuffer = ImGuiLayer::Get()->GetCommandBuffers(m_CurrentFrameIndex);
+		VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer), "Failed to Record Command Buffer!");
 	}
 
 	void VulkanRenderer::BeginSwapChainRenderPass(VkCommandBuffer commandBuffer)
@@ -112,6 +135,42 @@ namespace VulkanCore {
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndSwapChainRenderPass() if frame is not in progress!");
 		VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot end Render Pass on Command Buffer from a different frame!");
 	
+		vkCmdEndRenderPass(commandBuffer);
+	}
+
+	void VulkanRenderer::BeginSceneRenderPass(VkCommandBuffer commandBuffer)
+	{
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = ImGuiLayer::Get()->m_ViewportRenderPass;
+		renderPassInfo.framebuffer = ImGuiLayer::Get()->m_Framebuffers[m_CurrentImageIndex];
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = m_SwapChain->GetSwapChainExtent();
+
+		std::array<VkClearValue, 2> clearValues{};
+		clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };
+		clearValues[1].depthStencil = { 1.0f, 0 };
+
+		renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
+		renderPassInfo.pClearValues = clearValues.data();
+
+		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(m_SwapChain->GetSwapChainExtent().width);
+		viewport.height = static_cast<float>(m_SwapChain->GetSwapChainExtent().height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor{ {0, 0}, m_SwapChain->GetSwapChainExtent() };
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+	}
+
+	void VulkanRenderer::EndSceneRenderPass(VkCommandBuffer commandBuffer)
+	{
 		vkCmdEndRenderPass(commandBuffer);
 	}
 
@@ -158,12 +217,33 @@ namespace VulkanCore {
 		{
 			std::shared_ptr<VulkanSwapChain> oldSwapChain = std::move(m_SwapChain);
 			m_SwapChain = std::make_unique<VulkanSwapChain>(m_VulkanDevice, extent, oldSwapChain);
+			ImGuiLayer::Get()->Init();
 
 			if (!oldSwapChain->CompareSwapFormats(*m_SwapChain->GetSwapChain()))
 			{
 				VK_CORE_ASSERT(false, "Swap Chain Image(or Depth) Format has changed!");
 			}
 		}
+
+	}
+
+	void VulkanRenderer::FinalQueueSubmit()
+	{
+		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), ImGuiLayer::Get()->GetCommandBuffers(m_CurrentFrameIndex) };
+
+		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window.IsWindowResize())
+		{
+			m_Window.ResetWindowResizeFlag();
+			RecreateSwapChain();
+		}
+
+		else if (result != VK_SUCCESS)
+			VK_CORE_ERROR("Failed to Present Swap Chain Image!");
+
+		IsFrameStarted = false;
+		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;
 	}
 
 }

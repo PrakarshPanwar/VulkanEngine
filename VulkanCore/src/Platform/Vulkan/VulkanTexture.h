@@ -17,6 +17,7 @@ namespace VulkanCore {
 	public:
 		VulkanTexture() = default;
 		VulkanTexture(const std::string& filepath);
+		VulkanTexture(VkImage image, VkImageView imageView, bool destroyImg = true);
 		~VulkanTexture();
 
 		inline VkImage GetVulkanImage() { return m_TextureImage; }
@@ -50,6 +51,7 @@ namespace VulkanCore {
 
 		static uint32_t m_TextureCount;
 		static std::vector<VkDescriptorImageInfo> m_DescriptorImagesInfo;
+		bool m_Release = true;
 	};
 
 }

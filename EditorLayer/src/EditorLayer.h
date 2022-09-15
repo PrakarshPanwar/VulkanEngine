@@ -13,6 +13,8 @@
 
 #include "Panels/SceneHierarchyPanel.h"
 
+#include <imgui.h>
+
 namespace VulkanCore {
 
 	class EditorLayer : public Layer
@@ -44,9 +46,10 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap, m_DiffuseMap2, m_NormalMap2,
 			m_SpecularMap2, m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
 
-		std::shared_ptr<VulkanTexture> m_SwapChainImage;
-		VkDescriptorSet m_SwapChainTexID;
-		bool m_ImGuiShowWindow = true;
+		std::vector<VulkanTexture> m_SceneImages;
+		std::vector<VkDescriptorSet> m_SceneTextureIDs;
+		bool m_ImGuiShowWindow = true, m_ViewportHovered = false, m_ViewportFocused = false;
+		ImVec2 m_ViewportSize;
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 	};

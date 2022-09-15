@@ -48,11 +48,21 @@ namespace VulkanCore {
 		m_DescriptorImagesInfo.emplace_back(m_TextureSampler, m_TextureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
+	VulkanTexture::VulkanTexture(VkImage image, VkImageView imageView, bool destroyImg)
+		: m_TextureImage(image), m_TextureImageView(imageView), m_Release(destroyImg)
+	{
+		CreateTextureSampler();
+		m_TextureCount++;
+	}
+
 	VulkanTexture::~VulkanTexture()
 	{
 		vkDestroySampler(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureSampler, nullptr);
-		vkDestroyImageView(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureImageView, nullptr);
-		vmaDestroyImage(VulkanDevice::GetDevice()->GetVulkanAllocator(), m_TextureImage, m_ImageAlloc);
+		if (m_Release)
+		{
+			vkDestroyImageView(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureImageView, nullptr);
+			vmaDestroyImage(VulkanDevice::GetDevice()->GetVulkanAllocator(), m_TextureImage, m_ImageAlloc);
+		}
 	}
 
 	void VulkanTexture::CreateTextureImage()
@@ -79,6 +89,8 @@ namespace VulkanCore {
 
 	void VulkanTexture::CreateImage()
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -100,7 +112,7 @@ namespace VulkanCore {
 #if !USE_VMA
 		VulkanDevice::GetDevice()->CreateImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage, m_TextureImageMemory);
 #else
-		m_ImageAlloc = VulkanDevice::GetDevice()->CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage);
+		m_ImageAlloc = device->CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage);
 #endif
 	}
 
@@ -152,6 +164,8 @@ namespace VulkanCore {
 
 	void VulkanTexture::CreateTextureSampler()
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		VkSamplerCreateInfo samplerInfo{};
 		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 		samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -161,7 +175,7 @@ namespace VulkanCore {
 		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerInfo.anisotropyEnable = VK_TRUE;
 
-		auto deviceProps = VulkanDevice::GetDevice()->GetPhysicalDeviceProperties();
+		auto deviceProps = device->GetPhysicalDeviceProperties();
 		samplerInfo.maxAnisotropy = deviceProps.limits.maxSamplerAnisotropy;
 
 		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
@@ -171,9 +185,9 @@ namespace VulkanCore {
 		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		samplerInfo.mipLodBias = 0.0f;
 		samplerInfo.minLod = 0.0f;
-		samplerInfo.maxLod = 0.0f;
+		samplerInfo.maxLod = 2.0f;
 
-		VK_CHECK_RESULT(vkCreateSampler(VulkanDevice::GetDevice()->GetVulkanDevice(), &samplerInfo, nullptr, &m_TextureSampler), "Failed to Create Texture Sampler!");
+		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &samplerInfo, nullptr, &m_TextureSampler), "Failed to Create Texture Sampler!");
 	}
 
 	void VulkanTexture::CreateTextureImageView()

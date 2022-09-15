@@ -17,7 +17,13 @@ namespace VulkanCore {
 		inline float GetDistance() const { return m_Distance; }
 		inline void SetDistance(float distance) { m_Distance = distance; }
 
-		inline void SetViewportSize(float width, float height) { m_ViewportWidth = width; m_ViewportHeight = height; UpdateProjection(); }
+		inline void SetViewportSize(float width, float height)
+		{ 
+			m_ViewportWidth = width;
+			m_ViewportHeight = height;
+			m_AspectRatio = m_ViewportWidth / m_ViewportHeight;
+			UpdateProjection();
+		}
 		inline void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; UpdateProjection(); }
 
 		const glm::mat4& GetViewMatrix() const { return m_ViewMatrix; }

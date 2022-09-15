@@ -4,6 +4,7 @@
 
 #define MULTISAMPLING 1
 #define USE_VMA 1
+#define VIEWPORT_SUPPORT 1
 
 namespace VulkanCore {
 

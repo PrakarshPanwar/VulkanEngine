@@ -30,6 +30,7 @@ namespace VulkanCore {
 
 		VkResult AcquireNextImage(uint32_t* imageIndex);
 		VkResult SubmitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
+		VkResult SubmitCommandBuffers(const std::vector<VkCommandBuffer>& buffers, uint32_t* imageIndex);
 
 		bool CompareSwapFormats(const VulkanSwapChain& swapChain) const;
 	private:
