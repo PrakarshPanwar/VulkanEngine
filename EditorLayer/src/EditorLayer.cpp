@@ -9,7 +9,6 @@
 #include "Platform/Vulkan/VulkanModel.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 
-#include <imgui.h>
 #include <imgui_impl_vulkan.h>
 
 #include <numbers>
@@ -27,6 +26,7 @@ namespace VulkanCore {
 
 	EditorLayer::~EditorLayer()
 	{
+		m_SceneImages.clear();
 	}
 
 	void EditorLayer::OnAttach()
@@ -110,8 +110,6 @@ namespace VulkanCore {
 		}
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
-		m_RenderSystem = std::make_shared<RenderSystem>(vulkanDevice, vkRenderer->GetSwapChainRenderPass(), globalSetLayout->GetDescriptorSetLayout());
-		m_PointLightSystem = std::make_shared<PointLightSystem>(vulkanDevice, vkRenderer->GetSwapChainRenderPass(), globalSetLayout->GetDescriptorSetLayout());
 
 		m_RenderSystem = std::make_shared<RenderSystem>(vulkanDevice, ImGuiLayer::Get()->GetImGuiRenderPass(), globalSetLayout->GetDescriptorSetLayout());
 		m_PointLightSystem = std::make_shared<PointLightSystem>(vulkanDevice, ImGuiLayer::Get()->GetImGuiRenderPass(), globalSetLayout->GetDescriptorSetLayout());
@@ -122,7 +120,7 @@ namespace VulkanCore {
 		m_PointLightScene.ScenePipeline = m_PointLightSystem->GetPipeline();
 		m_PointLightScene.PipelineLayout = m_PointLightSystem->GetPipelineLayout();
 
-		m_EditorCamera = EditorCamera(glm::radians(50.0f), vkRenderer->GetAspectRatio(), 0.1f, 100.0f);
+		m_EditorCamera = EditorCamera(glm::radians(45.0f), vkRenderer->GetAspectRatio(), 0.1f, 100.0f);
 	}
 
 	void EditorLayer::OnDetach()
@@ -156,7 +154,7 @@ namespace VulkanCore {
 
 	void EditorLayer::OnEvent(Event& e)
 	{
-		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents())
+		if (!Application::Get()->GetImGuiLayerPtr()->GetBlockEvents())
 			m_EditorCamera.OnEvent(e);
 
 		EventDispatcher dispatcher(e);
@@ -221,7 +219,6 @@ namespace VulkanCore {
 		ImGui::Checkbox("Show ImGui Demo Window", &m_ImGuiShowWindow);
 		ImGui::End();
 
-#if USE_IMGUI_VIEWPORTS
 		ImGui::Begin("Viewport");
 		auto region = ImGui::GetContentRegionAvail();
 		auto windowSize = ImGui::GetWindowSize();
@@ -230,12 +227,12 @@ namespace VulkanCore {
 		{
 			VK_CORE_TRACE("Viewport has been Resized!");
 			m_ViewportSize = windowSize;
-			m_EditorCamera.SetAspectRatio(16.0f / 9.0f);
+			m_EditorCamera.SetViewportSize(region.x, region.y);
 		}
 
 		m_ViewportHovered = ImGui::IsWindowHovered();
 		m_ViewportFocused = ImGui::IsWindowFocused();
-		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
+		Application::Get()->GetImGuiLayerPtr()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
 		ImGui::Image(m_SceneTextureIDs[VulkanRenderer::Get()->GetFrameIndex()], region);
 		ImGui::End(); // End of Viewport

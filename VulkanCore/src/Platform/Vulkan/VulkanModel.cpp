@@ -6,7 +6,6 @@
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Timer.h"
-#include <filesystem>
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tinyobjloader.h>
@@ -17,6 +16,9 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+
+#include <filesystem>
+#include <format>
 
 namespace std {
 
@@ -103,7 +105,7 @@ namespace VulkanCore {
 	{
 		ModelBuilder builder{};
 		std::filesystem::path modelFilepath = filepath;
-		Timer timer(fmt::format("\tProcessing Mesh {0}", modelFilepath.filename()));
+		Timer timer(std::format("\tProcessing Mesh {}", modelFilepath.filename().string()));
 
 		builder.LoadModelFromAssimp(filepath, texID);
 
