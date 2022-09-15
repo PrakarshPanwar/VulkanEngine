@@ -30,7 +30,8 @@ namespace VulkanCore {
 
 		Window* GetWindow() { return m_Window.get(); }
 		WindowsWindow* GetWindowsWindow() { return std::dynamic_pointer_cast<WindowsWindow>(m_Window).get(); }
-		ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer.get(); }
+		ImGuiLayer* GetImGuiLayerPtr() { return m_ImGuiLayer.get(); }
+		std::shared_ptr<ImGuiLayer> GetImGuiLayer() { return m_ImGuiLayer; }
 		static Application* Get() { return s_Instance; }
 
 		inline VulkanDescriptorPool* GetVulkanDescriptorPool() { return m_GlobalPool.get(); }
@@ -42,7 +43,7 @@ namespace VulkanCore {
 		std::unique_ptr<VulkanDevice> m_VulkanDevice;
 		std::unique_ptr<VulkanRenderer> m_Renderer;
 		std::unique_ptr<VulkanDescriptorPool> m_GlobalPool;
-		std::unique_ptr<ImGuiLayer> m_ImGuiLayer;
+		std::shared_ptr<ImGuiLayer> m_ImGuiLayer;
 		bool m_Running = true, m_GammaCorrection = false;
 
 		LayerStack m_LayerStack;

@@ -47,35 +47,7 @@ namespace VulkanCore {
 
 	ImGuiLayer::~ImGuiLayer()
 	{
-		auto device = VulkanDevice::GetDevice();
-#if IMGUI_SEPARATE_RESOURCES
-		for (int i = 0; i < m_ViewportImages.size(); i++)
-		{
-			vkDestroyImageView(device->GetVulkanDevice(), m_ViewportImageViews[i], nullptr);
-			vmaDestroyImage(device->GetVulkanAllocator(), m_ViewportImages[i], m_ViewportImageAllocs[i]);
-		}
-
-#if DEPTH_RESOURCES
-		for (int i = 0; i < m_DepthImages.size(); i++)
-		{
-			vkDestroyImageView(device->GetVulkanDevice(), m_DepthImageViews[i], nullptr);
-			vmaDestroyImage(device->GetVulkanAllocator(), m_DepthImages[i], m_DepthImageAllocs[i]);
-		}
-#endif
-
-#if MULTISAMPLING
-		for (int i = 0; i < m_ColorImages.size(); i++)
-		{
-			vkDestroyImageView(device->GetVulkanDevice(), m_ColorImageViews[i], nullptr);
-			vmaDestroyImage(device->GetVulkanAllocator(), m_ColorImages[i], m_ColorImageAllocs[i]);
-		}
-#endif
-
-		for (auto& Framebuffer : m_Framebuffers)
-			vkDestroyFramebuffer(device->GetVulkanDevice(), Framebuffer, nullptr);
-
-		vkDestroyRenderPass(device->GetVulkanDevice(), m_ViewportRenderPass, nullptr);
-#endif
+		Release();
 	}
 
 	void ImGuiLayer::OnAttach()
@@ -187,6 +159,38 @@ namespace VulkanCore {
 			return;
 
 		VK_CORE_ERROR("[ImGui] Error: VkResult = {0}", error);
+	}
+
+	void ImGuiLayer::RecreateFramebuffers(uint32_t width, uint32_t height)
+	{
+		auto device = VulkanDevice::GetDevice();
+
+		if (!m_Framebuffers.empty())
+		{
+			for (auto& Framebuffer : m_Framebuffers)
+				vkDestroyFramebuffer(device->GetVulkanDevice(), Framebuffer, nullptr);
+
+			m_Framebuffers.clear();
+		}
+
+		m_FramebufferDimensions = { (float)width, (float)height };
+		m_Framebuffers.resize(VulkanSwapChain::GetSwapChain()->GetImageCount());
+
+		for (int i = 0; i < m_Framebuffers.size(); i++)
+		{
+			std::array<VkImageView, 3> attachments = { m_ColorImageViews[i], m_DepthImageViews[i], m_ViewportImageViews[i] };
+
+			VkFramebufferCreateInfo framebufferInfo{};
+			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferInfo.renderPass = m_ViewportRenderPass;
+			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+			framebufferInfo.pAttachments = attachments.data();
+			framebufferInfo.width = width;
+			framebufferInfo.height = height;
+			framebufferInfo.layers = 1;
+
+			VK_CHECK_RESULT(vkCreateFramebuffer(device->GetVulkanDevice(), &framebufferInfo, nullptr, &m_Framebuffers[i]), "Failed to Allocate Viewport Framebuffers!");
+		}
 	}
 
 	void ImGuiLayer::SetDarkThemeColor() // TODO: Colors are very gray in ImGui, need to Re-Color Everything
@@ -504,6 +508,39 @@ namespace VulkanCore {
 
 			VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewInfo, nullptr, &m_DepthImageViews[i]), "Failed to Create Texture Image View!");
 		}
+	}
+
+	void ImGuiLayer::Release()
+	{
+		auto device = VulkanDevice::GetDevice();
+#if IMGUI_SEPARATE_RESOURCES
+		for (int i = 0; i < m_ViewportImages.size(); i++)
+		{
+			vkDestroyImageView(device->GetVulkanDevice(), m_ViewportImageViews[i], nullptr);
+			vmaDestroyImage(device->GetVulkanAllocator(), m_ViewportImages[i], m_ViewportImageAllocs[i]);
+		}
+
+#if DEPTH_RESOURCES
+		for (int i = 0; i < m_DepthImages.size(); i++)
+		{
+			vkDestroyImageView(device->GetVulkanDevice(), m_DepthImageViews[i], nullptr);
+			vmaDestroyImage(device->GetVulkanAllocator(), m_DepthImages[i], m_DepthImageAllocs[i]);
+		}
+#endif
+
+#if MULTISAMPLING
+		for (int i = 0; i < m_ColorImages.size(); i++)
+		{
+			vkDestroyImageView(device->GetVulkanDevice(), m_ColorImageViews[i], nullptr);
+			vmaDestroyImage(device->GetVulkanAllocator(), m_ColorImages[i], m_ColorImageAllocs[i]);
+		}
+#endif
+
+		for (auto& Framebuffer : m_Framebuffers)
+			vkDestroyFramebuffer(device->GetVulkanDevice(), Framebuffer, nullptr);
+
+		vkDestroyRenderPass(device->GetVulkanDevice(), m_ViewportRenderPass, nullptr);
+#endif
 	}
 
 }

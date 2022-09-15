@@ -4,6 +4,8 @@
 
 #include "Platform/Vulkan/VulkanDescriptor.h"
 
+#include <glm/glm.hpp>
+
 #define DEPTH_RESOURCES 1
 
 namespace VulkanCore {
@@ -24,17 +26,20 @@ namespace VulkanCore {
 		static void CheckVkResult(VkResult error);
 
 		void BlockEvents(bool block) { m_BlockEvents = block; }
+		void RecreateFramebuffers(uint32_t width, uint32_t height);
 
 		static ImGuiLayer* Get() { return s_Instance; }
 		inline bool GetBlockEvents() const { return m_BlockEvents; }
-		inline VkCommandBuffer GetCommandBuffers(int index) { return m_ImGuiCommandBuffers[index]; }
-		inline VkRenderPass GetImGuiRenderPass() { return m_ViewportRenderPass; }
-		inline VkImage GetImage(int index) { return m_ViewportImages[index]; }
-		inline VkImageView GetImageView(int index) { return m_ViewportImageViews[index]; }
+		inline VkCommandBuffer GetCommandBuffers(int index) const { return m_ImGuiCommandBuffers[index]; }
+		inline VkRenderPass GetImGuiRenderPass() const { return m_ViewportRenderPass; }
+		inline VkImage GetImage(int index) const { return m_ViewportImages[index]; }
+		inline VkImageView GetImageView(int index) const { return m_ViewportImageViews[index]; }
+		inline glm::vec2 GetFramebufferDimensions() const { return m_FramebufferDimensions; }
 	private:
 		void CreateCommandBuffers();
 		void CreateImGuiRenderPass();
 		void CreateImGuiFramebuffers();
+		void Release();
 
 		void SetDarkThemeColor();
 		void CreateImGuiViewportImages();
@@ -60,8 +65,13 @@ namespace VulkanCore {
 
 		bool m_BlockEvents = false;
 
+		// TODO: Retrieve this through SwapChain or Application
+		glm::vec2 m_FramebufferDimensions = { 1920.0f, 1080.0f };
+
 		// TODO: Maybe this could be changed in the future(Removing VulkanRenderer as friend class)
 		friend class VulkanRenderer;
 	};
+
+
 
 }

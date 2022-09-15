@@ -82,7 +82,7 @@ namespace VulkanCore {
 		Log::Init();
 
 		std::filesystem::current_path("../VulkanCore");
-		m_Window = std::make_shared<WindowsWindow>(WindowSpecs(1280, 720, "Vulkan Application"));
+		m_Window = std::make_shared<WindowsWindow>(WindowSpecs(1920, 1080, "Vulkan Application"));
 		m_Window->SetEventCallback(VK_CORE_BIND_EVENT_FN(Application::OnEvent));
 
 		Init();
@@ -104,7 +104,7 @@ namespace VulkanCore {
 		descriptorPoolBuilder.SetMaxSets(VulkanSwapChain::MaxFramesInFlight).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VulkanSwapChain::MaxFramesInFlight);
 		m_GlobalPool = descriptorPoolBuilder.Build();
 
-		m_ImGuiLayer = std::make_unique<ImGuiLayer>();
+		m_ImGuiLayer = std::make_shared<ImGuiLayer>();
 		m_ImGuiLayer->OnAttach();
 	}
 

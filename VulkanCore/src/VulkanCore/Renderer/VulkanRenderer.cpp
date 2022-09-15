@@ -140,10 +140,12 @@ namespace VulkanCore {
 
 	void VulkanRenderer::BeginSceneRenderPass(VkCommandBuffer commandBuffer)
 	{
+		auto imguiLayer = ImGuiLayer::Get();
+
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = ImGuiLayer::Get()->m_ViewportRenderPass;
-		renderPassInfo.framebuffer = ImGuiLayer::Get()->m_Framebuffers[m_CurrentImageIndex];
+		renderPassInfo.renderPass = imguiLayer->m_ViewportRenderPass;
+		renderPassInfo.framebuffer = imguiLayer->m_Framebuffers[m_CurrentImageIndex];
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = m_SwapChain->GetSwapChainExtent();
 
