@@ -27,12 +27,13 @@ namespace VulkanCore {
 		{
 			auto EndTimePoint = std::chrono::high_resolution_clock::now();
 			auto Duration = std::chrono::duration_cast<std::chrono::nanoseconds>(EndTimePoint - m_StartTimePoint);
+			auto Duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(Duration);
 
 			if (m_FunctionName.empty())
-				VK_CORE_TRACE("{0} ms({1})", Duration.count() * 0.000001, Duration);
+				VK_CORE_TRACE("{0} ({1})", Duration_ms, Duration);
 
 			else
-				VK_CORE_TRACE("{0} took {1} ms({2})", m_FunctionName, Duration.count() * 0.000001, Duration);
+				VK_CORE_TRACE("{0} took {1} ({2})", m_FunctionName, Duration_ms, Duration);
 		}
 	private:
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_StartTimePoint;

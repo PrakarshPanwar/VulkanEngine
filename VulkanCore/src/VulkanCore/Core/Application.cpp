@@ -15,8 +15,6 @@
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
 
-#include <numbers>
-#include <chrono>
 #include <filesystem>
 
 namespace VulkanCore {
@@ -79,6 +77,8 @@ namespace VulkanCore {
 	Application::Application()
 	{
 		s_Instance = this;
+
+		m_AppTimer = std::make_unique<Timer>("Application Initialization");
 		Log::Init();
 
 		std::filesystem::current_path("../VulkanCore");
@@ -110,6 +110,8 @@ namespace VulkanCore {
 
 	void Application::Run()
 	{
+		m_AppTimer.reset();
+
 		while (m_Running)
 		{
 			m_Window->OnUpdate();
