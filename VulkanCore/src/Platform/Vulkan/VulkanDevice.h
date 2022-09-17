@@ -2,7 +2,6 @@
 #include <vma/vk_mem_alloc.h>
 #include "Platform/Windows/WindowsWindow.h"
 
-#define MULTISAMPLING 1
 #define USE_VMA 1
 #define VIEWPORT_SUPPORT 1
 
