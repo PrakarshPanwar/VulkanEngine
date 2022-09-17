@@ -32,6 +32,8 @@ namespace VulkanCore {
 	void EditorLayer::OnAttach()
 	{
 		VK_CORE_INFO("Running Editor Layer");
+
+		m_SceneRenderer = std::make_shared<SceneRenderer>();
 		LoadEntities();
 
 		VulkanDevice& vulkanDevice = *VulkanDevice::GetDevice();
@@ -63,9 +65,8 @@ namespace VulkanCore {
 		m_SceneImages.reserve(2);
 		m_SceneTextureIDs.resize(2);
 
-		ImGuiLayer* layerPtr = ImGuiLayer::Get();
-		m_SceneImages.emplace_back(VulkanTexture(layerPtr->GetImage(0), layerPtr->GetImageView(0), false));
-		m_SceneImages.emplace_back(VulkanTexture(layerPtr->GetImage(1), layerPtr->GetImageView(1), false));
+		m_SceneImages.emplace_back(VulkanTexture(m_SceneRenderer->GetImage(0), m_SceneRenderer->GetImageView(0), false));
+		m_SceneImages.emplace_back(VulkanTexture(m_SceneRenderer->GetImage(1), m_SceneRenderer->GetImageView(1), false));
 
 		m_SceneTextureIDs[0] = ImGui_ImplVulkan_AddTexture(
 			m_SceneImages[0].GetTextureSampler(),
@@ -111,8 +112,8 @@ namespace VulkanCore {
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 
-		m_RenderSystem = std::make_shared<RenderSystem>(vulkanDevice, ImGuiLayer::Get()->GetImGuiRenderPass(), globalSetLayout->GetDescriptorSetLayout());
-		m_PointLightSystem = std::make_shared<PointLightSystem>(vulkanDevice, ImGuiLayer::Get()->GetImGuiRenderPass(), globalSetLayout->GetDescriptorSetLayout());
+		m_RenderSystem = std::make_shared<RenderSystem>(vulkanDevice, m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
+		m_PointLightSystem = std::make_shared<PointLightSystem>(vulkanDevice, m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
 
 		m_SceneRender.ScenePipeline = m_RenderSystem->GetPipeline();
 		m_SceneRender.PipelineLayout = m_RenderSystem->GetPipelineLayout();
@@ -135,10 +136,10 @@ namespace VulkanCore {
 		int frameIndex = VulkanRenderer::Get()->GetFrameIndex();
 
 		m_SceneRender.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
-		m_SceneRender.CommandBuffer = ImGuiLayer::Get()->GetCommandBuffers(frameIndex);
+		m_SceneRender.CommandBuffer = m_SceneRenderer->GetCommandBuffer(frameIndex);
 
 		m_PointLightScene.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
-		m_PointLightScene.CommandBuffer = ImGuiLayer::Get()->GetCommandBuffers(frameIndex);
+		m_PointLightScene.CommandBuffer = m_SceneRenderer->GetCommandBuffer(frameIndex);
 
 		UniformBufferDataComponent uniformBuffer{};
 		uniformBuffer.Projection = m_EditorCamera.GetProjectionMatrix();
@@ -159,6 +160,7 @@ namespace VulkanCore {
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnKeyEvent));
+		//dispatcher.Dispatch<WindowResizeEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnWindowResize));
 	}
 
 	void EditorLayer::OnImGuiRender()
@@ -194,7 +196,7 @@ namespace VulkanCore {
 		// We cannot preserve the docking relationship between an active window and an inactive docking, otherwise 
 		// any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-		ImGui::Begin("DockSpace Demo", &dockspaceOpen, window_flags);
+		ImGui::Begin("DockSpace Window", &dockspaceOpen, window_flags);
 		ImGui::PopStyleVar();
 
 		if (opt_fullscreen)
@@ -223,7 +225,7 @@ namespace VulkanCore {
 		auto region = ImGui::GetContentRegionAvail();
 		auto windowSize = ImGui::GetWindowSize();
 
-		if (m_ViewportSize.x != windowSize.x && m_ViewportSize.y != windowSize.y)
+		if ((m_ViewportSize.x != windowSize.x) && (m_ViewportSize.y != windowSize.y))
 		{
 			VK_CORE_TRACE("Viewport has been Resized!");
 			m_ViewportSize = windowSize;
@@ -250,6 +252,12 @@ namespace VulkanCore {
 	bool EditorLayer::OnMouseScroll(MouseScrolledEvent& mouseScroll)
 	{
 		return false;
+	}
+
+	bool EditorLayer::OnWindowResize(WindowResizeEvent& windowEvent)
+	{
+		m_WindowResized = true;
+		return true;
 	}
 
 	void EditorLayer::LoadEntities()

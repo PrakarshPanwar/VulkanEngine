@@ -105,7 +105,7 @@ namespace VulkanCore {
 	{
 		ModelBuilder builder{};
 		std::filesystem::path modelFilepath = filepath;
-		Timer timer(std::format("\tProcessing Mesh {}", modelFilepath.filename().string()));
+		Timer timer(std::format("\tProcessing Mesh {0}", modelFilepath.filename().string()));
 
 		builder.LoadModelFromAssimp(filepath, texID);
 
