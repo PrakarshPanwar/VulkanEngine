@@ -1,6 +1,8 @@
 #include "vulkanpch.h"
 #include "VulkanRenderer.h"
+
 #include "../Core/ImGuiLayer.h"
+#include "../Scene/SceneRenderer.h"
 
 namespace VulkanCore {
 
@@ -44,7 +46,6 @@ namespace VulkanCore {
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		//beginInfo.flags |= VK_COMMAND_BUFFER_USAGE;
 
 		VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo), "Failed to Begin Recording Command Buffer!");
 
@@ -57,26 +58,6 @@ namespace VulkanCore {
 
 		auto commandBuffer = GetCurrentCommandBuffer();
 		VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer), "Failed to Record Command Buffer!");
-#if !VIEWPORT_SUPPORT
-		// TODO: Maybe it does not need a vector, array can be used
-	#if 1
-		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers.data(), &m_CurrentImageIndex);
-	#else
-		auto result = m_SwapChain->SubmitCommandBuffers(&commandBuffer, &m_CurrentImageIndex);
-	#endif
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window.IsWindowResize())
-		{
-			m_Window.ResetWindowResizeFlag();
-			RecreateSwapChain();
-		}
-
-		else if (result != VK_SUCCESS)
-			VK_CORE_ERROR("Failed to Present Swap Chain Image!");
-
-		IsFrameStarted = false;
-		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;
-#endif
 	}
 
 	VkCommandBuffer VulkanRenderer::BeginSceneFrame()
@@ -84,7 +65,7 @@ namespace VulkanCore {
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		auto commandBuffer = ImGuiLayer::Get()->GetCommandBuffers(m_CurrentFrameIndex);
+		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer(m_CurrentFrameIndex);
 
 		VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo), "Failed to Begin Recording Command Buffer!");
 		return commandBuffer;
@@ -92,7 +73,7 @@ namespace VulkanCore {
 
 	void VulkanRenderer::EndSceneFrame()
 	{
-		auto commandBuffer = ImGuiLayer::Get()->GetCommandBuffers(m_CurrentFrameIndex);
+		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer(m_CurrentFrameIndex);
 		VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer), "Failed to Record Command Buffer!");
 	}
 
@@ -104,7 +85,7 @@ namespace VulkanCore {
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = m_SwapChain->GetRenderPass();
-		renderPassInfo.framebuffer = m_SwapChain->GetFrameBuffer(m_CurrentImageIndex);
+		renderPassInfo.framebuffer = m_SwapChain->GetFramebuffer(m_CurrentImageIndex);
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = m_SwapChain->GetSwapChainExtent();
 
@@ -140,12 +121,10 @@ namespace VulkanCore {
 
 	void VulkanRenderer::BeginSceneRenderPass(VkCommandBuffer commandBuffer)
 	{
-		auto imguiLayer = ImGuiLayer::Get();
-
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = imguiLayer->m_ViewportRenderPass;
-		renderPassInfo.framebuffer = imguiLayer->m_Framebuffers[m_CurrentImageIndex];
+		renderPassInfo.renderPass = SceneRenderer::GetSceneRenderer()->GetRenderPass();
+		renderPassInfo.framebuffer = SceneRenderer::GetSceneRenderer()->GetFramebuffer(m_CurrentImageIndex);
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = m_SwapChain->GetSwapChainExtent();
 
@@ -219,7 +198,6 @@ namespace VulkanCore {
 		{
 			std::shared_ptr<VulkanSwapChain> oldSwapChain = std::move(m_SwapChain);
 			m_SwapChain = std::make_unique<VulkanSwapChain>(m_VulkanDevice, extent, oldSwapChain);
-			ImGuiLayer::Get()->Init();
 
 			if (!oldSwapChain->CompareSwapFormats(*m_SwapChain->GetSwapChain()))
 			{
@@ -231,7 +209,7 @@ namespace VulkanCore {
 
 	void VulkanRenderer::FinalQueueSubmit()
 	{
-		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), ImGuiLayer::Get()->GetCommandBuffers(m_CurrentFrameIndex) };
+		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), SceneRenderer::GetSceneRenderer()->GetCommandBuffer(m_CurrentFrameIndex) };
 
 		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
 

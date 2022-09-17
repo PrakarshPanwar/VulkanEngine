@@ -15,7 +15,7 @@ namespace VulkanCore {
 		static VulkanSwapChain* GetSwapChain() { return s_Instance; }
 		VulkanDevice GetDevice() { return m_VulkanDevice; }
 
-		VkFramebuffer GetFrameBuffer(int index) { return m_SwapChainFramebuffers[index]; }
+		VkFramebuffer GetFramebuffer(int index) { return m_SwapChainFramebuffers[index]; }
 		VkRenderPass GetRenderPass() { return m_RenderPass; }
 		VkImageView GetImageView(int index) { return m_SwapChainImageViews[index]; }
 		VkImage GetSwapChainImage(int index) { return m_SwapChainImages[index]; }
