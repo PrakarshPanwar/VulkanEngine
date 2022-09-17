@@ -18,50 +18,6 @@ namespace VulkanCore {
 		vkDestroyPipelineLayout(m_VulkanDevice.GetVulkanDevice(), m_PipelineLayout, nullptr);
 	}
 
-	void PointLightSystem::Update(FrameInfo& frameInfo, UniformBufferDataComponent& ubo)
-	{
-		int lightIndex = 0;
-		for (auto& GameObject : frameInfo.GameObjects)
-		{
-			auto& obj = GameObject.second;
-
-			if (obj.PointLight == nullptr)
-				continue;
-
-			ubo.PointLights[lightIndex].Position = glm::vec4(obj.Transform.Translation, 1.0f);
-			ubo.PointLights[lightIndex].Color = glm::vec4(obj.Color, obj.PointLight->LightIntensity);
-			lightIndex++;
-		}
-
-		ubo.NumLights = lightIndex;
-	}
-
-	void PointLightSystem::RenderLights(FrameInfo& frameInfo)
-	{
-		m_Pipeline->Bind(frameInfo.CommandBuffer);
-
-		vkCmdBindDescriptorSets(frameInfo.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
-			0, 1, &frameInfo.GlobalDescriptorSet, 0, nullptr);
-
-		for (auto& pointLight : frameInfo.GameObjects)
-		{
-			auto& obj = pointLight.second;
-			if (obj.PointLight == nullptr)
-				continue;
-
-			PointLightPushConstants push{};
-			push.Position = glm::vec4(obj.Transform.Translation, 1.0f);
-			push.Color = glm::vec4(obj.Color, obj.PointLight->LightIntensity);
-			push.Radius = obj.Transform.Scale.x;
-
-			vkCmdPushConstants(frameInfo.CommandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				0, sizeof(PointLightPushConstants), &push);
-
-			vkCmdDraw(frameInfo.CommandBuffer, 6, 1, 0, 0);
-		}
-
-	}
-
 	void PointLightSystem::CreatePipeline(VkRenderPass renderPass)
 	{
 		PipelineConfigInfo pipelineConfig{};

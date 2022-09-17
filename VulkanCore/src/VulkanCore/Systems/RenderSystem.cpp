@@ -19,34 +19,6 @@ namespace VulkanCore {
 		vkDestroyPipelineLayout(m_VulkanDevice.GetVulkanDevice(), m_PipelineLayout, nullptr);
 	}
 
-	void RenderSystem::RenderGameObjects(FrameInfo& frameInfo)
-	{
-		m_Pipeline->Bind(frameInfo.CommandBuffer);
-
-		vkCmdBindDescriptorSets(frameInfo.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
-			0, 1, &frameInfo.GlobalDescriptorSet, 0, nullptr);
-
-		for (auto& kv : frameInfo.GameObjects)
-		{
-			auto& object = kv.second;
-
-			if (object.Model == nullptr)
-				continue;
-
-			PushConstantsDataComponent pushConstants{};
-			pushConstants.ModelMatrix = object.Transform.GetTransform();
-			pushConstants.NormalMatrix = object.Transform.GetNormalMatrix();
-			pushConstants.timestep = (float)glfwGetTime();
-
-			vkCmdPushConstants(frameInfo.CommandBuffer, m_PipelineLayout,
-				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				0, sizeof(PushConstantsDataComponent), &pushConstants);
-
-			object.Model->Bind(frameInfo.CommandBuffer);
-			object.Model->Draw(frameInfo.CommandBuffer);
-		}
-	}
-
 	void RenderSystem::CreatePipeline(VkRenderPass renderPass)
 	{
 		PipelineConfigInfo pipelineConfig{};

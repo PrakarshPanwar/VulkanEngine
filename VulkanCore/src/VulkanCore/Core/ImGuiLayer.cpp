@@ -59,16 +59,18 @@ namespace VulkanCore {
 		GLFWwindow* window = (GLFWwindow*)Application::Get()->GetWindow()->GetNativeWindow();
 		ImGui_ImplGlfw_InitForVulkan(window, true);
 
+		auto device = VulkanDevice::GetDevice();
+
 		ImGui_ImplVulkan_InitInfo init_info = {};
-		init_info.Instance = VulkanDevice::GetDevice()->GetVulkanInstance();
-		init_info.PhysicalDevice = VulkanDevice::GetDevice()->GetPhysicalDevice();
-		init_info.Device = VulkanDevice::GetDevice()->GetVulkanDevice();
-		init_info.Queue = VulkanDevice::GetDevice()->GetGraphicsQueue();
+		init_info.Instance = device->GetVulkanInstance();
+		init_info.PhysicalDevice = device->GetPhysicalDevice();
+		init_info.Device = device->GetVulkanDevice();
+		init_info.Queue = device->GetGraphicsQueue();
 		init_info.DescriptorPool = m_GlobalPool->GetDescriptorPool();
 		init_info.MinImageCount = 2;
 		init_info.ImageCount = 3;
 		init_info.CheckVkResultFn = CheckVkResult;
-		init_info.MSAASamples = VulkanDevice::GetDevice()->GetMSAASampleCount();
+		init_info.MSAASamples = device->GetMSAASampleCount();
 
 		//ImGui::StyleColorsDark();
 		ImGuiStyle& style = ImGui::GetStyle();
@@ -80,20 +82,24 @@ namespace VulkanCore {
 
 		ImGui_ImplVulkan_Init(&init_info, VulkanSwapChain::GetSwapChain()->GetRenderPass());
 
-#define OPENSANS 1
+#define OPENSANS 0
+#define SOURCESANSPRO 1
 #if OPENSANS
 		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", 18.0f);
 		io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", 18.0f);
+#elif SOURCESANSPRO
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/SourceSansPro/SourceSansPro-Regular.ttf", 20.0f);
+		io.Fonts->AddFontFromFileTTF("assets/fonts/SourceSansPro/SourceSansPro-Bold.ttf", 20.0f);
 #else
-		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/SourceCodePro/static/SourceCodePro-Regular.ttf", 18.0f);
-		io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", 18.0f);
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/WorkSans/static/WorkSans-Regular.ttf", 18.0f);
+		io.Fonts->AddFontFromFileTTF("assets/fonts/WorkSans/static/WorkSans-Bold.ttf", 18.0f);
 #endif
 
 		SetDarkThemeColor();
 
-		VkCommandBuffer commandBuffer = VulkanDevice::GetDevice()->BeginSingleTimeCommands();
+		VkCommandBuffer commandBuffer = device->BeginSingleTimeCommands();
 		ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-		VulkanDevice::GetDevice()->EndSingleTimeCommands(commandBuffer);
+		device->EndSingleTimeCommands(commandBuffer);
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 

@@ -11,6 +11,7 @@ namespace VulkanCore {
 
 		void Init();
 		void Release();
+		void RecreateScene();
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
