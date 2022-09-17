@@ -37,6 +37,7 @@ namespace VulkanCore {
 		void CreateTextureImageView();
 		void TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 		void CreateTextureSampler();
+		void Release();
 	private:
 		std::string m_FilePath;
 
@@ -53,5 +54,7 @@ namespace VulkanCore {
 		static std::vector<VkDescriptorImageInfo> m_DescriptorImagesInfo;
 		bool m_Release = true;
 	};
+
+
 
 }

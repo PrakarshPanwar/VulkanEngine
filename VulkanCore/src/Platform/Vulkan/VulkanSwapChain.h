@@ -19,9 +19,9 @@ namespace VulkanCore {
 		VkRenderPass GetRenderPass() { return m_RenderPass; }
 		VkImageView GetImageView(int index) { return m_SwapChainImageViews[index]; }
 		VkImage GetSwapChainImage(int index) { return m_SwapChainImages[index]; }
-		size_t GetImageCount() { return m_SwapChainImages.size(); }
+		inline size_t GetImageCount() { return m_SwapChainImages.size(); }
 		VkFormat GetSwapChainImageFormat() { return m_SwapChainImageFormat; }
-		VkExtent2D GetSwapChainExtent() { return m_SwapChainExtent; }
+		inline VkExtent2D GetSwapChainExtent() { return m_SwapChainExtent; }
 		uint32_t GetWidth() { return m_SwapChainExtent.width; }
 		uint32_t GetHeight() { return m_SwapChainExtent.height; }
 

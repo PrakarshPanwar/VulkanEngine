@@ -10,8 +10,10 @@
 #include "VulkanCore/Events/ApplicationEvent.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
+
 #include "ImGuiLayer.h"
 #include "LayerStack.h"
+#include "Timer.h"
 
 namespace VulkanCore {
 
@@ -44,8 +46,9 @@ namespace VulkanCore {
 		std::unique_ptr<VulkanRenderer> m_Renderer;
 		std::unique_ptr<VulkanDescriptorPool> m_GlobalPool;
 		std::shared_ptr<ImGuiLayer> m_ImGuiLayer;
-		bool m_Running = true, m_GammaCorrection = false;
+		std::unique_ptr<Timer> m_AppTimer;
 
+		bool m_Running = true, m_GammaCorrection = false;
 		LayerStack m_LayerStack;
 
 		static Application* s_Instance;

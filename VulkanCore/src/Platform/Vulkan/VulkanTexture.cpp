@@ -57,12 +57,8 @@ namespace VulkanCore {
 
 	VulkanTexture::~VulkanTexture()
 	{
-		vkDestroySampler(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureSampler, nullptr);
-		if (m_Release)
-		{
-			vkDestroyImageView(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureImageView, nullptr);
-			vmaDestroyImage(VulkanDevice::GetDevice()->GetVulkanAllocator(), m_TextureImage, m_ImageAlloc);
-		}
+		Release();
+
 	}
 
 	void VulkanTexture::CreateTextureImage()
@@ -204,6 +200,22 @@ namespace VulkanCore {
 		imageViewInfo.subresourceRange.layerCount = 1;
 
 		VK_CHECK_RESULT(vkCreateImageView(VulkanDevice::GetDevice()->GetVulkanDevice(), &imageViewInfo, nullptr, &m_TextureImageView), "Failed to Create Texture Image View!");
+	}
+
+	void VulkanTexture::Release()
+	{
+		if (m_Release)
+		{
+			vkDestroyImageView(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureImageView, nullptr);
+			vmaDestroyImage(VulkanDevice::GetDevice()->GetVulkanAllocator(), m_TextureImage, m_ImageAlloc);
+#if VK_RELEASE
+			vkDestroySampler(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureSampler, nullptr);
+#endif
+		}
+
+#if VK_DEBUG
+		vkDestroySampler(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureSampler, nullptr);
+#endif
 	}
 
 }
