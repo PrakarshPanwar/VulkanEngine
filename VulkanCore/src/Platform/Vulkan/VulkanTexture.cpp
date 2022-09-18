@@ -68,7 +68,7 @@ namespace VulkanCore {
 		VkDeviceSize imageSize = m_Width * m_Height * 4;
 		VK_CORE_ASSERT(m_Pixels, "Failed to Load Image {0}", m_FilePath);
 
-		VulkanBuffer stagingBuffer{ *VulkanDevice::GetDevice(), imageSize, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VulkanBuffer stagingBuffer{ imageSize, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
 
 		stagingBuffer.Map();
@@ -208,14 +208,9 @@ namespace VulkanCore {
 		{
 			vkDestroyImageView(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureImageView, nullptr);
 			vmaDestroyImage(VulkanDevice::GetDevice()->GetVulkanAllocator(), m_TextureImage, m_ImageAlloc);
-#if VK_RELEASE
-			vkDestroySampler(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureSampler, nullptr);
-#endif
 		}
 
-#if VK_DEBUG
 		vkDestroySampler(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureSampler, nullptr);
-#endif
 	}
 
 }

@@ -11,8 +11,10 @@
 
 #include <imgui_impl_vulkan.h>
 
-#include <numbers>
+#include <memory>
 #include <filesystem>
+#include <numbers>
+#include <future>
 
 #define SHOW_FRAMERATES ImGui::Text("Application Stats:\n\t Frame Time: %.3f ms\n\t Frames Per Second: %.2f FPS", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate)
 #define USE_IMGUI_VIEWPORTS 0
@@ -41,7 +43,7 @@ namespace VulkanCore {
 
 		for (auto& UniformBuffer : m_UniformBuffers)
 		{
-			UniformBuffer = std::make_unique<VulkanBuffer>(vulkanDevice, sizeof(UniformBufferDataComponent), 1,
+			UniformBuffer = std::make_unique<VulkanBuffer>(sizeof(UniformBufferDataComponent), 1,
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
@@ -65,8 +67,8 @@ namespace VulkanCore {
 		m_SceneImages.reserve(2);
 		m_SceneTextureIDs.resize(2);
 
-		m_SceneImages.emplace_back(VulkanTexture(m_SceneRenderer->GetImage(0), m_SceneRenderer->GetImageView(0), false));
-		m_SceneImages.emplace_back(VulkanTexture(m_SceneRenderer->GetImage(1), m_SceneRenderer->GetImageView(1), false));
+		m_SceneImages.emplace_back(m_SceneRenderer->GetImage(0), m_SceneRenderer->GetImageView(0), false);
+		m_SceneImages.emplace_back(m_SceneRenderer->GetImage(1), m_SceneRenderer->GetImageView(1), false);
 
 		m_SceneTextureIDs[0] = ImGui_ImplVulkan_AddTexture(
 			m_SceneImages[0].GetTextureSampler(),
@@ -110,10 +112,30 @@ namespace VulkanCore {
 			vkGlobalDescriptorWriter[i].Build(m_GlobalDescriptorSets[i]);
 		}
 
+		auto RetRenderSystem = [&]()
+		{
+			return std::make_shared<RenderSystem>(vulkanDevice, m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
+		};
+
+		auto RetPointLightSystem = [&]()
+		{
+			return std::make_shared<PointLightSystem>(vulkanDevice, m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
+		};
+
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 
+#define PIPELINE_MULTITHREADED 1
+
+#if PIPELINE_MULTITHREADED
+		auto renderSystemThread = std::async(std::launch::async, RetRenderSystem);
+		auto pointLightSystemThread = std::async(std::launch::async, RetPointLightSystem);
+
+		m_RenderSystem = renderSystemThread.get();
+		m_PointLightSystem = pointLightSystemThread.get();
+#else
 		m_RenderSystem = std::make_shared<RenderSystem>(vulkanDevice, m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
 		m_PointLightSystem = std::make_shared<PointLightSystem>(vulkanDevice, m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
+#endif
 
 		m_SceneRender.ScenePipeline = m_RenderSystem->GetPipeline();
 		m_SceneRender.PipelineLayout = m_RenderSystem->GetPipelineLayout();
@@ -160,7 +182,7 @@ namespace VulkanCore {
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnKeyEvent));
-		//dispatcher.Dispatch<WindowResizeEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnWindowResize));
+		dispatcher.Dispatch<WindowResizeEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnWindowResize));
 	}
 
 	void EditorLayer::OnImGuiRender()
@@ -229,6 +251,7 @@ namespace VulkanCore {
 		{
 			VK_CORE_TRACE("Viewport has been Resized!");
 			m_ViewportSize = windowSize;
+			RecreateSceneDescriptors();
 			m_EditorCamera.SetViewportSize(region.x, region.y);
 		}
 
@@ -257,7 +280,30 @@ namespace VulkanCore {
 	bool EditorLayer::OnWindowResize(WindowResizeEvent& windowEvent)
 	{
 		m_WindowResized = true;
+		m_SceneRenderer->RecreateScene();
 		return true;
+	}
+
+	void EditorLayer::RecreateSceneDescriptors()
+	{
+		m_SceneImages.clear();
+		m_SceneTextureIDs.clear();
+
+		m_SceneImages.reserve(2);
+		m_SceneTextureIDs.resize(2);
+
+		m_SceneImages.emplace_back(m_SceneRenderer->GetImage(0), m_SceneRenderer->GetImageView(0), false);
+		m_SceneImages.emplace_back(m_SceneRenderer->GetImage(1), m_SceneRenderer->GetImageView(1), false);
+
+		m_SceneTextureIDs[0] = ImGui_ImplVulkan_AddTexture(
+			m_SceneImages[0].GetTextureSampler(),
+			m_SceneImages[0].GetVulkanImageView(),
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		m_SceneTextureIDs[1] = ImGui_ImplVulkan_AddTexture(
+			m_SceneImages[1].GetTextureSampler(),
+			m_SceneImages[1].GetVulkanImageView(),
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
 	void EditorLayer::LoadEntities()

@@ -6,47 +6,59 @@
 
 namespace VulkanCore {
 
-	VulkanBuffer::VulkanBuffer(VulkanDevice& device, VkDeviceSize instanceSize, uint32_t instanceCount, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize minOffsetAlignment)
-		: m_VulkanDevice(device), m_InstanceSize(instanceSize), m_InstanceCount(instanceCount), m_UsageFlags(usageFlags),
+	VulkanBuffer::VulkanBuffer(VkDeviceSize instanceSize, uint32_t instanceCount, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize minOffsetAlignment)
+		: m_InstanceSize(instanceSize), m_InstanceCount(instanceCount), m_UsageFlags(usageFlags),
 		m_MemoryPropertyFlags(memoryPropertyFlags)
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		m_AlignmentSize = GetAlignment(m_InstanceSize, minOffsetAlignment);
 		m_BufferSize = m_AlignmentSize * m_InstanceCount;
-		m_VMAAllocation = m_VulkanDevice.CreateBuffer(m_BufferSize, m_UsageFlags, m_MemoryPropertyFlags, m_Buffer);
+		m_VMAAllocation = device->CreateBuffer(m_BufferSize, m_UsageFlags, m_MemoryPropertyFlags, m_Buffer);
 	}
 
 	VulkanBuffer::~VulkanBuffer()
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		Unmap();
-		vmaDestroyBuffer(m_VulkanDevice.GetVulkanAllocator(), m_Buffer, m_VMAAllocation);
+		vmaDestroyBuffer(device->GetVulkanAllocator(), m_Buffer, m_VMAAllocation);
 	}
 
 	VkResult VulkanBuffer::MapOld(VkDeviceSize size, VkDeviceSize offset)
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		VK_CORE_ASSERT(m_Buffer && m_Memory, "Called Map on Buffer before its creation!");
-		return vkMapMemory(m_VulkanDevice.GetVulkanDevice(), m_Memory, offset, size, 0, &m_dstMapped);
+		return vkMapMemory(device->GetVulkanDevice(), m_Memory, offset, size, 0, &m_dstMapped);
 	}
 
 	VkResult VulkanBuffer::Map()
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		VK_CORE_ASSERT(m_Buffer, "Called Map on Buffer before its creation!");
-		return vmaMapMemory(m_VulkanDevice.GetVulkanAllocator(), m_VMAAllocation, &m_dstMapped);
+		return vmaMapMemory(device->GetVulkanAllocator(), m_VMAAllocation, &m_dstMapped);
 	}
 
 	void VulkanBuffer::UnmapOld()
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		if (m_dstMapped)
 		{
-			vkUnmapMemory(m_VulkanDevice.GetVulkanDevice(), m_Memory);
+			vkUnmapMemory(device->GetVulkanDevice(), m_Memory);
 			m_dstMapped = nullptr;
 		}
 	}
 
 	void VulkanBuffer::Unmap()
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		if (m_dstMapped)
 		{
-			vmaUnmapMemory(m_VulkanDevice.GetVulkanAllocator(), m_VMAAllocation);
+			vmaUnmapMemory(device->GetVulkanAllocator(), m_VMAAllocation);
 			m_dstMapped = nullptr;
 		}
 	}
@@ -68,17 +80,20 @@ namespace VulkanCore {
 
 	VkResult VulkanBuffer::FlushBufferOld(VkDeviceSize size, VkDeviceSize offset)
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		VkMappedMemoryRange mappedRange = {};
 		mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		mappedRange.memory = m_Memory;
 		mappedRange.offset = offset;
 		mappedRange.size = size;
-		return vkFlushMappedMemoryRanges(m_VulkanDevice.GetVulkanDevice(), 1, &mappedRange);
+		return vkFlushMappedMemoryRanges(device->GetVulkanDevice(), 1, &mappedRange);
 	}
 
 	VkResult VulkanBuffer::FlushBuffer(VkDeviceSize size, VkDeviceSize offset)
 	{
-		return vmaFlushAllocation(m_VulkanDevice.GetVulkanAllocator(), m_VMAAllocation, offset, size);
+		auto device = VulkanDevice::GetDevice();
+		return vmaFlushAllocation(device->GetVulkanAllocator(), m_VMAAllocation, offset, size);
 	}
 
 	VkDescriptorBufferInfo VulkanBuffer::DescriptorInfo(VkDeviceSize size, VkDeviceSize offset)
@@ -88,12 +103,14 @@ namespace VulkanCore {
 
 	VkResult VulkanBuffer::Invalidate(VkDeviceSize size, VkDeviceSize offset)
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		VkMappedMemoryRange mappedRange = {};
 		mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		mappedRange.memory = m_Memory;
 		mappedRange.offset = offset;
 		mappedRange.size = size;
-		return vkInvalidateMappedMemoryRanges(m_VulkanDevice.GetVulkanDevice(), 1, &mappedRange);
+		return vkInvalidateMappedMemoryRanges(device->GetVulkanDevice(), 1, &mappedRange);
 	}
 
 	void VulkanBuffer::WriteToIndex(void* data, int index)

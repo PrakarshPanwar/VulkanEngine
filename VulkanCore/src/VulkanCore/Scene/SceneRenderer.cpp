@@ -253,6 +253,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::RecreateScene()
 	{
+		VK_CORE_INFO("Scene has been Recreated!");
 		Release();
 		Init();
 	}
