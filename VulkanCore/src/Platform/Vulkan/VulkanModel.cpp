@@ -123,14 +123,14 @@ namespace VulkanCore {
 		VkDeviceSize bufferSize = sizeof(vertices[0]) * m_VertexCount;
 		uint32_t vertexSize = sizeof(vertices[0]);
 
-		VulkanBuffer stagingBuffer{ m_VulkanDevice, vertexSize, m_VertexCount,
+		VulkanBuffer stagingBuffer{ vertexSize, m_VertexCount,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
 
 		stagingBuffer.Map();
 		stagingBuffer.WriteToBuffer((void*)vertices.data());
 
-		m_VertexBuffer = std::make_unique<VulkanBuffer>(m_VulkanDevice, vertexSize, m_VertexCount,
+		m_VertexBuffer = std::make_unique<VulkanBuffer>(vertexSize, m_VertexCount,
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
@@ -148,14 +148,14 @@ namespace VulkanCore {
 		VkDeviceSize bufferSize = sizeof(indices[0]) * m_IndexCount;
 		uint32_t indexSize = sizeof(indices[0]);
 
-		VulkanBuffer stagingBuffer{ m_VulkanDevice, indexSize, m_IndexCount, 
+		VulkanBuffer stagingBuffer{ indexSize, m_IndexCount, 
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
 
 		stagingBuffer.Map();
 		stagingBuffer.WriteToBuffer((void*)indices.data());
 
-		m_IndexBuffer = std::make_unique<VulkanBuffer>(m_VulkanDevice, indexSize, m_IndexCount,
+		m_IndexBuffer = std::make_unique<VulkanBuffer>(indexSize, m_IndexCount,
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 

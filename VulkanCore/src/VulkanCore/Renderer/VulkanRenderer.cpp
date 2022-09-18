@@ -217,6 +217,7 @@ namespace VulkanCore {
 		{
 			m_Window.ResetWindowResizeFlag();
 			RecreateSwapChain();
+			SceneRenderer::GetSceneRenderer()->RecreateScene();
 		}
 
 		else if (result != VK_SUCCESS)

@@ -33,6 +33,7 @@ namespace VulkanCore {
 		bool OnKeyEvent(KeyPressedEvent& keyEvent);
 		bool OnMouseScroll(MouseScrolledEvent& mouseScroll);
 		bool OnWindowResize(WindowResizeEvent& windowEvent);
+		void RecreateSceneDescriptors();
 		void LoadEntities();
 	private:
 		std::shared_ptr<Scene> m_Scene;

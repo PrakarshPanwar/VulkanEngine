@@ -11,6 +11,7 @@
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Camera.h"
 #include "VulkanCore/Scene/Entity.h"
+#include "VulkanCore/Scene/SceneRenderer.h"
 
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"

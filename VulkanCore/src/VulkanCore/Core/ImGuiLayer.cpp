@@ -88,8 +88,8 @@ namespace VulkanCore {
 		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", 18.0f);
 		io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", 18.0f);
 #elif SOURCESANSPRO
-		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/SourceSansPro/SourceSansPro-Regular.ttf", 20.0f);
-		io.Fonts->AddFontFromFileTTF("assets/fonts/SourceSansPro/SourceSansPro-Bold.ttf", 20.0f);
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/SourceSansPro/SourceSansPro-Regular.ttf", 18.0f);
+		io.Fonts->AddFontFromFileTTF("assets/fonts/SourceSansPro/SourceSansPro-Bold.ttf", 18.0f);
 #else
 		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/WorkSans/static/WorkSans-Regular.ttf", 18.0f);
 		io.Fonts->AddFontFromFileTTF("assets/fonts/WorkSans/static/WorkSans-Bold.ttf", 18.0f);

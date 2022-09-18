@@ -6,7 +6,7 @@ namespace VulkanCore {
 	class VulkanBuffer
 	{
 	public:
-		VulkanBuffer(VulkanDevice& device, VkDeviceSize instanceSize, uint32_t instanceCount, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize minOffsetAlignment = 1);
+		VulkanBuffer(VkDeviceSize instanceSize, uint32_t instanceCount, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize minOffsetAlignment = 1);
 		~VulkanBuffer();
 
 		VkResult MapOld(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
@@ -36,7 +36,7 @@ namespace VulkanCore {
 	private:
 		static VkDeviceSize GetAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment);
 
-		VulkanDevice& m_VulkanDevice;
+		//VulkanDevice& m_VulkanDevice;
 		void* m_dstMapped = nullptr;
 		VkBuffer m_Buffer = VK_NULL_HANDLE;
 		VkDeviceMemory m_Memory = VK_NULL_HANDLE;
