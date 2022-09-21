@@ -35,6 +35,8 @@ namespace VulkanCore {
 	{
 		VK_CORE_INFO("Running Editor Layer");
 
+		Timer* editorInit = new Timer("Editor Initialization");
+
 		m_SceneRenderer = std::make_shared<SceneRenderer>();
 		LoadEntities();
 
@@ -64,11 +66,13 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
 		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
 
-		m_SceneImages.reserve(2);
-		m_SceneTextureIDs.resize(2);
+		m_SceneImages.reserve(VulkanSwapChain::MaxFramesInFlight);
+		m_SceneTextureIDs.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		m_SceneImages.emplace_back(m_SceneRenderer->GetImage(0), m_SceneRenderer->GetImageView(0), false);
 		m_SceneImages.emplace_back(m_SceneRenderer->GetImage(1), m_SceneRenderer->GetImageView(1), false);
+		if (VulkanSwapChain::MaxFramesInFlight > 2)
+			m_SceneImages.emplace_back(m_SceneRenderer->GetImage(2), m_SceneRenderer->GetImageView(2), false);
 
 		m_SceneTextureIDs[0] = ImGui_ImplVulkan_AddTexture(
 			m_SceneImages[0].GetTextureSampler(),
@@ -79,6 +83,14 @@ namespace VulkanCore {
 			m_SceneImages[1].GetTextureSampler(),
 			m_SceneImages[1].GetVulkanImageView(),
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		if (VulkanSwapChain::MaxFramesInFlight > 2)
+		{
+			m_SceneTextureIDs[2] = ImGui_ImplVulkan_AddTexture(
+				m_SceneImages[2].GetTextureSampler(),
+				m_SceneImages[2].GetVulkanImageView(),
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		}
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
 		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
@@ -143,7 +155,9 @@ namespace VulkanCore {
 		m_PointLightScene.ScenePipeline = m_PointLightSystem->GetPipeline();
 		m_PointLightScene.PipelineLayout = m_PointLightSystem->GetPipelineLayout();
 
-		m_EditorCamera = EditorCamera(glm::radians(45.0f), vkRenderer->GetAspectRatio(), 0.1f, 100.0f);
+		delete editorInit;
+		//m_EditorCamera = EditorCamera(glm::radians(45.0f), vkRenderer->GetAspectRatio(), 0.1f, 100.0f);
+		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 100.0f);
 	}
 
 	void EditorLayer::OnDetach()
@@ -247,10 +261,10 @@ namespace VulkanCore {
 		auto region = ImGui::GetContentRegionAvail();
 		auto windowSize = ImGui::GetWindowSize();
 
-		if ((m_ViewportSize.x != windowSize.x) && (m_ViewportSize.y != windowSize.y))
+		if ((m_ViewportSize.x != region.x) && (m_ViewportSize.y != region.y))
 		{
 			VK_CORE_TRACE("Viewport has been Resized!");
-			m_ViewportSize = windowSize;
+			m_ViewportSize = region;
 			RecreateSceneDescriptors();
 			m_EditorCamera.SetViewportSize(region.x, region.y);
 		}
@@ -289,11 +303,13 @@ namespace VulkanCore {
 		m_SceneImages.clear();
 		m_SceneTextureIDs.clear();
 
-		m_SceneImages.reserve(2);
-		m_SceneTextureIDs.resize(2);
+		m_SceneImages.reserve(VulkanSwapChain::MaxFramesInFlight);
+		m_SceneTextureIDs.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		m_SceneImages.emplace_back(m_SceneRenderer->GetImage(0), m_SceneRenderer->GetImageView(0), false);
 		m_SceneImages.emplace_back(m_SceneRenderer->GetImage(1), m_SceneRenderer->GetImageView(1), false);
+		if (VulkanSwapChain::MaxFramesInFlight > 2)
+			m_SceneImages.emplace_back(m_SceneRenderer->GetImage(2), m_SceneRenderer->GetImageView(2), false);
 
 		m_SceneTextureIDs[0] = ImGui_ImplVulkan_AddTexture(
 			m_SceneImages[0].GetTextureSampler(),
@@ -304,6 +320,13 @@ namespace VulkanCore {
 			m_SceneImages[1].GetTextureSampler(),
 			m_SceneImages[1].GetVulkanImageView(),
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		if (VulkanSwapChain::MaxFramesInFlight > 2)
+		{
+			m_SceneTextureIDs[2] = ImGui_ImplVulkan_AddTexture(
+				m_SceneImages[2].GetTextureSampler(),
+				m_SceneImages[2].GetVulkanImageView(),
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
 	void EditorLayer::LoadEntities()
@@ -325,7 +348,7 @@ namespace VulkanCore {
 
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
 		auto& brassTransform = BrassVase.AddComponent<TransformComponent>(glm::vec3{ 1.5f, 0.0f, 1.5f }, glm::vec3{ 6.0f });
-		brassTransform.Rotation = glm::vec3(-0.5f * std::numbers::pi_v<float>, 0.0f, 0.0f);
+		brassTransform.Rotation = glm::vec3(glm::radians(90.0f), 0.0f, 0.0f);
 		BrassVase.AddComponent<ModelComponent>(VulkanModel::CreateModelFromAssimp(*VulkanDevice::GetDevice(), "assets/models/BrassVase2K/BrassVase.fbx", 0));
 
 		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");

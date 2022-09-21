@@ -24,6 +24,8 @@ namespace VulkanCore {
 			m_AspectRatio = m_ViewportWidth / m_ViewportHeight;
 			UpdateProjection();
 		}
+
+		inline float GetAspectRatio() { return m_AspectRatio; }
 		inline void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; UpdateProjection(); }
 
 		const glm::mat4& GetViewMatrix() const { return m_ViewMatrix; }
