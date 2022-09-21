@@ -249,6 +249,9 @@ namespace VulkanCore {
 			vkDestroyFramebuffer(device->GetVulkanDevice(), Framebuffer, nullptr);
 
 		vkDestroyRenderPass(device->GetVulkanDevice(), m_SceneRenderPass, nullptr);
+
+		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(), 
+			static_cast<uint32_t>(m_SceneCommandBuffers.size()), m_SceneCommandBuffers.data());
 	}
 
 	void SceneRenderer::RecreateScene()

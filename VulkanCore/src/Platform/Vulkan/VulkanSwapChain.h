@@ -10,7 +10,7 @@ namespace VulkanCore {
 		VulkanSwapChain(VulkanDevice& vkDevice, VkExtent2D windowExtent, std::shared_ptr<VulkanSwapChain> prev);
 		~VulkanSwapChain();
 
-		static constexpr int MaxFramesInFlight = 2;
+		static constexpr int MaxFramesInFlight = 3;
 
 		static VulkanSwapChain* GetSwapChain() { return s_Instance; }
 		VulkanDevice GetDevice() { return m_VulkanDevice; }
