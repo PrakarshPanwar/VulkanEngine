@@ -3,7 +3,6 @@
 #include "Platform/Vulkan/VulkanPipeline.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanMesh.h"
-#include "Platform/Vulkan/VulkanGameObject.h"
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"

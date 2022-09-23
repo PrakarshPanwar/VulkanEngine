@@ -37,7 +37,7 @@ namespace std {
 
 namespace VulkanCore {
 
-	VulkanMesh::VulkanMesh(VulkanDevice& device, const ModelBuilder& builder)
+	VulkanMesh::VulkanMesh(VulkanDevice& device, const MeshBuilder& builder)
 		: m_VulkanDevice(device)
 	{
 		CreateVertexBuffers(builder.Vertices);
@@ -68,10 +68,10 @@ namespace VulkanCore {
 			vkCmdDraw(commandBuffer, m_VertexCount, 1, 0, 0);
 	}
 
-	std::shared_ptr<VulkanMesh> VulkanMesh::CreateModelFromFile(VulkanDevice& device, const std::string& filepath)
+	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromFile(VulkanDevice& device, const std::string& filepath)
 	{
-		ModelBuilder builder{};
-		builder.LoadModel(filepath);
+		MeshBuilder builder{};
+		builder.LoadMesh(filepath);
 
 		std::filesystem::path modelFilepath = filepath;
 		//std::filesystem::path materialFilePath = modelFilepath.replace_extension(".mtl");
@@ -82,15 +82,15 @@ namespace VulkanCore {
 		return std::make_shared<VulkanMesh>(device, builder);
 	}
 
-	std::shared_ptr<VulkanMesh> VulkanMesh::CreateModelFromFile(VulkanDevice& device, const std::string& filepath, const glm::vec3& modelColor)
+	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromFile(VulkanDevice& device, const std::string& filepath, const glm::vec3& modelColor)
 	{
 		return nullptr;
 	}
 
-	std::shared_ptr<VulkanMesh> VulkanMesh::CreateModelFromFile(VulkanDevice& device, const std::string& filepath, int texID)
+	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromFile(VulkanDevice& device, const std::string& filepath, int texID)
 	{
-		ModelBuilder builder{};
-		builder.LoadModel(filepath, texID);
+		MeshBuilder builder{};
+		builder.LoadMesh(filepath, texID);
 
 		std::filesystem::path modelFilepath = filepath;
 		//std::filesystem::path materialFilePath = modelFilepath.replace_extension(".mtl");
@@ -101,13 +101,13 @@ namespace VulkanCore {
 		return std::make_shared<VulkanMesh>(device, builder);
 	}
 
-	std::shared_ptr<VulkanMesh> VulkanMesh::CreateModelFromAssimp(VulkanDevice& device, const std::string& filepath, int texID)
+	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromAssimp(VulkanDevice& device, const std::string& filepath, int texID)
 	{
-		ModelBuilder builder{};
+		MeshBuilder builder{};
 		std::filesystem::path modelFilepath = filepath;
 		Timer timer(std::format("\tProcessing Mesh {0}", modelFilepath.filename().string()));
 
-		builder.LoadModelFromAssimp(filepath, texID);
+		builder.LoadMeshFromAssimp(filepath, texID);
 
 		VK_CORE_TRACE("Loading Model: {0}", filepath);
 		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
@@ -185,7 +185,7 @@ namespace VulkanCore {
 		return attributeDescriptions;
 	}
 
-	void ModelBuilder::LoadModel(const std::string& filepath)
+	void MeshBuilder::LoadMesh(const std::string& filepath)
 	{
 		tinyobj::attrib_t attrib;
 		std::vector<tinyobj::shape_t> shapes;
@@ -246,7 +246,7 @@ namespace VulkanCore {
 		}
 	}
 
-	void ModelBuilder::LoadModel(const std::string& filepath, int texID)
+	void MeshBuilder::LoadMesh(const std::string& filepath, int texID)
 	{
 		tinyobj::attrib_t attrib;
 		std::vector<tinyobj::shape_t> shapes;
@@ -307,7 +307,7 @@ namespace VulkanCore {
 		}
 	}
 
-	void ModelBuilder::LoadModelFromAssimp(const std::string& filepath, int texID)
+	void MeshBuilder::LoadMeshFromAssimp(const std::string& filepath, int texID)
 	{
 		Assimp::Importer mImporter;
 		const aiScene* mScene = mImporter.ReadFile(filepath,
@@ -329,7 +329,7 @@ namespace VulkanCore {
 		ProcessNode(mScene->mRootNode, mScene);
 	}
 
-	void ModelBuilder::ProcessNode(aiNode* node, const aiScene* scene)
+	void MeshBuilder::ProcessNode(aiNode* node, const aiScene* scene)
 	{
 		for (uint32_t i = 0; i < node->mNumMeshes; i++)
 		{
@@ -343,7 +343,7 @@ namespace VulkanCore {
 		}
 	}
 
-	void ModelBuilder::ProcessMesh(aiMesh* mesh, const aiScene* scene)
+	void MeshBuilder::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 	{
 		for (uint32_t i = 0; i < mesh->mNumVertices; i++)
 		{

@@ -24,7 +24,7 @@ namespace VulkanCore {
 
 	std::shared_ptr<VulkanMesh> CreateCubeModel(VulkanDevice& device, glm::vec3 offset)
 	{
-		ModelBuilder modelBuilder{};
+		MeshBuilder modelBuilder{};
 
 		modelBuilder.Vertices = {
 

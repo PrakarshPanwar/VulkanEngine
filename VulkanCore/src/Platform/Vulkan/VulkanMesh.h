@@ -25,15 +25,15 @@ namespace VulkanCore {
 	};
 
 
-	struct ModelBuilder
+	struct MeshBuilder
 	{
 		std::vector<Vertex> Vertices{};
 		std::vector<uint32_t> Indices{};
 		int TextureID;
 
-		void LoadModel(const std::string& filepath);
-		void LoadModel(const std::string& filepath, int texID);
-		void LoadModelFromAssimp(const std::string& filepath, int texID);
+		void LoadMesh(const std::string& filepath);
+		void LoadMesh(const std::string& filepath, int texID);
+		void LoadMeshFromAssimp(const std::string& filepath, int texID);
 		void ProcessNode(aiNode* node, const aiScene* scene);
 		void ProcessMesh(aiMesh* mesh, const aiScene* scene);
 	};
@@ -42,7 +42,7 @@ namespace VulkanCore {
 	{
 	public:
 		VulkanMesh() = default;
-		VulkanMesh(VulkanDevice& device, const ModelBuilder& builder);
+		VulkanMesh(VulkanDevice& device, const MeshBuilder& builder);
 		~VulkanMesh();
 
 		VulkanMesh(const VulkanMesh&) = default;
@@ -50,10 +50,10 @@ namespace VulkanCore {
 		void Bind(VkCommandBuffer commandBuffer);
 		void Draw(VkCommandBuffer commandBuffer);
 
-		static std::shared_ptr<VulkanMesh> CreateModelFromFile(VulkanDevice& device, const std::string& filepath);
-		static std::shared_ptr<VulkanMesh> CreateModelFromFile(VulkanDevice& device, const std::string& filepath, const glm::vec3& modelColor);
-		static std::shared_ptr<VulkanMesh> CreateModelFromFile(VulkanDevice& device, const std::string& filepath, int texID);
-		static std::shared_ptr<VulkanMesh> CreateModelFromAssimp(VulkanDevice& device, const std::string& filepath, int texID);
+		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(VulkanDevice& device, const std::string& filepath);
+		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(VulkanDevice& device, const std::string& filepath, const glm::vec3& modelColor);
+		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(VulkanDevice& device, const std::string& filepath, int texID);
+		static std::shared_ptr<VulkanMesh> CreateMeshFromAssimp(VulkanDevice& device, const std::string& filepath, int texID);
 	private:
 		void CreateVertexBuffers(const std::vector<Vertex>& vertices);
 		void CreateIndexBuffers(const std::vector<uint32_t>& indices);
