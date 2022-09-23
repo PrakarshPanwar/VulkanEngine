@@ -47,6 +47,7 @@ namespace VulkanCore {
 		std::shared_ptr<RenderSystem> m_RenderSystem;
 		std::shared_ptr<PointLightSystem> m_PointLightSystem;
 
+		std::shared_ptr<VulkanImage> m_TextureImage;
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap, m_DiffuseMap2, m_NormalMap2,
 			m_SpecularMap2, m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
 

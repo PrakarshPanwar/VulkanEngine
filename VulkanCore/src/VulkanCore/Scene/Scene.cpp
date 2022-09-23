@@ -1,7 +1,7 @@
 #include "vulkanpch.h"
 #include "Scene.h"
 #include "Entity.h"
-#include "Platform/Vulkan/VulkanModel.h"
+#include "Platform/Vulkan/VulkanMesh.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 
 namespace VulkanCore {

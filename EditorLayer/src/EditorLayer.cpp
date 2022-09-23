@@ -6,7 +6,7 @@
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 
-#include "Platform/Vulkan/VulkanModel.h"
+#include "Platform/Vulkan/VulkanMesh.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 
 #include <imgui_impl_vulkan.h>
@@ -40,7 +40,7 @@ namespace VulkanCore {
 		m_SceneRenderer = std::make_shared<SceneRenderer>();
 		LoadEntities();
 
-		VulkanDevice& vulkanDevice = *VulkanDevice::GetDevice();
+		VulkanDevice& device = *VulkanDevice::GetDevice();
 		VulkanRenderer* vkRenderer = VulkanRenderer::Get();
 
 		for (auto& UniformBuffer : m_UniformBuffers)
@@ -51,8 +51,6 @@ namespace VulkanCore {
 
 			UniformBuffer->Map();
 		}
-
-#define TEXTURE_SYSTEM 1
 
 		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/textures/PlainSnow/SnowDiffuse.jpg");
 		m_NormalMap = std::make_shared<VulkanTexture>("assets/textures/PlainSnow/SnowNormalGL.png");
@@ -65,6 +63,15 @@ namespace VulkanCore {
 		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleDiff.png");
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
 		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
+
+		ImageSpecification spec;
+		spec.Width = 1280;
+		spec.Height = 720;
+		spec.Usage = ImageUsage::Texture;
+		spec.Format = ImageFormat::RGBA;
+
+		m_TextureImage = std::make_shared<VulkanImage>(spec);
+		m_TextureImage->Invalidate();
 
 		m_SceneImages.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_SceneTextureIDs.resize(VulkanSwapChain::MaxFramesInFlight);
@@ -103,15 +110,32 @@ namespace VulkanCore {
 		SpecularMaps.push_back(m_SpecularMap2->GetDescriptorImageInfo());
 		SpecularMaps.push_back(m_SpecularMap3->GetDescriptorImageInfo());
 
-		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder(vulkanDevice);
+		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder(device);
 		descriptorSetLayoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);
 		descriptorSetLayoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
 		descriptorSetLayoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
 		descriptorSetLayoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
+		descriptorSetLayoutBuilder.AddBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT);
 		auto globalSetLayout = descriptorSetLayoutBuilder.Build();
 
 		std::vector<VulkanDescriptorWriter> vkGlobalDescriptorWriter(VulkanSwapChain::MaxFramesInFlight,
 			{ *globalSetLayout, *Application::Get()->GetVulkanDescriptorPool() });
+
+#define USE_VULKAN_IMAGE 0
+#if USE_VULKAN_IMAGE
+		std::vector<VkDescriptorImageInfo> newImgs{ 1 };
+		newImgs.emplace_back()
+
+		auto cmdBuffer = device.BeginSingleTimeCommands();
+
+		Utils::InsertImageMemoryBarrier(cmdBuffer, m_TextureImage->GetVulkanImage(),
+			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+		device.EndSingleTimeCommands(cmdBuffer);
+#endif
 
 		for (int i = 0; i < m_GlobalDescriptorSets.size(); i++)
 		{
@@ -120,18 +144,19 @@ namespace VulkanCore {
 			vkGlobalDescriptorWriter[i].WriteImage(1, DiffuseMaps);
 			vkGlobalDescriptorWriter[i].WriteImage(2, NormalMaps);
 			vkGlobalDescriptorWriter[i].WriteImage(3, SpecularMaps);
+			//vkGlobalDescriptorWriter[i].WriteImage(4, newImgs);
 
 			vkGlobalDescriptorWriter[i].Build(m_GlobalDescriptorSets[i]);
 		}
 
 		auto RetRenderSystem = [&]()
 		{
-			return std::make_shared<RenderSystem>(vulkanDevice, m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
+			return std::make_shared<RenderSystem>(m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
 		};
 
 		auto RetPointLightSystem = [&]()
 		{
-			return std::make_shared<PointLightSystem>(vulkanDevice, m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
+			return std::make_shared<PointLightSystem>(m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
 		};
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
@@ -145,8 +170,8 @@ namespace VulkanCore {
 		m_RenderSystem = renderSystemThread.get();
 		m_PointLightSystem = pointLightSystemThread.get();
 #else
-		m_RenderSystem = std::make_shared<RenderSystem>(vulkanDevice, m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
-		m_PointLightSystem = std::make_shared<PointLightSystem>(vulkanDevice, m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
+		m_RenderSystem = std::make_shared<RenderSystem>(m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
+		m_PointLightSystem = std::make_shared<PointLightSystem>(m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
 #endif
 
 		m_SceneRender.ScenePipeline = m_RenderSystem->GetPipeline();
@@ -255,6 +280,8 @@ namespace VulkanCore {
 		ImGui::Begin("Application Stats");
 		SHOW_FRAMERATES;
 		ImGui::Checkbox("Show ImGui Demo Window", &m_ImGuiShowWindow);
+		ImGui::ArrowButton("ArrowButton", ImGuiDir_Right);
+		ImGui::Text("Camera Aspect Ratio: %.6f", m_EditorCamera.GetAspectRatio());
 		ImGui::End();
 
 		ImGui::Begin("Viewport");
@@ -327,6 +354,7 @@ namespace VulkanCore {
 				m_SceneImages[2].GetTextureSampler(),
 				m_SceneImages[2].GetVulkanImageView(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		}
 	}
 
 	void EditorLayer::LoadEntities()
@@ -335,21 +363,21 @@ namespace VulkanCore {
 
 		Entity CeramicVase = m_Scene->CreateEntity("Vase Model");
 		CeramicVase.AddComponent<TransformComponent>(glm::vec3{ 0.0f, 0.0f, 2.5f }, glm::vec3{ 3.5f });
-		CeramicVase.AddComponent<ModelComponent>(VulkanModel::CreateModelFromFile(*VulkanDevice::GetDevice(), "assets/models/CeramicVase.obj", 0));
+		CeramicVase.AddComponent<ModelComponent>(VulkanMesh::CreateModelFromFile(*VulkanDevice::GetDevice(), "assets/models/CeramicVase.obj", 0));
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
 		FlatPlane.AddComponent<TransformComponent>(glm::vec3{ 0.0f, 1.6f, 0.0f }, glm::vec3{ 0.5f });
-		FlatPlane.AddComponent<ModelComponent>(VulkanModel::CreateModelFromFile(*VulkanDevice::GetDevice(), "assets/models/FlatPlane.obj", 2));
+		FlatPlane.AddComponent<ModelComponent>(VulkanMesh::CreateModelFromFile(*VulkanDevice::GetDevice(), "assets/models/FlatPlane.obj", 2));
 
 		Entity CrateModel = m_Scene->CreateEntity("Wooden Crate");
 		auto& crateTransform = CrateModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 1.5f });
 		crateTransform.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-		CrateModel.AddComponent<ModelComponent>(VulkanModel::CreateModelFromAssimp(*VulkanDevice::GetDevice(), "assets/models/WoodenCrate/WoodenCrate.gltf", 1));
+		CrateModel.AddComponent<ModelComponent>(VulkanMesh::CreateModelFromAssimp(*VulkanDevice::GetDevice(), "assets/models/WoodenCrate/WoodenCrate.gltf", 1));
 
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
 		auto& brassTransform = BrassVase.AddComponent<TransformComponent>(glm::vec3{ 1.5f, 0.0f, 1.5f }, glm::vec3{ 6.0f });
 		brassTransform.Rotation = glm::vec3(glm::radians(90.0f), 0.0f, 0.0f);
-		BrassVase.AddComponent<ModelComponent>(VulkanModel::CreateModelFromAssimp(*VulkanDevice::GetDevice(), "assets/models/BrassVase2K/BrassVase.fbx", 0));
+		BrassVase.AddComponent<ModelComponent>(VulkanMesh::CreateModelFromAssimp(*VulkanDevice::GetDevice(), "assets/models/BrassVase2K/BrassVase.fbx", 0));
 
 		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");
 		auto& blueLightTransform = BluePointLight.AddComponent<TransformComponent>(glm::vec3{ -1.0f, 0.0f, 4.5f }, glm::vec3{ 0.1f });

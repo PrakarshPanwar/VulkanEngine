@@ -38,22 +38,22 @@ namespace VulkanCore {
 		void ProcessMesh(aiMesh* mesh, const aiScene* scene);
 	};
 
-	class VulkanModel
+	class VulkanMesh
 	{
 	public:
-		VulkanModel() = default;
-		VulkanModel(VulkanDevice& device, const ModelBuilder& builder);
-		~VulkanModel();
+		VulkanMesh() = default;
+		VulkanMesh(VulkanDevice& device, const ModelBuilder& builder);
+		~VulkanMesh();
 
-		VulkanModel(const VulkanModel&) = default;
+		VulkanMesh(const VulkanMesh&) = default;
 
 		void Bind(VkCommandBuffer commandBuffer);
 		void Draw(VkCommandBuffer commandBuffer);
 
-		static std::shared_ptr<VulkanModel> CreateModelFromFile(VulkanDevice& device, const std::string& filepath);
-		static std::shared_ptr<VulkanModel> CreateModelFromFile(VulkanDevice& device, const std::string& filepath, const glm::vec3& modelColor);
-		static std::shared_ptr<VulkanModel> CreateModelFromFile(VulkanDevice& device, const std::string& filepath, int texID);
-		static std::shared_ptr<VulkanModel> CreateModelFromAssimp(VulkanDevice& device, const std::string& filepath, int texID);
+		static std::shared_ptr<VulkanMesh> CreateModelFromFile(VulkanDevice& device, const std::string& filepath);
+		static std::shared_ptr<VulkanMesh> CreateModelFromFile(VulkanDevice& device, const std::string& filepath, const glm::vec3& modelColor);
+		static std::shared_ptr<VulkanMesh> CreateModelFromFile(VulkanDevice& device, const std::string& filepath, int texID);
+		static std::shared_ptr<VulkanMesh> CreateModelFromAssimp(VulkanDevice& device, const std::string& filepath, int texID);
 	private:
 		void CreateVertexBuffers(const std::vector<Vertex>& vertices);
 		void CreateIndexBuffers(const std::vector<uint32_t>& indices);

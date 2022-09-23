@@ -1,6 +1,5 @@
 #pragma once
 #include "Platform/Vulkan/VulkanDevice.h"
-#include "Platform/Vulkan/VulkanGameObject.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
 #include "VulkanCore/Renderer/Camera.h"
 
@@ -11,7 +10,7 @@ namespace VulkanCore {
 	class PointLightSystem
 	{
 	public:
-		PointLightSystem(VulkanDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+		PointLightSystem(VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
 		~PointLightSystem();
 
 		inline VkPipelineLayout GetPipelineLayout() { return m_PipelineLayout; }
@@ -20,8 +19,6 @@ namespace VulkanCore {
 		void CreatePipeline(VkRenderPass renderPass);
 		void CreatePipelineLayout(VkDescriptorSetLayout globalSetLayout);
 	private:
-		VulkanDevice& m_VulkanDevice;
-
 		std::unique_ptr<VulkanPipeline> m_Pipeline;
 		VkPipelineLayout m_PipelineLayout;
 	};

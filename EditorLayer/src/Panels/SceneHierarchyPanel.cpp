@@ -1,7 +1,7 @@
 #include "SceneHierarchyPanel.h"
 
 #include <imgui.h>
-#include "imgui_internal.h"
+#include <imgui_internal.h>
 
 namespace VulkanCore {
 
@@ -96,7 +96,7 @@ namespace VulkanCore {
 			ImGui::PopStyleVar();
 
 			ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
-			if (ImGui::Button("+", ImVec2{ lineHeight, lineHeight }))
+			if (ImGui::Button("-", ImVec2{ lineHeight, lineHeight }))
 			{
 				ImGui::OpenPopup("ComponentSettings");
 			}
@@ -164,6 +164,11 @@ namespace VulkanCore {
 			DrawVec3Control("Rotation", rotation);
 			component.Rotation = glm::radians(rotation);
 			DrawVec3Control("Scale", component.Scale, 1.0f);
+		});
+
+		DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
+		{
+			ImGui::ColorEdit4("Color", (float*)&component.PointLightInstance->Color);
 		});
 	}
 
