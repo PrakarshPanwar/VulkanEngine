@@ -3,12 +3,10 @@
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
-#include <glm/gtc/constants.hpp>
 
 namespace VulkanCore {
 
-	RenderSystem::RenderSystem(VulkanDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
-		: m_VulkanDevice(device)
+	RenderSystem::RenderSystem(VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
 	{
 		CreatePipelineLayout(globalSetLayout);
 		CreatePipeline(renderPass);
@@ -16,11 +14,14 @@ namespace VulkanCore {
 
 	RenderSystem::~RenderSystem()
 	{
-		vkDestroyPipelineLayout(m_VulkanDevice.GetVulkanDevice(), m_PipelineLayout, nullptr);
+		auto device = VulkanDevice::GetDevice();
+		vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 	}
 
 	void RenderSystem::CreatePipeline(VkRenderPass renderPass)
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		PipelineConfigInfo pipelineConfig{};
 		VulkanPipeline::DefaultPipelineConfigInfo(pipelineConfig);
 		pipelineConfig.RenderPass = renderPass;
@@ -37,15 +38,17 @@ namespace VulkanCore {
 		);
 #else
 		m_Pipeline = std::make_unique<VulkanPipeline>(
-			m_VulkanDevice, pipelineConfig,
+			*device, pipelineConfig,
 			"assets/shaders/FirstShader.vert",
 			"assets/shaders/FirstShader.frag"
 		);
 #endif
 	}
 
-	void RenderSystem::CreatePipelineLayout(VkDescriptorSetLayout globalSetLayout)
-{
+	void RenderSystem::CreatePipelineLayout(VkDescriptorSetLayout globalSetLayout) 
+	{
+		auto device = VulkanDevice::GetDevice();
+
 		VkPushConstantRange pushConstantRange{};
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		pushConstantRange.offset = 0;
@@ -60,7 +63,7 @@ namespace VulkanCore {
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
-		VK_CHECK_RESULT(vkCreatePipelineLayout(m_VulkanDevice.GetVulkanDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout), "Failed to Create Pipeline Layout!");
+		VK_CHECK_RESULT(vkCreatePipelineLayout(device->GetVulkanDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout), "Failed to Create Pipeline Layout!");
 	}
 
 }

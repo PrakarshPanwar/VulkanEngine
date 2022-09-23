@@ -2,7 +2,7 @@
 #include "glfw_vulkan.h"
 
 #include "Platform/Windows/WindowsWindow.h"
-#include "Platform/Vulkan/VulkanModel.h"
+#include "Platform/Vulkan/VulkanMesh.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 
 #include "VulkanCore/Scene/Scene.h"

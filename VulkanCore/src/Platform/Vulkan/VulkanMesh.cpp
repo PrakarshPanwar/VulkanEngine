@@ -1,5 +1,5 @@
 #include "vulkanpch.h"
-#include "VulkanModel.h"
+#include "VulkanMesh.h"
 
 #include "VulkanCore/Core/HashCombine.h"
 
@@ -37,18 +37,18 @@ namespace std {
 
 namespace VulkanCore {
 
-	VulkanModel::VulkanModel(VulkanDevice& device, const ModelBuilder& builder)
+	VulkanMesh::VulkanMesh(VulkanDevice& device, const ModelBuilder& builder)
 		: m_VulkanDevice(device)
 	{
 		CreateVertexBuffers(builder.Vertices);
 		CreateIndexBuffers(builder.Indices);
 	}
 
-	VulkanModel::~VulkanModel()
+	VulkanMesh::~VulkanMesh()
 	{
 	}
 
-	void VulkanModel::Bind(VkCommandBuffer commandBuffer)
+	void VulkanMesh::Bind(VkCommandBuffer commandBuffer)
 	{
 		VkBuffer buffers[] = { m_VertexBuffer->GetBuffer() };
 		VkDeviceSize offsets[] = { 0 };
@@ -59,7 +59,7 @@ namespace VulkanCore {
 			vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
 	}
 
-	void VulkanModel::Draw(VkCommandBuffer commandBuffer)
+	void VulkanMesh::Draw(VkCommandBuffer commandBuffer)
 	{
 		if (m_HasIndexBuffer)
 			vkCmdDrawIndexed(commandBuffer, m_IndexCount, 1, 0, 0, 0);
@@ -68,7 +68,7 @@ namespace VulkanCore {
 			vkCmdDraw(commandBuffer, m_VertexCount, 1, 0, 0);
 	}
 
-	std::shared_ptr<VulkanModel> VulkanModel::CreateModelFromFile(VulkanDevice& device, const std::string& filepath)
+	std::shared_ptr<VulkanMesh> VulkanMesh::CreateModelFromFile(VulkanDevice& device, const std::string& filepath)
 	{
 		ModelBuilder builder{};
 		builder.LoadModel(filepath);
@@ -79,15 +79,15 @@ namespace VulkanCore {
 		VK_CORE_TRACE("Loading Model: {0}", modelFilepath.filename());
 		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
 		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
-		return std::make_shared<VulkanModel>(device, builder);
+		return std::make_shared<VulkanMesh>(device, builder);
 	}
 
-	std::shared_ptr<VulkanModel> VulkanModel::CreateModelFromFile(VulkanDevice& device, const std::string& filepath, const glm::vec3& modelColor)
+	std::shared_ptr<VulkanMesh> VulkanMesh::CreateModelFromFile(VulkanDevice& device, const std::string& filepath, const glm::vec3& modelColor)
 	{
 		return nullptr;
 	}
 
-	std::shared_ptr<VulkanModel> VulkanModel::CreateModelFromFile(VulkanDevice& device, const std::string& filepath, int texID)
+	std::shared_ptr<VulkanMesh> VulkanMesh::CreateModelFromFile(VulkanDevice& device, const std::string& filepath, int texID)
 	{
 		ModelBuilder builder{};
 		builder.LoadModel(filepath, texID);
@@ -98,10 +98,10 @@ namespace VulkanCore {
 		VK_CORE_TRACE("Loading Model: {0}", modelFilepath.filename());
 		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
 		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
-		return std::make_shared<VulkanModel>(device, builder);
+		return std::make_shared<VulkanMesh>(device, builder);
 	}
 
-	std::shared_ptr<VulkanModel> VulkanModel::CreateModelFromAssimp(VulkanDevice& device, const std::string& filepath, int texID)
+	std::shared_ptr<VulkanMesh> VulkanMesh::CreateModelFromAssimp(VulkanDevice& device, const std::string& filepath, int texID)
 	{
 		ModelBuilder builder{};
 		std::filesystem::path modelFilepath = filepath;
@@ -112,10 +112,10 @@ namespace VulkanCore {
 		VK_CORE_TRACE("Loading Model: {0}", filepath);
 		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
 		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
-		return std::make_shared<VulkanModel>(device, builder);
+		return std::make_shared<VulkanMesh>(device, builder);
 	}
 
-	void VulkanModel::CreateVertexBuffers(const std::vector<Vertex>& vertices)
+	void VulkanMesh::CreateVertexBuffers(const std::vector<Vertex>& vertices)
 	{
 		m_VertexCount = (uint32_t)vertices.size();
 		VK_CORE_ASSERT(m_VertexCount >= 3, "Vertex Count should be at least greater than or equal to 3!");
@@ -137,7 +137,7 @@ namespace VulkanCore {
 		m_VulkanDevice.CopyBuffer(stagingBuffer.GetBuffer(), m_VertexBuffer->GetBuffer(), bufferSize);
 	}
 
-	void VulkanModel::CreateIndexBuffers(const std::vector<uint32_t>& indices)
+	void VulkanMesh::CreateIndexBuffers(const std::vector<uint32_t>& indices)
 	{
 		m_IndexCount = (uint32_t)indices.size();
 		m_HasIndexBuffer = m_IndexCount > 0;

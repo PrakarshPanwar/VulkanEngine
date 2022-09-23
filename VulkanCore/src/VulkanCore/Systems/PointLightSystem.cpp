@@ -3,11 +3,11 @@
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Components.h"
 
 namespace VulkanCore {
 
-	PointLightSystem::PointLightSystem(VulkanDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
-		: m_VulkanDevice(device)
+	PointLightSystem::PointLightSystem(VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
 	{
 		CreatePipelineLayout(globalSetLayout);
 		CreatePipeline(renderPass);
@@ -15,11 +15,14 @@ namespace VulkanCore {
 
 	PointLightSystem::~PointLightSystem()
 	{
-		vkDestroyPipelineLayout(m_VulkanDevice.GetVulkanDevice(), m_PipelineLayout, nullptr);
+		auto device = VulkanDevice::GetDevice();
+		vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 	}
 
 	void PointLightSystem::CreatePipeline(VkRenderPass renderPass)
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		PipelineConfigInfo pipelineConfig{};
 		VulkanPipeline::DefaultPipelineConfigInfo(pipelineConfig);
 		VulkanPipeline::EnableAlphaBlending(pipelineConfig);
@@ -29,7 +32,7 @@ namespace VulkanCore {
 		pipelineConfig.PipelineLayout = m_PipelineLayout;
 
 		m_Pipeline = std::make_unique<VulkanPipeline>(
-			m_VulkanDevice, pipelineConfig,
+			*device, pipelineConfig,
 			"assets/shaders/PointLightShader.vert",
 			"assets/shaders/PointLightShader.frag"
 		);
@@ -37,6 +40,8 @@ namespace VulkanCore {
 
 	void PointLightSystem::CreatePipelineLayout(VkDescriptorSetLayout globalSetLayout)
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		VkPushConstantRange pushConstantRange{};
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		pushConstantRange.offset = 0;
@@ -51,7 +56,7 @@ namespace VulkanCore {
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
-		VK_CHECK_RESULT(vkCreatePipelineLayout(m_VulkanDevice.GetVulkanDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout), "Failed to Create Pipeline Layout!");
+		VK_CHECK_RESULT(vkCreatePipelineLayout(device->GetVulkanDevice(), &pipelineLayoutInfo, nullptr, &m_PipelineLayout), "Failed to Create Pipeline Layout!");
 	}
 
 }
