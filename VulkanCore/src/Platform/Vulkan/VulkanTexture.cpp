@@ -7,32 +7,9 @@
 
 #include "VulkanBuffer.h"
 #include "VulkanDescriptor.h"
+#include "VulkanAllocator.h"
 
 namespace VulkanCore {
-
-	namespace Utils {
-
-		void InsertImageMemoryBarrier(VkCommandBuffer cmdBuf, VkImage image,
-			VkAccessFlags srcFlags, VkAccessFlags dstFlags,
-			VkImageLayout oldLayout, VkImageLayout newLayout,
-			VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
-			VkImageSubresourceRange subresourceRange)
-		{
-			VkImageMemoryBarrier barrier{};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.oldLayout = oldLayout;
-			barrier.newLayout = newLayout;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = image;
-			barrier.subresourceRange = subresourceRange;
-			barrier.srcAccessMask = srcFlags;
-			barrier.dstAccessMask = dstFlags;
-
-			vkCmdPipelineBarrier(cmdBuf, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-		}
-
-	}
 
 	uint32_t VulkanTexture::m_TextureCount = 0;
 	std::vector<VkDescriptorImageInfo> VulkanTexture::m_DescriptorImagesInfo;
@@ -55,14 +32,20 @@ namespace VulkanCore {
 		m_TextureCount++;
 	}
 
+	VulkanTexture::VulkanTexture(uint32_t width, uint32_t height)
+	{
+
+	}
+
 	VulkanTexture::~VulkanTexture()
 	{
 		Release();
-
 	}
 
 	void VulkanTexture::CreateTextureImage()
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		m_Pixels = stbi_load(m_FilePath.c_str(), &m_Width, &m_Height, &m_Channels, STBI_rgb_alpha);
 
 		VkDeviceSize imageSize = m_Width * m_Height * 4;
@@ -79,13 +62,14 @@ namespace VulkanCore {
 
 		CreateImage();
 		TransitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		VulkanDevice::GetDevice()->CopyBufferToImage(stagingBuffer.GetBuffer(), m_TextureImage, m_Width, m_Height, 1);
+		device->CopyBufferToImage(stagingBuffer.GetBuffer(), m_TextureImage, m_Width, m_Height, 1);
 		TransitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
 	void VulkanTexture::CreateImage()
 	{
 		auto device = VulkanDevice::GetDevice();
+		VulkanAllocator allocator("Image2D");
 
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -105,16 +89,14 @@ namespace VulkanCore {
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-#if !USE_VMA
-		VulkanDevice::GetDevice()->CreateImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage, m_TextureImageMemory);
-#else
-		m_ImageAlloc = device->CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage);
-#endif
+		//m_ImageAlloc = device->CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_TextureImage);
+		m_ImageAlloc = allocator.AllocateImage(imageInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_TextureImage);
 	}
 
 	void VulkanTexture::TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout)
-{
-		VkCommandBuffer commandBuffer = VulkanDevice::GetDevice()->BeginSingleTimeCommands();
+	{
+		auto device = VulkanDevice::GetDevice();
+		VkCommandBuffer commandBuffer = device->GetCommandBuffer();
 
 		VkImageMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -155,35 +137,35 @@ namespace VulkanCore {
 
 		vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-		VulkanDevice::GetDevice()->EndSingleTimeCommands(commandBuffer);
+		device->FlushCommandBuffer(commandBuffer);
 	}
 
 	void VulkanTexture::CreateTextureSampler()
 	{
 		auto device = VulkanDevice::GetDevice();
 
-		VkSamplerCreateInfo samplerInfo{};
-		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.anisotropyEnable = VK_TRUE;
+		VkSamplerCreateInfo samplerCreateInfo{};
+		samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+		samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCreateInfo.anisotropyEnable = VK_TRUE;
 
 		auto deviceProps = device->GetPhysicalDeviceProperties();
-		samplerInfo.maxAnisotropy = deviceProps.limits.maxSamplerAnisotropy;
+		samplerCreateInfo.maxAnisotropy = deviceProps.limits.maxSamplerAnisotropy;
 
-		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		samplerInfo.unnormalizedCoordinates = VK_FALSE;
-		samplerInfo.compareEnable = VK_FALSE;
-		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.mipLodBias = 0.0f;
-		samplerInfo.minLod = 0.0f;
-		samplerInfo.maxLod = 2.0f;
+		samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+		samplerCreateInfo.compareEnable = VK_FALSE;
+		samplerCreateInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+		samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerCreateInfo.mipLodBias = 0.0f;
+		samplerCreateInfo.minLod = 0.0f;
+		samplerCreateInfo.maxLod = 2.0f;
 
-		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &samplerInfo, nullptr, &m_TextureSampler), "Failed to Create Texture Sampler!");
+		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &samplerCreateInfo, nullptr, &m_TextureSampler), "Failed to Create Texture Sampler!");
 	}
 
 	void VulkanTexture::CreateTextureImageView()
@@ -204,13 +186,15 @@ namespace VulkanCore {
 
 	void VulkanTexture::Release()
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		if (m_Release)
 		{
-			vkDestroyImageView(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureImageView, nullptr);
-			vmaDestroyImage(VulkanDevice::GetDevice()->GetVulkanAllocator(), m_TextureImage, m_ImageAlloc);
+			vkDestroyImageView(device->GetVulkanDevice(), m_TextureImageView, nullptr);
+			vmaDestroyImage(device->GetVulkanAllocator(), m_TextureImage, m_ImageAlloc);
 		}
 
-		vkDestroySampler(VulkanDevice::GetDevice()->GetVulkanDevice(), m_TextureSampler, nullptr);
+		vkDestroySampler(device->GetVulkanDevice(), m_TextureSampler, nullptr);
 	}
 
 }

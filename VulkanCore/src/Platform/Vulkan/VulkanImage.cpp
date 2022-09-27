@@ -1,0 +1,237 @@
+#include "vulkanpch.h"
+#include "VulkanImage.h"
+
+#include "VulkanCore/Core/Assert.h"
+#include "VulkanCore/Core/Log.h"
+#include "VulkanAllocator.h"
+
+namespace VulkanCore {
+
+	namespace Utils {
+
+		static VkFormat VulkanImageFormat(ImageFormat format)
+		{
+			switch (format)
+			{
+			case ImageFormat::RGBA:			   return VK_FORMAT_R8G8B8A8_SRGB;
+			case ImageFormat::RGBA8:		   return VK_FORMAT_R8G8B8A8_SNORM;
+			case ImageFormat::RGBA16F:		   return VK_FORMAT_R16G16B16A16_SFLOAT;
+			case ImageFormat::RGBA32F:		   return VK_FORMAT_R32G32B32A32_SFLOAT;
+			case ImageFormat::DEPTH24STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
+			case ImageFormat::DEPTH16F:		   return VK_FORMAT_D16_UNORM;
+			case ImageFormat::DEPTH32F:		   return VK_FORMAT_D32_SFLOAT;
+			default:
+				VK_CORE_ASSERT(false, "Format not Supported!");
+				return (VkFormat)0;
+			}
+		}
+
+		static bool IsDepthFormat(ImageFormat format)
+		{
+			switch (format)
+			{
+			case ImageFormat::DEPTH24STENCIL8: return true;
+			case ImageFormat::DEPTH16F:		   return true;
+			case ImageFormat::DEPTH32F:		   return true;
+			default:						   return false;
+			}
+		}
+
+		static VkSamplerAddressMode VulkanSamplerWrap(TextureWrap wrap)
+		{
+			switch (wrap)
+			{
+			case TextureWrap::Repeat: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			case TextureWrap::Wrap:	  return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+				break;
+			default:
+				break;
+			}
+		}
+
+		void InsertImageMemoryBarrier(VkCommandBuffer cmdBuf, VkImage image,
+			VkAccessFlags srcFlags, VkAccessFlags dstFlags,
+			VkImageLayout oldLayout, VkImageLayout newLayout,
+			VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
+			VkImageSubresourceRange subresourceRange)
+		{
+			VkImageMemoryBarrier barrier{};
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barrier.oldLayout = oldLayout;
+			barrier.newLayout = newLayout;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = image;
+			barrier.subresourceRange = subresourceRange;
+			barrier.srcAccessMask = srcFlags;
+			barrier.dstAccessMask = dstFlags;
+
+			vkCmdPipelineBarrier(cmdBuf, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+		}
+
+	}
+
+	VulkanImage::VulkanImage(const ImageSpecification& spec)
+		: m_Specification(spec)
+	{
+	}
+
+	VulkanImage::VulkanImage(uint32_t width, uint32_t height, ImageUsage usage)
+	{
+		m_Specification.Width = width;
+		m_Specification.Height = height;
+		m_Specification.Format = ImageFormat::RGBA;
+		m_Specification.Usage = usage;
+
+		//Invalidate(); // TODO: For now we have to invalidate manually
+	}
+
+	VulkanImage::~VulkanImage()
+	{
+		if (m_Info.Image == nullptr)
+			return;
+
+		Release();
+	}
+
+	void VulkanImage::Invalidate()
+	{
+		auto device = VulkanDevice::GetDevice();
+		VulkanAllocator allocator("Image2D");
+
+		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
+		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+
+		if (m_Specification.Usage == ImageUsage::Attachment)
+			usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+		if (m_Specification.Usage == ImageUsage::Texture)
+			usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+		if (m_Specification.Usage == ImageUsage::Storage)
+			usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+
+		VkImageAspectFlags aspectMask = Utils::IsDepthFormat(m_Specification.Format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+		if (m_Specification.Format == ImageFormat::DEPTH24STENCIL8)
+			aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+
+		// Create Vulkan Image
+		VkImageCreateInfo imageCreateInfo{};
+		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageCreateInfo.format = vulkanFormat;
+		imageCreateInfo.extent.width = m_Specification.Width;
+		imageCreateInfo.extent.height = m_Specification.Height;
+		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = usage;
+		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		uint32_t mipLevels = static_cast<uint32_t>(std::_Floor_of_log_2(std::max(m_Specification.Width, m_Specification.Height))) + 1;
+		imageCreateInfo.mipLevels = 1;
+
+		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
+
+		// Create a view for Image
+		VkImageViewCreateInfo viewCreateInfo{};
+		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewCreateInfo.image = m_Info.Image;
+		viewCreateInfo.format = vulkanFormat;
+		viewCreateInfo.subresourceRange.aspectMask = aspectMask;
+		viewCreateInfo.subresourceRange.baseMipLevel = 0;
+		viewCreateInfo.subresourceRange.levelCount = 1;
+		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		viewCreateInfo.subresourceRange.layerCount = 1;
+
+		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &m_Info.ImageView), "Failed to Create Image View!");
+
+		// Create a sampler for Image
+		VkSamplerCreateInfo sampler{};
+		sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		sampler.magFilter = VK_FILTER_LINEAR;
+		sampler.minFilter = VK_FILTER_LINEAR;
+		sampler.addressModeU = Utils::VulkanSamplerWrap(m_Specification.WrapType);
+		sampler.addressModeV = Utils::VulkanSamplerWrap(m_Specification.WrapType);
+		sampler.addressModeW = Utils::VulkanSamplerWrap(m_Specification.WrapType);
+		sampler.anisotropyEnable = VK_TRUE;
+
+		auto deviceProps = device->GetPhysicalDeviceProperties();
+		sampler.maxAnisotropy = deviceProps.limits.maxSamplerAnisotropy;
+
+		sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		sampler.unnormalizedCoordinates = VK_FALSE;
+		sampler.compareEnable = VK_FALSE;
+		sampler.compareOp = VK_COMPARE_OP_ALWAYS;
+		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		sampler.mipLodBias = 0.0f;
+		sampler.minLod = 0.0f;
+		sampler.maxLod = 2.0f;
+
+		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &sampler, nullptr, &m_Info.Sampler), "Failed to Create Image Sampler!");
+	
+		if (m_Specification.Usage == ImageUsage::Storage)
+		{
+			auto cmdBuffer = device->GetCommandBuffer();
+
+			VkImageSubresourceRange subresourceRange{}; // TODO: Add Mips
+			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.baseMipLevel = 0;
+			subresourceRange.levelCount = 1;
+			subresourceRange.layerCount = 1;
+
+			Utils::InsertImageMemoryBarrier(cmdBuffer, m_Info.Image,
+				0, 0,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+				subresourceRange);
+
+			device->FlushCommandBuffer(cmdBuffer);
+		}
+
+		if (m_Specification.Usage == ImageUsage::Texture)
+		{
+			auto cmdBuffer = device->GetCommandBuffer();
+
+			VkImageSubresourceRange subresourceRange{}; // TODO: Add Mips
+			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.baseMipLevel = 0;
+			subresourceRange.levelCount = 1;
+			subresourceRange.layerCount = 1;
+
+			Utils::InsertImageMemoryBarrier(cmdBuffer, m_Info.Image,
+				0, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				subresourceRange);
+		}
+
+		UpdateImageDescriptor();
+	}
+
+	void VulkanImage::UpdateImageDescriptor()
+	{
+		if (Utils::IsDepthFormat(m_Specification.Format))
+			m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+		else if (m_Specification.Usage == ImageUsage::Storage)
+			m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		else
+			m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		m_DescriptorImageInfo.imageView = m_Info.ImageView;
+		m_DescriptorImageInfo.sampler = m_Info.Sampler;
+	}
+
+	void VulkanImage::Release()
+	{
+		auto device = VulkanDevice::GetDevice();
+
+		vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
+		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
+		vmaDestroyImage(device->GetVulkanAllocator(), m_Info.Image, m_Info.MemoryAlloc);
+	}
+
+}
