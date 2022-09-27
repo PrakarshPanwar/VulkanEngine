@@ -2,22 +2,19 @@
 #include "VulkanDevice.h"
 #include <stb_image.h>
 
+#include "VulkanImage.h"
+
 namespace VulkanCore {
 
-	namespace Utils {
-		void InsertImageMemoryBarrier(VkCommandBuffer cmdBuf, VkImage image,
-			VkAccessFlags srcFlags, VkAccessFlags dstFlags,
-			VkImageLayout oldLayout, VkImageLayout newLayout,
-			VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
-			VkImageSubresourceRange subresourceRange);
-	}
-
+	// TODO: Only Copy the Data from Image File to Vulkan Image,
+	// Image Creation, Image View Creation, Image Sampler Creation will be handled by VulkanImage
 	class VulkanTexture
 	{
 	public:
 		VulkanTexture() = default;
 		VulkanTexture(const std::string& filepath);
 		VulkanTexture(VkImage image, VkImageView imageView, bool destroyImg = true);
+		VulkanTexture(uint32_t width, uint32_t height);
 		~VulkanTexture();
 
 		inline VkImage GetVulkanImage() { return m_TextureImage; }
