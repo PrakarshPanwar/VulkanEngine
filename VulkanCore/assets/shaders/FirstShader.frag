@@ -64,5 +64,6 @@ void main()
 	vec3 rDiffuse = diffuseLight * diffColorMap;
 	vec3 rSpecular = specularLight * specColorMap.rgb;
 	vec4 resColor = vec4((rDiffuse + rSpecular) * v_FragColor, 1.0);
+
 	o_Color = resColor;
 }

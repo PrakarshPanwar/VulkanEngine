@@ -37,8 +37,7 @@ namespace std {
 
 namespace VulkanCore {
 
-	VulkanMesh::VulkanMesh(VulkanDevice& device, const MeshBuilder& builder)
-		: m_VulkanDevice(device)
+	VulkanMesh::VulkanMesh(const MeshBuilder& builder)
 	{
 		CreateVertexBuffers(builder.Vertices);
 		CreateIndexBuffers(builder.Indices);
@@ -68,7 +67,7 @@ namespace VulkanCore {
 			vkCmdDraw(commandBuffer, m_VertexCount, 1, 0, 0);
 	}
 
-	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromFile(VulkanDevice& device, const std::string& filepath)
+	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromFile(const std::string& filepath)
 	{
 		MeshBuilder builder{};
 		builder.LoadMesh(filepath);
@@ -79,15 +78,15 @@ namespace VulkanCore {
 		VK_CORE_TRACE("Loading Model: {0}", modelFilepath.filename());
 		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
 		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
-		return std::make_shared<VulkanMesh>(device, builder);
+		return std::make_shared<VulkanMesh>(builder);
 	}
 
-	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromFile(VulkanDevice& device, const std::string& filepath, const glm::vec3& modelColor)
+	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromFile(const std::string& filepath, const glm::vec3& modelColor)
 	{
 		return nullptr;
 	}
 
-	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromFile(VulkanDevice& device, const std::string& filepath, int texID)
+	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromFile(const std::string& filepath, int texID)
 	{
 		MeshBuilder builder{};
 		builder.LoadMesh(filepath, texID);
@@ -98,10 +97,10 @@ namespace VulkanCore {
 		VK_CORE_TRACE("Loading Model: {0}", modelFilepath.filename());
 		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
 		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
-		return std::make_shared<VulkanMesh>(device, builder);
+		return std::make_shared<VulkanMesh>(builder);
 	}
 
-	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromAssimp(VulkanDevice& device, const std::string& filepath, int texID)
+	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromAssimp(const std::string& filepath, int texID)
 	{
 		MeshBuilder builder{};
 		std::filesystem::path modelFilepath = filepath;
@@ -112,7 +111,7 @@ namespace VulkanCore {
 		VK_CORE_TRACE("Loading Model: {0}", filepath);
 		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
 		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
-		return std::make_shared<VulkanMesh>(device, builder);
+		return std::make_shared<VulkanMesh>(builder);
 	}
 
 	void VulkanMesh::CreateVertexBuffers(const std::vector<Vertex>& vertices)
@@ -134,7 +133,9 @@ namespace VulkanCore {
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-		m_VulkanDevice.CopyBuffer(stagingBuffer.GetBuffer(), m_VertexBuffer->GetBuffer(), bufferSize);
+		auto device = VulkanDevice::GetDevice();
+
+		device->CopyBuffer(stagingBuffer.GetBuffer(), m_VertexBuffer->GetBuffer(), bufferSize);
 	}
 
 	void VulkanMesh::CreateIndexBuffers(const std::vector<uint32_t>& indices)
@@ -159,7 +160,9 @@ namespace VulkanCore {
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-		m_VulkanDevice.CopyBuffer(stagingBuffer.GetBuffer(), m_IndexBuffer->GetBuffer(), bufferSize);
+		auto device = VulkanDevice::GetDevice();
+
+		device->CopyBuffer(stagingBuffer.GetBuffer(), m_IndexBuffer->GetBuffer(), bufferSize);
 	}
 
 	std::vector<VkVertexInputBindingDescription> Vertex::GetBindingDescriptions()
@@ -309,16 +312,18 @@ namespace VulkanCore {
 
 	void MeshBuilder::LoadMeshFromAssimp(const std::string& filepath, int texID)
 	{
-		Assimp::Importer mImporter;
-		const aiScene* mScene = mImporter.ReadFile(filepath,
-			aiProcess_Triangulate |
+		const uint32_t s_MeshImportFlags = {
+			aiProcess_Triangulate |           // Use triangles
 			aiProcess_CalcTangentSpace |
-			aiProcess_JoinIdenticalVertices |
-			aiProcess_GenUVCoords |
-			aiProcess_GenNormals |
+			aiProcess_JoinIdenticalVertices | // For Index Buffer
+			aiProcess_GenUVCoords |           // Generate UV Coords
+			aiProcess_GenNormals |            // Generate Normals for Mesh
 			aiProcess_SortByPType |
 			aiProcess_ValidateDataStructure
-		);
+		};
+
+		Assimp::Importer mImporter{};
+		const aiScene* mScene = mImporter.ReadFile(filepath, s_MeshImportFlags);
 
 		VK_CORE_ASSERT(mScene && !(mScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) && mScene->mRootNode, mImporter.GetErrorString());
 
