@@ -6,6 +6,7 @@
 
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanTexture.h"
+#include "Platform/Vulkan/VulkanAllocator.h"
 
 namespace VulkanCore {
 
@@ -34,6 +35,7 @@ namespace VulkanCore {
 	{
 		auto device = VulkanDevice::GetDevice();
 		auto swapChain = VulkanSwapChain::GetSwapChain();
+		VulkanAllocator allocator("SceneImages");
 
 		VkFormat depthfmt = swapChain->FindDepthFormat();
 
@@ -72,7 +74,7 @@ namespace VulkanCore {
 			imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-			m_ImageAllocs[i] = device->CreateImage(imageInfo, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_SceneImages[i]);
+			m_ImageAllocs[i] = allocator.AllocateImage(imageInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_SceneImages[i]);
 
 			VkCommandBuffer cmdBuffer = device->GetCommandBuffer();
 
@@ -102,7 +104,7 @@ namespace VulkanCore {
 			imageInfo.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 			imageInfo.samples = device->GetMSAASampleCount();
 
-			m_ColorImageAllocs[i] = device->CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_SceneColorImages[i]);
+			m_ColorImageAllocs[i] = allocator.AllocateImage(imageInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_SceneColorImages[i]);
 
 			viewInfo.image = m_SceneColorImages[i];
 
@@ -112,7 +114,7 @@ namespace VulkanCore {
 			imageInfo.format = depthfmt;
 			imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-			m_DepthImageAllocs[i] = device->CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_SceneDepthImages[i]);
+			m_DepthImageAllocs[i] = allocator.AllocateImage(imageInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_SceneDepthImages[i]);
 
 			viewInfo.image = m_SceneDepthImages[i];
 			viewInfo.format = depthfmt;
