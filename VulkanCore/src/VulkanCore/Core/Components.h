@@ -68,14 +68,14 @@ namespace VulkanCore {
 
 	class VulkanMesh;
 
-	struct ModelComponent
+	struct MeshComponent
 	{
-		std::shared_ptr<VulkanMesh> Model;
+		std::shared_ptr<VulkanMesh> Mesh;
 
-		ModelComponent() = default;
-		ModelComponent(const ModelComponent&) = default;
-		ModelComponent(std::shared_ptr<VulkanMesh> model)
-			: Model(model) {}
+		MeshComponent() = default;
+		MeshComponent(const MeshComponent&) = default;
+		MeshComponent(std::shared_ptr<VulkanMesh> mesh)
+			: Mesh(mesh) {}
 	};
 
 	struct PointLight

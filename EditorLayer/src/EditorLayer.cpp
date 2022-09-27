@@ -35,7 +35,7 @@ namespace VulkanCore {
 	{
 		VK_CORE_INFO("Running Editor Layer");
 
-		Timer* editorInit = new Timer("Editor Initialization");
+		std::unique_ptr<Timer> editorInit = std::make_unique<Timer>("Editor Initialization");
 
 		m_SceneRenderer = std::make_shared<SceneRenderer>();
 		LoadEntities();
@@ -52,8 +52,8 @@ namespace VulkanCore {
 			UniformBuffer->Map();
 		}
 
-		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/textures/PlainSnow/SnowDiffuse.jpg");
-		m_NormalMap = std::make_shared<VulkanTexture>("assets/textures/PlainSnow/SnowNormalGL.png");
+		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg");
+		m_NormalMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_nor_gl_2k.jpg");
 		m_SpecularMap = std::make_shared<VulkanTexture>("assets/textures/PlainSnow/SnowSpecular.jpg");
 
 		m_DiffuseMap2 = std::make_shared<VulkanTexture>("assets/textures/DeformedSnow/SnowDiffuse.jpg");
@@ -64,38 +64,16 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
 		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
 
-		ImageSpecification spec;
-		spec.Width = 1280;
-		spec.Height = 720;
-		spec.Usage = ImageUsage::Texture;
-		spec.Format = ImageFormat::RGBA;
-
-		m_TextureImage = std::make_shared<VulkanImage>(spec);
-		m_TextureImage->Invalidate();
-
 		m_SceneImages.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_SceneTextureIDs.resize(VulkanSwapChain::MaxFramesInFlight);
 
-		m_SceneImages.emplace_back(m_SceneRenderer->GetImage(0), m_SceneRenderer->GetImageView(0), false);
-		m_SceneImages.emplace_back(m_SceneRenderer->GetImage(1), m_SceneRenderer->GetImageView(1), false);
-		if (VulkanSwapChain::MaxFramesInFlight > 2)
-			m_SceneImages.emplace_back(m_SceneRenderer->GetImage(2), m_SceneRenderer->GetImageView(2), false);
-
-		m_SceneTextureIDs[0] = ImGui_ImplVulkan_AddTexture(
-			m_SceneImages[0].GetTextureSampler(),
-			m_SceneImages[0].GetVulkanImageView(),
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		m_SceneTextureIDs[1] = ImGui_ImplVulkan_AddTexture(
-			m_SceneImages[1].GetTextureSampler(),
-			m_SceneImages[1].GetVulkanImageView(),
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		if (VulkanSwapChain::MaxFramesInFlight > 2)
+		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
 		{
-			m_SceneTextureIDs[2] = ImGui_ImplVulkan_AddTexture(
-				m_SceneImages[2].GetTextureSampler(),
-				m_SceneImages[2].GetVulkanImageView(),
+			m_SceneImages.emplace_back(m_SceneRenderer->GetImage(i), m_SceneRenderer->GetImageView(i), false);
+
+			m_SceneTextureIDs[i] = ImGui_ImplVulkan_AddTexture(
+				m_SceneImages[i].GetTextureSampler(),
+				m_SceneImages[i].GetVulkanImageView(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
 
@@ -123,18 +101,27 @@ namespace VulkanCore {
 
 #define USE_VULKAN_IMAGE 0
 #if USE_VULKAN_IMAGE
-		std::vector<VkDescriptorImageInfo> newImgs{ 1 };
-		newImgs.emplace_back()
+		ImageSpecification spec;
+		spec.Width = 1280;
+		spec.Height = 720;
+		spec.Usage = ImageUsage::Storage;
+		spec.Format = ImageFormat::RGBA16F;
 
-		auto cmdBuffer = device.BeginSingleTimeCommands();
+		m_TextureImage = std::make_shared<VulkanImage>(spec);
+		m_TextureImage->Invalidate();
 
-		Utils::InsertImageMemoryBarrier(cmdBuffer, m_TextureImage->GetVulkanImage(),
+		std::vector<VkDescriptorImageInfo> newImgs;
+		newImgs.emplace_back(m_TextureImage->GetDescriptorInfo());
+
+		auto cmdBuffer = device.GetCommandBuffer();
+
+		Utils::InsertImageMemoryBarrier(cmdBuffer, m_TextureImage->GetVulkanImageInfo(),
 			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
-		device.EndSingleTimeCommands(cmdBuffer);
+		device.FlushCommandBuffer(cmdBuffer);
 #endif
 
 		for (int i = 0; i < m_GlobalDescriptorSets.size(); i++)
@@ -144,7 +131,9 @@ namespace VulkanCore {
 			vkGlobalDescriptorWriter[i].WriteImage(1, DiffuseMaps);
 			vkGlobalDescriptorWriter[i].WriteImage(2, NormalMaps);
 			vkGlobalDescriptorWriter[i].WriteImage(3, SpecularMaps);
-			//vkGlobalDescriptorWriter[i].WriteImage(4, newImgs);
+#if USE_VULKAN_IMAGE
+			vkGlobalDescriptorWriter[i].WriteImage(4, newImgs);
+#endif
 
 			vkGlobalDescriptorWriter[i].Build(m_GlobalDescriptorSets[i]);
 		}
@@ -180,7 +169,6 @@ namespace VulkanCore {
 		m_PointLightScene.ScenePipeline = m_PointLightSystem->GetPipeline();
 		m_PointLightScene.PipelineLayout = m_PointLightSystem->GetPipelineLayout();
 
-		delete editorInit;
 		//m_EditorCamera = EditorCamera(glm::radians(45.0f), vkRenderer->GetAspectRatio(), 0.1f, 100.0f);
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 100.0f);
 	}
@@ -333,26 +321,13 @@ namespace VulkanCore {
 		m_SceneImages.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_SceneTextureIDs.resize(VulkanSwapChain::MaxFramesInFlight);
 
-		m_SceneImages.emplace_back(m_SceneRenderer->GetImage(0), m_SceneRenderer->GetImageView(0), false);
-		m_SceneImages.emplace_back(m_SceneRenderer->GetImage(1), m_SceneRenderer->GetImageView(1), false);
-		if (VulkanSwapChain::MaxFramesInFlight > 2)
-			m_SceneImages.emplace_back(m_SceneRenderer->GetImage(2), m_SceneRenderer->GetImageView(2), false);
-
-		m_SceneTextureIDs[0] = ImGui_ImplVulkan_AddTexture(
-			m_SceneImages[0].GetTextureSampler(),
-			m_SceneImages[0].GetVulkanImageView(),
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		m_SceneTextureIDs[1] = ImGui_ImplVulkan_AddTexture(
-			m_SceneImages[1].GetTextureSampler(),
-			m_SceneImages[1].GetVulkanImageView(),
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		if (VulkanSwapChain::MaxFramesInFlight > 2)
+		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
 		{
-			m_SceneTextureIDs[2] = ImGui_ImplVulkan_AddTexture(
-				m_SceneImages[2].GetTextureSampler(),
-				m_SceneImages[2].GetVulkanImageView(),
+			m_SceneImages.emplace_back(m_SceneRenderer->GetImage(i), m_SceneRenderer->GetImageView(i), false);
+
+			m_SceneTextureIDs[i] = ImGui_ImplVulkan_AddTexture(
+				m_SceneImages[i].GetTextureSampler(),
+				m_SceneImages[i].GetVulkanImageView(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
 	}
@@ -363,21 +338,21 @@ namespace VulkanCore {
 
 		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
 		CeramicVase.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.2f, 2.5f }, glm::vec3{ 3.5f });
-		CeramicVase.AddComponent<ModelComponent>(VulkanMesh::CreateMeshFromFile(*VulkanDevice::GetDevice(), "assets/models/CeramicVase.obj", 0));
+		CeramicVase.AddComponent<MeshComponent>(VulkanMesh::CreateMeshFromAssimp("assets/models/CeramicVase2K/antique_ceramic_vase_01_2k.obj", 0));
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
 		FlatPlane.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.3f, 0.0f }, glm::vec3{ 0.5f });
-		FlatPlane.AddComponent<ModelComponent>(VulkanMesh::CreateMeshFromFile(*VulkanDevice::GetDevice(), "assets/models/FlatPlane.obj", 2));
+		FlatPlane.AddComponent<MeshComponent>(VulkanMesh::CreateMeshFromFile("assets/models/FlatPlane.obj", 2));
 
 		Entity CrateModel = m_Scene->CreateEntity("Wooden Crate");
 		auto& crateTransform = CrateModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 1.5f });
 		crateTransform.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-		CrateModel.AddComponent<ModelComponent>(VulkanMesh::CreateMeshFromAssimp(*VulkanDevice::GetDevice(), "assets/models/WoodenCrate/WoodenCrate.gltf", 1));
+		CrateModel.AddComponent<MeshComponent>(VulkanMesh::CreateMeshFromAssimp("assets/models/WoodenCrate/WoodenCrate.gltf", 1));
 
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
 		auto& brassTransform = BrassVase.AddComponent<TransformComponent>(glm::vec3{ 1.5f, 0.0f, 1.5f }, glm::vec3{ 6.0f });
 		brassTransform.Rotation = glm::vec3(glm::radians(90.0f), 0.0f, 0.0f);
-		BrassVase.AddComponent<ModelComponent>(VulkanMesh::CreateMeshFromAssimp(*VulkanDevice::GetDevice(), "assets/models/BrassVase2K/BrassVase.fbx", 0));
+		BrassVase.AddComponent<MeshComponent>(VulkanMesh::CreateMeshFromAssimp("assets/models/BrassVase2K/BrassVase.fbx", 1));
 
 		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");
 		auto& blueLightTransform = BluePointLight.AddComponent<TransformComponent>(glm::vec3{ -1.0f, 0.0f, 4.5f }, glm::vec3{ 0.1f });

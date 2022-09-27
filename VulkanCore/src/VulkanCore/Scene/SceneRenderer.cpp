@@ -74,7 +74,7 @@ namespace VulkanCore {
 
 			m_ImageAllocs[i] = device->CreateImage(imageInfo, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_SceneImages[i]);
 
-			VkCommandBuffer cmdBuffer = device->BeginSingleTimeCommands();
+			VkCommandBuffer cmdBuffer = device->GetCommandBuffer();
 
 			Utils::InsertImageMemoryBarrier(cmdBuffer, m_SceneImages[i],
 				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
@@ -82,7 +82,7 @@ namespace VulkanCore {
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
-			device->EndSingleTimeCommands(cmdBuffer);
+			device->FlushCommandBuffer(cmdBuffer);
 
 			VkImageViewCreateInfo viewInfo{};
 			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;

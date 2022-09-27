@@ -42,7 +42,7 @@ namespace VulkanCore {
 	{
 	public:
 		VulkanMesh() = default;
-		VulkanMesh(VulkanDevice& device, const MeshBuilder& builder);
+		VulkanMesh(const MeshBuilder& builder);
 		~VulkanMesh();
 
 		VulkanMesh(const VulkanMesh&) = default;
@@ -50,15 +50,14 @@ namespace VulkanCore {
 		void Bind(VkCommandBuffer commandBuffer);
 		void Draw(VkCommandBuffer commandBuffer);
 
-		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(VulkanDevice& device, const std::string& filepath);
-		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(VulkanDevice& device, const std::string& filepath, const glm::vec3& modelColor);
-		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(VulkanDevice& device, const std::string& filepath, int texID);
-		static std::shared_ptr<VulkanMesh> CreateMeshFromAssimp(VulkanDevice& device, const std::string& filepath, int texID);
+		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(const std::string& filepath);
+		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(const std::string& filepath, const glm::vec3& modelColor);
+		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(const std::string& filepath, int texID);
+		static std::shared_ptr<VulkanMesh> CreateMeshFromAssimp(const std::string& filepath, int texID);
 	private:
 		void CreateVertexBuffers(const std::vector<Vertex>& vertices);
 		void CreateIndexBuffers(const std::vector<uint32_t>& indices);
 	private:
-		VulkanDevice& m_VulkanDevice;
 		std::shared_ptr<VulkanBuffer> m_VertexBuffer;
 		std::shared_ptr<VulkanBuffer> m_IndexBuffer;
 		uint32_t m_VertexCount, m_IndexCount;

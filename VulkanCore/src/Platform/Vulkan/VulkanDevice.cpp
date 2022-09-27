@@ -223,7 +223,7 @@ namespace VulkanCore {
 		return allocation;
 	}
 
-	VkCommandBuffer VulkanDevice::BeginSingleTimeCommands()
+	VkCommandBuffer VulkanDevice::GetCommandBuffer()
 	{
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -242,7 +242,7 @@ namespace VulkanCore {
 		return commandBuffer;
 	}
 
-	void VulkanDevice::EndSingleTimeCommands(VkCommandBuffer commandBuffer)
+	void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer)
 	{
 		vkEndCommandBuffer(commandBuffer);
 
@@ -259,7 +259,7 @@ namespace VulkanCore {
 
 	void VulkanDevice::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 	{
-		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+		VkCommandBuffer commandBuffer = GetCommandBuffer();
 
 		VkBufferCopy copyRegion{};
 		copyRegion.srcOffset = 0;  // Optional
@@ -267,12 +267,12 @@ namespace VulkanCore {
 		copyRegion.size = size;
 		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-		EndSingleTimeCommands(commandBuffer);
+		FlushCommandBuffer(commandBuffer);
 	}
 
 	void VulkanDevice::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount)
 	{
-		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+		VkCommandBuffer commandBuffer = GetCommandBuffer();
 
 		VkBufferImageCopy region{};
 		region.bufferOffset = 0;
@@ -289,7 +289,7 @@ namespace VulkanCore {
 
 		vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-		EndSingleTimeCommands(commandBuffer);
+		FlushCommandBuffer(commandBuffer);
 	}
 
 	void VulkanDevice::CreateImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
@@ -430,6 +430,7 @@ namespace VulkanCore {
 		deviceFeatures.geometryShader = VK_TRUE;
 		deviceFeatures.shaderInt64 = VK_TRUE;
 		deviceFeatures.multiViewport = VK_TRUE;
+		deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 
 		VkDeviceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

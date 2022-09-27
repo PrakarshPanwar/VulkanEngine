@@ -97,9 +97,9 @@ namespace VulkanCore {
 
 		SetDarkThemeColor();
 
-		VkCommandBuffer commandBuffer = device->BeginSingleTimeCommands();
+		VkCommandBuffer commandBuffer = device->GetCommandBuffer();
 		ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-		device->EndSingleTimeCommands(commandBuffer);
+		device->FlushCommandBuffer(commandBuffer);
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
@@ -156,7 +156,7 @@ namespace VulkanCore {
 		auto& colors = ImGui::GetStyle().Colors;
 
 		// TODO: Better Names of Color Variables or either remove these variables entirely
-		bool squareVal = true;
+		bool squareVal = false;
 		glm::vec3 gammaVal = squareVal ? glm::vec3(2.0f) : glm::vec3(1 / 0.44f);
 		glm::vec3 colorCode1 = glm::pow(glm::vec3(0.11f, 0.105f, 0.11f), gammaVal);
 		glm::vec3 colorCode2 = glm::pow(glm::vec3(0.3f, 0.305f, 0.31f), gammaVal);

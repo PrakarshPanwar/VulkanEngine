@@ -45,10 +45,10 @@ namespace VulkanCore {
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				0, sizeof(PushConstantsDataComponent), &pushConstants);
 
-			if (entity.HasComponent<ModelComponent>())
+			if (entity.HasComponent<MeshComponent>())
 			{
-				entity.GetComponent<ModelComponent>().Model->Bind(commandBuffer);
-				entity.GetComponent<ModelComponent>().Model->Draw(commandBuffer);
+				entity.GetComponent<MeshComponent>().Mesh->Bind(commandBuffer);
+				entity.GetComponent<MeshComponent>().Mesh->Draw(commandBuffer);
 			}
 		}
 	}
@@ -75,10 +75,10 @@ namespace VulkanCore {
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				0, sizeof(PushConstantsDataComponent), &pushConstants);
 
-			if (entity.HasComponent<ModelComponent>())
+			if (entity.HasComponent<MeshComponent>())
 			{
-				entity.GetComponent<ModelComponent>().Model->Bind(sceneInfo.CommandBuffer);
-				entity.GetComponent<ModelComponent>().Model->Draw(sceneInfo.CommandBuffer);
+				entity.GetComponent<MeshComponent>().Mesh->Bind(sceneInfo.CommandBuffer);
+				entity.GetComponent<MeshComponent>().Mesh->Draw(sceneInfo.CommandBuffer);
 			}
 		}
 	}
