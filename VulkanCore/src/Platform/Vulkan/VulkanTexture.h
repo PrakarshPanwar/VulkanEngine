@@ -17,17 +17,12 @@ namespace VulkanCore {
 		VulkanTexture(uint32_t width, uint32_t height);
 		~VulkanTexture();
 
-		inline VkImage GetVulkanImage() { return m_TextureImage; }
-		inline VkImageView GetVulkanImageView() { return m_TextureImageView; }
-		inline VkSampler GetTextureSampler() { return m_TextureSampler; }
+		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
 
-		inline VkDescriptorImageInfo GetDescriptorImageInfo()
+		inline VkDescriptorImageInfo GetDescriptorImageInfo() // TODO: Set layout dynamically
 		{
-			return VkDescriptorImageInfo{ m_TextureSampler, m_TextureImageView, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL };
+			return VkDescriptorImageInfo{ m_Info.Sampler, m_Info.ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 		}
-
-		static uint32_t GetTextureCount() { return m_TextureCount; }
-		static std::vector<VkDescriptorImageInfo> GetDescriptorImagesInfo() { return m_DescriptorImagesInfo; }
 	private:
 		void CreateTextureImage();
 		void CreateImage();
@@ -38,17 +33,12 @@ namespace VulkanCore {
 	private:
 		std::string m_FilePath;
 
-		VkImage m_TextureImage;
-		VkImageView m_TextureImageView;
-		VkSampler m_TextureSampler;
+		VulkanImageInfo m_Info;
 		VkDeviceMemory m_TextureImageMemory;
-		VmaAllocation m_ImageAlloc;
 
 		stbi_uc* m_Pixels;
 		int m_Width, m_Height, m_Channels;
 
-		static uint32_t m_TextureCount;
-		static std::vector<VkDescriptorImageInfo> m_DescriptorImagesInfo;
 		bool m_Release = true;
 	};
 
