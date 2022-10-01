@@ -72,8 +72,8 @@ namespace VulkanCore {
 			m_SceneImages.emplace_back(m_SceneRenderer->GetImage(i), m_SceneRenderer->GetImageView(i), false);
 
 			m_SceneTextureIDs[i] = ImGui_ImplVulkan_AddTexture(
-				m_SceneImages[i].GetTextureSampler(),
-				m_SceneImages[i].GetVulkanImageView(),
+				m_SceneImages[i].GetVulkanImageInfo().Sampler,
+				m_SceneImages[i].GetVulkanImageInfo().ImageView,
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
 
@@ -326,8 +326,8 @@ namespace VulkanCore {
 			m_SceneImages.emplace_back(m_SceneRenderer->GetImage(i), m_SceneRenderer->GetImageView(i), false);
 
 			m_SceneTextureIDs[i] = ImGui_ImplVulkan_AddTexture(
-				m_SceneImages[i].GetTextureSampler(),
-				m_SceneImages[i].GetVulkanImageView(),
+				m_SceneImages[i].GetVulkanImageInfo().Sampler,
+				m_SceneImages[i].GetVulkanImageInfo().ImageView,
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
 	}

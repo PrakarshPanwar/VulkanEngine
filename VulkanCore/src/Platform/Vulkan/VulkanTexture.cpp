@@ -11,25 +11,18 @@
 
 namespace VulkanCore {
 
-	uint32_t VulkanTexture::m_TextureCount = 0;
-	std::vector<VkDescriptorImageInfo> VulkanTexture::m_DescriptorImagesInfo;
-
 	VulkanTexture::VulkanTexture(const std::string& filepath)
 		: m_FilePath(filepath)
 	{
 		CreateTextureImage();
 		CreateTextureImageView();
 		CreateTextureSampler();
-
-		m_TextureCount++;
-		m_DescriptorImagesInfo.emplace_back(m_TextureSampler, m_TextureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
 	VulkanTexture::VulkanTexture(VkImage image, VkImageView imageView, bool destroyImg)
-		: m_TextureImage(image), m_TextureImageView(imageView), m_Release(destroyImg)
+		: m_Info{ image, imageView }, m_Release(destroyImg)
 	{
 		CreateTextureSampler();
-		m_TextureCount++;
 	}
 
 	VulkanTexture::VulkanTexture(uint32_t width, uint32_t height)
@@ -62,7 +55,7 @@ namespace VulkanCore {
 
 		CreateImage();
 		TransitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		device->CopyBufferToImage(stagingBuffer.GetBuffer(), m_TextureImage, m_Width, m_Height, 1);
+		device->CopyBufferToImage(stagingBuffer.GetBuffer(), m_Info.Image, m_Width, m_Height, 1);
 		TransitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
@@ -89,7 +82,7 @@ namespace VulkanCore {
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		m_ImageAlloc = allocator.AllocateImage(imageInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_TextureImage);
+		m_Info.MemoryAlloc = allocator.AllocateImage(imageInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
 	}
 
 	void VulkanTexture::TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout)
@@ -103,7 +96,7 @@ namespace VulkanCore {
 		barrier.newLayout = newLayout;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = m_TextureImage;
+		barrier.image = m_Info.Image;
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
@@ -164,14 +157,16 @@ namespace VulkanCore {
 		samplerCreateInfo.minLod = 0.0f;
 		samplerCreateInfo.maxLod = 2.0f;
 
-		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &samplerCreateInfo, nullptr, &m_TextureSampler), "Failed to Create Texture Sampler!");
+		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &samplerCreateInfo, nullptr, &m_Info.Sampler), "Failed to Create Texture Sampler!");
 	}
 
 	void VulkanTexture::CreateTextureImageView()
 	{
+		auto device = VulkanDevice::GetDevice();
+
 		VkImageViewCreateInfo imageViewInfo{};
 		imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewInfo.image = m_TextureImage;
+		imageViewInfo.image = m_Info.Image;
 		imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		imageViewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
 		imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -180,20 +175,21 @@ namespace VulkanCore {
 		imageViewInfo.subresourceRange.baseArrayLayer = 0;
 		imageViewInfo.subresourceRange.layerCount = 1;
 
-		VK_CHECK_RESULT(vkCreateImageView(VulkanDevice::GetDevice()->GetVulkanDevice(), &imageViewInfo, nullptr, &m_TextureImageView), "Failed to Create Texture Image View!");
+		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &imageViewInfo, nullptr, &m_Info.ImageView), "Failed to Create Texture Image View!");
 	}
 
 	void VulkanTexture::Release()
 	{
 		auto device = VulkanDevice::GetDevice();
+		VulkanAllocator allocator("Texture2D");
 
 		if (m_Release)
 		{
-			vkDestroyImageView(device->GetVulkanDevice(), m_TextureImageView, nullptr);
-			vmaDestroyImage(device->GetVulkanAllocator(), m_TextureImage, m_ImageAlloc);
+			vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
+			allocator.DestroyImage(m_Info.Image, m_Info.MemoryAlloc);
 		}
 
-		vkDestroySampler(device->GetVulkanDevice(), m_TextureSampler, nullptr);
+		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
 	}
 
 }

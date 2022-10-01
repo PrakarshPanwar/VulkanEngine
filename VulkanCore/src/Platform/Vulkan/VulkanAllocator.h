@@ -16,6 +16,9 @@ namespace VulkanCore {
 		[[nodiscard]] T* MapMemory(VmaAllocation allocation);
 
 		void UnmapMemory(VmaAllocation allocation);
+
+		void DestroyBuffer(VkBuffer& buffer, VmaAllocation allocation);
+		void DestroyImage(VkImage& image, VmaAllocation allocation);
 	private:
 		const VmaAllocator m_vkAllocator = VulkanDevice::GetDevice()->GetVulkanAllocator();
 		std::string_view m_DebugName;

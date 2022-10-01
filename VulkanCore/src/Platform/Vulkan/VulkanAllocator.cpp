@@ -70,4 +70,14 @@ namespace VulkanCore {
 		vmaUnmapMemory(m_vkAllocator, allocation);
 	}
 
+	void VulkanAllocator::DestroyBuffer(VkBuffer& buffer, VmaAllocation allocation)
+	{
+		vmaDestroyBuffer(m_vkAllocator, buffer, allocation);
+	}
+
+	void VulkanAllocator::DestroyImage(VkImage& image, VmaAllocation allocation)
+	{
+		vmaDestroyImage(m_vkAllocator, image, allocation);
+	}
+
 }

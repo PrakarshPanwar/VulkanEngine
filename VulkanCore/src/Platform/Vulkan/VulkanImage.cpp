@@ -100,7 +100,7 @@ namespace VulkanCore {
 		VulkanAllocator allocator("Image2D");
 
 		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
-		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT; // TODO: This shouldn't(probably) be implied
 
 		if (m_Specification.Usage == ImageUsage::Attachment)
 			usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
