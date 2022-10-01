@@ -41,8 +41,8 @@ namespace VulkanCore {
 		{
 			switch (wrap)
 			{
-			case TextureWrap::Repeat: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-			case TextureWrap::Wrap:	  return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			case TextureWrap::Repeat: return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			case TextureWrap::Clamp:  return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 				break;
 			default:
 				break;

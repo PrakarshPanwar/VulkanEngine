@@ -22,4 +22,4 @@ Start by cloning the repository with `git clone --recursive https://github.com/P
 - Cascaded Shadow Maps
 - HDR Cubemaps and Irradiance Maps
 - Physically Based 3D Rendering
-- Integrated 3D Physics Engine like [NVIDIA-PhysX](https://github.com/NVIDIAGameWorks/PhysX-3.4), [box2d](https://github.com/erincatto/box2d)
+- Integrated 3D Physics Engine like [NVIDIA-PhysX](https://github.com/NVIDIAGameWorks/PhysX), [box2d](https://github.com/erincatto/box2d)
