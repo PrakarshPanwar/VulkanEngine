@@ -35,11 +35,7 @@ namespace VulkanCore {
 		}
 
 		inline VkRenderPass GetSwapChainRenderPass() const { return m_SwapChain->GetRenderPass(); }
-		inline int GetFrameIndex() const 
-		{
-			//VK_CORE_ASSERT(IsFrameStarted, "Cannot get Frame Index when frame is not in progress!");
-			return m_CurrentFrameIndex;
-		}
+		inline int GetFrameIndex() const { return m_CurrentFrameIndex; }
 
 		void RecreateSwapChain();
 		void FinalQueueSubmit();

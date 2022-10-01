@@ -26,7 +26,7 @@ namespace VulkanCore {
 	enum class TextureWrap
 	{
 		Repeat,
-		Wrap
+		Clamp
 	};
 
 	enum class ImageUsage

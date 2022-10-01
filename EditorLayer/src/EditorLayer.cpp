@@ -204,7 +204,7 @@ namespace VulkanCore {
 
 	void EditorLayer::OnEvent(Event& e)
 	{
-		if (!Application::Get()->GetImGuiLayerPtr()->GetBlockEvents())
+		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents())
 			m_EditorCamera.OnEvent(e);
 
 		EventDispatcher dispatcher(e);
@@ -286,7 +286,7 @@ namespace VulkanCore {
 
 		m_ViewportHovered = ImGui::IsWindowHovered();
 		m_ViewportFocused = ImGui::IsWindowFocused();
-		Application::Get()->GetImGuiLayerPtr()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
+		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
 		ImGui::Image(m_SceneTextureIDs[VulkanRenderer::Get()->GetFrameIndex()], region);
 		ImGui::End(); // End of Viewport
