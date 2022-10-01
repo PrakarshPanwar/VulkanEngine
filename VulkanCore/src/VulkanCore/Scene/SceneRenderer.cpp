@@ -23,7 +23,7 @@ namespace VulkanCore {
 		Release();
 	}
 
-	void SceneRenderer::Init()
+	void SceneRenderer::Init() // TODO: Make Framebuffer, RenderPass to do automatically manage image creation
 	{
 		CreateCommandBuffers();
 		CreateImagesandViews();
@@ -229,22 +229,24 @@ namespace VulkanCore {
 	void SceneRenderer::Release()
 	{
 		auto device = VulkanDevice::GetDevice();
+		VulkanAllocator allocator("SceneImages");
+
 		for (int i = 0; i < m_SceneImages.size(); i++)
 		{
 			vkDestroyImageView(device->GetVulkanDevice(), m_SceneImageViews[i], nullptr);
-			vmaDestroyImage(device->GetVulkanAllocator(), m_SceneImages[i], m_ImageAllocs[i]);
+			allocator.DestroyImage(m_SceneImages[i], m_ImageAllocs[i]);
 		}
 
 		for (int i = 0; i < m_SceneDepthImages.size(); i++)
 		{
 			vkDestroyImageView(device->GetVulkanDevice(), m_SceneDepthImageViews[i], nullptr);
-			vmaDestroyImage(device->GetVulkanAllocator(), m_SceneDepthImages[i], m_DepthImageAllocs[i]);
+			allocator.DestroyImage(m_SceneDepthImages[i], m_DepthImageAllocs[i]);
 		}
 
 		for (int i = 0; i < m_SceneColorImages.size(); i++)
 		{
 			vkDestroyImageView(device->GetVulkanDevice(), m_SceneColorImageViews[i], nullptr);
-			vmaDestroyImage(device->GetVulkanAllocator(), m_SceneColorImages[i], m_ColorImageAllocs[i]);
+			allocator.DestroyImage(m_SceneColorImages[i], m_ColorImageAllocs[i]);
 		}
 
 		for (auto& Framebuffer : m_SceneFramebuffers)
