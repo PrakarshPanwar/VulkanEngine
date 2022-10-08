@@ -18,8 +18,10 @@ namespace VulkanCore {
 	private:
 		RenderPassSpecification m_Specification;
 
-		VkRenderPass m_RenderPass;
-		VkFramebuffer m_Framebuffer;
+		std::vector<VkAttachmentDescription> m_AttachmentDescriptions;
+		std::vector<VkAttachmentReference> m_AttachmentReferences;
+
+		VkRenderPass m_RenderPass = nullptr;
 	};
 
 }
