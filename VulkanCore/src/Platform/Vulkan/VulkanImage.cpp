@@ -49,6 +49,23 @@ namespace VulkanCore {
 			}
 		}
 
+		static VkSampleCountFlagBits VulkanSampleCount(uint32_t sampleCount)
+		{
+			switch (sampleCount)
+			{
+			case 1:  return VK_SAMPLE_COUNT_1_BIT;
+			case 2:  return VK_SAMPLE_COUNT_2_BIT;
+			case 4:  return VK_SAMPLE_COUNT_4_BIT;
+			case 8:  return VK_SAMPLE_COUNT_8_BIT;
+			case 16: return VK_SAMPLE_COUNT_16_BIT;
+			case 32: return VK_SAMPLE_COUNT_32_BIT;
+			case 64: return VK_SAMPLE_COUNT_64_BIT;
+			default:
+				VK_CORE_ASSERT(false, "Sample Bit not Supported! Choose Power of 2");
+				return VK_SAMPLE_COUNT_1_BIT;
+			}
+		}
+
 		void InsertImageMemoryBarrier(VkCommandBuffer cmdBuf, VkImage image,
 			VkAccessFlags srcFlags, VkAccessFlags dstFlags,
 			VkImageLayout oldLayout, VkImageLayout newLayout,
@@ -83,7 +100,7 @@ namespace VulkanCore {
 		m_Specification.Format = ImageFormat::RGBA;
 		m_Specification.Usage = usage;
 
-		//Invalidate(); // TODO: For now we have to invalidate manually
+		//Invalidate(); // TODO: For now we have to invalidate manually as copying is involved
 	}
 
 	VulkanImage::~VulkanImage()
@@ -125,7 +142,7 @@ namespace VulkanCore {
 		imageCreateInfo.extent.height = m_Specification.Height;
 		imageCreateInfo.extent.depth = 1;
 		imageCreateInfo.arrayLayers = 1;
-		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.samples = Utils::VulkanSampleCount(m_Specification.Samples);
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCreateInfo.usage = usage;
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;

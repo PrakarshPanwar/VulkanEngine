@@ -1,28 +1,15 @@
 #pragma once
-#include "VulkanDevice.h"
+#include "VulkanImage.h"
 
 namespace VulkanCore {
-
-	enum class FramebufferTextureFormat
-	{
-		None,
-
-		RGBA,
-		RGBA16F,
-		RGBA32F,
-
-		DEPTH24STENCIL8,
-		DEPTH16F,
-		DEPTH32F
-	};
 
 	struct FramebufferTextureSpecification
 	{
 		FramebufferTextureSpecification() = default;
-		FramebufferTextureSpecification(FramebufferTextureFormat format)
+		FramebufferTextureSpecification(ImageFormat format)
 			: TextureFormat(format) {}
 
-		FramebufferTextureFormat TextureFormat = FramebufferTextureFormat::None;
+		ImageFormat TextureFormat = ImageFormat::None;
 	};
 
 	struct FramebufferAttachmentSpecification
@@ -47,16 +34,26 @@ namespace VulkanCore {
 	{
 	public:
 		VulkanFramebuffer(const FramebufferSpecification& spec);
+		~VulkanFramebuffer();
+
+		inline const std::vector<VkFramebuffer>& GetVulkanFramebuffer() const { return m_Framebuffers; }
+		inline const FramebufferSpecification& GetSpecification() const { return m_Specification; }
+		inline const std::vector<FramebufferTextureSpecification>& GetColorAttachments() const { return m_ColorAttachmentSpecifications; }
+		inline const FramebufferTextureSpecification& GetDepthAttachment() const { return m_DepthAttachmentSpecification; }
 
 		void Invalidate();
+		void CreateFramebuffer(); // TODO: This could be removed from here
+		void Release();
 	private:
 		FramebufferSpecification m_Specification;
 
 		std::vector<FramebufferTextureSpecification> m_ColorAttachmentSpecifications;
 		FramebufferTextureSpecification m_DepthAttachmentSpecification;
 
-		std::vector<std::vector<VkImageView>> m_ColorAttachments;
-		std::vector<VkImageView> m_DepthAttachment;
+		std::vector<std::vector<VulkanImage>> m_ColorAttachments;
+		std::vector<VulkanImage> m_DepthAttachment;
+
+		std::vector<VkFramebuffer> m_Framebuffers;
 	};
 
 }
