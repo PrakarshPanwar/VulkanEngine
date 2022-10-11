@@ -13,22 +13,19 @@ namespace VulkanCore {
 	public:
 		VulkanTexture() = default;
 		VulkanTexture(const std::string& filepath);
-		VulkanTexture(VkImage image, VkImageView imageView, bool destroyImg = true);
 		VulkanTexture(uint32_t width, uint32_t height);
 		~VulkanTexture();
 
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
-
-		inline VkDescriptorImageInfo GetDescriptorImageInfo() // TODO: Set layout dynamically
-		{
-			return VkDescriptorImageInfo{ m_Info.Sampler, m_Info.ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-		}
+		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_Image->GetDescriptorInfo(); }
 	private:
+		/// TODO: Soon to be deprecated
 		void CreateTextureImage();
 		void CreateImage();
 		void CreateTextureImageView();
-		void TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 		void CreateTextureSampler();
+		void TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
+		/// TODO: Soon to be deprecated
 		void Invalidate();
 		void Release();
 	private:
