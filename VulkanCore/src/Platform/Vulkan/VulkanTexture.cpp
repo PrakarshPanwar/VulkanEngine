@@ -14,19 +14,7 @@ namespace VulkanCore {
 	VulkanTexture::VulkanTexture(const std::string& filepath)
 		: m_FilePath(filepath)
 	{
-#if USE_VULKAN_IMAGE
 		Invalidate();
-#else
-		CreateTextureImage();
-		CreateTextureImageView();
-		CreateTextureSampler();
-#endif
-	}
-
-	VulkanTexture::VulkanTexture(VkImage image, VkImageView imageView, bool destroyImg)
-		: m_Info{ image, imageView }, m_Release(destroyImg)
-	{
-		CreateTextureSampler();
 	}
 
 	VulkanTexture::VulkanTexture(uint32_t width, uint32_t height)
@@ -39,6 +27,9 @@ namespace VulkanCore {
 
 	VulkanTexture::~VulkanTexture()
 	{
+		if (m_Image->GetDescriptorInfo().imageView == nullptr)
+			return;
+
 		Release();
 	}
 
@@ -174,9 +165,11 @@ namespace VulkanCore {
 		int width, height, channels; // TODO: Ask for HDR Texture
 		stbi_uc* pixelData = stbi_load(m_FilePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
+		// TODO: Maybe we'll have to change this
 		m_Width = width;
 		m_Height = height;
 
+		// TODO: Get DeviceSize through some Utils function as format could be different
 		VkDeviceSize imageSize = width * height * 4;
 
 		VK_CORE_ASSERT(pixelData, "Failed to Load Image {0}", m_FilePath);

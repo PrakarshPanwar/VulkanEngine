@@ -94,31 +94,6 @@ namespace VulkanCore {
 		std::vector<VulkanDescriptorWriter> vkGlobalDescriptorWriter(VulkanSwapChain::MaxFramesInFlight,
 			{ *globalSetLayout, *Application::Get()->GetVulkanDescriptorPool() });
 
-#define USE_VULKAN_IMG 0
-#if USE_VULKAN_IMG
-		ImageSpecification spec;
-		spec.Width = 1280;
-		spec.Height = 720;
-		spec.Usage = ImageUsage::Storage;
-		spec.Format = ImageFormat::RGBA16F;
-
-		m_TextureImage = std::make_shared<VulkanImage>(spec);
-		m_TextureImage->Invalidate();
-
-		std::vector<VkDescriptorImageInfo> newImgs;
-		newImgs.emplace_back(m_TextureImage->GetDescriptorInfo());
-
-		auto cmdBuffer = device.GetCommandBuffer();
-
-		Utils::InsertImageMemoryBarrier(cmdBuffer, m_TextureImage->GetVulkanImageInfo(),
-			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-		device.FlushCommandBuffer(cmdBuffer);
-#endif
-
 		for (int i = 0; i < m_GlobalDescriptorSets.size(); i++)
 		{
 			auto bufferInfo = m_UniformBuffers[i]->DescriptorInfo();
@@ -126,37 +101,15 @@ namespace VulkanCore {
 			vkGlobalDescriptorWriter[i].WriteImage(1, DiffuseMaps);
 			vkGlobalDescriptorWriter[i].WriteImage(2, NormalMaps);
 			vkGlobalDescriptorWriter[i].WriteImage(3, SpecularMaps);
-#if USE_VULKAN_IMG
-			vkGlobalDescriptorWriter[i].WriteImage(4, newImgs);
-#endif
 
 			vkGlobalDescriptorWriter[i].Build(m_GlobalDescriptorSets[i]);
 		}
 
-		auto RetRenderSystem = [&]()
-		{
-			return std::make_shared<RenderSystem>(m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
-		};
-
-		auto RetPointLightSystem = [&]()
-		{
-			return std::make_shared<PointLightSystem>(m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
-		};
-
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 
-#define PIPELINE_MULTITHREADED 1
-
-#if PIPELINE_MULTITHREADED
-		auto renderSystemThread = std::async(std::launch::async, RetRenderSystem);
-		auto pointLightSystemThread = std::async(std::launch::async, RetPointLightSystem);
-
-		m_RenderSystem = renderSystemThread.get();
-		m_PointLightSystem = pointLightSystemThread.get();
-#else
+		// TODO: In future these classes will be deprecated, and all pipeline creation will move into SceneRenderer
 		m_RenderSystem = std::make_shared<RenderSystem>(m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
 		m_PointLightSystem = std::make_shared<PointLightSystem>(m_SceneRenderer->GetRenderPass(), globalSetLayout->GetDescriptorSetLayout());
-#endif
 
 		m_SceneRender.ScenePipeline = m_RenderSystem->GetPipeline();
 		m_SceneRender.PipelineLayout = m_RenderSystem->GetPipelineLayout();

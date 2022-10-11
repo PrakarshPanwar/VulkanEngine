@@ -142,10 +142,11 @@ namespace VulkanCore {
 
 	VkDescriptorSet ImGuiLayer::AddTexture(const VulkanImage& Image)
 	{
-		return ImGui_ImplVulkan_AddTexture(
-			Image.GetVulkanImageInfo().Sampler,
-			Image.GetVulkanImageInfo().ImageView,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		auto imageDescriptor = Image.GetDescriptorInfo();
+
+		return ImGui_ImplVulkan_AddTexture(imageDescriptor.sampler,
+			imageDescriptor.imageView,
+			imageDescriptor.imageLayout);
 	}
 
 	void ImGuiLayer::CheckVkResult(VkResult error)
