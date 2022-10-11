@@ -157,7 +157,7 @@ namespace VulkanCore {
 		VK_CORE_ERROR("[ImGui] Error: VkResult = {0}", error);
 	}
 
-	void ImGuiLayer::SetDarkThemeColor() // TODO: Colors are very gray in ImGui, need to Re-Color Everything
+	void ImGuiLayer::SetDarkThemeColor()
 	{
 		auto& style = ImGui::GetStyle();
 		style.WindowBorderSize = 0.0f;

@@ -6,8 +6,6 @@
 
 namespace VulkanCore {
 
-	// TODO: Only Copy the Data from Image File to Vulkan Image,
-	// Image Creation, Image View Creation, Image Sampler Creation will be handled by VulkanImage
 	class VulkanTexture
 	{
 	public:
@@ -19,13 +17,13 @@ namespace VulkanCore {
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_Image->GetDescriptorInfo(); }
 	private:
-		/// TODO: Soon to be deprecated
+		/// Deprecated Methods
 		void CreateTextureImage();
 		void CreateImage();
 		void CreateTextureImageView();
 		void CreateTextureSampler();
 		void TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
-		/// TODO: Soon to be deprecated
+		/// Deprecated Methods
 		void Invalidate();
 		void Release();
 	private:
@@ -37,8 +35,6 @@ namespace VulkanCore {
 
 		stbi_uc* m_Pixels;
 		int m_Width, m_Height, m_Channels;
-
-		bool m_Release = true;
 	};
 
 
