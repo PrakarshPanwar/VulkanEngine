@@ -250,20 +250,8 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &imageViewInfo, nullptr, &m_Info.ImageView), "Failed to Create Texture Image View!");
 	}
 
-	void VulkanTexture::Release()
+	void VulkanTexture::Release() // TODO: Could be used otherwise will be removed in future
 	{
-		auto device = VulkanDevice::GetDevice();
-		VulkanAllocator allocator("Texture2D");
-
-#if !USE_VULKAN_IMAGE
-		if (m_Release)
-		{
-			vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
-			allocator.DestroyImage(m_Info.Image, m_Info.MemoryAlloc);
-		}
-
-		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
-#endif
 	}
 
 }
