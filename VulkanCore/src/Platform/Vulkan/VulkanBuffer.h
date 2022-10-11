@@ -40,7 +40,7 @@ namespace VulkanCore {
 		void* m_dstMapped = nullptr;
 		VkBuffer m_Buffer = VK_NULL_HANDLE;
 		VkDeviceMemory m_Memory = VK_NULL_HANDLE;
-		VmaAllocation m_VMAAllocation;
+		VmaAllocation m_MemoryAllocation;
 
 		VkDeviceSize m_BufferSize;
 		uint32_t m_InstanceCount;

@@ -10,6 +10,27 @@
 
 namespace VulkanCore {
 
+	namespace Utils {
+
+		static VkFormat VulkanImageFormat(ImageFormat format)
+		{
+			switch (format)
+			{
+			case ImageFormat::RGBA8_SRGB:	   return VK_FORMAT_R8G8B8A8_SRGB;
+			case ImageFormat::RGBA8_NORM:	   return VK_FORMAT_R8G8B8A8_SNORM;
+			case ImageFormat::RGBA16F:		   return VK_FORMAT_R16G16B16A16_SFLOAT;
+			case ImageFormat::RGBA32F:		   return VK_FORMAT_R32G32B32A32_SFLOAT;
+			case ImageFormat::DEPTH24STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
+			case ImageFormat::DEPTH16F:		   return VK_FORMAT_D16_UNORM;
+			case ImageFormat::DEPTH32F:		   return VK_FORMAT_D32_SFLOAT;
+			default:
+				VK_CORE_ASSERT(false, "Format not Supported!");
+				return (VkFormat)0;
+			}
+		}
+
+	}
+
 	SceneRenderer* SceneRenderer::s_Instance = nullptr;
 
 	SceneRenderer::SceneRenderer()
@@ -35,11 +56,12 @@ namespace VulkanCore {
 	{
 		auto device = VulkanDevice::GetDevice();
 		auto swapChain = VulkanSwapChain::GetSwapChain();
+#if !USE_VULKAN_IMAGE
 		VulkanAllocator allocator("SceneImages");
 
 		VkFormat depthfmt = swapChain->FindDepthFormat();
 
-		m_SceneImages.resize(swapChain->GetImageCount());
+		m_SceneReadImages.resize(swapChain->GetImageCount());
 		m_SceneColorImages.resize(swapChain->GetImageCount());
 		m_SceneDepthImages.resize(swapChain->GetImageCount());
 
@@ -74,11 +96,11 @@ namespace VulkanCore {
 			imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-			m_ImageAllocs[i] = allocator.AllocateImage(imageInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_SceneImages[i]);
+			m_ImageAllocs[i] = allocator.AllocateImage(imageInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_SceneReadImages[i]);
 
 			VkCommandBuffer cmdBuffer = device->GetCommandBuffer();
 
-			Utils::InsertImageMemoryBarrier(cmdBuffer, m_SceneImages[i],
+			Utils::InsertImageMemoryBarrier(cmdBuffer, m_SceneReadImages[i],
 				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -89,7 +111,7 @@ namespace VulkanCore {
 			VkImageViewCreateInfo viewInfo{};
 			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			viewInfo.image = m_SceneImages[i];
+			viewInfo.image = m_SceneReadImages[i];
 			viewInfo.format = swapChain->GetSwapChainImageFormat();
 			viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			viewInfo.subresourceRange.baseMipLevel = 0;
@@ -122,6 +144,41 @@ namespace VulkanCore {
 
 			VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewInfo, nullptr, &m_SceneDepthImageViews[i]), "Failed to Create Scene Depth Image Views!");
 		}
+#else
+		m_SceneReadImages.reserve(swapChain->GetImageCount());
+		m_SceneColorImages.reserve(swapChain->GetImageCount());
+		m_SceneDepthImages.reserve(swapChain->GetImageCount());
+
+		for (int i = 0; i < swapChain->GetImageCount(); i++)
+		{
+			ImageSpecification spec;
+			spec.Width = swapChain->GetWidth();
+			spec.Height = swapChain->GetHeight();
+			spec.Format = ImageFormat::RGBA8_SRGB;
+			spec.Usage = ImageUsage::Attachment;
+
+			auto& sceneResImage = m_SceneReadImages.emplace_back(spec);
+			sceneResImage.Invalidate();
+
+			VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+
+			Utils::InsertImageMemoryBarrier(barrierCmd, m_SceneReadImages[i].GetVulkanImageInfo().Image,
+				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+			device->FlushCommandBuffer(barrierCmd);
+
+			spec.Samples = 8;
+			auto& sceneColImage = m_SceneColorImages.emplace_back(spec);
+			sceneColImage.Invalidate();
+
+			spec.Format = ImageFormat::DEPTH32F;
+			auto& sceneDepImage = m_SceneDepthImages.emplace_back(spec);
+			sceneDepImage.Invalidate();
+		}
+#endif
 	}
 
 	void SceneRenderer::CreateRenderPass()
@@ -130,7 +187,7 @@ namespace VulkanCore {
 		auto swapChain = VulkanSwapChain::GetSwapChain();
 
 		VkAttachmentDescription colorAttachmentResolve = {};
-		colorAttachmentResolve.format = VK_FORMAT_B8G8R8A8_SRGB;
+		colorAttachmentResolve.format = Utils::VulkanImageFormat(m_SceneReadImages[0].GetSpecification().Format);
 		colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
 		colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -141,7 +198,7 @@ namespace VulkanCore {
 		colorAttachmentResolve.flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
 
 		VkAttachmentDescription colorAttachment = {};
-		colorAttachment.format = VK_FORMAT_B8G8R8A8_SRGB;
+		colorAttachment.format = Utils::VulkanImageFormat(m_SceneColorImages[0].GetSpecification().Format);
 		colorAttachment.samples = device->GetMSAASampleCount();
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -207,6 +264,7 @@ namespace VulkanCore {
 
 		m_SceneFramebuffers.resize(swapChain->GetImageCount());
 
+#if !USE_VULKAN_IMAGE
 		for (int i = 0; i < swapChain->GetImageCount(); i++)
 		{
 			std::array<VkImageView, 3> attachments = { m_SceneColorImageViews[i], m_SceneDepthImageViews[i], m_SceneImageViews[i] };
@@ -224,6 +282,28 @@ namespace VulkanCore {
 
 			VK_CHECK_RESULT(vkCreateFramebuffer(device->GetVulkanDevice(), &framebufferInfo, nullptr, &m_SceneFramebuffers[i]), "Failed to Allocate Scene Framebuffers!");
 		}
+#else
+		for (int i = 0; i < swapChain->GetImageCount(); i++)
+		{
+			std::array<VkImageView, 3> attachments = { 
+				m_SceneColorImages[i].GetVulkanImageInfo().ImageView,
+				m_SceneDepthImages[i].GetVulkanImageInfo().ImageView,
+				m_SceneReadImages[i].GetVulkanImageInfo().ImageView };
+
+			VkExtent2D swapChainExtent = swapChain->GetSwapChainExtent();
+
+			VkFramebufferCreateInfo framebufferInfo{};
+			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferInfo.renderPass = m_SceneRenderPass;
+			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+			framebufferInfo.pAttachments = attachments.data();
+			framebufferInfo.width = swapChainExtent.width;
+			framebufferInfo.height = swapChainExtent.height;
+			framebufferInfo.layers = 1;
+
+			VK_CHECK_RESULT(vkCreateFramebuffer(device->GetVulkanDevice(), &framebufferInfo, nullptr, &m_SceneFramebuffers[i]), "Failed to Allocate Scene Framebuffers!");
+		}
+#endif
 	}
 
 	void SceneRenderer::Release()
@@ -231,10 +311,11 @@ namespace VulkanCore {
 		auto device = VulkanDevice::GetDevice();
 		VulkanAllocator allocator("SceneImages");
 
-		for (int i = 0; i < m_SceneImages.size(); i++)
+#if !USE_VULKAN_IMAGE
+		for (int i = 0; i < m_SceneReadImages.size(); i++)
 		{
 			vkDestroyImageView(device->GetVulkanDevice(), m_SceneImageViews[i], nullptr);
-			allocator.DestroyImage(m_SceneImages[i], m_ImageAllocs[i]);
+			allocator.DestroyImage(m_SceneReadImages[i], m_ImageAllocs[i]);
 		}
 
 		for (int i = 0; i < m_SceneDepthImages.size(); i++)
@@ -248,6 +329,7 @@ namespace VulkanCore {
 			vkDestroyImageView(device->GetVulkanDevice(), m_SceneColorImageViews[i], nullptr);
 			allocator.DestroyImage(m_SceneColorImages[i], m_ColorImageAllocs[i]);
 		}
+#endif
 
 		for (auto& Framebuffer : m_SceneFramebuffers)
 			vkDestroyFramebuffer(device->GetVulkanDevice(), Framebuffer, nullptr);

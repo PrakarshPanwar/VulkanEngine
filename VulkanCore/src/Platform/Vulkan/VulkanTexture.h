@@ -29,10 +29,12 @@ namespace VulkanCore {
 		void CreateTextureImageView();
 		void TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 		void CreateTextureSampler();
+		void Invalidate();
 		void Release();
 	private:
 		std::string m_FilePath;
 
+		std::shared_ptr<VulkanImage> m_Image;
 		VulkanImageInfo m_Info;
 		VkDeviceMemory m_TextureImageMemory;
 

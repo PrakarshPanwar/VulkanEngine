@@ -10,6 +10,8 @@ namespace VulkanCore {
 			: TextureFormat(format) {}
 
 		ImageFormat TextureFormat = ImageFormat::None;
+
+		operator bool() const { return TextureFormat == ImageFormat::None ? false : true; }
 	};
 
 	struct FramebufferAttachmentSpecification

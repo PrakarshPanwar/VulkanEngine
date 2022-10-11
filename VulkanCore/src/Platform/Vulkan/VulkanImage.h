@@ -14,8 +14,8 @@ namespace VulkanCore {
 	enum class ImageFormat
 	{
 		None,
-		RGBA,
-		RGBA8,
+		RGBA8_SRGB,
+		RGBA8_NORM,
 		RGBA16F,
 		RGBA32F,
 
@@ -40,7 +40,7 @@ namespace VulkanCore {
 	struct ImageSpecification
 	{
 		uint32_t Width, Height;
-		uint32_t Samples = 1; // TODO: To Add Multisampled Images
+		uint32_t Samples = 1;
 		ImageFormat Format;
 		ImageUsage Usage;
 		TextureWrap WrapType = TextureWrap::Repeat;
@@ -48,10 +48,10 @@ namespace VulkanCore {
 
 	struct VulkanImageInfo
 	{
-		VkImage Image;
-		VkImageView ImageView;
-		VkSampler Sampler;
-		VmaAllocation MemoryAlloc;
+		VkImage Image = nullptr;
+		VkImageView ImageView = nullptr;
+		VkSampler Sampler = nullptr;
+		VmaAllocation MemoryAlloc = nullptr;
 	};
 
 	class VulkanImage
@@ -65,6 +65,7 @@ namespace VulkanCore {
 
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
 		inline const VkDescriptorImageInfo& GetDescriptorInfo() const { return m_DescriptorImageInfo; }
+		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
 	private:
 		void UpdateImageDescriptor();
 		void Release();
