@@ -3,15 +3,14 @@
 #include "VulkanCore/Core/Layer.h"
 
 #include "Platform/Vulkan/VulkanDescriptor.h"
+#include "Platform/Vulkan/VulkanImage.h"
 
 #include <glm/glm.hpp>
 
-#define DEPTH_RESOURCES 1
-
 namespace VulkanCore {
 
-	class ImGuiLayer : public Layer // TODO: Remove all images, framebuffers, renderpass from this class 
-	{								// Will be managed by class SceneRenderer
+	class ImGuiLayer : public Layer
+	{
 	public:
 		ImGuiLayer();
 		~ImGuiLayer();
@@ -22,6 +21,7 @@ namespace VulkanCore {
 		void ImGuiRenderandEnd(VkCommandBuffer commandBuffer);
 		void ShutDown();
 
+		static VkDescriptorSet AddTexture(const VulkanImage& Image);
 		static void CheckVkResult(VkResult error);
 
 		void BlockEvents(bool block) { m_BlockEvents = block; }

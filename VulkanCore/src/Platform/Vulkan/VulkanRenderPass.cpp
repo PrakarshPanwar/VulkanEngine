@@ -8,12 +8,12 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		static VkFormat VulkanImageFormat(ImageFormat format)
+		static VkFormat VulkanImageFormat(ImageFormat format, bool IsSRGB = false)
 		{
 			switch (format)
 			{
-			case ImageFormat::RGBA:			   return VK_FORMAT_R8G8B8A8_SRGB;
-			case ImageFormat::RGBA8:		   return VK_FORMAT_R8G8B8A8_SNORM;
+			case ImageFormat::RGBA8_SRGB:			   return (IsSRGB ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_SNORM);
+			case ImageFormat::RGBA8_NORM:		   return VK_FORMAT_R8G8B8A8_SNORM;
 			case ImageFormat::RGBA16F:		   return VK_FORMAT_R16G16B16A16_SFLOAT;
 			case ImageFormat::RGBA32F:		   return VK_FORMAT_R32G32B32A32_SFLOAT;
 			case ImageFormat::DEPTH24STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
@@ -64,7 +64,7 @@ namespace VulkanCore {
 		VkAttachmentDescription colorAttachmentResolve = {};
 		if (Utils::IsMultiSampled(m_Specification))
 		{
-			colorAttachmentResolve.format = Utils::VulkanImageFormat(ImageFormat::RGBA8);
+			colorAttachmentResolve.format = Utils::VulkanImageFormat(ImageFormat::RGBA8_NORM);
 			colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
 			colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -137,6 +137,7 @@ namespace VulkanCore {
 		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 
+		// TODO: There could be multiple subpasses/framebuffers, needs to be changed in future
 		VkRenderPassCreateInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		renderPassInfo.attachmentCount = static_cast<uint32_t>(m_AttachmentDescriptions.size());

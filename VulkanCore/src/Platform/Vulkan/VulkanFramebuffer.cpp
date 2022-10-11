@@ -66,17 +66,20 @@ namespace VulkanCore {
 			m_ColorAttachments.emplace_back(AttachmentImages);
 		}
 
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
+		if (m_DepthAttachmentSpecification)
 		{
-			ImageSpecification spec;
-			spec.Width = m_Specification.Width;
-			spec.Height = m_Specification.Height;
-			spec.Samples = m_Specification.Samples;
-			spec.Format = m_DepthAttachmentSpecification.TextureFormat;
-			spec.Usage = ImageUsage::Attachment;
+			for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
+			{
+				ImageSpecification spec;
+				spec.Width = m_Specification.Width;
+				spec.Height = m_Specification.Height;
+				spec.Samples = m_Specification.Samples;
+				spec.Format = m_DepthAttachmentSpecification.TextureFormat;
+				spec.Usage = ImageUsage::Attachment;
 
-			auto& depthImage = m_DepthAttachment.emplace_back(spec);
-			depthImage.Invalidate();
+				auto& depthImage = m_DepthAttachment.emplace_back(spec);
+				depthImage.Invalidate();
+			}
 		}
 	}
 

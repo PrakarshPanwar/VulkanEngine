@@ -14,9 +14,13 @@ namespace VulkanCore {
 	VulkanTexture::VulkanTexture(const std::string& filepath)
 		: m_FilePath(filepath)
 	{
+#if USE_VULKAN_IMAGE
+		Invalidate();
+#else
 		CreateTextureImage();
 		CreateTextureImageView();
 		CreateTextureSampler();
+#endif
 	}
 
 	VulkanTexture::VulkanTexture(VkImage image, VkImageView imageView, bool destroyImg)
@@ -27,7 +31,10 @@ namespace VulkanCore {
 
 	VulkanTexture::VulkanTexture(uint32_t width, uint32_t height)
 	{
+		m_Width = width;
+		m_Height = height;
 
+		Invalidate();
 	}
 
 	VulkanTexture::~VulkanTexture()
@@ -160,6 +167,78 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &samplerCreateInfo, nullptr, &m_Info.Sampler), "Failed to Create Texture Sampler!");
 	}
 
+	void VulkanTexture::Invalidate()
+	{
+		auto device = VulkanDevice::GetDevice();
+
+		int width, height, channels; // TODO: Ask for HDR Texture
+		stbi_uc* pixelData = stbi_load(m_FilePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+
+		m_Width = width;
+		m_Height = height;
+
+		VkDeviceSize imageSize = width * height * 4;
+
+		VK_CORE_ASSERT(pixelData, "Failed to Load Image {0}", m_FilePath);
+
+		VulkanBuffer stagingBuffer{ imageSize, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
+
+		stagingBuffer.Map();
+		stagingBuffer.WriteToBuffer(pixelData, imageSize);
+		stagingBuffer.Unmap();
+
+		ImageSpecification spec;
+		spec.Width = m_Width;
+		spec.Height = m_Height;
+		spec.Usage = ImageUsage::Texture;
+		spec.Format = ImageFormat::RGBA8_SRGB; // TODO: Change this when HDR Textures come
+		m_Image = std::make_shared<VulkanImage>(spec);
+		m_Image->Invalidate();
+		m_Info = m_Image->GetVulkanImageInfo();
+
+		if (pixelData)
+		{
+			VkCommandBuffer copyCmd = device->GetCommandBuffer();
+			VkImageSubresourceRange subResourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+			VkBufferImageCopy region{};
+			region.bufferOffset = 0;
+			region.bufferRowLength = 0;
+			region.bufferImageHeight = 0;
+
+			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			region.imageSubresource.mipLevel = 0;
+			region.imageSubresource.baseArrayLayer = 0;
+			region.imageSubresource.layerCount = 1;
+
+			region.imageOffset = { 0, 0, 0 };
+			region.imageExtent = { (uint32_t)width, (uint32_t)height, 1 };
+
+			vkCmdCopyBufferToImage(copyCmd,
+				stagingBuffer.GetBuffer(),
+				m_Image->GetVulkanImageInfo().Image,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1,
+				&region);
+
+			device->FlushCommandBuffer(copyCmd);
+
+			VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+
+			Utils::InsertImageMemoryBarrier(barrierCmd, m_Image->GetVulkanImageInfo().Image,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				subResourceRange);
+
+			device->FlushCommandBuffer(barrierCmd);
+		}
+
+
+		free(pixelData);
+	}
+
 	void VulkanTexture::CreateTextureImageView()
 	{
 		auto device = VulkanDevice::GetDevice();
@@ -183,6 +262,7 @@ namespace VulkanCore {
 		auto device = VulkanDevice::GetDevice();
 		VulkanAllocator allocator("Texture2D");
 
+#if !USE_VULKAN_IMAGE
 		if (m_Release)
 		{
 			vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
@@ -190,6 +270,7 @@ namespace VulkanCore {
 		}
 
 		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
+#endif
 	}
 
 }

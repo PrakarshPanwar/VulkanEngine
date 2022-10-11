@@ -3,6 +3,7 @@
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
+#include "VulkanAllocator.h"
 
 namespace VulkanCore {
 
@@ -11,10 +12,19 @@ namespace VulkanCore {
 		m_MemoryPropertyFlags(memoryPropertyFlags)
 	{
 		auto device = VulkanDevice::GetDevice();
+		VulkanAllocator allocator("Buffer");
 
 		m_AlignmentSize = GetAlignment(m_InstanceSize, minOffsetAlignment);
 		m_BufferSize = m_AlignmentSize * m_InstanceCount;
-		m_VMAAllocation = device->CreateBuffer(m_BufferSize, m_UsageFlags, m_MemoryPropertyFlags, m_Buffer);
+
+		// TODO: To use VulkanAllocator
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = m_BufferSize;
+		bufferInfo.usage = m_UsageFlags;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		m_MemoryAllocation = device->CreateBuffer(m_BufferSize, m_UsageFlags, m_MemoryPropertyFlags, m_Buffer);
 	}
 
 	VulkanBuffer::~VulkanBuffer()
@@ -22,7 +32,7 @@ namespace VulkanCore {
 		auto device = VulkanDevice::GetDevice();
 
 		Unmap();
-		vmaDestroyBuffer(device->GetVulkanAllocator(), m_Buffer, m_VMAAllocation);
+		vmaDestroyBuffer(device->GetVulkanAllocator(), m_Buffer, m_MemoryAllocation);
 	}
 
 	VkResult VulkanBuffer::MapOld(VkDeviceSize size, VkDeviceSize offset)
@@ -38,7 +48,7 @@ namespace VulkanCore {
 		auto device = VulkanDevice::GetDevice();
 
 		VK_CORE_ASSERT(m_Buffer, "Called Map on Buffer before its creation!");
-		return vmaMapMemory(device->GetVulkanAllocator(), m_VMAAllocation, &m_dstMapped);
+		return vmaMapMemory(device->GetVulkanAllocator(), m_MemoryAllocation, &m_dstMapped);
 	}
 
 	void VulkanBuffer::UnmapOld()
@@ -58,7 +68,7 @@ namespace VulkanCore {
 
 		if (m_dstMapped)
 		{
-			vmaUnmapMemory(device->GetVulkanAllocator(), m_VMAAllocation);
+			vmaUnmapMemory(device->GetVulkanAllocator(), m_MemoryAllocation);
 			m_dstMapped = nullptr;
 		}
 	}
@@ -93,7 +103,7 @@ namespace VulkanCore {
 	VkResult VulkanBuffer::FlushBuffer(VkDeviceSize size, VkDeviceSize offset)
 	{
 		auto device = VulkanDevice::GetDevice();
-		return vmaFlushAllocation(device->GetVulkanAllocator(), m_VMAAllocation, offset, size);
+		return vmaFlushAllocation(device->GetVulkanAllocator(), m_MemoryAllocation, offset, size);
 	}
 
 	VkDescriptorBufferInfo VulkanBuffer::DescriptorInfo(VkDeviceSize size, VkDeviceSize offset)

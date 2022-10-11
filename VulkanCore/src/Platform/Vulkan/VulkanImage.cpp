@@ -13,8 +13,8 @@ namespace VulkanCore {
 		{
 			switch (format)
 			{
-			case ImageFormat::RGBA:			   return VK_FORMAT_R8G8B8A8_SRGB;
-			case ImageFormat::RGBA8:		   return VK_FORMAT_R8G8B8A8_SNORM;
+			case ImageFormat::RGBA8_SRGB:	   return VK_FORMAT_R8G8B8A8_SRGB;
+			case ImageFormat::RGBA8_NORM:	   return VK_FORMAT_R8G8B8A8_SNORM;
 			case ImageFormat::RGBA16F:		   return VK_FORMAT_R16G16B16A16_SFLOAT;
 			case ImageFormat::RGBA32F:		   return VK_FORMAT_R32G32B32A32_SFLOAT;
 			case ImageFormat::DEPTH24STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
@@ -66,6 +66,11 @@ namespace VulkanCore {
 			}
 		}
 
+		static uint32_t CalculateMipCount(uint32_t width, uint32_t height)
+		{
+			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
+		}
+
 		void InsertImageMemoryBarrier(VkCommandBuffer cmdBuf, VkImage image,
 			VkAccessFlags srcFlags, VkAccessFlags dstFlags,
 			VkImageLayout oldLayout, VkImageLayout newLayout,
@@ -97,7 +102,7 @@ namespace VulkanCore {
 	{
 		m_Specification.Width = width;
 		m_Specification.Height = height;
-		m_Specification.Format = ImageFormat::RGBA;
+		m_Specification.Format = ImageFormat::RGBA8_SRGB;
 		m_Specification.Usage = usage;
 
 		//Invalidate(); // TODO: For now we have to invalidate manually as copying is involved
@@ -120,7 +125,12 @@ namespace VulkanCore {
 		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT; // TODO: This shouldn't(probably) be implied
 
 		if (m_Specification.Usage == ImageUsage::Attachment)
-			usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		{
+			if (Utils::IsDepthFormat(m_Specification.Format))
+				usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+			else
+				usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		}
 
 		if (m_Specification.Usage == ImageUsage::Texture)
 			usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -148,7 +158,7 @@ namespace VulkanCore {
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		uint32_t mipLevels = static_cast<uint32_t>(std::_Floor_of_log_2(std::max(m_Specification.Width, m_Specification.Height))) + 1;
-		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.mipLevels = 1; // TODO: Add a mips member in 'ImageSpecification'
 
 		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
 
@@ -192,7 +202,7 @@ namespace VulkanCore {
 	
 		if (m_Specification.Usage == ImageUsage::Storage)
 		{
-			auto cmdBuffer = device->GetCommandBuffer();
+			auto barrierCmd = device->GetCommandBuffer();
 
 			VkImageSubresourceRange subresourceRange{}; // TODO: Add Mips
 			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -200,30 +210,33 @@ namespace VulkanCore {
 			subresourceRange.levelCount = 1;
 			subresourceRange.layerCount = 1;
 
-			Utils::InsertImageMemoryBarrier(cmdBuffer, m_Info.Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
 				0, 0,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 				subresourceRange);
 
-			device->FlushCommandBuffer(cmdBuffer);
+			device->FlushCommandBuffer(barrierCmd);
 		}
 
 		if (m_Specification.Usage == ImageUsage::Texture)
 		{
-			auto cmdBuffer = device->GetCommandBuffer();
+			auto barrierCmd = device->GetCommandBuffer();
 
 			VkImageSubresourceRange subresourceRange{}; // TODO: Add Mips
 			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			subresourceRange.baseMipLevel = 0;
 			subresourceRange.levelCount = 1;
+			subresourceRange.baseArrayLayer = 0;
 			subresourceRange.layerCount = 1;
 
-			Utils::InsertImageMemoryBarrier(cmdBuffer, m_Info.Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
 				0, VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				subresourceRange);
+
+			device->FlushCommandBuffer(barrierCmd);
 		}
 
 		UpdateImageDescriptor();
@@ -245,10 +258,11 @@ namespace VulkanCore {
 	void VulkanImage::Release()
 	{
 		auto device = VulkanDevice::GetDevice();
+		VulkanAllocator allocator("Image2D");
 
 		vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
 		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
-		vmaDestroyImage(device->GetVulkanAllocator(), m_Info.Image, m_Info.MemoryAlloc);
+		allocator.DestroyImage(m_Info.Image, m_Info.MemoryAlloc);
 	}
 
 }

@@ -69,12 +69,7 @@ namespace VulkanCore {
 
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
 		{
-			m_SceneImages.emplace_back(m_SceneRenderer->GetImage(i), m_SceneRenderer->GetImageView(i), false);
-
-			m_SceneTextureIDs[i] = ImGui_ImplVulkan_AddTexture(
-				m_SceneImages[i].GetVulkanImageInfo().Sampler,
-				m_SceneImages[i].GetVulkanImageInfo().ImageView,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			m_SceneTextureIDs[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetImage(i));
 		}
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
@@ -99,8 +94,8 @@ namespace VulkanCore {
 		std::vector<VulkanDescriptorWriter> vkGlobalDescriptorWriter(VulkanSwapChain::MaxFramesInFlight,
 			{ *globalSetLayout, *Application::Get()->GetVulkanDescriptorPool() });
 
-#define USE_VULKAN_IMAGE 0
-#if USE_VULKAN_IMAGE
+#define USE_VULKAN_IMG 0
+#if USE_VULKAN_IMG
 		ImageSpecification spec;
 		spec.Width = 1280;
 		spec.Height = 720;
@@ -131,7 +126,7 @@ namespace VulkanCore {
 			vkGlobalDescriptorWriter[i].WriteImage(1, DiffuseMaps);
 			vkGlobalDescriptorWriter[i].WriteImage(2, NormalMaps);
 			vkGlobalDescriptorWriter[i].WriteImage(3, SpecularMaps);
-#if USE_VULKAN_IMAGE
+#if USE_VULKAN_IMG
 			vkGlobalDescriptorWriter[i].WriteImage(4, newImgs);
 #endif
 
@@ -323,12 +318,7 @@ namespace VulkanCore {
 
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
 		{
-			m_SceneImages.emplace_back(m_SceneRenderer->GetImage(i), m_SceneRenderer->GetImageView(i), false);
-
-			m_SceneTextureIDs[i] = ImGui_ImplVulkan_AddTexture(
-				m_SceneImages[i].GetVulkanImageInfo().Sampler,
-				m_SceneImages[i].GetVulkanImageInfo().ImageView,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			m_SceneTextureIDs[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetImage(i));
 		}
 	}
 
