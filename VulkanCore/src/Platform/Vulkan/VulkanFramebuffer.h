@@ -7,11 +7,11 @@ namespace VulkanCore {
 	{
 		FramebufferTextureSpecification() = default;
 		FramebufferTextureSpecification(ImageFormat format)
-			: TextureFormat(format) {}
+			: ImageFormat(format) {}
 
-		ImageFormat TextureFormat = ImageFormat::None;
+		ImageFormat ImageFormat = ImageFormat::None;
 
-		operator bool() const { return TextureFormat == ImageFormat::None ? false : true; }
+		operator bool() const { return ImageFormat == ImageFormat::None ? false : true; }
 	};
 
 	struct FramebufferAttachmentSpecification
@@ -38,13 +38,15 @@ namespace VulkanCore {
 		VulkanFramebuffer(const FramebufferSpecification& spec);
 		~VulkanFramebuffer();
 
-		inline const std::vector<VkFramebuffer>& GetVulkanFramebuffer() const { return m_Framebuffers; }
+		inline const std::vector<VkFramebuffer>& GetVulkanFramebuffers() const { return m_Framebuffers; }
 		inline const FramebufferSpecification& GetSpecification() const { return m_Specification; }
 		inline const std::vector<FramebufferTextureSpecification>& GetColorAttachments() const { return m_ColorAttachmentSpecifications; }
 		inline const FramebufferTextureSpecification& GetDepthAttachment() const { return m_DepthAttachmentSpecification; }
+		inline bool HasDepthAttachment() { return m_DepthAttachmentSpecification; }
+		const std::vector<VulkanImage>& GetResolveAttachment() const;
 
 		void Invalidate();
-		void CreateFramebuffer(); // TODO: This could be removed from here
+		void CreateFramebuffer(VkRenderPass renderPass); // TODO: This could be removed from here
 		void Release();
 	private:
 		FramebufferSpecification m_Specification;
@@ -56,6 +58,8 @@ namespace VulkanCore {
 		std::vector<VulkanImage> m_DepthAttachment;
 
 		std::vector<VkFramebuffer> m_Framebuffers;
+
+		static uint32_t s_InstanceCount;
 	};
 
 }
