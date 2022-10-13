@@ -13,13 +13,14 @@ namespace VulkanCore {
 	{
 	public:
 		VulkanRenderPass(const RenderPassSpecification& spec);
+		~VulkanRenderPass();
 
 		void Invalidate();
+
+		inline VkRenderPass GetRenderPass() const { return m_RenderPass; }
+		inline const RenderPassSpecification& GetSpecification() const { return m_Specification; }
 	private:
 		RenderPassSpecification m_Specification;
-
-		std::vector<VkAttachmentDescription> m_AttachmentDescriptions;
-		std::vector<VkAttachmentReference> m_AttachmentReferences;
 
 		VkRenderPass m_RenderPass = nullptr;
 	};

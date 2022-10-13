@@ -1,6 +1,7 @@
 #pragma once
 #include "Platform/Vulkan/VulkanDevice.h"
 #include "Platform/Vulkan/VulkanImage.h"
+#include "Platform/Vulkan/VulkanRenderPass.h"
 
 namespace VulkanCore {
 
@@ -18,19 +19,17 @@ namespace VulkanCore {
 
 		// TODO: Use struct SceneRendererData
 		inline VkCommandBuffer GetCommandBuffer(uint32_t index) { return m_SceneCommandBuffers[index]; }
-		inline VkFramebuffer GetFramebuffer(uint32_t index) { return m_SceneFramebuffers[index]; }
-		inline VkRenderPass GetRenderPass() { return m_SceneRenderPass; }
-		inline const VulkanImage& GetImage(uint32_t index) const { return m_SceneReadImages[index]; }
+		inline VkFramebuffer GetVulkanFramebuffer(uint32_t index) { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
+		inline std::shared_ptr<VulkanFramebuffer> GetFramebuffer() { return m_SceneFramebuffer; }
+		inline VkRenderPass GetRenderPass() { return m_SceneRenderPass->GetRenderPass(); }
+		inline const VulkanImage& GetImage(uint32_t index) { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
 	private:
 		void CreateCommandBuffers();
-		void CreateImagesandViews();
-		void CreateRenderPass();
-		void CreateFramebuffers();
-	private: // TODO: Use VulkanFramebuffer and VulkanRenderPass along with struct SceneRendererData
-		std::vector<VulkanImage> m_SceneReadImages, m_SceneColorImages, m_SceneDepthImages;
-		std::vector<VkFramebuffer> m_SceneFramebuffers;
+		void CreateRenderPasswithFramebuffers();
+	private:
 		std::vector<VkCommandBuffer> m_SceneCommandBuffers;
-		VkRenderPass m_SceneRenderPass;
+		std::shared_ptr<VulkanFramebuffer> m_SceneFramebuffer;
+		std::shared_ptr<VulkanRenderPass> m_SceneRenderPass;
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;

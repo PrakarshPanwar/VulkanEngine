@@ -118,6 +118,9 @@ namespace VulkanCore {
 
 	void VulkanImage::Invalidate()
 	{
+		if (m_Info.Image != nullptr)
+			Release();
+
 		auto device = VulkanDevice::GetDevice();
 		VulkanAllocator allocator("Image2D");
 

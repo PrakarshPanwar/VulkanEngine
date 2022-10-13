@@ -4,7 +4,6 @@
 
 #define USE_VMA 1
 #define VIEWPORT_SUPPORT 1
-//#define USE_VULKAN_IMAGE 1
 
 namespace VulkanCore {
 
