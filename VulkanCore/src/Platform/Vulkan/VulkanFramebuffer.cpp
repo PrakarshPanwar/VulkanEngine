@@ -145,6 +145,9 @@ namespace VulkanCore {
 	{
 		auto device = VulkanDevice::GetDevice();
 
+		if (!m_Framebuffers.empty())
+			Release();
+
 		m_Framebuffers.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
@@ -176,6 +179,21 @@ namespace VulkanCore {
 
 		for (auto& Framebuffer : m_Framebuffers)
 			vkDestroyFramebuffer(device->GetVulkanDevice(), Framebuffer, nullptr);
+
+		m_Framebuffers.clear();
+	}
+
+	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height)
+	{
+		m_Specification.Width = width;
+		m_Specification.Height = height;
+
+		for (auto& fbImages : m_ColorAttachments)
+			fbImages.clear();
+
+		m_ColorAttachments.clear();
+		m_DepthAttachment.clear();
+		Invalidate();
 	}
 
 }

@@ -292,7 +292,7 @@ namespace VulkanCore {
 
 	void VulkanPipeline::CreatePipelineCache()
 	{
-		// TODO
+		// TODO: Caching could benefit greatly in performance
 		VkPipelineCacheCreateInfo cacheInfo{};
 		cacheInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 		cacheInfo.initialDataSize = 0;

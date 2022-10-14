@@ -174,13 +174,6 @@ namespace VulkanCore {
 
 		VK_CORE_ASSERT(pixelData, "Failed to Load Image {0}", m_FilePath);
 
-		VulkanBuffer stagingBuffer{ imageSize, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
-
-		stagingBuffer.Map();
-		stagingBuffer.WriteToBuffer(pixelData, imageSize);
-		stagingBuffer.Unmap();
-
 		ImageSpecification spec;
 		spec.Width = m_Width;
 		spec.Height = m_Height;
@@ -192,6 +185,13 @@ namespace VulkanCore {
 
 		if (pixelData)
 		{
+			VulkanBuffer stagingBuffer{ imageSize, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
+
+			stagingBuffer.Map();
+			stagingBuffer.WriteToBuffer(pixelData, imageSize);
+			stagingBuffer.Unmap();
+
 			VkCommandBuffer copyCmd = device->GetCommandBuffer();
 			VkImageSubresourceRange subResourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 
@@ -227,7 +227,6 @@ namespace VulkanCore {
 
 			device->FlushCommandBuffer(barrierCmd);
 		}
-
 
 		free(pixelData);
 	}

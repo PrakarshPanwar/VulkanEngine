@@ -159,8 +159,6 @@ namespace VulkanCore {
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCreateInfo.usage = usage;
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		uint32_t mipLevels = static_cast<uint32_t>(std::_Floor_of_log_2(std::max(m_Specification.Width, m_Specification.Height))) + 1;
 		imageCreateInfo.mipLevels = 1; // TODO: Add a mips member in 'ImageSpecification'
 
 		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
@@ -179,14 +177,16 @@ namespace VulkanCore {
 
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &m_Info.ImageView), "Failed to Create Image View!");
 
+		VkSamplerAddressMode addressMode = Utils::VulkanSamplerWrap(m_Specification.WrapType);
+
 		// Create a sampler for Image
 		VkSamplerCreateInfo sampler{};
 		sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 		sampler.magFilter = VK_FILTER_LINEAR;
 		sampler.minFilter = VK_FILTER_LINEAR;
-		sampler.addressModeU = Utils::VulkanSamplerWrap(m_Specification.WrapType);
-		sampler.addressModeV = Utils::VulkanSamplerWrap(m_Specification.WrapType);
-		sampler.addressModeW = Utils::VulkanSamplerWrap(m_Specification.WrapType);
+		sampler.addressModeU = addressMode;
+		sampler.addressModeV = addressMode;
+		sampler.addressModeW = addressMode;
 		sampler.anisotropyEnable = VK_TRUE;
 
 		auto deviceProps = device->GetPhysicalDeviceProperties();

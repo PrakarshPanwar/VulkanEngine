@@ -28,7 +28,6 @@ namespace VulkanCore {
 
 	EditorLayer::~EditorLayer()
 	{
-		m_SceneImages.clear();
 	}
 
 	void EditorLayer::OnAttach()
@@ -45,7 +44,7 @@ namespace VulkanCore {
 
 		for (auto& UniformBuffer : m_UniformBuffers)
 		{
-			UniformBuffer = std::make_unique<VulkanBuffer>(sizeof(UniformBufferDataComponent), 1,
+			UniformBuffer = std::make_unique<VulkanBuffer>(sizeof(UBCameraandLights), 1,
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
@@ -64,13 +63,10 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
 		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
 
-		m_SceneImages.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_SceneTextureIDs.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-		{
 			m_SceneTextureIDs[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetImage(i));
-		}
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
 		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
@@ -138,7 +134,7 @@ namespace VulkanCore {
 		m_PointLightScene.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
 		m_PointLightScene.CommandBuffer = m_SceneRenderer->GetCommandBuffer(frameIndex);
 
-		UniformBufferDataComponent uniformBuffer{};
+		UBCameraandLights uniformBuffer{};
 		uniformBuffer.Projection = m_EditorCamera.GetProjectionMatrix();
 		uniformBuffer.View = m_EditorCamera.GetViewMatrix();
 		uniformBuffer.InverseView = glm::inverse(m_EditorCamera.GetViewMatrix());
@@ -228,6 +224,7 @@ namespace VulkanCore {
 		{
 			VK_CORE_TRACE("Viewport has been Resized!");
 			m_ViewportSize = region;
+			m_SceneRenderer->SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
 			RecreateSceneDescriptors();
 			m_EditorCamera.SetViewportSize(region.x, region.y);
 		}
@@ -258,21 +255,16 @@ namespace VulkanCore {
 	{
 		m_WindowResized = true;
 		m_SceneRenderer->RecreateScene();
-		return true;
+		return false;
 	}
 
 	void EditorLayer::RecreateSceneDescriptors()
 	{
-		m_SceneImages.clear();
 		m_SceneTextureIDs.clear();
-
-		m_SceneImages.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_SceneTextureIDs.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-		{
 			m_SceneTextureIDs[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetImage(i));
-		}
 	}
 
 	void EditorLayer::LoadEntities()

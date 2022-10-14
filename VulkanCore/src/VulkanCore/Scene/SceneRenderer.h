@@ -3,6 +3,8 @@
 #include "Platform/Vulkan/VulkanImage.h"
 #include "Platform/Vulkan/VulkanRenderPass.h"
 
+#include <glm/glm.hpp>
+
 namespace VulkanCore {
 
 	class SceneRenderer
@@ -14,6 +16,8 @@ namespace VulkanCore {
 		void Init();
 		void Release();
 		void RecreateScene();
+
+		void SetViewportSize(uint32_t width, uint32_t height) { m_ViewportSize.x = width; m_ViewportSize.y = height; }
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
@@ -30,6 +34,8 @@ namespace VulkanCore {
 		std::vector<VkCommandBuffer> m_SceneCommandBuffers;
 		std::shared_ptr<VulkanFramebuffer> m_SceneFramebuffer;
 		std::shared_ptr<VulkanRenderPass> m_SceneRenderPass;
+
+		glm::ivec2 m_ViewportSize;
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;

@@ -48,6 +48,7 @@ namespace VulkanCore {
 		void Invalidate();
 		void CreateFramebuffer(VkRenderPass renderPass); // TODO: This could be removed from here
 		void Release();
+		void Resize(uint32_t width, uint32_t height);
 	private:
 		FramebufferSpecification m_Specification;
 

@@ -24,11 +24,9 @@ namespace VulkanCore {
 		~Scene();
 
 		Entity CreateEntity(const std::string& name);
-		void OnUpdate(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VulkanPipeline* pipeline, VkDescriptorSet descriptorSet);
 		void OnUpdate(SceneInfo& sceneInfo);
-		void OnUpdateLights(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VulkanPipeline* pipeline, VkDescriptorSet descriptorSet);
 		void OnUpdateLights(SceneInfo& sceneInfo);
-		void UpdateUniformBuffer(UniformBufferDataComponent& ubo);
+		void UpdateUniformBuffer(UBCameraandLights& ubo);
 		void DestroyEntity(Entity entity);
 	private:
 		entt::registry m_Registry;

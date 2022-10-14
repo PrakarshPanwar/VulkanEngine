@@ -23,36 +23,6 @@ namespace VulkanCore {
 		return entity;
 	}
 
-	void Scene::OnUpdate(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VulkanPipeline* pipeline, VkDescriptorSet descriptorSet)
-	{
-		pipeline->Bind(commandBuffer);
-
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout,
-			0, 1, &descriptorSet, 0, nullptr);
-
-		auto view = m_Registry.view<TransformComponent>();
-
-		for (auto ent : view)
-		{
-			Entity entity = { ent, this };
-
-			PushConstantsDataComponent pushConstants{};
-			pushConstants.ModelMatrix = entity.GetComponent<TransformComponent>().GetTransform();
-			pushConstants.NormalMatrix = entity.GetComponent<TransformComponent>().GetNormalMatrix();
-			pushConstants.timestep = (float)glfwGetTime();
-
-			vkCmdPushConstants(commandBuffer, pipelineLayout,
-				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				0, sizeof(PushConstantsDataComponent), &pushConstants);
-
-			if (entity.HasComponent<MeshComponent>())
-			{
-				entity.GetComponent<MeshComponent>().Mesh->Bind(commandBuffer);
-				entity.GetComponent<MeshComponent>().Mesh->Draw(commandBuffer);
-			}
-		}
-	}
-
 	void Scene::OnUpdate(SceneInfo& sceneInfo)
 	{
 		sceneInfo.ScenePipeline->Bind(sceneInfo.CommandBuffer);
@@ -79,38 +49,6 @@ namespace VulkanCore {
 			{
 				entity.GetComponent<MeshComponent>().Mesh->Bind(sceneInfo.CommandBuffer);
 				entity.GetComponent<MeshComponent>().Mesh->Draw(sceneInfo.CommandBuffer);
-			}
-		}
-	}
-
-	void Scene::OnUpdateLights(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VulkanPipeline* pipeline, VkDescriptorSet descriptorSet)
-	{
-		pipeline->Bind(commandBuffer);
-
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout,
-			0, 1, &descriptorSet, 0, nullptr);
-
-		auto view = m_Registry.view<TransformComponent>();
-
-		for (auto ent : view)
-		{
-			Entity lightEntity = { ent, this };
-
-			PointLightPushConstants push{};
-			auto& lightTransform = lightEntity.GetComponent<TransformComponent>();
-
-			if (lightEntity.HasComponent<PointLightComponent>())
-			{
-				auto& pointLightComp = lightEntity.GetComponent<PointLightComponent>();
-
-				push.Position = glm::vec4(lightTransform.Translation, 1.0f);
-				push.Color = pointLightComp.PointLightInstance->Color;
-				push.Radius = lightTransform.Scale.x;
-
-				vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-					0, sizeof(PointLightPushConstants), &push);
-
-				vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 			}
 		}
 	}
@@ -147,7 +85,7 @@ namespace VulkanCore {
 		}
 	}
 
-	void Scene::UpdateUniformBuffer(UniformBufferDataComponent& ubo)
+	void Scene::UpdateUniformBuffer(UBCameraandLights& ubo)
 	{
 		auto view = m_Registry.view<TransformComponent>();
 		int lightIndex = 0;
