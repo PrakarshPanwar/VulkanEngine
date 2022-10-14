@@ -3,6 +3,7 @@
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Timer.h"
 
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanTexture.h"
@@ -44,7 +45,7 @@ namespace VulkanCore {
 		Release();
 	}
 
-	void SceneRenderer::Init() // TODO: Make Framebuffer, RenderPass to do automatically manage image creation
+	void SceneRenderer::Init()
 	{
 		CreateCommandBuffers();
 		CreateRenderPasswithFramebuffers();
@@ -52,11 +53,15 @@ namespace VulkanCore {
 
 	void SceneRenderer::CreateRenderPasswithFramebuffers()
 	{
+		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Render Pass Creation");
+
 		FramebufferSpecification fbSpec;
 		fbSpec.Width = 1920;
 		fbSpec.Height = 1080;
-		fbSpec.Attachments = { ImageFormat::RGBA8_SRGB, ImageFormat::DEPTH32F };
+		fbSpec.Attachments = { ImageFormat::RGBA8_SRGB, ImageFormat::DEPTH24STENCIL8 };
 		fbSpec.Samples = 8;
+
+		m_ViewportSize = { fbSpec.Width, fbSpec.Height };
 
 		m_SceneFramebuffer = std::make_shared<VulkanFramebuffer>(fbSpec);
 
@@ -75,10 +80,9 @@ namespace VulkanCore {
 	}
 
 	void SceneRenderer::RecreateScene()
-	{
-		VK_CORE_INFO("Scene has been Recreated!");
-		Release();
-		Init();
+{
+		VK_CORE_INFO("Scene has been Recreated!");		
+		m_SceneRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 	}
 
 	void SceneRenderer::CreateCommandBuffers()

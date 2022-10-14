@@ -7,7 +7,7 @@
 namespace VulkanCore {
 
 	// TODO: I am working with this right now but in future,
-	// these system will be shifted to struct SceneRendererData
+	// these system will be shifted to struct SceneRendererData or in SceneRenderer itself
 	class RenderSystem
 	{
 	public:

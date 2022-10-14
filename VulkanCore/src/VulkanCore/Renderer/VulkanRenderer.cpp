@@ -121,13 +121,15 @@ namespace VulkanCore {
 
 	void VulkanRenderer::BeginSceneRenderPass(VkCommandBuffer commandBuffer)
 	{
+		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
+
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = SceneRenderer::GetSceneRenderer()->GetRenderPass();
-		renderPassInfo.framebuffer = SceneRenderer::GetSceneRenderer()->GetVulkanFramebuffer(m_CurrentImageIndex);
+		renderPassInfo.renderPass = sceneRenderer->GetRenderPass();
+		renderPassInfo.framebuffer = sceneRenderer->GetVulkanFramebuffer(m_CurrentImageIndex);
 		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent.width = SceneRenderer::GetSceneRenderer()->GetFramebuffer()->GetSpecification().Width;
-		renderPassInfo.renderArea.extent.height = SceneRenderer::GetSceneRenderer()->GetFramebuffer()->GetSpecification().Height;
+		renderPassInfo.renderArea.extent.width = sceneRenderer->GetFramebuffer()->GetSpecification().Width;
+		renderPassInfo.renderArea.extent.height = sceneRenderer->GetFramebuffer()->GetSpecification().Height;
 
 		std::array<VkClearValue, 3> clearValues{};
 		clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };
@@ -141,8 +143,8 @@ namespace VulkanCore {
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(m_SwapChain->GetSwapChainExtent().width);
-		viewport.height = static_cast<float>(m_SwapChain->GetSwapChainExtent().height);
+		viewport.width = static_cast<float>(sceneRenderer->GetFramebuffer()->GetSpecification().Width);
+		viewport.height = static_cast<float>(sceneRenderer->GetFramebuffer()->GetSpecification().Height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
@@ -212,13 +214,14 @@ namespace VulkanCore {
 	{
 		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), SceneRenderer::GetSceneRenderer()->GetCommandBuffer(m_CurrentFrameIndex) };
 
+		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window.IsWindowResize())
 		{
 			m_Window.ResetWindowResizeFlag();
 			RecreateSwapChain();
-			SceneRenderer::GetSceneRenderer()->RecreateScene();
+			sceneRenderer->RecreateScene();
 		}
 
 		else if (result != VK_SUCCESS)

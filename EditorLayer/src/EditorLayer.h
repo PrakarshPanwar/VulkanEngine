@@ -51,7 +51,6 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap, m_DiffuseMap2, m_NormalMap2,
 			m_SpecularMap2, m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
 
-		std::vector<VulkanTexture> m_SceneImages;
 		std::vector<VkDescriptorSet> m_SceneTextureIDs;
 		bool m_ImGuiShowWindow = true, m_ViewportHovered = false, m_ViewportFocused = false, m_WindowResized = false;
 		ImVec2 m_ViewportSize = { 1904.0f, 991.0f }; // TODO: Calculate this by function

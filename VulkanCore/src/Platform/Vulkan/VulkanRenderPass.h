@@ -16,6 +16,7 @@ namespace VulkanCore {
 		~VulkanRenderPass();
 
 		void Invalidate();
+		void RecreateFramebuffers(uint32_t width, uint32_t height);
 
 		inline VkRenderPass GetRenderPass() const { return m_RenderPass; }
 		inline const RenderPassSpecification& GetSpecification() const { return m_Specification; }

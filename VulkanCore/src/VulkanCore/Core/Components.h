@@ -108,7 +108,7 @@ namespace VulkanCore {
 		float timestep;
 	};
 
-	struct UniformBufferDataComponent
+	struct UBCameraandLights
 	{
 		glm::mat4 Projection{ 1.0f };
 		glm::mat4 View{ 1.0f };
