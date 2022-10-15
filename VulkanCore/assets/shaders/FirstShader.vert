@@ -45,7 +45,6 @@ const vec2 TexCoords[4] = vec2[](
 void main()
 {
 	vec4 positionWorld = push.modelMatrix * vec4(a_Position, 1.0);
-	positionWorld.y = -positionWorld.y;
 	gl_Position = ubo.projection * ubo.view * positionWorld;
 	v_FragNormalWorld = normalize(mat3(push.normalMatrix) * a_Normal);
 	v_FragPosWorld = positionWorld.xyz;

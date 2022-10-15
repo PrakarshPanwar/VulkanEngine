@@ -142,9 +142,9 @@ namespace VulkanCore {
 
 		VkViewport viewport{};
 		viewport.x = 0.0f;
-		viewport.y = 0.0f;
+		viewport.y = static_cast<float>(sceneRenderer->GetFramebuffer()->GetSpecification().Height);
 		viewport.width = static_cast<float>(sceneRenderer->GetFramebuffer()->GetSpecification().Width);
-		viewport.height = static_cast<float>(sceneRenderer->GetFramebuffer()->GetSpecification().Height);
+		viewport.height = -static_cast<float>(sceneRenderer->GetFramebuffer()->GetSpecification().Height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
