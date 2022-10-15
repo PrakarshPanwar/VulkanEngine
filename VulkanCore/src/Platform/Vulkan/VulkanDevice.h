@@ -25,6 +25,7 @@ namespace VulkanCore {
 		bool IsComplete() { return GraphicsFamilyHasValue && PresentFamilyHasValue; }
 	};
 
+	// TODO: In future we could transfer all of this in class `VulkanContext`
 	class VulkanDevice
 	{
 	public:

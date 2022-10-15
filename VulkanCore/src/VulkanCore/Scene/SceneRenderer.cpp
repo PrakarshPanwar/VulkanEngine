@@ -65,10 +65,10 @@ namespace VulkanCore {
 
 		m_SceneFramebuffer = std::make_shared<VulkanFramebuffer>(fbSpec);
 
-		RenderPassSpecification spec;
-		spec.TargetFramebuffer = m_SceneFramebuffer;
+		RenderPassSpecification rpSpec;
+		rpSpec.TargetFramebuffer = m_SceneFramebuffer;
 
-		m_SceneRenderPass = std::make_shared<VulkanRenderPass>(spec);
+		m_SceneRenderPass = std::make_shared<VulkanRenderPass>(rpSpec);
 	}
 
 	void SceneRenderer::Release()

@@ -85,7 +85,8 @@ namespace VulkanCore {
 			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			colorAttachment.finalLayout = Utils::IsMultiSampled(m_Specification) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			attachmentDescriptions.push_back(colorAttachment);
 		}
@@ -134,14 +135,14 @@ namespace VulkanCore {
 		VkAttachmentReference colorAttachmentResolveRef = {};
 		if (Utils::IsMultiSampled(m_Specification))
 		{
-			colorAttachmentResolveRef.attachment = static_cast<uint32_t>(Framebuffer->GetColorAttachments().size());
+			colorAttachmentResolveRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
 			colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			attachmentRefs.push_back(colorAttachmentResolveRef);
 		}
 
 		// Depth Attachment Reference
 		VkAttachmentReference depthAttachmentRef = {};
-		depthAttachmentRef.attachment = static_cast<uint32_t>(Framebuffer->GetColorAttachments().size() + 1);
+		depthAttachmentRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
 		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		attachmentRefs.push_back(depthAttachmentRef);
 
