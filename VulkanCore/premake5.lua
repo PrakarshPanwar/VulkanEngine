@@ -49,16 +49,14 @@ project "VulkanCore"
 
 	filter "configurations:Debug"
 		defines { "VK_DEBUG" }
-		links { "%{Library.ShaderC_Debug}", "%{Library.SPIRV_Cross_Debug}", "%{Library.SPIRV_Cross_GLSL_Debug}", "%{Library.AssimpLibDebug}", "%{Library.AssimpZlibDebug}" }
+		links { "%{Library.ShaderC_Debug}", "%{Library.SPIRV_Cross_Debug}", "%{Library.SPIRV_Cross_GLSL_Debug}", "%{Library.AssimpLibDebug}" }
 		symbols "On"
 
 		postbuildcommands { "{COPY} %{Library.AssimpDLLDebug} ../bin/" .. outputdir .. "/%{prj.name}" }
-		postbuildcommands { "{COPY} %{Library.ZlibDLLDebug} ../bin/" .. outputdir .. "/%{prj.name}" }
 
 	filter "configurations:Release"
 		defines { "VK_RELEASE" }
-		links { "%{Library.ShaderC_Release}", "%{Library.SPIRV_Cross_Release}", "%{Library.SPIRV_Cross_GLSL_Release}", "%{Library.AssimpLibRelease}", "%{Library.AssimpZlibRelease}" }
+		links { "%{Library.ShaderC_Release}", "%{Library.SPIRV_Cross_Release}", "%{Library.SPIRV_Cross_GLSL_Release}", "%{Library.AssimpLibRelease}" }
 		optimize "On"
 
 		postbuildcommands { "{COPY} %{Library.AssimpDLLRelease} ../bin/" .. outputdir .. "/%{prj.name}" }
-		postbuildcommands { "{COPY} %{Library.ZlibDLLRelease} ../bin/" .. outputdir .. "/%{prj.name}" }
