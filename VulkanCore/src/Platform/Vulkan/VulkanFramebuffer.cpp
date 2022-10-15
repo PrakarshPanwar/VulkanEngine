@@ -21,6 +21,11 @@ namespace VulkanCore {
 			}
 		}
 
+		static bool IsMultisampled(FramebufferSpecification spec)
+		{
+			return spec.Samples > 1 ? true : false;
+		}
+
 	}
 
 	uint32_t VulkanFramebuffer::s_InstanceCount = 0;
@@ -83,13 +88,27 @@ namespace VulkanCore {
 
 				auto& attachmentColorImage = AttachmentImages.emplace_back(spec);
 				attachmentColorImage.Invalidate();
+
+				if (!Utils::IsMultisampled(m_Specification))
+				{
+					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+
+					Utils::InsertImageMemoryBarrier(barrierCmd, 
+						attachmentColorImage.GetVulkanImageInfo().Image,
+						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+						VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+					device->FlushCommandBuffer(barrierCmd);
+				}
 			}
 
 			m_ColorAttachments.emplace_back(std::move(AttachmentImages));
 		}
 
 		// Image Creation for Resolve Attachment
-		if (m_Specification.Samples > 1)
+		if (Utils::IsMultisampled(m_Specification))
 		{
 			std::vector<VulkanImage> ResolveImages;
 			ResolveImages.reserve(VulkanSwapChain::MaxFramesInFlight);
