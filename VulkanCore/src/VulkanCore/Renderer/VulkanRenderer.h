@@ -35,7 +35,8 @@ namespace VulkanCore {
 		}
 
 		inline VkRenderPass GetSwapChainRenderPass() const { return m_SwapChain->GetRenderPass(); }
-		inline int GetFrameIndex() const { return m_CurrentFrameIndex; }
+		inline int GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
+		inline VkQueryPool GetPerfQueryPool() const { return m_QueryPool; }
 
 		void RecreateSwapChain();
 		void FinalQueueSubmit();
@@ -43,12 +44,15 @@ namespace VulkanCore {
 	private:
 		void CreateCommandBuffers();
 		void FreeCommandBuffers();
+		void CreateQueryPool();
+		void FreeQueryPool();
 	private:
 		WindowsWindow& m_Window;
 		VulkanDevice& m_VulkanDevice;
 		std::unique_ptr<VulkanSwapChain> m_SwapChain;
 
 		std::vector<VkCommandBuffer> m_CommandBuffers;
+		VkQueryPool m_QueryPool;
 		uint32_t m_CurrentImageIndex;
 		int m_CurrentFrameIndex = 0;
 		bool IsFrameStarted = false;

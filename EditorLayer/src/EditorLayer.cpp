@@ -115,6 +115,7 @@ namespace VulkanCore {
 
 		//m_EditorCamera = EditorCamera(glm::radians(45.0f), vkRenderer->GetAspectRatio(), 0.1f, 100.0f);
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 100.0f);
+
 	}
 
 	void EditorLayer::OnDetach()
@@ -126,7 +127,7 @@ namespace VulkanCore {
 	{
 		m_EditorCamera.OnUpdate();
 
-		int frameIndex = VulkanRenderer::Get()->GetFrameIndex();
+		int frameIndex = VulkanRenderer::Get()->GetCurrentFrameIndex();
 
 		m_SceneRender.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
 		m_SceneRender.CommandBuffer = m_SceneRenderer->GetCommandBuffer(frameIndex);
@@ -208,11 +209,23 @@ namespace VulkanCore {
 
 		style.WindowMinSize.x = minWinSizeX;
 
+		constexpr std::array<uint64_t, 2> queryPoolBuffer = { 0, 0 };
+		vkGetQueryPoolResults(VulkanDevice::GetDevice()->GetVulkanDevice(),
+			VulkanRenderer::Get()->GetPerfQueryPool(),
+			0, 2, sizeof(uint64_t) * 2,
+			(void*)queryPoolBuffer.data(), sizeof(uint64_t),
+			VK_QUERY_RESULT_64_BIT);
+
+		uint64_t timeStamp = queryPoolBuffer[1] - queryPoolBuffer[0];
+
+		std::chrono::duration rasterTime = 
+			std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::nanoseconds(timeStamp));
+
 		//ImGui::ShowDemoWindow(&m_ImGuiShowWindow);
 		ImGui::Begin("Application Stats");
 		SHOW_FRAMERATES;
 		ImGui::Checkbox("Show ImGui Demo Window", &m_ImGuiShowWindow);
-		ImGui::ArrowButton("ArrowButton", ImGuiDir_Right);
+		ImGui::Text("Scene Rasterization Time: %llums", rasterTime.count());
 		ImGui::Text("Camera Aspect Ratio: %.6f", m_EditorCamera.GetAspectRatio());
 		ImGui::End();
 
@@ -233,7 +246,7 @@ namespace VulkanCore {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
-		ImGui::Image(m_SceneTextureIDs[VulkanRenderer::Get()->GetFrameIndex()], region);
+		ImGui::Image(m_SceneTextureIDs[VulkanRenderer::Get()->GetCurrentFrameIndex()], region);
 		ImGui::End(); // End of Viewport
 
 		m_SceneHierarchyPanel.OnImGuiRender();

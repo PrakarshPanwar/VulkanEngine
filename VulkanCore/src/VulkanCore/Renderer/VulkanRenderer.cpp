@@ -17,6 +17,7 @@ namespace VulkanCore {
 
 	VulkanRenderer::~VulkanRenderer()
 	{
+		FreeQueryPool();
 		FreeCommandBuffers();
 	}
 
@@ -24,6 +25,7 @@ namespace VulkanCore {
 	{
 		RecreateSwapChain();
 		CreateCommandBuffers();
+		CreateQueryPool();
 	}
 
 	VkCommandBuffer VulkanRenderer::BeginFrame()
@@ -123,6 +125,7 @@ namespace VulkanCore {
 	{
 		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
+		// TODO: Do this in `VulkanRenderPass`
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = sceneRenderer->GetRenderPass();
@@ -131,20 +134,14 @@ namespace VulkanCore {
 		renderPassInfo.renderArea.extent.width = sceneRenderer->GetFramebuffer()->GetSpecification().Width;
 		renderPassInfo.renderArea.extent.height = sceneRenderer->GetFramebuffer()->GetSpecification().Height;
 
-#define RENDER_TEMP 0
-#if RENDER_TEMP
-		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };
-		clearValues[1].depthStencil = { 1.0f, 0 };
-#else
 		std::array<VkClearValue, 3> clearValues{};
 		clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };
 		clearValues[2].depthStencil = { 1.0f, 0 };
-#endif
 
 		renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
 		renderPassInfo.pClearValues = clearValues.data();
 
+		vkCmdResetQueryPool(commandBuffer, m_QueryPool, 0, 2);
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		VkViewport viewport{};
@@ -184,6 +181,21 @@ namespace VulkanCore {
 			static_cast<uint32_t>(m_CommandBuffers.size()), m_CommandBuffers.data());
 
 		m_CommandBuffers.clear();
+	}
+
+	void VulkanRenderer::CreateQueryPool()
+	{
+		VkQueryPoolCreateInfo queryPoolInfo{};
+		queryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+		queryPoolInfo.queryCount = 2;
+		queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+		
+		vkCreateQueryPool(m_VulkanDevice.GetVulkanDevice(), &queryPoolInfo, nullptr, &m_QueryPool);
+	}
+
+	void VulkanRenderer::FreeQueryPool()
+	{
+		vkDestroyQueryPool(m_VulkanDevice.GetVulkanDevice(), m_QueryPool, nullptr);
 	}
 
 	void VulkanRenderer::RecreateSwapChain()
