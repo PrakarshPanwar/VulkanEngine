@@ -7,7 +7,7 @@
 
 namespace VulkanCore {
 
-	PointLightSystem::PointLightSystem(VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
+	PointLightSystem::PointLightSystem(std::shared_ptr<VulkanRenderPass> renderPass, VkDescriptorSetLayout globalSetLayout)
 	{
 		CreatePipelineLayout(globalSetLayout);
 		CreatePipeline(renderPass);
@@ -19,16 +19,16 @@ namespace VulkanCore {
 		vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 	}
 
-	void PointLightSystem::CreatePipeline(VkRenderPass renderPass)
+	void PointLightSystem::CreatePipeline(std::shared_ptr<VulkanRenderPass> renderPass)
 	{
 		auto device = VulkanDevice::GetDevice();
 
 		PipelineConfigInfo pipelineConfig{};
+		pipelineConfig.RenderPass = renderPass;
 		VulkanPipeline::DefaultPipelineConfigInfo(pipelineConfig);
 		VulkanPipeline::EnableAlphaBlending(pipelineConfig);
 		pipelineConfig.AttributeDescriptions.clear();
 		pipelineConfig.BindingDescriptions.clear();
-		pipelineConfig.RenderPass = renderPass;
 		pipelineConfig.PipelineLayout = m_PipelineLayout;
 
 		m_Pipeline = std::make_unique<VulkanPipeline>(
