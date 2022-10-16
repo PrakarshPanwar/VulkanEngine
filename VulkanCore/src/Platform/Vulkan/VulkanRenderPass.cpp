@@ -25,7 +25,7 @@ namespace VulkanCore {
 			}
 		}
 
-		static bool IsMultiSampled(RenderPassSpecification spec)
+		static bool IsMultisampled(RenderPassSpecification spec)
 		{
 			return spec.TargetFramebuffer->GetSpecification().Samples > 1 ? true : false;
 		}
@@ -85,7 +85,7 @@ namespace VulkanCore {
 			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			colorAttachment.finalLayout = Utils::IsMultiSampled(m_Specification) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
+			colorAttachment.finalLayout = Utils::IsMultisampled(m_Specification) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			attachmentDescriptions.push_back(colorAttachment);
@@ -93,7 +93,7 @@ namespace VulkanCore {
 
 		// Resolve Attachment Description
 		VkAttachmentDescription colorAttachmentResolve = {};
-		if (Utils::IsMultiSampled(m_Specification))
+		if (Utils::IsMultisampled(m_Specification))
 		{
 			colorAttachmentResolve.format = Utils::VulkanImageFormat(ImageFormat::RGBA8_SRGB);
 			colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -133,7 +133,7 @@ namespace VulkanCore {
 
 		// Resolve Attachment Reference(Only applicable if multisampling is present)
 		VkAttachmentReference colorAttachmentResolveRef = {};
-		if (Utils::IsMultiSampled(m_Specification))
+		if (Utils::IsMultisampled(m_Specification))
 		{
 			colorAttachmentResolveRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
 			colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -154,7 +154,7 @@ namespace VulkanCore {
 		// TODO: We are using single resolve attachment but,
 		// I think we need a vector of it for multiple color attachments
 		subpass.pDepthStencilAttachment = Framebuffer->HasDepthAttachment() ? &depthAttachmentRef : nullptr;
-		subpass.pResolveAttachments = Utils::IsMultiSampled(m_Specification) ? &colorAttachmentResolveRef : nullptr;
+		subpass.pResolveAttachments = Utils::IsMultisampled(m_Specification) ? &colorAttachmentResolveRef : nullptr;
 
 		VkSubpassDependency dependency = {}; // TODO: Changes need to be made
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
