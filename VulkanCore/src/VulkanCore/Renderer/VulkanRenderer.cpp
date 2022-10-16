@@ -124,42 +124,15 @@ namespace VulkanCore {
 	void VulkanRenderer::BeginSceneRenderPass(VkCommandBuffer commandBuffer)
 	{
 		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
-
-		// TODO: Do this in `VulkanRenderPass`
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = sceneRenderer->GetRenderPass();
-		renderPassInfo.framebuffer = sceneRenderer->GetVulkanFramebuffer(m_CurrentImageIndex);
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent.width = sceneRenderer->GetFramebuffer()->GetSpecification().Width;
-		renderPassInfo.renderArea.extent.height = sceneRenderer->GetFramebuffer()->GetSpecification().Height;
-
-		std::array<VkClearValue, 3> clearValues{};
-		clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };
-		clearValues[2].depthStencil = { 1.0f, 0 };
-
-		renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
-		renderPassInfo.pClearValues = clearValues.data();
-
 		vkCmdResetQueryPool(commandBuffer, m_QueryPool, 0, 2);
-		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = static_cast<float>(sceneRenderer->GetFramebuffer()->GetSpecification().Height);
-		viewport.width = static_cast<float>(sceneRenderer->GetFramebuffer()->GetSpecification().Width);
-		viewport.height = -static_cast<float>(sceneRenderer->GetFramebuffer()->GetSpecification().Height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor{ {0, 0}, m_SwapChain->GetSwapChainExtent() };
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+		auto renderPass = sceneRenderer->GetRenderPass();
+		renderPass->Begin(commandBuffer);
 	}
 
 	void VulkanRenderer::EndSceneRenderPass(VkCommandBuffer commandBuffer)
 	{
-		vkCmdEndRenderPass(commandBuffer);
+		auto renderPass = SceneRenderer::GetSceneRenderer()->GetRenderPass();
+		renderPass->End(commandBuffer);
 	}
 
 	void VulkanRenderer::CreateCommandBuffers()

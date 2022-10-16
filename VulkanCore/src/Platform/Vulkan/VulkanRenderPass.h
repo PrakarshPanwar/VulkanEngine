@@ -18,11 +18,15 @@ namespace VulkanCore {
 		void Invalidate();
 		void RecreateFramebuffers(uint32_t width, uint32_t height);
 
+		void Begin(VkCommandBuffer beginCmd);
+		void End(VkCommandBuffer endCmd);
+
 		inline VkRenderPass GetRenderPass() const { return m_RenderPass; }
 		inline const RenderPassSpecification& GetSpecification() const { return m_Specification; }
 	private:
 		RenderPassSpecification m_Specification;
 
+		std::vector<VkAttachmentDescription> m_AttachmentDescriptions;
 		VkRenderPass m_RenderPass = nullptr;
 	};
 
