@@ -15,8 +15,7 @@
 #include <glm/gtx/log_base.hpp>
 #include <filesystem>
 
-#define IMGUI_VIEWPORTS 0
-#define IMGUI_SEPARATE_RESOURCES 1
+#define IMGUI_VIEWPORTS 1
 
 namespace VulkanCore {
 
@@ -46,7 +45,7 @@ namespace VulkanCore {
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000);
 
-		m_GlobalPool = descriptorPoolBuilder.Build();
+		m_ImGuiGlobalPool = descriptorPoolBuilder.Build();
 
 		ImGui::CreateContext();
 
@@ -66,7 +65,7 @@ namespace VulkanCore {
 		init_info.PhysicalDevice = device->GetPhysicalDevice();
 		init_info.Device = device->GetVulkanDevice();
 		init_info.Queue = device->GetGraphicsQueue();
-		init_info.DescriptorPool = m_GlobalPool->GetDescriptorPool();
+		init_info.DescriptorPool = m_ImGuiGlobalPool->GetDescriptorPool();
 		init_info.MinImageCount = 2;
 		init_info.ImageCount = 3;
 		init_info.CheckVkResultFn = CheckVkResult;
@@ -80,7 +79,8 @@ namespace VulkanCore {
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
 
-		ImGui_ImplVulkan_Init(&init_info, VulkanSwapChain::GetSwapChain()->GetRenderPass());
+		bool initSuccess = ImGui_ImplVulkan_Init(&init_info, VulkanSwapChain::GetSwapChain()->GetRenderPass());
+		VK_CORE_ASSERT(initSuccess, "Failed to Initialize ImGui");
 
 #define OPENSANS 0
 #define SOURCESANSPRO 1
@@ -127,10 +127,10 @@ namespace VulkanCore {
 #if IMGUI_VIEWPORTS
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
-			//GLFWwindow* backup_current_context = glfwGetCurrentContext();
+			GLFWwindow* backup_current_context = glfwGetCurrentContext();
 			ImGui::UpdatePlatformWindows();
 			ImGui::RenderPlatformWindowsDefault();
-			//glfwMakeContextCurrent(backup_current_context);
+			glfwMakeContextCurrent(backup_current_context);
 		}
 #endif
 	}

@@ -14,8 +14,8 @@ namespace VulkanCore {
 			switch (format)
 			{
 			case ImageFormat::DEPTH24STENCIL8: return true;
-			case ImageFormat::DEPTH16F:		return true;
-			case ImageFormat::DEPTH32F:		return true;
+			case ImageFormat::DEPTH16F:		   return true;
+			case ImageFormat::DEPTH32F:		   return true;
 			default:
 				return false;
 			}

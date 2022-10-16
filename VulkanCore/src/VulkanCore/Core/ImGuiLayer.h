@@ -31,7 +31,7 @@ namespace VulkanCore {
 	private:
 		void SetDarkThemeColor();
 	private:
-		std::unique_ptr<VulkanDescriptorPool> m_GlobalPool;
+		std::unique_ptr<VulkanDescriptorPool> m_ImGuiGlobalPool;
 		bool m_BlockEvents = false;
 
 		static ImGuiLayer* s_Instance;
