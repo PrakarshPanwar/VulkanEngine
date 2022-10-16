@@ -9,6 +9,27 @@
 
 namespace VulkanCore {
 
+	namespace Utils {
+
+		static VkSampleCountFlagBits VulkanSampleCount(uint32_t sampleCount)
+		{
+			switch (sampleCount)
+			{
+			case 1:  return VK_SAMPLE_COUNT_1_BIT;
+			case 2:  return VK_SAMPLE_COUNT_2_BIT;
+			case 4:  return VK_SAMPLE_COUNT_4_BIT;
+			case 8:  return VK_SAMPLE_COUNT_8_BIT;
+			case 16: return VK_SAMPLE_COUNT_16_BIT;
+			case 32: return VK_SAMPLE_COUNT_32_BIT;
+			case 64: return VK_SAMPLE_COUNT_64_BIT;
+			default:
+				VK_CORE_ASSERT(false, "Sample Bit not Supported! Choose Power of 2");
+				return VK_SAMPLE_COUNT_1_BIT;
+			}
+		}
+
+	}
+
 	VulkanPipeline::VulkanPipeline(VulkanDevice& device, PipelineConfigInfo& pipelineInfo, const std::string& vertFilepath, const std::string& fragFilepath, const std::string& geomFilepath)
 		: m_VulkanDevice(device)
 	{
@@ -112,7 +133,7 @@ namespace VulkanCore {
 		graphicsPipelineInfo.pDynamicState = &pipelineInfo.DynamicStateInfo;
 
 		graphicsPipelineInfo.layout = pipelineInfo.PipelineLayout;
-		graphicsPipelineInfo.renderPass = pipelineInfo.RenderPass;
+		graphicsPipelineInfo.renderPass = pipelineInfo.RenderPass->GetRenderPass();
 		graphicsPipelineInfo.subpass = pipelineInfo.SubPass;
 
 		graphicsPipelineInfo.basePipelineIndex = -1;
@@ -179,10 +200,11 @@ namespace VulkanCore {
 		pipelineConfigInfo.RasterizationInfo.depthBiasClamp = 0.0f;
 		pipelineConfigInfo.RasterizationInfo.depthBiasSlopeFactor = 0.0f;
 
+		auto Framebuffer = pipelineConfigInfo.RenderPass->GetSpecification().TargetFramebuffer;
+		const auto sampleCount = Utils::VulkanSampleCount(Framebuffer->GetSpecification().Samples);
 		pipelineConfigInfo.MultisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		pipelineConfigInfo.MultisampleInfo.sampleShadingEnable = VK_FALSE;
-		pipelineConfigInfo.MultisampleInfo.rasterizationSamples = VulkanDevice::GetDevice()->GetMSAASampleCount();
-		//pipelineConfigInfo.MultisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		pipelineConfigInfo.MultisampleInfo.rasterizationSamples = sampleCount;
 		pipelineConfigInfo.MultisampleInfo.minSampleShading = 1.0f;
 		pipelineConfigInfo.MultisampleInfo.pSampleMask = nullptr;
 		pipelineConfigInfo.MultisampleInfo.alphaToCoverageEnable = VK_FALSE;

@@ -1,6 +1,7 @@
 #pragma once
 #include "VulkanDevice.h"
 #include "VulkanCore/Core/Shader.h"
+#include "VulkanRenderPass.h"
 
 namespace VulkanCore {
 
@@ -20,7 +21,8 @@ namespace VulkanCore {
 		std::vector<VkDynamicState> DynamicStateEnables;
 		VkPipelineDynamicStateCreateInfo DynamicStateInfo;
 		VkPipelineLayout PipelineLayout = nullptr;
-		VkRenderPass RenderPass = nullptr;
+		//VkRenderPass RenderPass = nullptr;
+		std::shared_ptr<VulkanRenderPass> RenderPass;
 		uint32_t SubPass = 0;
 	};
 
@@ -30,8 +32,8 @@ namespace VulkanCore {
 		VulkanPipeline() = default;
 		VulkanPipeline(VulkanDevice& device, PipelineConfigInfo& pipelineInfo, 
 			const std::string& vertFilepath, const std::string& fragFilepath, const std::string& geomFilepath = "");
-
 		~VulkanPipeline();
+
 		static void DefaultPipelineConfigInfo(PipelineConfigInfo& pipelineConfigInfo);
 		static void EnableAlphaBlending(PipelineConfigInfo& pipelineConfigInfo);
 
