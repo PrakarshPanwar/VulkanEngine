@@ -37,13 +37,10 @@ namespace VulkanCore {
 
 		void Bind(VkCommandBuffer commandBuffer);
 	private:
-		std::string ReadFile(const std::string& filepath);
-		void CreateGraphicsPipeline(const PipelineConfigInfo& pipelineInfo, 
-			const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath = "");
 		void CreateGraphicsPipeline(std::shared_ptr<Shader> shader, const PipelineConfigInfo& pipelineInfo);
 		void CreateShaderModule(const std::string& shaderSource, VkShaderModule* shaderModule);
 		void CreateShaderModule(const std::vector<uint32_t>& shaderSource, VkShaderModule* shaderModule);
-		void CreatePipelineCache(); //TODO
+		void CreatePipelineCache();
 	private:
 		VulkanDevice& m_VulkanDevice;
 		VkPipeline m_GraphicsPipeline;
