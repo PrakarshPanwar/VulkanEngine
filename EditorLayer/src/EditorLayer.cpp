@@ -3,6 +3,7 @@
 #include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Core/ImGuiLayer.h"
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 
@@ -264,7 +265,7 @@ namespace VulkanCore {
 	bool EditorLayer::OnWindowResize(WindowResizeEvent& windowEvent)
 	{
 		m_WindowResized = true;
-		m_SceneRenderer->RecreateScene();
+		//m_SceneRenderer->RecreateScene();
 		return false;
 	}
 

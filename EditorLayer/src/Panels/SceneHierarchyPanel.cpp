@@ -3,6 +3,8 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+#include <glm/gtc/type_ptr.hpp>
+
 namespace VulkanCore {
 
 	SceneHierarchyPanel::SceneHierarchyPanel(std::shared_ptr<Scene> sceneContext)
@@ -168,7 +170,7 @@ namespace VulkanCore {
 
 		DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
 		{
-			ImGui::ColorEdit4("Color", (float*)&component.PointLightInstance->Color);
+			ImGui::ColorEdit4("Color", glm::value_ptr(component.PointLightInstance->Color));
 		});
 	}
 
