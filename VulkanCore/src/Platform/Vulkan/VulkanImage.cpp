@@ -71,6 +71,11 @@ namespace VulkanCore {
 			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
 		}
 
+		static bool IsMultisampled(ImageSpecification spec)
+		{
+			return spec.Samples > 1 ? true : false;
+		}
+
 		void InsertImageMemoryBarrier(VkCommandBuffer cmdBuf, VkImage image,
 			VkAccessFlags srcFlags, VkAccessFlags dstFlags,
 			VkImageLayout oldLayout, VkImageLayout newLayout,
@@ -159,7 +164,8 @@ namespace VulkanCore {
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCreateInfo.usage = usage;
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCreateInfo.mipLevels = 1; // TODO: Add a mips member in 'ImageSpecification'
+		imageCreateInfo.mipLevels = Utils::IsMultisampled(m_Specification) ? // TODO: Add a mips member in 'ImageSpecification'
+			1 : Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height);
 
 		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "VulkanDevice.h"
 #include "VulkanCore/Core/Shader.h"
+#include "VulkanRenderPass.h"
 
 namespace VulkanCore {
 
@@ -20,7 +21,8 @@ namespace VulkanCore {
 		std::vector<VkDynamicState> DynamicStateEnables;
 		VkPipelineDynamicStateCreateInfo DynamicStateInfo;
 		VkPipelineLayout PipelineLayout = nullptr;
-		VkRenderPass RenderPass = nullptr;
+		//VkRenderPass RenderPass = nullptr;
+		std::shared_ptr<VulkanRenderPass> RenderPass;
 		uint32_t SubPass = 0;
 	};
 
@@ -30,20 +32,17 @@ namespace VulkanCore {
 		VulkanPipeline() = default;
 		VulkanPipeline(VulkanDevice& device, PipelineConfigInfo& pipelineInfo, 
 			const std::string& vertFilepath, const std::string& fragFilepath, const std::string& geomFilepath = "");
-
 		~VulkanPipeline();
+
 		static void DefaultPipelineConfigInfo(PipelineConfigInfo& pipelineConfigInfo);
 		static void EnableAlphaBlending(PipelineConfigInfo& pipelineConfigInfo);
 
 		void Bind(VkCommandBuffer commandBuffer);
 	private:
-		std::string ReadFile(const std::string& filepath);
-		void CreateGraphicsPipeline(const PipelineConfigInfo& pipelineInfo, 
-			const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath = "");
 		void CreateGraphicsPipeline(std::shared_ptr<Shader> shader, const PipelineConfigInfo& pipelineInfo);
 		void CreateShaderModule(const std::string& shaderSource, VkShaderModule* shaderModule);
 		void CreateShaderModule(const std::vector<uint32_t>& shaderSource, VkShaderModule* shaderModule);
-		void CreatePipelineCache(); //TODO
+		void CreatePipelineCache();
 	private:
 		VulkanDevice& m_VulkanDevice;
 		VkPipeline m_GraphicsPipeline;

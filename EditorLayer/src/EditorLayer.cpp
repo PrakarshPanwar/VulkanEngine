@@ -101,9 +101,10 @@ namespace VulkanCore {
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 
+		auto sceneRenderPass = m_SceneRenderer->GetRenderPass();
 		// TODO: In future these classes will be deprecated, and all pipeline creation will move into SceneRenderer
-		m_RenderSystem = std::make_shared<RenderSystem>(m_SceneRenderer->GetVulkanRenderPass(), globalSetLayout->GetDescriptorSetLayout());
-		m_PointLightSystem = std::make_shared<PointLightSystem>(m_SceneRenderer->GetVulkanRenderPass(), globalSetLayout->GetDescriptorSetLayout());
+		m_RenderSystem = std::make_shared<RenderSystem>(sceneRenderPass, globalSetLayout->GetDescriptorSetLayout());
+		m_PointLightSystem = std::make_shared<PointLightSystem>(sceneRenderPass, globalSetLayout->GetDescriptorSetLayout());
 
 		m_SceneRender.ScenePipeline = m_RenderSystem->GetPipeline();
 		m_SceneRender.PipelineLayout = m_RenderSystem->GetPipelineLayout();
