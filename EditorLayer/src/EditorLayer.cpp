@@ -16,9 +16,6 @@
 #include <numbers>
 #include <future>
 
-#define SHOW_FRAMERATES ImGui::Text("Application Stats:\n\t Frame Time: %.3f ms\n\t Frames Per Second: %.2f FPS", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate)
-#define USE_IMGUI_VIEWPORTS 0
-
 namespace VulkanCore {
 
 	EditorLayer::EditorLayer()
