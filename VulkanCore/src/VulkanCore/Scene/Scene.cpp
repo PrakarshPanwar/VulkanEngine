@@ -3,6 +3,7 @@
 #include "Entity.h"
 #include "Platform/Vulkan/VulkanMesh.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
+#include "VulkanCore/Renderer/VulkanRenderer.h"
 
 namespace VulkanCore {
 
@@ -32,6 +33,9 @@ namespace VulkanCore {
 
 		auto view = m_Registry.view<TransformComponent>();
 
+		vkCmdWriteTimestamp(sceneInfo.CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VulkanRenderer::Get()->GetPerfQueryPool(), 0);
+
 		for (auto ent : view)
 		{
 			Entity entity = { ent, this };
@@ -51,6 +55,9 @@ namespace VulkanCore {
 				entity.GetComponent<MeshComponent>().Mesh->Draw(sceneInfo.CommandBuffer);
 			}
 		}
+
+		vkCmdWriteTimestamp(sceneInfo.CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+			VulkanRenderer::Get()->GetPerfQueryPool(), 1);
 	}
 
 	void Scene::OnUpdateLights(SceneInfo& sceneInfo)
@@ -82,6 +89,7 @@ namespace VulkanCore {
 
 				vkCmdDraw(sceneInfo.CommandBuffer, 6, 1, 0, 0);
 			}
+
 		}
 	}
 
