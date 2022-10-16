@@ -3,6 +3,7 @@
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Renderer/VulkanRenderer.h"
 
 namespace VulkanCore {
 
@@ -176,6 +177,7 @@ namespace VulkanCore {
 
 		VK_CHECK_RESULT(vkCreateRenderPass(device->GetVulkanDevice(), &renderPassInfo, nullptr, &m_RenderPass), "Failed to Create Scene Render Pass!");
 
+		m_AttachmentDescriptions = attachmentDescriptions;
 		Framebuffer->CreateFramebuffer(m_RenderPass);
 	}
 
@@ -184,6 +186,49 @@ namespace VulkanCore {
 		auto Framebuffer = m_Specification.TargetFramebuffer;
 		Framebuffer->Resize(width, height);
 		Framebuffer->CreateFramebuffer(m_RenderPass);
+	}
+
+	void VulkanRenderPass::Begin(VkCommandBuffer beginCmd)
+	{
+		auto Framebuffer = m_Specification.TargetFramebuffer;
+		VkExtent2D framebufferExtent = { Framebuffer->GetSpecification().Width, Framebuffer->GetSpecification().Height };
+
+		VkRenderPassBeginInfo beginPassInfo{};
+		beginPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		beginPassInfo.renderPass = m_RenderPass;
+		beginPassInfo.framebuffer = Framebuffer->GetVulkanFramebuffers()[VulkanRenderer::Get()->GetCurrentFrameIndex()];
+		beginPassInfo.renderArea.offset = { 0, 0 };
+		beginPassInfo.renderArea.extent = framebufferExtent;
+
+		// TODO: We may change this in future as there will be multiple allocation/deallocation in
+		// clearValues vector
+		std::vector<VkClearValue> clearValues{ m_AttachmentDescriptions.size() };
+		for (uint32_t i = 0; i < Framebuffer->GetColorAttachments().size(); i++)
+			clearValues[i].color = { 0.01f, 0.01f, 0.01f, 1.0f };
+
+		clearValues[clearValues.size() - 1].depthStencil = { 1.0f, 0 };
+
+		beginPassInfo.clearValueCount = (uint32_t)clearValues.size();
+		beginPassInfo.pClearValues = clearValues.data();
+
+		vkCmdBeginRenderPass(beginCmd, &beginPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = static_cast<float>(Framebuffer->GetSpecification().Height);
+		viewport.width = static_cast<float>(Framebuffer->GetSpecification().Width);
+		viewport.height = -static_cast<float>(Framebuffer->GetSpecification().Height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor{ { 0, 0 }, framebufferExtent };
+		vkCmdSetViewport(beginCmd, 0, 1, &viewport);
+		vkCmdSetScissor(beginCmd, 0, 1, &scissor);
+	}
+
+	void VulkanRenderPass::End(VkCommandBuffer endCmd)
+	{
+		vkCmdEndRenderPass(endCmd);
 	}
 
 }
