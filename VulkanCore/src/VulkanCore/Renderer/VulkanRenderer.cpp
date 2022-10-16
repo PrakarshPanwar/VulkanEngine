@@ -204,9 +204,9 @@ namespace VulkanCore {
 
 	void VulkanRenderer::FinalQueueSubmit()
 	{
-		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), SceneRenderer::GetSceneRenderer()->GetCommandBuffer(m_CurrentFrameIndex) };
-
 		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
+
+		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), sceneRenderer->GetCommandBuffer(m_CurrentFrameIndex) };
 		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window.IsWindowResize())

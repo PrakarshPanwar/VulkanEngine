@@ -1,6 +1,8 @@
 #pragma once
 #include "VulkanImage.h"
 
+#include <glm/glm.hpp>
+
 namespace VulkanCore {
 
 	struct FramebufferTextureSpecification
@@ -28,6 +30,7 @@ namespace VulkanCore {
 		uint32_t Width = 0, Height = 0;
 		FramebufferAttachmentSpecification Attachments;
 		uint32_t Samples = 1;
+		glm::vec4 ClearColor = { 0.01f, 0.01f, 0.01f, 1.0f };
 
 		bool SwapChainTarget = false;
 	};

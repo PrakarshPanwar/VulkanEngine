@@ -5,6 +5,8 @@
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 namespace VulkanCore {
 
 	namespace Utils {
@@ -191,7 +193,8 @@ namespace VulkanCore {
 	void VulkanRenderPass::Begin(VkCommandBuffer beginCmd)
 	{
 		auto Framebuffer = m_Specification.TargetFramebuffer;
-		VkExtent2D framebufferExtent = { Framebuffer->GetSpecification().Width, Framebuffer->GetSpecification().Height };
+		const FramebufferSpecification fbSpec = Framebuffer->GetSpecification();
+		const VkExtent2D framebufferExtent = { fbSpec.Width, fbSpec.Height };
 
 		VkRenderPassBeginInfo beginPassInfo{};
 		beginPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -204,7 +207,7 @@ namespace VulkanCore {
 		// clearValues vector
 		std::vector<VkClearValue> clearValues{ m_AttachmentDescriptions.size() };
 		for (uint32_t i = 0; i < Framebuffer->GetColorAttachments().size(); i++)
-			clearValues[i].color = { 0.01f, 0.01f, 0.01f, 1.0f };
+			clearValues[i].color = { fbSpec.ClearColor.x, fbSpec.ClearColor.y, fbSpec.ClearColor.z, fbSpec.ClearColor.w };
 
 		clearValues[clearValues.size() - 1].depthStencil = { 1.0f, 0 };
 
@@ -215,9 +218,9 @@ namespace VulkanCore {
 
 		VkViewport viewport{};
 		viewport.x = 0.0f;
-		viewport.y = static_cast<float>(Framebuffer->GetSpecification().Height);
-		viewport.width = static_cast<float>(Framebuffer->GetSpecification().Width);
-		viewport.height = -static_cast<float>(Framebuffer->GetSpecification().Height);
+		viewport.y = static_cast<float>(fbSpec.Height);
+		viewport.width = static_cast<float>(fbSpec.Width);
+		viewport.height = -static_cast<float>(fbSpec.Height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
