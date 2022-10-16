@@ -6,7 +6,7 @@
 
 namespace VulkanCore {
 
-	RenderSystem::RenderSystem(VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout)
+	RenderSystem::RenderSystem(std::shared_ptr<VulkanRenderPass> renderPass, VkDescriptorSetLayout globalSetLayout)
 	{
 		CreatePipelineLayout(globalSetLayout);
 		CreatePipeline(renderPass);
@@ -18,13 +18,13 @@ namespace VulkanCore {
 		vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 	}
 
-	void RenderSystem::CreatePipeline(VkRenderPass renderPass)
+	void RenderSystem::CreatePipeline(std::shared_ptr<VulkanRenderPass> renderPass)
 	{
 		auto device = VulkanDevice::GetDevice();
 
 		PipelineConfigInfo pipelineConfig{};
-		VulkanPipeline::DefaultPipelineConfigInfo(pipelineConfig);
 		pipelineConfig.RenderPass = renderPass;
+		VulkanPipeline::DefaultPipelineConfigInfo(pipelineConfig);
 		pipelineConfig.PipelineLayout = m_PipelineLayout;
 
 #define USE_GEOMETRY_SHADER 0

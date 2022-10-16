@@ -128,7 +128,7 @@ namespace VulkanCore {
 		// TODO: Do this in `VulkanRenderPass`
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = sceneRenderer->GetRenderPass();
+		renderPassInfo.renderPass = sceneRenderer->GetVulkanRenderPass();
 		renderPassInfo.framebuffer = sceneRenderer->GetVulkanFramebuffer(m_CurrentImageIndex);
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent.width = sceneRenderer->GetFramebuffer()->GetSpecification().Width;
