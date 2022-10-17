@@ -56,7 +56,6 @@ namespace VulkanCore {
 	{
 		CreateInstance();
 		SetupDebugMessenger();
-		SetupAllocationMessenger();
 		CreateSurface();
 	}
 
