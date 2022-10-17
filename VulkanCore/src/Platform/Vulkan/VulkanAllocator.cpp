@@ -40,7 +40,7 @@ namespace VulkanCore {
 		allocInfo.preferredFlags = Utils::VulkanMemoryFlags(usage);
 
 		VmaAllocation vmaAllocation;
-		VK_CHECK_RESULT(vmaCreateBuffer(m_vkAllocator, &bufInfo, &allocInfo, &buffer, &vmaAllocation, nullptr), "{0}: Failed to Allocate Buffer!", m_DebugName);
+		VK_CHECK_RESULT(vmaCreateBuffer(m_VkMemoryAllocator, &bufInfo, &allocInfo, &buffer, &vmaAllocation, nullptr), "{0}: Failed to Allocate Buffer!", m_DebugName);
 		return vmaAllocation;
 	}
 
@@ -51,7 +51,7 @@ namespace VulkanCore {
 		allocInfo.preferredFlags = Utils::VulkanMemoryFlags(usage);
 
 		VmaAllocation vmaAllocation;
-		VK_CHECK_RESULT(vmaCreateImage(m_vkAllocator, &imgInfo, &allocInfo, &image, &vmaAllocation, nullptr), "{0}: Failed to Allocate Image!", m_DebugName);
+		VK_CHECK_RESULT(vmaCreateImage(m_VkMemoryAllocator, &imgInfo, &allocInfo, &image, &vmaAllocation, nullptr), "{0}: Failed to Allocate Image!", m_DebugName);
 		return vmaAllocation;
 	}
 
@@ -59,7 +59,7 @@ namespace VulkanCore {
 	T* VulkanAllocator::MapMemory(VmaAllocation allocation)
 	{
 		void* mappedData;
-		VK_CHECK_RESULT(vmaMapMemory(m_vkAllocator, allocation, &mappedData), "{}: Failed to Map Memory!", m_DebugName);
+		VK_CHECK_RESULT(vmaMapMemory(m_VkMemoryAllocator, allocation, &mappedData), "{}: Failed to Map Memory!", m_DebugName);
 
 		static_assert(std::integral<T>, "Type is not Integral");
 		return (T*)mappedData;
@@ -67,17 +67,17 @@ namespace VulkanCore {
 
 	void VulkanAllocator::UnmapMemory(VmaAllocation allocation)
 	{
-		vmaUnmapMemory(m_vkAllocator, allocation);
+		vmaUnmapMemory(m_VkMemoryAllocator, allocation);
 	}
 
 	void VulkanAllocator::DestroyBuffer(VkBuffer& buffer, VmaAllocation allocation)
 	{
-		vmaDestroyBuffer(m_vkAllocator, buffer, allocation);
+		vmaDestroyBuffer(m_VkMemoryAllocator, buffer, allocation);
 	}
 
 	void VulkanAllocator::DestroyImage(VkImage& image, VmaAllocation allocation)
 	{
-		vmaDestroyImage(m_vkAllocator, image, allocation);
+		vmaDestroyImage(m_VkMemoryAllocator, image, allocation);
 	}
 
 }

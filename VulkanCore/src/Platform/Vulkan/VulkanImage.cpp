@@ -126,7 +126,7 @@ namespace VulkanCore {
 		if (m_Info.Image != nullptr)
 			Release();
 
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("Image2D");
 
 		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
@@ -266,7 +266,7 @@ namespace VulkanCore {
 
 	void VulkanImage::Release()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("Image2D");
 
 		vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);

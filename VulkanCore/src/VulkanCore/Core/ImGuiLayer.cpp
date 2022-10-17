@@ -3,6 +3,7 @@
 
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanTexture.h"
+#include "Platform/Vulkan/VulkanContext.h"
 #include "Application.h"
 
 #include "VulkanCore/Core/Assert.h"
@@ -32,7 +33,7 @@ namespace VulkanCore {
 
 	void ImGuiLayer::OnAttach()
 	{
-		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder(*VulkanDevice::GetDevice());
+		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder(*VulkanContext::GetCurrentDevice());
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, 1000);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000);
@@ -58,10 +59,11 @@ namespace VulkanCore {
 		GLFWwindow* window = (GLFWwindow*)Application::Get()->GetWindow()->GetNativeWindow();
 		ImGui_ImplGlfw_InitForVulkan(window, true);
 
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
+		const auto vulkanInstance = VulkanContext::GetCurrentContext()->m_VkInstance;
 
 		ImGui_ImplVulkan_InitInfo init_info = {};
-		init_info.Instance = device->GetVulkanInstance();
+		init_info.Instance = vulkanInstance;
 		init_info.PhysicalDevice = device->GetPhysicalDevice();
 		init_info.Device = device->GetVulkanDevice();
 		init_info.Queue = device->GetGraphicsQueue();

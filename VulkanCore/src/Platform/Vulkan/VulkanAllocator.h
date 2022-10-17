@@ -1,5 +1,5 @@
 #pragma once
-#include "VulkanDevice.h"
+#include "VulkanContext.h"
 
 namespace VulkanCore {
 
@@ -20,7 +20,7 @@ namespace VulkanCore {
 		void DestroyBuffer(VkBuffer& buffer, VmaAllocation allocation);
 		void DestroyImage(VkImage& image, VmaAllocation allocation);
 	private:
-		const VmaAllocator m_vkAllocator = VulkanDevice::GetDevice()->GetVulkanAllocator();
+		const VmaAllocator m_VkMemoryAllocator = VulkanContext::GetVulkanMemoryAllocator();
 		std::string_view m_DebugName;
 	};
 

@@ -35,7 +35,7 @@ namespace VulkanCore {
 
 	void VulkanTexture::CreateTextureImage()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		m_Pixels = stbi_load(m_FilePath.c_str(), &m_Width, &m_Height, &m_Channels, STBI_rgb_alpha);
 
@@ -59,7 +59,7 @@ namespace VulkanCore {
 
 	void VulkanTexture::CreateImage()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("Image2D");
 
 		VkImageCreateInfo imageInfo{};
@@ -85,7 +85,7 @@ namespace VulkanCore {
 
 	void VulkanTexture::TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout)
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 		VkCommandBuffer commandBuffer = device->GetCommandBuffer();
 
 		VkImageMemoryBarrier barrier{};
@@ -132,7 +132,7 @@ namespace VulkanCore {
 
 	void VulkanTexture::CreateTextureSampler()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		VkSamplerCreateInfo samplerCreateInfo{};
 		samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -160,7 +160,7 @@ namespace VulkanCore {
 
 	void VulkanTexture::Invalidate()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		int width, height, channels; // TODO: Ask for HDR Texture
 		stbi_uc* pixelData = stbi_load(m_FilePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
@@ -233,7 +233,7 @@ namespace VulkanCore {
 
 	void VulkanTexture::CreateTextureImageView()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		VkImageViewCreateInfo imageViewInfo{};
 		imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
