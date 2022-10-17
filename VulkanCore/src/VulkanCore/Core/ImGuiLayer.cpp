@@ -11,6 +11,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
+#include "ImGuizmo.h"
 
 #include <glm/gtx/log_base.hpp>
 #include <filesystem>
@@ -112,6 +113,7 @@ namespace VulkanCore {
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
 	}
 
 	void ImGuiLayer::ImGuiRenderandEnd(VkCommandBuffer commandBuffer)

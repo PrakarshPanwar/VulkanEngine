@@ -4,6 +4,7 @@
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
+#include "VulkanCore/Events/Input.h"
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 
@@ -11,11 +12,17 @@
 #include "Platform/Vulkan/VulkanSwapChain.h"
 
 #include <imgui_impl_vulkan.h>
+#include <ImGuizmo.h>
 
 #include <memory>
 #include <filesystem>
 #include <numbers>
 #include <future>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace VulkanCore {
 
@@ -231,6 +238,11 @@ namespace VulkanCore {
 		ImGui::Begin("Viewport");
 		auto region = ImGui::GetContentRegionAvail();
 		auto windowSize = ImGui::GetWindowSize();
+		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+		auto viewportOffset = ImGui::GetWindowPos();
+		m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
+		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
 
 		if ((m_ViewportSize.x != region.x) && (m_ViewportSize.y != region.y))
 		{
@@ -246,6 +258,8 @@ namespace VulkanCore {
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
 		ImGui::Image(m_SceneTextureIDs[VulkanRenderer::Get()->GetCurrentFrameIndex()], region);
+
+		RenderGizmo();
 		ImGui::End(); // End of Viewport
 
 		m_SceneHierarchyPanel.OnImGuiRender();
@@ -255,6 +269,34 @@ namespace VulkanCore {
 
 	bool EditorLayer::OnKeyEvent(KeyPressedEvent& keyevent)
 	{
+		// Gizmos
+		switch (keyevent.GetKeyCode())
+		{
+		case Key::Q:
+		{
+			if (!ImGuizmo::IsUsing())
+				m_GizmoType = -1;
+			break;
+		}
+		case Key::W:
+		{
+			if (!ImGuizmo::IsUsing())
+				m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+			break;
+		}
+		case Key::E:
+		{
+			if (!ImGuizmo::IsUsing())
+				m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+			break;
+		}
+		case Key::R:
+		{
+			if (!ImGuizmo::IsUsing())
+				m_GizmoType = ImGuizmo::OPERATION::SCALE;
+			break;
+		}
+		}
 		return false;
 	}
 
@@ -315,6 +357,53 @@ namespace VulkanCore {
 		auto& greenLightTransform = GreenPointLight.AddComponent<TransformComponent>(glm::vec3{ 2.0f, 0.0f, -0.5f }, glm::vec3{ 0.1f });
 		std::shared_ptr<PointLight> greenLight = std::make_shared<PointLight>(glm::vec4(greenLightTransform.Translation, 1.0f), glm::vec4{ 0.1f, 0.8f, 0.2f, 1.0f });
 		GreenPointLight.AddComponent<PointLightComponent>(greenLight);
+	}
+
+	void EditorLayer::RenderGizmo()
+	{
+		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+
+		if (selectedEntity && m_GizmoType != -1)
+		{
+			ImGuizmo::SetOrthographic(false);
+			ImGuizmo::SetDrawlist();
+
+			ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y, m_ViewportBounds[1].x - m_ViewportBounds[0].x, m_ViewportBounds[1].y - m_ViewportBounds[0].y);
+		
+			// Editor camera
+			const glm::mat4& cameraProjection = m_EditorCamera.GetProjectionMatrix();
+			glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
+
+			// Entity transform
+			auto& tc = selectedEntity.GetComponent<TransformComponent>();
+			glm::mat4 transform = tc.GetTransform();
+
+			// Snapping
+			bool snap = Input::IsKeyPressed(Key::LeftControl);
+			float snapValue = 0.5f; // Snap to 0.5m for translation/scale
+			// Snap to 45 degrees for rotation
+			if (m_GizmoType == ImGuizmo::OPERATION::ROTATE)
+				snapValue = 45.0f;
+
+			float snapValues[3] = { snapValue, snapValue, snapValue };
+
+			ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
+				(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::LOCAL, glm::value_ptr(transform),
+				nullptr, snap ? snapValues : nullptr);
+
+			if (ImGuizmo::IsUsing())
+			{
+				glm::vec3 translation, scale, skew;
+				glm::vec4 perspective;
+				glm::quat rotation;
+
+				glm::decompose(transform, scale, rotation, translation, skew, perspective);
+
+				tc.Translation = translation;
+				tc.Rotation = glm::eulerAngles(rotation);
+				tc.Scale = scale;
+			}
+		}
 	}
 
 }

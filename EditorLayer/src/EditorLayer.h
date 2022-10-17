@@ -35,6 +35,7 @@ namespace VulkanCore {
 		bool OnWindowResize(WindowResizeEvent& windowEvent);
 		void RecreateSceneDescriptors();
 		void LoadEntities();
+		void RenderGizmo();
 	private:
 		std::shared_ptr<Scene> m_Scene;
 		std::shared_ptr<SceneRenderer> m_SceneRenderer;
@@ -54,6 +55,9 @@ namespace VulkanCore {
 		std::vector<VkDescriptorSet> m_SceneTextureIDs;
 		bool m_ImGuiShowWindow = true, m_ViewportHovered = false, m_ViewportFocused = false, m_WindowResized = false;
 		ImVec2 m_ViewportSize = { 1904.0f, 991.0f }; // TODO: Calculate this by function
+
+		glm::vec2 m_ViewportBounds[2];
+		int m_GizmoType = -1;
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 	};
