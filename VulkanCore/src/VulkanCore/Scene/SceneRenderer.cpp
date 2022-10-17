@@ -52,7 +52,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::Release()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(), 
 			static_cast<uint32_t>(m_SceneCommandBuffers.size()), m_SceneCommandBuffers.data());
@@ -66,7 +66,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::CreateCommandBuffers()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 		auto swapChain = VulkanSwapChain::GetSwapChain();
 
 		m_SceneCommandBuffers.resize(swapChain->GetImageCount());

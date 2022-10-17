@@ -4,6 +4,7 @@
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Components.h"
+#include "Platform/Vulkan/VulkanContext.h"
 
 namespace VulkanCore {
 
@@ -15,13 +16,13 @@ namespace VulkanCore {
 
 	PointLightSystem::~PointLightSystem()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 		vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 	}
 
 	void PointLightSystem::CreatePipeline(std::shared_ptr<VulkanRenderPass> renderPass)
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		PipelineConfigInfo pipelineConfig{};
 		pipelineConfig.RenderPass = renderPass;
@@ -40,7 +41,7 @@ namespace VulkanCore {
 
 	void PointLightSystem::CreatePipelineLayout(VkDescriptorSetLayout globalSetLayout)
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		VkPushConstantRange pushConstantRange{};
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;

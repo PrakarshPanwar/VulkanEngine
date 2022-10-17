@@ -2,6 +2,7 @@
 #include "VulkanFramebuffer.h"
 
 #include "VulkanSwapChain.h"
+#include "VulkanContext.h"
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
 
@@ -65,9 +66,9 @@ namespace VulkanCore {
 
 	void VulkanFramebuffer::Invalidate()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
-		uint32_t attachmentSize = m_Specification.Samples > 1 ? (m_ColorAttachmentSpecifications.size() + 1) : m_ColorAttachmentSpecifications.size();
+		uint32_t attachmentSize = static_cast<uint32_t>(m_Specification.Samples > 1 ? (m_ColorAttachmentSpecifications.size() + 1) : m_ColorAttachmentSpecifications.size());
 		m_ColorAttachments.reserve(attachmentSize);
 
 		// Image Creation for Color Attachments
@@ -162,7 +163,7 @@ namespace VulkanCore {
 
 	void VulkanFramebuffer::CreateFramebuffer(VkRenderPass renderPass)
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		if (!m_Framebuffers.empty())
 			Release();
@@ -194,7 +195,7 @@ namespace VulkanCore {
 
 	void VulkanFramebuffer::Release()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		for (auto& Framebuffer : m_Framebuffers)
 			vkDestroyFramebuffer(device->GetVulkanDevice(), Framebuffer, nullptr);

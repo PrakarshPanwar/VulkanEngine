@@ -4,6 +4,7 @@
 #include "Platform/Windows/WindowsWindow.h"
 #include "Platform/Vulkan/VulkanMesh.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
+#include "Platform/Vulkan/VulkanContext.h"
 
 #include "VulkanCore/Scene/Scene.h"
 #include "VulkanCore/Scene/Entity.h"
@@ -41,7 +42,7 @@ namespace VulkanCore {
 		bool OnWindowResize(WindowResizeEvent& window);
 	private:
 		std::shared_ptr<Window> m_Window;
-		std::unique_ptr<VulkanDevice> m_VulkanDevice;
+		std::unique_ptr<VulkanContext> m_Context;
 		std::unique_ptr<VulkanRenderer> m_Renderer;
 		std::unique_ptr<VulkanDescriptorPool> m_GlobalPool;
 		std::shared_ptr<ImGuiLayer> m_ImGuiLayer;

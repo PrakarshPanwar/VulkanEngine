@@ -11,7 +11,7 @@ namespace VulkanCore {
 		: m_InstanceSize(instanceSize), m_InstanceCount(instanceCount), m_UsageFlags(usageFlags),
 		m_MemoryPropertyFlags(memoryPropertyFlags)
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("Buffer");
 
 		m_AlignmentSize = GetAlignment(m_InstanceSize, minOffsetAlignment);
@@ -29,15 +29,15 @@ namespace VulkanCore {
 
 	VulkanBuffer::~VulkanBuffer()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		Unmap();
-		vmaDestroyBuffer(device->GetVulkanAllocator(), m_Buffer, m_MemoryAllocation);
+		vmaDestroyBuffer(VulkanContext::GetVulkanMemoryAllocator(), m_Buffer, m_MemoryAllocation);
 	}
 
 	VkResult VulkanBuffer::MapOld(VkDeviceSize size, VkDeviceSize offset)
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		VK_CORE_ASSERT(m_Buffer && m_Memory, "Called Map on Buffer before its creation!");
 		return vkMapMemory(device->GetVulkanDevice(), m_Memory, offset, size, 0, &m_dstMapped);
@@ -45,15 +45,15 @@ namespace VulkanCore {
 
 	VkResult VulkanBuffer::Map()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		VK_CORE_ASSERT(m_Buffer, "Called Map on Buffer before its creation!");
-		return vmaMapMemory(device->GetVulkanAllocator(), m_MemoryAllocation, &m_dstMapped);
+		return vmaMapMemory(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, &m_dstMapped);
 	}
 
 	void VulkanBuffer::UnmapOld()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		if (m_dstMapped)
 		{
@@ -64,11 +64,11 @@ namespace VulkanCore {
 
 	void VulkanBuffer::Unmap()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		if (m_dstMapped)
 		{
-			vmaUnmapMemory(device->GetVulkanAllocator(), m_MemoryAllocation);
+			vmaUnmapMemory(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation);
 			m_dstMapped = nullptr;
 		}
 	}
@@ -90,7 +90,7 @@ namespace VulkanCore {
 
 	VkResult VulkanBuffer::FlushBufferOld(VkDeviceSize size, VkDeviceSize offset)
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		VkMappedMemoryRange mappedRange = {};
 		mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
@@ -102,8 +102,8 @@ namespace VulkanCore {
 
 	VkResult VulkanBuffer::FlushBuffer(VkDeviceSize size, VkDeviceSize offset)
 	{
-		auto device = VulkanDevice::GetDevice();
-		return vmaFlushAllocation(device->GetVulkanAllocator(), m_MemoryAllocation, offset, size);
+		auto device = VulkanContext::GetCurrentDevice();
+		return vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, offset, size);
 	}
 
 	VkDescriptorBufferInfo VulkanBuffer::DescriptorInfo(VkDeviceSize size, VkDeviceSize offset)
@@ -113,7 +113,7 @@ namespace VulkanCore {
 
 	VkResult VulkanBuffer::Invalidate(VkDeviceSize size, VkDeviceSize offset)
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		VkMappedMemoryRange mappedRange = {};
 		mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;

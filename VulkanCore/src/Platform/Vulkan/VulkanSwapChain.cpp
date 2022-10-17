@@ -3,6 +3,8 @@
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
+#include "VulkanContext.h"
+#include "VulkanAllocator.h"
 
 namespace VulkanCore {
 
@@ -26,10 +28,12 @@ namespace VulkanCore {
 
 	VulkanSwapChain::~VulkanSwapChain()
 	{
+		const auto vulkanAllocator = VulkanContext::GetCurrentContext()->m_VkMemoryAllocator;
+
 		for (int i = 0; i < m_ColorImages.size(); i++)
 		{
 			vkDestroyImageView(m_VulkanDevice.GetVulkanDevice(), m_ColorImageViews[i], nullptr);
-			vmaDestroyImage(m_VulkanDevice.GetVulkanAllocator(), m_ColorImages[i], m_ColorImageMemories[i]);
+			vmaDestroyImage(vulkanAllocator, m_ColorImages[i], m_ColorImageMemories[i]);
 		}
 
 		for (auto imageView : m_SwapChainImageViews)
@@ -193,7 +197,8 @@ namespace VulkanCore {
 
 	void VulkanSwapChain::CreateSwapChain()
 	{
-		SwapChainSupportDetails swapChainSupport = m_VulkanDevice.GetSwapChainSupport();
+		auto device = VulkanContext::GetCurrentDevice();
+		SwapChainSupportDetails swapChainSupport = VulkanContext::GetCurrentContext()->QuerySwapChainSupport(device->GetPhysicalDevice());
 
 		VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
 		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.PresentModes);
@@ -203,9 +208,11 @@ namespace VulkanCore {
 		if (swapChainSupport.Capabilities.maxImageCount > 0 && imageCount > swapChainSupport.Capabilities.maxImageCount)
 			imageCount = swapChainSupport.Capabilities.maxImageCount;
 
+		const auto vulkanSurface = VulkanContext::GetCurrentContext()->m_VkSurface;
+
 		VkSwapchainCreateInfoKHR createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = m_VulkanDevice.GetSurface();
+		createInfo.surface = vulkanSurface;
 
 		createInfo.minImageCount = imageCount;
 		createInfo.imageFormat = surfaceFormat.format;
@@ -278,6 +285,7 @@ namespace VulkanCore {
 	{
 		VkFormat format = GetSwapChainImageFormat();
 		VkExtent2D swapChainExtent = GetSwapChainExtent();
+		VulkanAllocator allocator("SwapChainImages");
 
 		m_ColorImages.resize(GetImageCount());
 		m_ColorImageMemories.resize(GetImageCount());
@@ -303,7 +311,7 @@ namespace VulkanCore {
 
 			// TODO: Use VMA method/allocator
 			m_ColorImageMemories[i] = m_VulkanDevice.CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_ColorImages[i]);
-		
+
 			VkImageViewCreateInfo viewInfo{};
 			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 			viewInfo.image = m_ColorImages[i];
