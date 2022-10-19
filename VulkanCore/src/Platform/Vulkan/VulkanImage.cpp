@@ -43,9 +43,8 @@ namespace VulkanCore {
 			{
 			case TextureWrap::Repeat: return VK_SAMPLER_ADDRESS_MODE_REPEAT;
 			case TextureWrap::Clamp:  return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-				break;
 			default:
-				break;
+				return (VkSamplerAddressMode)0;
 			}
 		}
 
@@ -109,8 +108,6 @@ namespace VulkanCore {
 		m_Specification.Height = height;
 		m_Specification.Format = ImageFormat::RGBA8_SRGB;
 		m_Specification.Usage = usage;
-
-		//Invalidate(); // TODO: For now we have to invalidate manually as copying is involved
 	}
 
 	VulkanImage::~VulkanImage()
@@ -231,10 +228,10 @@ namespace VulkanCore {
 		{
 			auto barrierCmd = device->GetCommandBuffer();
 
-			VkImageSubresourceRange subresourceRange{}; // TODO: Add Mips
+			VkImageSubresourceRange subresourceRange{};
 			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			subresourceRange.baseMipLevel = 0;
-			subresourceRange.levelCount = 1;
+			subresourceRange.levelCount = m_Specification.MipLevels;
 			subresourceRange.baseArrayLayer = 0;
 			subresourceRange.layerCount = 1;
 

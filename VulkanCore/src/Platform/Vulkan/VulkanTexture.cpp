@@ -229,21 +229,24 @@ namespace VulkanCore {
 
 			device->FlushCommandBuffer(copyCmd);
 
-			VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+			if (m_Specification.GenerateMips)
+				GenerateMipMaps();
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, m_Image->GetVulkanImageInfo().Image,
-				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				subResourceRange);
+			else
+			{
+				VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
-			device->FlushCommandBuffer(barrierCmd);
+				Utils::InsertImageMemoryBarrier(barrierCmd, m_Image->GetVulkanImageInfo().Image,
+					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					subResourceRange);
+
+				device->FlushCommandBuffer(barrierCmd);
+			}
 
 			free(pixelData);
 		}
-
-		if (m_Specification.GenerateMips)
-			GenerateMipMaps();
 	}
 
 	void VulkanTexture::CreateTextureImageView()
@@ -274,17 +277,12 @@ namespace VulkanCore {
 
 		VkCommandBuffer blitCmd = device->GetCommandBuffer();
 
-		const VkImage TexImage = m_Image->GetVulkanImageInfo().Image;
-
-		VkImageMemoryBarrier barrier{};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.image = TexImage;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
-		barrier.subresourceRange.levelCount = 1;
+		const VkImage vulkanImage = m_Image->GetVulkanImageInfo().Image;
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.layerCount = 1;
+		subresourceRange.levelCount = 1;
 
 		int32_t mipWidth = m_Specification.Width;
 		int32_t mipHeight = m_Specification.Height;
@@ -293,17 +291,13 @@ namespace VulkanCore {
 
 		for (uint32_t i = 1; i < mipLevels; i++)
 		{
-			barrier.subresourceRange.baseMipLevel = i - 1;
-			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			subresourceRange.baseMipLevel = i - 1;
 
-			vkCmdPipelineBarrier(blitCmd,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-				0, nullptr,
-				0, nullptr,
-				1, &barrier);
+			Utils::InsertImageMemoryBarrier(blitCmd, vulkanImage,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 
+				subresourceRange);
 
 			VkImageBlit blit{};
 			blit.srcOffsets[0] = { 0, 0, 0 };
@@ -320,37 +314,28 @@ namespace VulkanCore {
 			blit.dstSubresource.layerCount = 1;
 
 			vkCmdBlitImage(blitCmd,
-				TexImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				TexImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				1, &blit,
 				VK_FILTER_LINEAR);
 
-			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-			vkCmdPipelineBarrier(blitCmd,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-				0, nullptr,
-				0, nullptr,
-				1, &barrier);
+			Utils::InsertImageMemoryBarrier(blitCmd, vulkanImage,
+				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				subresourceRange);
 
 			if (mipWidth > 1) mipWidth /= 2;
 			if (mipHeight > 1) mipHeight /= 2;
 		}
 
-		barrier.subresourceRange.baseMipLevel = mipLevels - 1;
-		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		subresourceRange.baseMipLevel = mipLevels - 1;
 
-		vkCmdPipelineBarrier(blitCmd,
-			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-			0, nullptr,
-			0, nullptr,
-			1, &barrier);
+		Utils::InsertImageMemoryBarrier(blitCmd, vulkanImage,
+			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			subresourceRange);
 
 		device->FlushCommandBuffer(blitCmd);
 	}
