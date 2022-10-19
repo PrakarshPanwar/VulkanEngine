@@ -202,10 +202,9 @@ namespace VulkanCore {
 		allocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 		allocInfo.preferredFlags = properties;
 
-		const auto vulkanAllocator = VulkanContext::GetCurrentContext()->m_VkMemoryAllocator;
 		VmaAllocation allocation;
 
-		VK_CHECK_RESULT(vmaCreateBuffer(vulkanAllocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr), "Failed to Create Buffer");
+		VK_CHECK_RESULT(vmaCreateBuffer(VulkanContext::GetVulkanMemoryAllocator(), &bufferInfo, &allocInfo, &buffer, &allocation, nullptr), "Failed to Create Buffer");
 		return allocation;
 	}
 
@@ -300,10 +299,9 @@ namespace VulkanCore {
 		allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 		allocInfo.preferredFlags = properties;
 
-		const auto vulkanAllocator = VulkanContext::GetCurrentContext()->m_VkMemoryAllocator;
 		VmaAllocation imageAllocation;
 
-		VK_CHECK_RESULT(vmaCreateImage(vulkanAllocator, &imageInfo, &allocInfo, &image, &imageAllocation, nullptr), "Failed to Create Image!");
+		VK_CHECK_RESULT(vmaCreateImage(VulkanContext::GetVulkanMemoryAllocator(), &imageInfo, &allocInfo, &image, &imageAllocation, nullptr), "Failed to Create Image!");
 		return imageAllocation;
 	}
 
