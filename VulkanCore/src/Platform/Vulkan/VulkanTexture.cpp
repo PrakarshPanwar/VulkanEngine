@@ -11,6 +11,15 @@
 
 namespace VulkanCore {
 
+	namespace Utils {
+
+		static uint32_t CalculateMipCount(uint32_t width, uint32_t height)
+		{
+			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
+		}
+
+	}
+
 	VulkanTexture::VulkanTexture(const std::string& filepath)
 		: m_FilePath(filepath)
 	{
@@ -19,8 +28,8 @@ namespace VulkanCore {
 
 	VulkanTexture::VulkanTexture(uint32_t width, uint32_t height)
 	{
-		m_Width = width;
-		m_Height = height;
+		m_TexWidth = width;
+		m_TexHeight = height;
 
 		Invalidate();
 	}
@@ -37,9 +46,9 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		m_Pixels = stbi_load(m_FilePath.c_str(), &m_Width, &m_Height, &m_Channels, STBI_rgb_alpha);
+		m_Pixels = stbi_load(m_FilePath.c_str(), &m_TexWidth, &m_TexHeight, &m_Channels, STBI_rgb_alpha);
 
-		VkDeviceSize imageSize = m_Width * m_Height * 4;
+		VkDeviceSize imageSize = m_TexWidth * m_TexHeight * 4;
 		VK_CORE_ASSERT(m_Pixels, "Failed to Load Image {0}", m_FilePath);
 
 		VulkanBuffer stagingBuffer{ imageSize, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -53,7 +62,7 @@ namespace VulkanCore {
 
 		CreateImage();
 		TransitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		device->CopyBufferToImage(stagingBuffer.GetBuffer(), m_Info.Image, m_Width, m_Height, 1);
+		device->CopyBufferToImage(stagingBuffer.GetBuffer(), m_Info.Image, m_TexWidth, m_TexHeight, 1);
 		TransitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
@@ -65,11 +74,11 @@ namespace VulkanCore {
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageInfo.extent.width = m_Width;
-		imageInfo.extent.height = m_Height;
+		imageInfo.extent.width = m_TexWidth;
+		imageInfo.extent.height = m_TexHeight;
 		imageInfo.extent.depth = 1;
 
-		uint32_t mipLevels = static_cast<uint32_t>(std::_Floor_of_log_2(std::max(m_Width, m_Height))) + 1;
+		uint32_t mipLevels = static_cast<uint32_t>(std::_Floor_of_log_2(std::max(m_TexWidth, m_TexHeight))) + 1;
 		imageInfo.mipLevels = mipLevels;
 
 		imageInfo.arrayLayers = 1;
@@ -165,9 +174,11 @@ namespace VulkanCore {
 		int width, height, channels; // TODO: Ask for HDR Texture
 		stbi_uc* pixelData = stbi_load(m_FilePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
-		// TODO: Maybe we'll have to change this
-		m_Width = width;
-		m_Height = height;
+		if (m_Specification.Width == 0 && m_Specification.Height == 0)
+		{
+			m_Specification.Width = width;
+			m_Specification.Height = height;
+		}
 
 		// TODO: Get DeviceSize through some Utils function as format could be different
 		VkDeviceSize imageSize = width * height * 4;
@@ -175,10 +186,11 @@ namespace VulkanCore {
 		VK_CORE_ASSERT(pixelData, "Failed to Load Image {0}", m_FilePath);
 
 		ImageSpecification spec;
-		spec.Width = m_Width;
-		spec.Height = m_Height;
+		spec.Width = m_Specification.Width;
+		spec.Height = m_Specification.Height;
 		spec.Usage = ImageUsage::Texture;
-		spec.Format = ImageFormat::RGBA8_SRGB; // TODO: Change this when HDR Textures come
+		spec.Format = m_Specification.Format; // TODO: Change this when HDR Textures come
+		spec.MipLevels = Utils::CalculateMipCount(width, height);
 		m_Image = std::make_shared<VulkanImage>(spec);
 		m_Image->Invalidate();
 		m_Info = m_Image->GetVulkanImageInfo();
@@ -226,9 +238,12 @@ namespace VulkanCore {
 				subResourceRange);
 
 			device->FlushCommandBuffer(barrierCmd);
+
+			free(pixelData);
 		}
 
-		free(pixelData);
+		if (m_Specification.GenerateMips)
+			GenerateMipMaps();
 	}
 
 	void VulkanTexture::CreateTextureImageView()
@@ -251,6 +266,93 @@ namespace VulkanCore {
 
 	void VulkanTexture::Release() // TODO: Could be used otherwise will be removed in future
 	{
+	}
+
+	void VulkanTexture::GenerateMipMaps()
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		VkCommandBuffer blitCmd = device->GetCommandBuffer();
+
+		const VkImage TexImage = m_Image->GetVulkanImageInfo().Image;
+
+		VkImageMemoryBarrier barrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.image = TexImage;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+		barrier.subresourceRange.levelCount = 1;
+
+		int32_t mipWidth = m_Specification.Width;
+		int32_t mipHeight = m_Specification.Height;
+
+		const uint32_t mipLevels = Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height);
+
+		for (uint32_t i = 1; i < mipLevels; i++)
+		{
+			barrier.subresourceRange.baseMipLevel = i - 1;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+			vkCmdPipelineBarrier(blitCmd,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier);
+
+			VkImageBlit blit{};
+			blit.srcOffsets[0] = { 0, 0, 0 };
+			blit.srcOffsets[1] = { mipWidth, mipHeight, 1 };
+			blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blit.srcSubresource.mipLevel = i - 1;
+			blit.srcSubresource.baseArrayLayer = 0;
+			blit.srcSubresource.layerCount = 1;
+			blit.dstOffsets[0] = { 0, 0, 0 };
+			blit.dstOffsets[1] = { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
+			blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blit.dstSubresource.mipLevel = i;
+			blit.dstSubresource.baseArrayLayer = 0;
+			blit.dstSubresource.layerCount = 1;
+
+			vkCmdBlitImage(blitCmd,
+				TexImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				TexImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1, &blit,
+				VK_FILTER_LINEAR);
+
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+			vkCmdPipelineBarrier(blitCmd,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier);
+
+			if (mipWidth > 1) mipWidth /= 2;
+			if (mipHeight > 1) mipHeight /= 2;
+		}
+
+		barrier.subresourceRange.baseMipLevel = mipLevels - 1;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		vkCmdPipelineBarrier(blitCmd,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+			0, nullptr,
+			0, nullptr,
+			1, &barrier);
+
+		device->FlushCommandBuffer(blitCmd);
 	}
 
 }
