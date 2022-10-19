@@ -12,7 +12,7 @@ namespace VulkanCore {
 	class VulkanRenderer
 	{
 	public:
-		VulkanRenderer(WindowsWindow& appwindow, VulkanDevice& device);
+		VulkanRenderer(std::shared_ptr<WindowsWindow> window);
 		~VulkanRenderer();
 
 		void Init();
@@ -47,8 +47,7 @@ namespace VulkanCore {
 		void CreateQueryPool();
 		void FreeQueryPool();
 	private:
-		WindowsWindow& m_Window;
-		VulkanDevice& m_VulkanDevice;
+		std::shared_ptr<WindowsWindow> m_Window;
 		std::unique_ptr<VulkanSwapChain> m_SwapChain;
 
 		std::vector<VkCommandBuffer> m_CommandBuffers;

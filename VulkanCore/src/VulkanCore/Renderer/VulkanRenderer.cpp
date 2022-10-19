@@ -4,13 +4,14 @@
 #include "../Core/ImGuiLayer.h"
 #include "../Scene/SceneRenderer.h"
 #include "Renderer.h"
+#include "Platform/Vulkan/VulkanContext.h"
 
 namespace VulkanCore {
 
 	VulkanRenderer* VulkanRenderer::s_Instance;
 
-	VulkanRenderer::VulkanRenderer(WindowsWindow& appwindow, VulkanDevice& device)
-		: m_Window(appwindow), m_VulkanDevice(device)
+	VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowsWindow> window)
+		: m_Window(window)
 	{
 		s_Instance = this;
 		Init();
@@ -138,20 +139,24 @@ namespace VulkanCore {
 
 	void VulkanRenderer::CreateCommandBuffers()
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		m_CommandBuffers.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = m_VulkanDevice.GetCommandPool();
+		allocInfo.commandPool = device->GetCommandPool();
 		allocInfo.commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size());
 
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(m_VulkanDevice.GetVulkanDevice(), &allocInfo, m_CommandBuffers.data()), "Failed to Allocate Command Buffers!");
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_CommandBuffers.data()), "Failed to Allocate Command Buffers!");
 	}
 
 	void VulkanRenderer::FreeCommandBuffers()
 	{
-		vkFreeCommandBuffers(m_VulkanDevice.GetVulkanDevice(), m_VulkanDevice.GetCommandPool(),
+		auto device = VulkanContext::GetCurrentDevice();
+
+		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(),
 			static_cast<uint32_t>(m_CommandBuffers.size()), m_CommandBuffers.data());
 
 		m_CommandBuffers.clear();
@@ -159,41 +164,44 @@ namespace VulkanCore {
 
 	void VulkanRenderer::CreateQueryPool()
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		VkQueryPoolCreateInfo queryPoolInfo{};
 		queryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
 		queryPoolInfo.queryCount = 2;
 		queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
 		
-		vkCreateQueryPool(m_VulkanDevice.GetVulkanDevice(), &queryPoolInfo, nullptr, &m_QueryPool);
+		vkCreateQueryPool(device->GetVulkanDevice(), &queryPoolInfo, nullptr, &m_QueryPool);
 	}
 
 	void VulkanRenderer::FreeQueryPool()
 	{
-		vkDestroyQueryPool(m_VulkanDevice.GetVulkanDevice(), m_QueryPool, nullptr);
+		vkDestroyQueryPool(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), m_QueryPool, nullptr);
 	}
 
 	void VulkanRenderer::RecreateSwapChain()
 	{
-		auto extent = m_Window.GetExtent();
+		auto device = VulkanContext::GetCurrentDevice();
+		auto extent = m_Window->GetExtent();
 
 		while (extent.width == 0 || extent.height == 0)
 		{
-			extent = m_Window.GetExtent();
+			extent = m_Window->GetExtent();
 			glfwWaitEvents();
 		}
 
-		vkDeviceWaitIdle(m_VulkanDevice.GetVulkanDevice());
+		vkDeviceWaitIdle(device->GetVulkanDevice());
 		m_SwapChain.reset();
 
 		if (m_SwapChain == nullptr)
 		{
-			m_SwapChain = std::make_unique<VulkanSwapChain>(m_VulkanDevice, extent);
+			m_SwapChain = std::make_unique<VulkanSwapChain>(*device, extent);
 		}
 
 		else
 		{
 			std::shared_ptr<VulkanSwapChain> oldSwapChain = std::move(m_SwapChain);
-			m_SwapChain = std::make_unique<VulkanSwapChain>(m_VulkanDevice, extent, oldSwapChain);
+			m_SwapChain = std::make_unique<VulkanSwapChain>(*device, extent, oldSwapChain);
 
 			if (!oldSwapChain->CompareSwapFormats(*m_SwapChain->GetSwapChain()))
 			{
@@ -210,9 +218,9 @@ namespace VulkanCore {
 		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), sceneRenderer->GetCommandBuffer(m_CurrentFrameIndex) };
 		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window.IsWindowResize())
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
 		{
-			m_Window.ResetWindowResizeFlag();
+			m_Window->ResetWindowResizeFlag();
 			RecreateSwapChain();
 			sceneRenderer->RecreateScene();
 		}
