@@ -141,7 +141,7 @@ namespace VulkanCore {
 		}
 
 		if (m_Specification.Usage == ImageUsage::Texture)
-			usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+			usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 		if (m_Specification.Usage == ImageUsage::Storage)
 			usage |= VK_IMAGE_USAGE_STORAGE_BIT;
@@ -164,8 +164,7 @@ namespace VulkanCore {
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCreateInfo.usage = usage;
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCreateInfo.mipLevels = Utils::IsMultisampled(m_Specification) ? // TODO: Add a mips member in 'ImageSpecification'
-			1 : Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height);
+		imageCreateInfo.mipLevels = Utils::IsMultisampled(m_Specification) ? 1 : m_Specification.MipLevels;
 
 		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
 
@@ -183,7 +182,7 @@ namespace VulkanCore {
 
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &m_Info.ImageView), "Failed to Create Image View!");
 
-		VkSamplerAddressMode addressMode = Utils::VulkanSamplerWrap(m_Specification.WrapType);
+		VkSamplerAddressMode addressMode = Utils::VulkanSamplerWrap(m_Specification.SamplerWrap);
 
 		// Create a sampler for Image
 		VkSamplerCreateInfo sampler{};
@@ -205,7 +204,7 @@ namespace VulkanCore {
 		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		sampler.mipLodBias = 0.0f;
 		sampler.minLod = 0.0f;
-		sampler.maxLod = 2.0f;
+		sampler.maxLod = (float)m_Specification.MipLevels;
 
 		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &sampler, nullptr, &m_Info.Sampler), "Failed to Create Image Sampler!");
 	
