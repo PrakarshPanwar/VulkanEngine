@@ -3,6 +3,7 @@
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
+#include "Platform/Vulkan/VulkanContext.h"
 
 namespace VulkanCore {
 
@@ -14,13 +15,13 @@ namespace VulkanCore {
 
 	RenderSystem::~RenderSystem()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 		vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 	}
 
 	void RenderSystem::CreatePipeline(std::shared_ptr<VulkanRenderPass> renderPass)
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		PipelineConfigInfo pipelineConfig{};
 		pipelineConfig.RenderPass = renderPass;
@@ -47,7 +48,7 @@ namespace VulkanCore {
 
 	void RenderSystem::CreatePipelineLayout(VkDescriptorSetLayout globalSetLayout) 
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		VkPushConstantRange pushConstantRange{};
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;

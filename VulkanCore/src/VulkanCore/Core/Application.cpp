@@ -91,16 +91,18 @@ namespace VulkanCore {
 
 	Application::~Application()
 	{
-		vkDeviceWaitIdle(m_VulkanDevice->GetVulkanDevice());
+		vkDeviceWaitIdle(VulkanContext::GetCurrentDevice()->GetVulkanDevice());
 		m_ImGuiLayer->ShutDown();
 	}
 
 	void Application::Init()
 	{
-		m_VulkanDevice = std::make_unique<VulkanDevice>(*std::dynamic_pointer_cast<WindowsWindow>(m_Window));
-		m_Renderer = std::make_unique<VulkanRenderer>(*std::dynamic_pointer_cast<WindowsWindow>(m_Window), *m_VulkanDevice);
+		m_Context = std::make_unique<VulkanContext>(std::dynamic_pointer_cast<WindowsWindow>(m_Window));
 
-		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder(*m_VulkanDevice);
+		const auto device = VulkanContext::GetCurrentDevice();
+		m_Renderer = std::make_unique<VulkanRenderer>(*std::dynamic_pointer_cast<WindowsWindow>(m_Window), *device);
+
+		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder(*device);
 		descriptorPoolBuilder.SetMaxSets(VulkanSwapChain::MaxFramesInFlight).AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VulkanSwapChain::MaxFramesInFlight);
 		descriptorPoolBuilder.SetMaxSets(VulkanSwapChain::MaxFramesInFlight).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VulkanSwapChain::MaxFramesInFlight);
 		m_GlobalPool = descriptorPoolBuilder.Build();

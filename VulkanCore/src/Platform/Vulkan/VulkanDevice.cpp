@@ -3,6 +3,7 @@
 
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Assert.h"
+#include "VulkanContext.h"
 
 namespace VulkanCore {
 
@@ -56,6 +57,7 @@ namespace VulkanCore {
 		}
 	}
 
+#if !USE_CONTEXT
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -84,6 +86,7 @@ namespace VulkanCore {
 
 		return VK_FALSE;
 	}
+#endif
 
 	VkResult CreateDebugUtilsMessengerEXT(
 		VkInstance instance,
@@ -108,45 +111,27 @@ namespace VulkanCore {
 			func(instance, debugMessenger, pAllocator);
 	}
 
-	VulkanDevice* VulkanDevice::s_Instance;
-
-	void VulkanDevice::SetupAllocationMessenger()
+	VulkanDevice::VulkanDevice()
 	{
-		m_AllocationCallbacks = {};
-		m_AllocationCallbacks.pfnInternalAllocation = InternalAllocationNotification;
-		m_AllocationCallbacks.pfnInternalFree = InternalFreeNotification;
-	}
-
-	VulkanDevice::VulkanDevice(WindowsWindow& window)
-		: m_Window(window)
-	{
-		s_Instance = this;
+		//s_Instance = this;
 		Init();
 	}
 
 	void VulkanDevice::Init()
 	{
-		CreateInstance();
-		SetupDebugMessenger();
-		SetupAllocationMessenger();
-		CreateSurface();
 		PickPhysicalDevice();
 		CreateLogicalDevice();
 		CreateCommandPool();
-		CreateVMAAllocatorInstance();
+	}
+
+	void VulkanDevice::Destroy()
+	{
+		vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
+		vkDestroyDevice(m_LogicalDevice, nullptr);
 	}
 
 	VulkanDevice::~VulkanDevice()
 	{
-		vkDestroyCommandPool(m_vkDevice, m_CommandPool, nullptr);
-		vmaDestroyAllocator(m_VMAAllocator);
-		vkDestroyDevice(m_vkDevice, nullptr);
-
-		if (m_EnableValidation)
-			DestroyDebugUtilsMessengerEXT(m_vkInstance, m_DebugMessenger, nullptr);
-
-		vkDestroySurfaceKHR(m_vkInstance, m_vkSurface, nullptr);
-		vkDestroyInstance(m_vkInstance, nullptr);
 	}
 
 	uint32_t VulkanDevice::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
@@ -187,19 +172,19 @@ namespace VulkanCore {
 		bufferInfo.usage = usage;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		VK_CHECK_RESULT(vkCreateBuffer(m_vkDevice, &bufferInfo, nullptr, &buffer), "Failed to Create Buffer!");
+		VK_CHECK_RESULT(vkCreateBuffer(m_LogicalDevice, &bufferInfo, nullptr, &buffer), "Failed to Create Buffer!");
 
 		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(m_vkDevice, buffer, &memRequirements);
+		vkGetBufferMemoryRequirements(m_LogicalDevice, buffer, &memRequirements);
 
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
 
-		VK_CHECK_RESULT(vkAllocateMemory(m_vkDevice, &allocInfo, nullptr, &bufferMemory), "Failed to Allocate Buffer Memory!");
+		VK_CHECK_RESULT(vkAllocateMemory(m_LogicalDevice, &allocInfo, nullptr, &bufferMemory), "Failed to Allocate Buffer Memory!");
 
-		vkBindBufferMemory(m_vkDevice, buffer, bufferMemory, 0);
+		vkBindBufferMemory(m_LogicalDevice, buffer, bufferMemory, 0);
 	}
 
 	VmaAllocation VulkanDevice::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer)
@@ -219,7 +204,7 @@ namespace VulkanCore {
 
 		VmaAllocation allocation;
 
-		VK_CHECK_RESULT(vmaCreateBuffer(m_VMAAllocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr), "Failed to Create Buffer");
+		VK_CHECK_RESULT(vmaCreateBuffer(VulkanContext::GetVulkanMemoryAllocator(), &bufferInfo, &allocInfo, &buffer, &allocation, nullptr), "Failed to Create Buffer");
 		return allocation;
 	}
 
@@ -232,7 +217,7 @@ namespace VulkanCore {
 		allocInfo.commandBufferCount = 1;
 
 		VkCommandBuffer commandBuffer;
-		vkAllocateCommandBuffers(m_vkDevice, &allocInfo, &commandBuffer);
+		vkAllocateCommandBuffers(m_LogicalDevice, &allocInfo, &commandBuffer);
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -251,10 +236,10 @@ namespace VulkanCore {
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffer;
 
-		vkQueueSubmit(m_vkGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(m_vkGraphicsQueue);
+		vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(m_GraphicsQueue);
 
-		vkFreeCommandBuffers(m_vkDevice, m_CommandPool, 1, &commandBuffer);
+		vkFreeCommandBuffers(m_LogicalDevice, m_CommandPool, 1, &commandBuffer);
 	}
 
 	void VulkanDevice::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
@@ -294,18 +279,18 @@ namespace VulkanCore {
 
 	void VulkanDevice::CreateImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 	{
-		VK_CHECK_RESULT(vkCreateImage(m_vkDevice, &imageInfo, nullptr, &image), "Failed to Create Image!");
+		VK_CHECK_RESULT(vkCreateImage(m_LogicalDevice, &imageInfo, nullptr, &image), "Failed to Create Image!");
 
 		VkMemoryRequirements memRequirements;
-		vkGetImageMemoryRequirements(m_vkDevice, image, &memRequirements);
+		vkGetImageMemoryRequirements(m_LogicalDevice, image, &memRequirements);
 
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
 
-		VK_CHECK_RESULT(vkAllocateMemory(m_vkDevice, &allocInfo, nullptr, &imageMemory), "Failed to Allocate Image Memory!");
-		VK_CHECK_RESULT(vkBindImageMemory(m_vkDevice, image, imageMemory, 0), "Failed to Bind Image Memory!");
+		VK_CHECK_RESULT(vkAllocateMemory(m_LogicalDevice, &allocInfo, nullptr, &imageMemory), "Failed to Allocate Image Memory!");
+		VK_CHECK_RESULT(vkBindImageMemory(m_LogicalDevice, image, imageMemory, 0), "Failed to Bind Image Memory!");
 	}
 
 	VmaAllocation VulkanDevice::CreateImage(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image)
@@ -315,76 +300,23 @@ namespace VulkanCore {
 		allocInfo.preferredFlags = properties;
 
 		VmaAllocation imageAllocation;
-		VK_CHECK_RESULT(vmaCreateImage(m_VMAAllocator, &imageInfo, &allocInfo, &image, &imageAllocation, nullptr), "Failed to Create Image!");
+
+		VK_CHECK_RESULT(vmaCreateImage(VulkanContext::GetVulkanMemoryAllocator(), &imageInfo, &allocInfo, &image, &imageAllocation, nullptr), "Failed to Create Image!");
 		return imageAllocation;
-	}
-
-	void VulkanDevice::CreateInstance()
-	{
-		VK_CORE_ASSERT(!m_EnableValidation || CheckValidationLayerSupport(), "Validation Layers requested, but not Available!");
-
-		VkApplicationInfo appInfo = {};
-		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		appInfo.pApplicationName = m_Window.GetWindowName().c_str();
-		appInfo.applicationVersion = VK_MAKE_VERSION(1, 3, 0);
-		appInfo.pEngineName = "Vulkan Engine";
-		appInfo.engineVersion = VK_MAKE_VERSION(1, 3, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_3;
-
-		VkInstanceCreateInfo createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		createInfo.pApplicationInfo = &appInfo;
-
-		auto extensions = GetRequiredExtensions();
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-		createInfo.ppEnabledExtensionNames = extensions.data();
-
-		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-		if (m_EnableValidation) 
-		{
-			createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
-			createInfo.ppEnabledLayerNames = m_ValidationLayers.data();
-
-			PopulateDebugMessengerCreateInfo(debugCreateInfo);
-			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
-		}
-
-		else
-		{
-			createInfo.enabledLayerCount = 0;
-			createInfo.pNext = nullptr;
-		}
-
-		VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &m_vkInstance), "Failed to Create Vulkan Instance!");
-
-		HasGLFWRequiredInstanceExtensions();
-	}
-
-	void VulkanDevice::SetupDebugMessenger()
-	{
-		if (!m_EnableValidation)
-			return;
-
-		VkDebugUtilsMessengerCreateInfoEXT createInfo;
-		PopulateDebugMessengerCreateInfo(createInfo);
-		VK_CHECK_RESULT(CreateDebugUtilsMessengerEXT(m_vkInstance, &createInfo, nullptr, &m_DebugMessenger), "Failed to Setup Debug Messenger!");
-	}
-
-	void VulkanDevice::CreateSurface()
-	{
-		VK_CHECK_RESULT(glfwCreateWindowSurface(m_vkInstance, (GLFWwindow*)m_Window.GetNativeWindow(), nullptr, &m_vkSurface),
-			"Failed to Create Window Surface!");
 	}
 
 	void VulkanDevice::PickPhysicalDevice()
 	{
 		uint32_t deviceCount = 0;
-		vkEnumeratePhysicalDevices(m_vkInstance, &deviceCount, nullptr);
+
+		const auto vulkanInstance = VulkanContext::GetCurrentContext()->m_VkInstance;
+
+		vkEnumeratePhysicalDevices(vulkanInstance, &deviceCount, nullptr);
 		VK_CORE_ASSERT(deviceCount != 0, "Failed to find GPUs with Vulkan Support!");
 
 		VK_CORE_INFO("Device Count: {0}", deviceCount);
 		std::vector<VkPhysicalDevice> devices(deviceCount);
-		vkEnumeratePhysicalDevices(m_vkInstance, &deviceCount, devices.data());
+		vkEnumeratePhysicalDevices(vulkanInstance, &deviceCount, devices.data());
 
 		for (const auto& device : devices) 
 		{
@@ -438,25 +370,28 @@ namespace VulkanCore {
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
+		const auto& deviceExtensions = VulkanContext::GetCurrentContext()->m_DeviceExtensions;
+		const auto& validationLayers = VulkanContext::GetCurrentContext()->m_ValidationLayers;
+
 		createInfo.pEnabledFeatures = &deviceFeatures;
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(m_DeviceExtensions.size());
-		createInfo.ppEnabledExtensionNames = m_DeviceExtensions.data();
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+		createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
 		// Might not really be Necessary anymore because device specific Validation Layers
 		// have been deprecated
 		if (m_EnableValidation) 
 		{
-			createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
-			createInfo.ppEnabledLayerNames = m_ValidationLayers.data();
+			createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+			createInfo.ppEnabledLayerNames = validationLayers.data();
 		}
 
 		else
 			createInfo.enabledLayerCount = 0;
 
-		VK_CHECK_RESULT(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_vkDevice), "Failed to Create Logical Device!");
+		VK_CHECK_RESULT(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_LogicalDevice), "Failed to Create Logical Device!");
 
-		vkGetDeviceQueue(m_vkDevice, indices.GraphicsFamily, 0, &m_vkGraphicsQueue);
-		vkGetDeviceQueue(m_vkDevice, indices.PresentFamily, 0, &m_vkPresentQueue);
+		vkGetDeviceQueue(m_LogicalDevice, indices.GraphicsFamily, 0, &m_GraphicsQueue);
+		vkGetDeviceQueue(m_LogicalDevice, indices.PresentFamily, 0, &m_PresentQueue);
 	}
 
 	void VulkanDevice::CreateCommandPool()
@@ -468,69 +403,7 @@ namespace VulkanCore {
 		poolInfo.queueFamilyIndex = queueFamilyIndices.GraphicsFamily;
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-		VK_CHECK_RESULT(vkCreateCommandPool(m_vkDevice, &poolInfo, nullptr, &m_CommandPool), "Failed to Create Command Pool!");
-	}
-
-	bool VulkanDevice::IsDeviceSuitable(VkPhysicalDevice device)
-	{
-		QueueFamilyIndices indices = FindQueueFamilies(device);
-
-		bool extensionsSupported = CheckDeviceExtensionSupport(device);
-
-		bool swapChainAdequate = false;
-		if (extensionsSupported) 
-		{
-			SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
-			swapChainAdequate = !swapChainSupport.Formats.empty() && !swapChainSupport.PresentModes.empty();
-		}
-
-		VkPhysicalDeviceFeatures supportedFeatures;
-		vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
-
-		return indices.IsComplete() && extensionsSupported && swapChainAdequate 
-			&& supportedFeatures.samplerAnisotropy && supportedFeatures.geometryShader;
-	}
-
-	std::vector<const char*> VulkanDevice::GetRequiredExtensions()
-	{
-		uint32_t glfwExtensionCount = 0;
-		const char** glfwExtensions;
-		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-		if (m_EnableValidation)
-			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-
-		return extensions;
-	}
-
-	bool VulkanDevice::CheckValidationLayerSupport()
-	{
-		uint32_t layerCount;
-		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-		std::vector<VkLayerProperties> availableLayers(layerCount);
-		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-		for (const char* layerName : m_ValidationLayers)
-		{
-			bool layerFound = false;
-
-			for (const auto& layerProperties : availableLayers)
-			{
-				if (strcmp(layerName, layerProperties.layerName) == 0)
-				{
-					layerFound = true;
-					break;
-				}
-			}
-
-			if (!layerFound)
-				return false;
-		}
-
-		return true;
+		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_CommandPool), "Failed to Create Command Pool!");
 	}
 
 	QueueFamilyIndices VulkanDevice::FindQueueFamilies(VkPhysicalDevice device)
@@ -543,6 +416,8 @@ namespace VulkanCore {
 		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
+		const auto vulkanSurface = VulkanContext::GetCurrentContext()->m_VkSurface;
+
 		int i = 0;
 		for (const auto& queueFamily : queueFamilies)
 		{
@@ -553,7 +428,7 @@ namespace VulkanCore {
 			}
 
 			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_vkSurface, &presentSupport);
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, vulkanSurface, &presentSupport);
 
 			if (queueFamily.queueCount > 0 && presentSupport)
 			{
@@ -568,112 +443,6 @@ namespace VulkanCore {
 		}
 
 		return indices;
-	}
-
-	void VulkanDevice::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
-	{
-		createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-		createInfo.messageSeverity =
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-
-		createInfo.messageType =
-			VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-
-		createInfo.pfnUserCallback = DebugCallback;
-		createInfo.pUserData = nullptr;
-	}
-
-	void VulkanDevice::HasGLFWRequiredInstanceExtensions()
-	{
-		uint32_t extensionCount = 0;
-		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-		std::vector<VkExtensionProperties> extensions(extensionCount);
-		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-
-		VK_CORE_INFO("Available Extensions:");
-		std::unordered_set<std::string> available;
-		for (const auto& extension : extensions) 
-		{
-			VK_CORE_TRACE("\t {0}", extension.extensionName);
-			available.insert(extension.extensionName);
-		}
-
-		VK_CORE_INFO("Required Extensions:");
-		auto requiredExtensions = GetRequiredExtensions();
-		for (const auto& required : requiredExtensions)
-		{
-			VK_CORE_WARN("\t {0}", required);
-			VK_CORE_ASSERT(available.find(required) != available.end(), "Missing Required GLFW Extension!");
-		}
-	}
-
-	bool VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice device)
-	{
-		uint32_t extensionCount;
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-
-		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
-
-		std::set<std::string> requiredExtensions(m_DeviceExtensions.begin(), m_DeviceExtensions.end());
-
-		for (const auto& extension : availableExtensions)
-			requiredExtensions.erase(extension.extensionName);
-
-		return requiredExtensions.empty();
-	}
-
-	SwapChainSupportDetails VulkanDevice::QuerySwapChainSupport(VkPhysicalDevice device)
-	{
-		SwapChainSupportDetails details;
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_vkSurface, &details.Capabilities);
-
-		uint32_t formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_vkSurface, &formatCount, nullptr);
-
-		if (formatCount != 0)
-		{
-			details.Formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_vkSurface, &formatCount, details.Formats.data());
-		}
-
-		uint32_t presentModeCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_vkSurface, &presentModeCount, nullptr);
-
-		if (presentModeCount != 0) 
-		{
-			details.PresentModes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_vkSurface, &presentModeCount, details.PresentModes.data());
-		}
-
-		return details;
-	}
-
-	void VulkanDevice::CreateVMAAllocatorInstance()
-	{
-		VmaVulkanFunctions vulkanFunctions = {};
-		vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
-		vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
-
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
-
-		VmaAllocatorCreateInfo allocatorInfo;
-		allocatorInfo.device = m_vkDevice;
-		allocatorInfo.instance = m_vkInstance;
-		allocatorInfo.physicalDevice = m_PhysicalDevice;
-		allocatorInfo.pVulkanFunctions = &vulkanFunctions;
-		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
-		allocatorInfo.pAllocationCallbacks = nullptr;
-		allocatorInfo.pDeviceMemoryCallbacks = nullptr;
-		allocatorInfo.pHeapSizeLimit = nullptr;
-		allocatorInfo.pTypeExternalMemoryHandleTypes = nullptr;
-
-		vmaCreateAllocator(&allocatorInfo, &m_VMAAllocator);
 	}
 
 }

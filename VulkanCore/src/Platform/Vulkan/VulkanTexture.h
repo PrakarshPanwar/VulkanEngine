@@ -6,6 +6,15 @@
 
 namespace VulkanCore {
 
+	struct TextureSpecification
+	{
+		uint32_t Width = 0;
+		uint32_t Height = 0;
+		ImageFormat Format = ImageFormat::RGBA8_SRGB;
+		TextureWrap SamplerWrap = TextureWrap::Clamp;
+		bool GenerateMips = true;
+	};
+
 	class VulkanTexture
 	{
 	public:
@@ -26,15 +35,19 @@ namespace VulkanCore {
 		/// Deprecated Methods
 		void Invalidate();
 		void Release();
+		void GenerateMipMaps();
 	private:
 		std::string m_FilePath;
+
+		TextureSpecification m_Specification;
 
 		std::shared_ptr<VulkanImage> m_Image;
 		VulkanImageInfo m_Info;
 		VkDeviceMemory m_TextureImageMemory;
 
+		// TODO: These members will be removed after deprecated methods are removed
 		stbi_uc* m_Pixels;
-		int m_Width, m_Height, m_Channels;
+		int m_TexWidth, m_TexHeight, m_Channels; 
 	};
 
 
