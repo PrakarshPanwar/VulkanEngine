@@ -45,9 +45,6 @@ namespace VulkanCore {
 		m_SceneRenderer = std::make_shared<SceneRenderer>();
 		LoadEntities();
 
-		VulkanDevice& device = *VulkanContext::GetCurrentDevice();
-		VulkanRenderer* vkRenderer = VulkanRenderer::Get();
-
 		for (auto& UniformBuffer : m_UniformBuffers)
 		{
 			UniformBuffer = std::make_unique<VulkanBuffer>(sizeof(UBCameraandLights), 1,
@@ -120,9 +117,8 @@ namespace VulkanCore {
 		m_PointLightScene.ScenePipeline = m_PointLightSystem->GetPipeline();
 		m_PointLightScene.PipelineLayout = m_PointLightSystem->GetPipelineLayout();
 
-		//m_EditorCamera = EditorCamera(glm::radians(45.0f), vkRenderer->GetAspectRatio(), 0.1f, 100.0f);
+		//m_EditorCamera = EditorCamera(glm::radians(45.0f), VulkanRenderer::Get()->GetAspectRatio(), 0.1f, 100.0f);
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 100.0f);
-
 	}
 
 	void EditorLayer::OnDetach()

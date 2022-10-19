@@ -6,24 +6,23 @@ namespace VulkanCore {
 	class VulkanSwapChain
 	{
 	public:
-		VulkanSwapChain(VulkanDevice& vkDevice, VkExtent2D windowExtent);
-		VulkanSwapChain(VulkanDevice& vkDevice, VkExtent2D windowExtent, std::shared_ptr<VulkanSwapChain> prev);
+		VulkanSwapChain(VkExtent2D windowExtent);
+		VulkanSwapChain(VkExtent2D windowExtent, std::shared_ptr<VulkanSwapChain> prev);
 		~VulkanSwapChain();
 
 		static constexpr int MaxFramesInFlight = 3;
 
 		static VulkanSwapChain* GetSwapChain() { return s_Instance; }
-		VulkanDevice GetDevice() { return m_VulkanDevice; }
 
-		VkFramebuffer GetFramebuffer(int index) { return m_SwapChainFramebuffers[index]; }
-		VkRenderPass GetRenderPass() { return m_RenderPass; }
-		VkImageView GetImageView(int index) { return m_SwapChainImageViews[index]; }
-		VkImage GetSwapChainImage(int index) { return m_SwapChainImages[index]; }
+		inline VkFramebuffer GetFramebuffer(int index) { return m_SwapChainFramebuffers[index]; }
+		inline VkRenderPass GetRenderPass() { return m_RenderPass; }
+		inline VkImageView GetImageView(int index) { return m_SwapChainImageViews[index]; }
+		inline VkImage GetSwapChainImage(int index) { return m_SwapChainImages[index]; }
 		inline size_t GetImageCount() { return m_SwapChainImages.size(); }
 		VkFormat GetSwapChainImageFormat() { return m_SwapChainImageFormat; }
 		inline VkExtent2D GetSwapChainExtent() { return m_SwapChainExtent; }
-		uint32_t GetWidth() { return m_SwapChainExtent.width; }
-		uint32_t GetHeight() { return m_SwapChainExtent.height; }
+		inline uint32_t GetWidth() { return m_SwapChainExtent.width; }
+		inline uint32_t GetHeight() { return m_SwapChainExtent.height; }
 
 		float ExtentAspectRatio() { return static_cast<float>(m_SwapChainExtent.width) / static_cast<float>(m_SwapChainExtent.height); }
 		VkFormat FindDepthFormat();
@@ -68,7 +67,6 @@ namespace VulkanCore {
 		std::vector<VkImage> m_SwapChainImages;
 		std::vector<VkImageView> m_SwapChainImageViews;
 
-		VulkanDevice& m_VulkanDevice;
 		VkExtent2D m_WindowExtent;
 
 		VkSwapchainKHR m_SwapChain;
