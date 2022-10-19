@@ -28,12 +28,10 @@ namespace VulkanCore {
 
 	VulkanSwapChain::~VulkanSwapChain()
 	{
-		const auto vulkanAllocator = VulkanContext::GetCurrentContext()->m_VkMemoryAllocator;
-
 		for (int i = 0; i < m_ColorImages.size(); i++)
 		{
 			vkDestroyImageView(m_VulkanDevice.GetVulkanDevice(), m_ColorImageViews[i], nullptr);
-			vmaDestroyImage(vulkanAllocator, m_ColorImages[i], m_ColorImageMemories[i]);
+			vmaDestroyImage(VulkanContext::GetVulkanMemoryAllocator(), m_ColorImages[i], m_ColorImageMemories[i]);
 		}
 
 		for (auto imageView : m_SwapChainImageViews)
