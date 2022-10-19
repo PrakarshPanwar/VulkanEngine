@@ -195,13 +195,13 @@ namespace VulkanCore {
 
 		if (m_SwapChain == nullptr)
 		{
-			m_SwapChain = std::make_unique<VulkanSwapChain>(*device, extent);
+			m_SwapChain = std::make_unique<VulkanSwapChain>(extent);
 		}
 
 		else
 		{
 			std::shared_ptr<VulkanSwapChain> oldSwapChain = std::move(m_SwapChain);
-			m_SwapChain = std::make_unique<VulkanSwapChain>(*device, extent, oldSwapChain);
+			m_SwapChain = std::make_unique<VulkanSwapChain>(extent, oldSwapChain);
 
 			if (!oldSwapChain->CompareSwapFormats(*m_SwapChain->GetSwapChain()))
 			{

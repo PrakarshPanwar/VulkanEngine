@@ -35,8 +35,7 @@ namespace VulkanCore {
 		inline VkDeviceSize GetBufferSize() const { return m_BufferSize; }
 	private:
 		static VkDeviceSize GetAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment);
-
-		//VulkanDevice& m_VulkanDevice;
+	private:
 		void* m_dstMapped = nullptr;
 		VkBuffer m_Buffer = VK_NULL_HANDLE;
 		VkDeviceMemory m_Memory = VK_NULL_HANDLE;

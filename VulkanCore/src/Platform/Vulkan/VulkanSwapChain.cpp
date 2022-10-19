@@ -9,15 +9,15 @@ namespace VulkanCore {
 
 	VulkanSwapChain* VulkanSwapChain::s_Instance;
 
-	VulkanSwapChain::VulkanSwapChain(VulkanDevice& vkDevice, VkExtent2D windowExtent)
-		: m_VulkanDevice(vkDevice), m_WindowExtent(windowExtent)
+	VulkanSwapChain::VulkanSwapChain(VkExtent2D windowExtent)
+		: m_WindowExtent(windowExtent)
 	{
 		s_Instance = this;
 		Init();
 	}
 
-	VulkanSwapChain::VulkanSwapChain(VulkanDevice& vkDevice, VkExtent2D windowExtent, std::shared_ptr<VulkanSwapChain> prev)
-		: m_VulkanDevice(vkDevice), m_WindowExtent(windowExtent), m_OldSwapChain(prev)
+	VulkanSwapChain::VulkanSwapChain(VkExtent2D windowExtent, std::shared_ptr<VulkanSwapChain> prev)
+		: m_WindowExtent(windowExtent), m_OldSwapChain(prev)
 	{
 		s_Instance = this;
 		Init();
@@ -27,48 +27,50 @@ namespace VulkanCore {
 
 	VulkanSwapChain::~VulkanSwapChain()
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		for (int i = 0; i < m_ColorImages.size(); i++)
 		{
-			vkDestroyImageView(m_VulkanDevice.GetVulkanDevice(), m_ColorImageViews[i], nullptr);
+			vkDestroyImageView(device->GetVulkanDevice(), m_ColorImageViews[i], nullptr);
 			vmaDestroyImage(VulkanContext::GetVulkanMemoryAllocator(), m_ColorImages[i], m_ColorImageMemories[i]);
 		}
 
 		for (auto imageView : m_SwapChainImageViews)
-			vkDestroyImageView(m_VulkanDevice.GetVulkanDevice(), imageView, nullptr);
+			vkDestroyImageView(device->GetVulkanDevice(), imageView, nullptr);
 
 		m_SwapChainImageViews.clear();
 
 		if (m_SwapChain != nullptr)
 		{
-			vkDestroySwapchainKHR(m_VulkanDevice.GetVulkanDevice(), m_SwapChain, nullptr);
+			vkDestroySwapchainKHR(device->GetVulkanDevice(), m_SwapChain, nullptr);
 			m_SwapChain = nullptr;
 		}
 
 
 		for (int i = 0; i < m_DepthImages.size(); i++)
 		{
-			vkDestroyImageView(m_VulkanDevice.GetVulkanDevice(), m_DepthImageViews[i], nullptr);
-			vkDestroyImage(m_VulkanDevice.GetVulkanDevice(), m_DepthImages[i], nullptr);
-			vkFreeMemory(m_VulkanDevice.GetVulkanDevice(), m_DepthImageMemories[i], nullptr);
+			vkDestroyImageView(device->GetVulkanDevice(), m_DepthImageViews[i], nullptr);
+			vkDestroyImage(device->GetVulkanDevice(), m_DepthImages[i], nullptr);
+			vkFreeMemory(device->GetVulkanDevice(), m_DepthImageMemories[i], nullptr);
 		}
 
 		for (auto framebuffer : m_SwapChainFramebuffers)
-			vkDestroyFramebuffer(m_VulkanDevice.GetVulkanDevice(), framebuffer, nullptr);
+			vkDestroyFramebuffer(device->GetVulkanDevice(), framebuffer, nullptr);
 
-		vkDestroyRenderPass(m_VulkanDevice.GetVulkanDevice(), m_RenderPass, nullptr);
+		vkDestroyRenderPass(device->GetVulkanDevice(), m_RenderPass, nullptr);
 
 		// Cleanup Synchronization Objects
 		for (size_t i = 0; i < MaxFramesInFlight; i++)
 		{
-			vkDestroySemaphore(m_VulkanDevice.GetVulkanDevice(), m_RenderFinishedSemaphores[i], nullptr);
-			vkDestroySemaphore(m_VulkanDevice.GetVulkanDevice(), m_ImageAvailableSemaphores[i], nullptr);
-			vkDestroyFence(m_VulkanDevice.GetVulkanDevice(), m_InFlightFences[i], nullptr);
+			vkDestroySemaphore(device->GetVulkanDevice(), m_RenderFinishedSemaphores[i], nullptr);
+			vkDestroySemaphore(device->GetVulkanDevice(), m_ImageAvailableSemaphores[i], nullptr);
+			vkDestroyFence(device->GetVulkanDevice(), m_InFlightFences[i], nullptr);
 		}
 	}
 
 	VkFormat VulkanSwapChain::FindDepthFormat()
 	{
-		return m_VulkanDevice.FindSupportedFormat(
+		return VulkanContext::GetCurrentDevice()->FindSupportedFormat(
 			{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
@@ -76,17 +78,20 @@ namespace VulkanCore {
 
 	VkResult VulkanSwapChain::AcquireNextImage(uint32_t* imageIndex)
 	{
-		vkWaitForFences(m_VulkanDevice.GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+		const auto device = VulkanContext::GetCurrentDevice();
+		vkWaitForFences(device->GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
-		VkResult result = vkAcquireNextImageKHR(m_VulkanDevice.GetVulkanDevice(), m_SwapChain, std::numeric_limits<uint64_t>::max(), m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, imageIndex);
+		VkResult result = vkAcquireNextImageKHR(device->GetVulkanDevice(), m_SwapChain, std::numeric_limits<uint64_t>::max(), m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, imageIndex);
 
 		return result;
 	}
 
 	VkResult VulkanSwapChain::SubmitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex)
 	{
+		const auto device = VulkanContext::GetCurrentDevice();
+
 		if (m_ImagesInFlight[*imageIndex] != VK_NULL_HANDLE)
-			vkWaitForFences(m_VulkanDevice.GetVulkanDevice(), 1, &m_ImagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
+			vkWaitForFences(device->GetVulkanDevice(), 1, &m_ImagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
 
 		m_ImagesInFlight[*imageIndex] = m_InFlightFences[m_CurrentFrame];
 
@@ -106,9 +111,9 @@ namespace VulkanCore {
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		vkResetFences(m_VulkanDevice.GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame]);
+		vkResetFences(device->GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame]);
 
-		VK_CHECK_RESULT(vkQueueSubmit(m_VulkanDevice.GetGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFrame]), "Failed to Submit Draw Command Buffer!");
+		VK_CHECK_RESULT(vkQueueSubmit(device->GetGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFrame]), "Failed to Submit Draw Command Buffer!");
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -122,7 +127,7 @@ namespace VulkanCore {
 
 		presentInfo.pImageIndices = imageIndex;
 
-		auto result = vkQueuePresentKHR(m_VulkanDevice.GetPresentQueue(), &presentInfo);
+		auto result = vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
 
 		m_CurrentFrame = (m_CurrentFrame + 1) % MaxFramesInFlight;
 
@@ -131,8 +136,10 @@ namespace VulkanCore {
 
 	VkResult VulkanSwapChain::SubmitCommandBuffers(const std::vector<VkCommandBuffer>& buffers, uint32_t* imageIndex)
 	{
+		const auto device = VulkanContext::GetCurrentDevice();
+
 		if (m_ImagesInFlight[*imageIndex] != VK_NULL_HANDLE)
-			vkWaitForFences(m_VulkanDevice.GetVulkanDevice(), 1, &m_ImagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
+			vkWaitForFences(device->GetVulkanDevice(), 1, &m_ImagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
 
 		m_ImagesInFlight[*imageIndex] = m_InFlightFences[m_CurrentFrame];
 
@@ -152,9 +159,9 @@ namespace VulkanCore {
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		vkResetFences(m_VulkanDevice.GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame]);
+		vkResetFences(device->GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame]);
 
-		VK_CHECK_RESULT(vkQueueSubmit(m_VulkanDevice.GetGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFrame]), "Failed to Submit Draw Command Buffer!");
+		VK_CHECK_RESULT(vkQueueSubmit(device->GetGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFrame]), "Failed to Submit Draw Command Buffer!");
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -168,7 +175,7 @@ namespace VulkanCore {
 
 		presentInfo.pImageIndices = imageIndex;
 
-		auto result = vkQueuePresentKHR(m_VulkanDevice.GetPresentQueue(), &presentInfo);
+		auto result = vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
 
 		m_CurrentFrame = (m_CurrentFrame + 1) % MaxFramesInFlight;
 
@@ -218,7 +225,7 @@ namespace VulkanCore {
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		QueueFamilyIndices indices = m_VulkanDevice.FindPhysicalQueueFamilies();
+		QueueFamilyIndices indices = device->FindPhysicalQueueFamilies();
 		uint32_t queueFamilyIndices[] = { indices.GraphicsFamily, indices.PresentFamily };
 
 		if (indices.GraphicsFamily != indices.PresentFamily)
@@ -243,15 +250,15 @@ namespace VulkanCore {
 
 		createInfo.oldSwapchain = m_OldSwapChain == nullptr ? VK_NULL_HANDLE : m_OldSwapChain->m_SwapChain;
 
-		VK_CHECK_RESULT(vkCreateSwapchainKHR(m_VulkanDevice.GetVulkanDevice(), &createInfo, nullptr, &m_SwapChain), "Failed to Create Swap Chain!");
+		VK_CHECK_RESULT(vkCreateSwapchainKHR(device->GetVulkanDevice(), &createInfo, nullptr, &m_SwapChain), "Failed to Create Swap Chain!");
 
 		// We only specified a minimum number of Images in the SwapChain, so the implementation is
 		// allowed to create a SwapChain with more. That's why we'll first query the final number of
 		// images with vkGetSwapchainImagesKHR, then resize the container and finally call it again to
 		// retrieve the handles.
-		vkGetSwapchainImagesKHR(m_VulkanDevice.GetVulkanDevice(), m_SwapChain, &imageCount, nullptr);
+		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, nullptr);
 		m_SwapChainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(m_VulkanDevice.GetVulkanDevice(), m_SwapChain, &imageCount, m_SwapChainImages.data());
+		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, m_SwapChainImages.data());
 
 		m_SwapChainImageFormat = surfaceFormat.format;
 		m_SwapChainExtent = extent;
@@ -274,12 +281,14 @@ namespace VulkanCore {
 			viewInfo.subresourceRange.baseArrayLayer = 0;
 			viewInfo.subresourceRange.layerCount = 1;
 
-			VK_CHECK_RESULT(vkCreateImageView(m_VulkanDevice.GetVulkanDevice(), &viewInfo, nullptr, &m_SwapChainImageViews[i]), "Failed to Create Texture Image View!");
+			VK_CHECK_RESULT(vkCreateImageView(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), &viewInfo, nullptr, &m_SwapChainImageViews[i]), "Failed to Create Texture Image View!");
 		}
 	}
 
 	void VulkanSwapChain::CreateColorResources()
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		VkFormat format = GetSwapChainImageFormat();
 		VkExtent2D swapChainExtent = GetSwapChainExtent();
 		VulkanAllocator allocator("SwapChainImages");
@@ -302,12 +311,12 @@ namespace VulkanCore {
 			imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 			imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			imageInfo.usage =  VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-			imageInfo.samples = m_VulkanDevice.GetMSAASampleCount();
+			imageInfo.samples = device->GetMSAASampleCount();
 			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			imageInfo.flags = 0;
 
 			// TODO: Use VMA method/allocator
-			m_ColorImageMemories[i] = m_VulkanDevice.CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_ColorImages[i]);
+			m_ColorImageMemories[i] = device->CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_ColorImages[i]);
 
 			VkImageViewCreateInfo viewInfo{};
 			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -320,12 +329,14 @@ namespace VulkanCore {
 			viewInfo.subresourceRange.baseArrayLayer = 0;
 			viewInfo.subresourceRange.layerCount = 1;
 
-			VK_CHECK_RESULT(vkCreateImageView(m_VulkanDevice.GetVulkanDevice(), &viewInfo, nullptr, &m_ColorImageViews[i]), "Failed to Create Texture Image View!");
+			VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewInfo, nullptr, &m_ColorImageViews[i]), "Failed to Create Texture Image View!");
 		}
 	}
 
 	void VulkanSwapChain::CreateDepthResources()
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		VkFormat depthFormat = FindDepthFormat();
 		m_SwapChainDepthFormat = depthFormat;
 		VkExtent2D swapChainExtent = GetSwapChainExtent();
@@ -348,12 +359,12 @@ namespace VulkanCore {
 			imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 			imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-			imageInfo.samples = m_VulkanDevice.GetMSAASampleCount();
+			imageInfo.samples = device->GetMSAASampleCount();
 			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			imageInfo.flags = 0;
 
 			// TODO: Use VMA method/allocator
-			m_VulkanDevice.CreateImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImages[i], m_DepthImageMemories[i]);
+			device->CreateImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImages[i], m_DepthImageMemories[i]);
 
 			VkImageViewCreateInfo viewInfo{};
 			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -366,15 +377,17 @@ namespace VulkanCore {
 			viewInfo.subresourceRange.baseArrayLayer = 0;
 			viewInfo.subresourceRange.layerCount = 1;
 
-			VK_CHECK_RESULT(vkCreateImageView(m_VulkanDevice.GetVulkanDevice(), &viewInfo, nullptr, &m_DepthImageViews[i]), "Failed to Create Texture Image View!");
+			VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewInfo, nullptr, &m_DepthImageViews[i]), "Failed to Create Texture Image View!");
 		}
 	}
 
 	void VulkanSwapChain::CreateRenderPass()
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		VkAttachmentDescription depthAttachment{};
 		depthAttachment.format = FindDepthFormat();
-		depthAttachment.samples = m_VulkanDevice.GetMSAASampleCount();
+		depthAttachment.samples = device->GetMSAASampleCount();
 		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -388,7 +401,7 @@ namespace VulkanCore {
 
 		VkAttachmentDescription colorAttachment = {};
 		colorAttachment.format = GetSwapChainImageFormat();
-		colorAttachment.samples = m_VulkanDevice.GetMSAASampleCount();
+		colorAttachment.samples = device->GetMSAASampleCount();
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -441,11 +454,13 @@ namespace VulkanCore {
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		VK_CHECK_RESULT(vkCreateRenderPass(m_VulkanDevice.GetVulkanDevice(), &renderPassInfo, nullptr, &m_RenderPass), "Failed to Create Render Pass!");
+		VK_CHECK_RESULT(vkCreateRenderPass(device->GetVulkanDevice(), &renderPassInfo, nullptr, &m_RenderPass), "Failed to Create Render Pass!");
 	}
 
 	void VulkanSwapChain::CreateFramebuffers()
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		m_SwapChainFramebuffers.resize(GetImageCount());
 		VkExtent2D swapChainExtent = GetSwapChainExtent();
 
@@ -462,12 +477,14 @@ namespace VulkanCore {
 			framebufferInfo.height = swapChainExtent.height;
 			framebufferInfo.layers = 1;
 
-			VK_CHECK_RESULT(vkCreateFramebuffer(m_VulkanDevice.GetVulkanDevice(), &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i]), "Failed to Create Framebuffer!");
+			VK_CHECK_RESULT(vkCreateFramebuffer(device->GetVulkanDevice(), &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i]), "Failed to Create Framebuffer!");
 		}
 	}
 
 	void VulkanSwapChain::CreateSyncObjects()
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		m_ImageAvailableSemaphores.resize(MaxFramesInFlight);
 		m_RenderFinishedSemaphores.resize(MaxFramesInFlight);
 		m_InFlightFences.resize(MaxFramesInFlight);
@@ -483,9 +500,9 @@ namespace VulkanCore {
 		for (size_t i = 0; i < MaxFramesInFlight; i++)
 		{
 			VK_CORE_ASSERT(
-				vkCreateSemaphore(m_VulkanDevice.GetVulkanDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) == VK_SUCCESS &&
-				vkCreateSemaphore(m_VulkanDevice.GetVulkanDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]) == VK_SUCCESS &&
-				vkCreateFence(m_VulkanDevice.GetVulkanDevice(), &fenceInfo, nullptr, &m_InFlightFences[i]) == VK_SUCCESS, 
+				vkCreateSemaphore(device->GetVulkanDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) == VK_SUCCESS &&
+				vkCreateSemaphore(device->GetVulkanDevice(), &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]) == VK_SUCCESS &&
+				vkCreateFence(device->GetVulkanDevice(), &fenceInfo, nullptr, &m_InFlightFences[i]) == VK_SUCCESS, 
 				"Failed to Create Synchronization Objects for a Frame!");
 		}
 	}

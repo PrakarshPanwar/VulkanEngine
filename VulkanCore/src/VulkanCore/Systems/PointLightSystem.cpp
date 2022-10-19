@@ -33,7 +33,7 @@ namespace VulkanCore {
 		pipelineConfig.PipelineLayout = m_PipelineLayout;
 
 		m_Pipeline = std::make_unique<VulkanPipeline>(
-			*device, pipelineConfig,
+			pipelineConfig,
 			"assets/shaders/PointLightShader.vert",
 			"assets/shaders/PointLightShader.frag"
 		);

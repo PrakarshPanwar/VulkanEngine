@@ -30,8 +30,7 @@ namespace VulkanCore {
 
 	}
 
-	VulkanPipeline::VulkanPipeline(VulkanDevice& device, PipelineConfigInfo& pipelineInfo, const std::string& vertFilepath, const std::string& fragFilepath, const std::string& geomFilepath)
-		: m_VulkanDevice(device)
+	VulkanPipeline::VulkanPipeline(PipelineConfigInfo& pipelineInfo, const std::string& vertFilepath, const std::string& fragFilepath, const std::string& geomFilepath)
 	{
 		if (geomFilepath.empty())
 		{
@@ -55,13 +54,15 @@ namespace VulkanCore {
 
 	VulkanPipeline::~VulkanPipeline()
 	{
-		vkDestroyShaderModule(m_VulkanDevice.GetVulkanDevice(), m_vertShaderModule, nullptr);
-		vkDestroyShaderModule(m_VulkanDevice.GetVulkanDevice(), m_fragShaderModule, nullptr);
+		auto device = VulkanContext::GetCurrentDevice();
+
+		vkDestroyShaderModule(device->GetVulkanDevice(), m_vertShaderModule, nullptr);
+		vkDestroyShaderModule(device->GetVulkanDevice(), m_fragShaderModule, nullptr);
 
 		if (m_geomShaderModule != VK_NULL_HANDLE)
-			vkDestroyShaderModule(m_VulkanDevice.GetVulkanDevice(), m_geomShaderModule, nullptr);
+			vkDestroyShaderModule(device->GetVulkanDevice(), m_geomShaderModule, nullptr);
 
-		vkDestroyPipeline(m_VulkanDevice.GetVulkanDevice(), m_GraphicsPipeline, nullptr);
+		vkDestroyPipeline(device->GetVulkanDevice(), m_GraphicsPipeline, nullptr);
 	}
 
 	void VulkanPipeline::CreateGraphicsPipeline(std::shared_ptr<Shader> shader, const PipelineConfigInfo& pipelineInfo)
@@ -69,6 +70,7 @@ namespace VulkanCore {
 		VK_CORE_ASSERT(pipelineInfo.RenderPass != VK_NULL_HANDLE, "Failed to Create Graphics Pipeline: Render Pass is VK_NULL_HANDLE");
 		VK_CORE_ASSERT(pipelineInfo.PipelineLayout != VK_NULL_HANDLE, "Failed to Create Graphics Pipeline: Pipeline Layout is VK_NULL_HANDLE");
 
+		auto device = VulkanContext::GetCurrentDevice();
 		auto& shaderSources = shader->GetShaderModules();
 
 		CreateShaderModule(shaderSources[(uint32_t)ShaderType::Vertex], &m_vertShaderModule);
@@ -139,7 +141,7 @@ namespace VulkanCore {
 		graphicsPipelineInfo.basePipelineIndex = -1;
 		graphicsPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-		VK_CHECK_RESULT(vkCreateGraphicsPipelines(m_VulkanDevice.GetVulkanDevice(),
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device->GetVulkanDevice(),
 			VK_NULL_HANDLE, 1, &graphicsPipelineInfo, nullptr, &m_GraphicsPipeline),
 			"Failed to Create Graphics Pipeline!");
 
@@ -148,22 +150,26 @@ namespace VulkanCore {
 
 	void VulkanPipeline::CreateShaderModule(const std::string& shaderSource, VkShaderModule* shaderModule)
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		createInfo.codeSize = shaderSource.size();
 		createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderSource.data());
 
-		VK_CHECK_RESULT(vkCreateShaderModule(m_VulkanDevice.GetVulkanDevice(), &createInfo, nullptr, shaderModule), "Failed to Create Shader Module!");
+		VK_CHECK_RESULT(vkCreateShaderModule(device->GetVulkanDevice(), &createInfo, nullptr, shaderModule), "Failed to Create Shader Module!");
 	}
 
 	void VulkanPipeline::CreateShaderModule(const std::vector<uint32_t>& shaderSource, VkShaderModule* shaderModule)
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		createInfo.codeSize = shaderSource.size() * sizeof(uint32_t);
 		createInfo.pCode = shaderSource.data();
 
-		VK_CHECK_RESULT(vkCreateShaderModule(m_VulkanDevice.GetVulkanDevice(), &createInfo, nullptr, shaderModule), "Failed to Create Shader Module!");
+		VK_CHECK_RESULT(vkCreateShaderModule(device->GetVulkanDevice(), &createInfo, nullptr, shaderModule), "Failed to Create Shader Module!");
 	}
 
 	void VulkanPipeline::CreatePipelineCache()

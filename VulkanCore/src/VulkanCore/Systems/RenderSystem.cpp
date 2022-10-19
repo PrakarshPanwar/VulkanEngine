@@ -32,14 +32,14 @@ namespace VulkanCore {
 
 #if USE_GEOMETRY_SHADER
 		m_Pipeline = std::make_unique<VulkanPipeline>(
-			m_VulkanDevice, pipelineConfig,
+			pipelineConfig,
 			"assets/shaders/FirstShader.vert",
 			"assets/shaders/FirstShader.frag",
 			"assets/shaders/FirstShader.geom"
 		);
 #else
 		m_Pipeline = std::make_unique<VulkanPipeline>(
-			*device, pipelineConfig,
+			pipelineConfig,
 			"assets/shaders/FirstShader.vert",
 			"assets/shaders/FirstShader.frag"
 		);

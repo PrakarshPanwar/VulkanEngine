@@ -21,7 +21,6 @@ namespace VulkanCore {
 		std::vector<VkDynamicState> DynamicStateEnables;
 		VkPipelineDynamicStateCreateInfo DynamicStateInfo;
 		VkPipelineLayout PipelineLayout = nullptr;
-		//VkRenderPass RenderPass = nullptr;
 		std::shared_ptr<VulkanRenderPass> RenderPass;
 		uint32_t SubPass = 0;
 	};
@@ -30,8 +29,8 @@ namespace VulkanCore {
 	{
 	public:
 		VulkanPipeline() = default;
-		VulkanPipeline(VulkanDevice& device, PipelineConfigInfo& pipelineInfo, 
-			const std::string& vertFilepath, const std::string& fragFilepath, const std::string& geomFilepath = "");
+		VulkanPipeline(PipelineConfigInfo& pipelineInfo, const std::string& vertFilepath,
+			const std::string& fragFilepath, const std::string& geomFilepath = "");
 		~VulkanPipeline();
 
 		static void DefaultPipelineConfigInfo(PipelineConfigInfo& pipelineConfigInfo);
@@ -44,7 +43,6 @@ namespace VulkanCore {
 		void CreateShaderModule(const std::vector<uint32_t>& shaderSource, VkShaderModule* shaderModule);
 		void CreatePipelineCache();
 	private:
-		VulkanDevice& m_VulkanDevice;
 		VkPipeline m_GraphicsPipeline;
 		VkShaderModule m_vertShaderModule, m_fragShaderModule, m_geomShaderModule = nullptr;
 		std::shared_ptr<Shader> m_Shader;
