@@ -19,7 +19,6 @@
 
 #include <filesystem>
 #include <format>
-#include "VulkanContext.h"
 
 namespace std {
 

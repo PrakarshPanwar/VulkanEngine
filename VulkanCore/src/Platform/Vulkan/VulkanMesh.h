@@ -1,5 +1,5 @@
 #pragma once
-#include "VulkanDevice.h"
+#include "VulkanContext.h"
 #include "VulkanBuffer.h"
 
 #include <glm/glm.hpp>

@@ -3,7 +3,6 @@
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
-#include "VulkanContext.h"
 #include "VulkanAllocator.h"
 
 namespace VulkanCore {
