@@ -7,6 +7,17 @@
 
 namespace VulkanCore {
 
+	VkResult CreateDebugUtilsMessengerEXT(
+		VkInstance instance,
+		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+		const VkAllocationCallbacks* pAllocator,
+		VkDebugUtilsMessengerEXT* pDebugMessenger);
+
+	void DestroyDebugUtilsMessengerEXT(
+		VkInstance instance,
+		VkDebugUtilsMessengerEXT debugMessenger,
+		const VkAllocationCallbacks* pAllocator);
+
 	struct SwapChainSupportDetails
 	{
 		VkSurfaceCapabilitiesKHR Capabilities;
@@ -34,26 +45,19 @@ namespace VulkanCore {
 #else
 		const bool m_EnableValidation = true;
 #endif
-		VulkanDevice() = default;
-
-		VulkanDevice(WindowsWindow& window);
+		VulkanDevice();
 		~VulkanDevice();
 
-		static VulkanDevice* GetDevice() { return s_Instance; }
-
 		inline VkCommandPool GetCommandPool() { return m_CommandPool; }
-		inline VkDevice GetVulkanDevice() { return m_vkDevice; }
-		inline VkInstance GetVulkanInstance() { return m_vkInstance; }
+		inline VkDevice GetVulkanDevice() { return m_LogicalDevice; }
 		inline VkPhysicalDevice GetPhysicalDevice() { return m_PhysicalDevice; }
-		inline VkSurfaceKHR GetSurface() { return m_vkSurface; }
-		inline VkQueue GetGraphicsQueue() { return m_vkGraphicsQueue; }
-		inline VkQueue GetPresentQueue() { return m_vkPresentQueue; }
+		inline VkQueue GetGraphicsQueue() { return m_GraphicsQueue; }
+		inline VkQueue GetPresentQueue() { return m_PresentQueue; }
 		inline VkPhysicalDeviceProperties& GetPhysicalDeviceProperties() { return m_DeviceProperties; }
 		inline VkSampleCountFlagBits GetMSAASampleCount() { return m_MSAASamples; }
-		inline VmaAllocator GetVulkanAllocator() { return m_VMAAllocator; }
 
 		void Init();
-		SwapChainSupportDetails GetSwapChainSupport() { return QuerySwapChainSupport(m_PhysicalDevice); }
+		void Destroy();
 		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		QueueFamilyIndices FindPhysicalQueueFamilies() { return FindQueueFamilies(m_PhysicalDevice); }
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
@@ -67,52 +71,21 @@ namespace VulkanCore {
 
 		void CreateImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 		VmaAllocation CreateImage(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image);
-	private:
-		void CreateInstance();
-		void SetupDebugMessenger();
-		void SetupAllocationMessenger();
-		void CreateSurface();
-		void PickPhysicalDevice();
-		void CreateLogicalDevice();
-		void CreateCommandPool();
-		void CreateVMAAllocatorInstance();
-
-		bool IsDeviceSuitable(VkPhysicalDevice device);
-		std::vector<const char*> GetRequiredExtensions();
-		bool CheckValidationLayerSupport();
 		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
-		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-		void HasGLFWRequiredInstanceExtensions();
-		bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
-		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
+	private:
+		void CreateLogicalDevice();
+		void PickPhysicalDevice();
+		void CreateCommandPool();
 
-		VkInstance m_vkInstance;
-		VkDebugUtilsMessengerEXT m_DebugMessenger;
 		VkAllocationCallbacks m_AllocationCallbacks;
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 		VkPhysicalDeviceProperties m_DeviceProperties;
 		VkSampleCountFlagBits m_MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-		WindowsWindow& m_Window;
 		VkCommandPool m_CommandPool;
 
-		VkDevice m_vkDevice;
-		VkSurfaceKHR m_vkSurface;
-		VkQueue m_vkGraphicsQueue;
-		VkQueue m_vkPresentQueue;
-
-		VmaAllocator m_VMAAllocator;
-
-		const std::vector<const char*> m_ValidationLayers = { "VK_LAYER_KHRONOS_validation" };
-		const std::vector<const char*> m_DeviceExtensions = { 
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-			VK_NV_RAY_TRACING_EXTENSION_NAME,
-			VK_NV_FRAMEBUFFER_MIXED_SAMPLES_EXTENSION_NAME,
-			VK_KHR_MAINTENANCE1_EXTENSION_NAME
-		};
-
-		static VulkanDevice* s_Instance;
-
-		friend class ImGuiLayer;
+		VkDevice m_LogicalDevice;
+		VkQueue m_GraphicsQueue;
+		VkQueue m_PresentQueue;
 	};
 
 }

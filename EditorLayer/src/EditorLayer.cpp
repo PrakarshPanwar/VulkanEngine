@@ -18,6 +18,7 @@
 #include <filesystem>
 #include <numbers>
 #include <future>
+#include "Platform/Vulkan/VulkanContext.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
@@ -44,7 +45,7 @@ namespace VulkanCore {
 		m_SceneRenderer = std::make_shared<SceneRenderer>();
 		LoadEntities();
 
-		VulkanDevice& device = *VulkanDevice::GetDevice();
+		VulkanDevice& device = *VulkanContext::GetCurrentDevice();
 		VulkanRenderer* vkRenderer = VulkanRenderer::Get();
 
 		for (auto& UniformBuffer : m_UniformBuffers)
@@ -216,7 +217,7 @@ namespace VulkanCore {
 		style.WindowMinSize.x = minWinSizeX;
 
 		constexpr std::array<uint64_t, 2> queryPoolBuffer = { 0, 0 };
-		vkGetQueryPoolResults(VulkanDevice::GetDevice()->GetVulkanDevice(),
+		vkGetQueryPoolResults(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
 			VulkanRenderer::Get()->GetPerfQueryPool(),
 			0, 2, sizeof(uint64_t) * 2,
 			(void*)queryPoolBuffer.data(), sizeof(uint64_t),

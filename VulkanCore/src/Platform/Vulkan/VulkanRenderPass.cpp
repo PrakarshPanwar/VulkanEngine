@@ -6,6 +6,7 @@
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 
 #include <glm/gtc/type_ptr.hpp>
+#include "VulkanContext.h"
 
 namespace VulkanCore {
 
@@ -59,7 +60,7 @@ namespace VulkanCore {
 
 	VulkanRenderPass::~VulkanRenderPass()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
 		if (m_RenderPass == nullptr)
 			return;
@@ -69,7 +70,7 @@ namespace VulkanCore {
 
 	void VulkanRenderPass::Invalidate()
 	{
-		auto device = VulkanDevice::GetDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 		auto Framebuffer = m_Specification.TargetFramebuffer;
 
 		VkSampleCountFlagBits samples = Utils::VulkanSampleCount(Framebuffer->GetSpecification().Samples);
