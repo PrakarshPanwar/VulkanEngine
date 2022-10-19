@@ -5,12 +5,12 @@ namespace VulkanCore {
 
 	void Renderer::BeginRenderPass(VkCommandBuffer beginPassCmd, std::shared_ptr<VulkanRenderPass> renderPass)
 	{
-		//vkCmdBeginRenderPass(beginPassCmd, )
+		renderPass->Begin(beginPassCmd);
 	}
 
 	void Renderer::EndRenderPass(VkCommandBuffer endPassCmd, std::shared_ptr<VulkanRenderPass> renderPass)
 	{
-		//vkCmdEndRenderPass(endPassCmd, )
+		renderPass->End(endPassCmd);
 	}
 
 }

@@ -3,6 +3,7 @@
 
 #include "../Core/ImGuiLayer.h"
 #include "../Scene/SceneRenderer.h"
+#include "Renderer.h"
 
 namespace VulkanCore {
 
@@ -126,13 +127,13 @@ namespace VulkanCore {
 		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 		vkCmdResetQueryPool(commandBuffer, m_QueryPool, 0, 2);
 		auto renderPass = sceneRenderer->GetRenderPass();
-		renderPass->Begin(commandBuffer);
+		Renderer::BeginRenderPass(commandBuffer, renderPass);
 	}
 
 	void VulkanRenderer::EndSceneRenderPass(VkCommandBuffer commandBuffer)
 	{
 		auto renderPass = SceneRenderer::GetSceneRenderer()->GetRenderPass();
-		renderPass->End(commandBuffer);
+		Renderer::EndRenderPass(commandBuffer, renderPass);
 	}
 
 	void VulkanRenderer::CreateCommandBuffers()
