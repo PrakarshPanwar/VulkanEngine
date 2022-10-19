@@ -6,8 +6,7 @@
 
 namespace VulkanCore {
 
-	DescriptorSetLayoutBuilder::DescriptorSetLayoutBuilder(VulkanDevice& device)
-		: m_VulkanDevice(device)
+	DescriptorSetLayoutBuilder::DescriptorSetLayoutBuilder()
 	{
 	}
 
@@ -26,11 +25,10 @@ namespace VulkanCore {
 
 	std::unique_ptr<VulkanDescriptorSetLayout> DescriptorSetLayoutBuilder::Build() const
 	{
-		return std::make_unique<VulkanDescriptorSetLayout>(m_VulkanDevice, m_Bindings);
+		return std::make_unique<VulkanDescriptorSetLayout>(m_Bindings);
 	}
 
-	DescriptorPoolBuilder::DescriptorPoolBuilder(VulkanDevice& device)
-		: m_VulkanDevice(device)
+	DescriptorPoolBuilder::DescriptorPoolBuilder()
 	{
 	}
 
@@ -54,15 +52,17 @@ namespace VulkanCore {
 
 	std::unique_ptr<VulkanDescriptorPool> DescriptorPoolBuilder::Build() const
 	{
-		return std::make_unique<VulkanDescriptorPool>(m_VulkanDevice, m_MaxSets, m_PoolFlags, m_PoolSizes);
+		return std::make_unique<VulkanDescriptorPool>(m_MaxSets, m_PoolFlags, m_PoolSizes);
 	}
 
-	VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(VulkanDevice& device, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
-		: m_VulkanDevice(device), m_Bindings(bindings)
+	VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
+		: m_Bindings(bindings)
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings{};
 
-		for (auto kv : m_Bindings)
+		for (const auto& kv : m_Bindings)
 			setLayoutBindings.push_back(kv.second);
 
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
@@ -70,16 +70,15 @@ namespace VulkanCore {
 		descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
 		descriptorSetLayoutInfo.pBindings = setLayoutBindings.data();
 
-		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_VulkanDevice.GetVulkanDevice(), &descriptorSetLayoutInfo, nullptr, &m_DescriptorSetLayout), "Failed to Create Descriptor Set Layout!");
+		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device->GetVulkanDevice(), &descriptorSetLayoutInfo, nullptr, &m_DescriptorSetLayout), "Failed to Create Descriptor Set Layout!");
 	}
 
 	VulkanDescriptorSetLayout::~VulkanDescriptorSetLayout()
 	{
-		vkDestroyDescriptorSetLayout(m_VulkanDevice.GetVulkanDevice(), m_DescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), m_DescriptorSetLayout, nullptr);
 	}
 
-	VulkanDescriptorPool::VulkanDescriptorPool(VulkanDevice& device, uint32_t maxSets, VkDescriptorPoolCreateFlags poolFlags, const std::vector<VkDescriptorPoolSize>& poolSizes)
-		: m_VulkanDevice(device)
+	VulkanDescriptorPool::VulkanDescriptorPool(uint32_t maxSets, VkDescriptorPoolCreateFlags poolFlags, const std::vector<VkDescriptorPoolSize>& poolSizes)
 	{
 		VkDescriptorPoolCreateInfo descriptorPoolInfo{};
 		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -88,11 +87,13 @@ namespace VulkanCore {
 		descriptorPoolInfo.maxSets = maxSets;
 		descriptorPoolInfo.flags = poolFlags;
 
-		VK_CHECK_RESULT(vkCreateDescriptorPool(m_VulkanDevice.GetVulkanDevice(), &descriptorPoolInfo, nullptr, &m_DescriptorPool), "Failed to Create Descriptor Pool!");
+		VK_CHECK_RESULT(vkCreateDescriptorPool(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), &descriptorPoolInfo, nullptr, &m_DescriptorPool), "Failed to Create Descriptor Pool!");
 	}
 
 	bool VulkanDescriptorPool::AllocateDescriptor(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = m_DescriptorPool;
@@ -101,7 +102,7 @@ namespace VulkanCore {
 
 		// TODO: Might want to create a "DescriptorPoolManager" class that handles this case, and builds
 		// a new pool whenever an old pool fills up. But this is beyond our current scope
-		if (vkAllocateDescriptorSets(m_VulkanDevice.GetVulkanDevice(), &allocInfo, &descriptor) != VK_SUCCESS)
+		if (vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, &descriptor) != VK_SUCCESS)
 			return false;
 
 		return true;
@@ -109,17 +110,18 @@ namespace VulkanCore {
 
 	void VulkanDescriptorPool::FreeDescriptors(std::vector<VkDescriptorSet>& descriptors) const
 	{
-		vkFreeDescriptorSets(m_VulkanDevice.GetVulkanDevice(), m_DescriptorPool, static_cast<uint32_t>(descriptors.size()), descriptors.data());
+		auto device = VulkanContext::GetCurrentDevice();
+		vkFreeDescriptorSets(device->GetVulkanDevice(), m_DescriptorPool, (uint32_t)descriptors.size(), descriptors.data());
 	}
 
 	void VulkanDescriptorPool::ResetPool()
 	{
-		vkResetDescriptorPool(m_VulkanDevice.GetVulkanDevice(), m_DescriptorPool, 0);
+		vkResetDescriptorPool(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), m_DescriptorPool, 0);
 	}
 
 	VulkanDescriptorPool::~VulkanDescriptorPool()
 	{
-		vkDestroyDescriptorPool(m_VulkanDevice.GetVulkanDevice(), m_DescriptorPool, nullptr);
+		vkDestroyDescriptorPool(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), m_DescriptorPool, nullptr);
 	}
 
 	VulkanDescriptorWriter::VulkanDescriptorWriter(VulkanDescriptorSetLayout& setLayout, VulkanDescriptorPool& pool)
@@ -198,7 +200,7 @@ namespace VulkanCore {
 		for (auto& write : m_Writes)
 			write.dstSet = set;
 
-		vkUpdateDescriptorSets(m_Pool.m_VulkanDevice.GetVulkanDevice(), (uint32_t)m_Writes.size(), m_Writes.data(), 0, nullptr);
+		vkUpdateDescriptorSets(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), (uint32_t)m_Writes.size(), m_Writes.data(), 0, nullptr);
 	}
 
 }

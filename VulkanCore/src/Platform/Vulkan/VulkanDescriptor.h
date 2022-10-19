@@ -1,5 +1,5 @@
 #pragma once
-#include "VulkanDevice.h"
+#include "VulkanContext.h"
 
 namespace VulkanCore {
 
@@ -8,12 +8,11 @@ namespace VulkanCore {
 	class DescriptorSetLayoutBuilder
 	{
 	public:
-		DescriptorSetLayoutBuilder(VulkanDevice& device);
+		DescriptorSetLayoutBuilder();
 
 		DescriptorSetLayoutBuilder& AddBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, uint32_t count = 1);
 		std::unique_ptr<VulkanDescriptorSetLayout> Build() const;
 	private:
-		VulkanDevice& m_VulkanDevice;
 		std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> m_Bindings;
 	};
 
@@ -22,14 +21,13 @@ namespace VulkanCore {
 	class DescriptorPoolBuilder
 	{
 	public:
-		DescriptorPoolBuilder(VulkanDevice& device);
+		DescriptorPoolBuilder();
 
 		DescriptorPoolBuilder& AddPoolSize(VkDescriptorType descriptorType, uint32_t count);
 		DescriptorPoolBuilder& SetPoolFlags(VkDescriptorPoolCreateFlags flags);
 		DescriptorPoolBuilder& SetMaxSets(uint32_t count);
 		std::unique_ptr<VulkanDescriptorPool> Build() const;
 	private:
-		VulkanDevice& m_VulkanDevice;
 		std::vector<VkDescriptorPoolSize> m_PoolSizes;
 		uint32_t m_MaxSets = 1000;
 		VkDescriptorPoolCreateFlags m_PoolFlags = 0;
@@ -38,14 +36,13 @@ namespace VulkanCore {
 	class VulkanDescriptorSetLayout
 	{
 	public:
-		VulkanDescriptorSetLayout(VulkanDevice& device, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
+		VulkanDescriptorSetLayout(std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
 		~VulkanDescriptorSetLayout();
 		VulkanDescriptorSetLayout(const VulkanDescriptorSetLayout&) = delete;
 		VulkanDescriptorSetLayout& operator=(const VulkanDescriptorSetLayout&) = delete;
 
 		VkDescriptorSetLayout GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
 	private:
-		VulkanDevice& m_VulkanDevice;
 		VkDescriptorSetLayout m_DescriptorSetLayout;
 		std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> m_Bindings;
 
@@ -55,7 +52,7 @@ namespace VulkanCore {
 	class VulkanDescriptorPool
 	{
 	public:
-		VulkanDescriptorPool(VulkanDevice& device, uint32_t maxSets, VkDescriptorPoolCreateFlags poolFlags, const std::vector<VkDescriptorPoolSize>& poolSizes);
+		VulkanDescriptorPool(uint32_t maxSets, VkDescriptorPoolCreateFlags poolFlags, const std::vector<VkDescriptorPoolSize>& poolSizes);
 		~VulkanDescriptorPool();
 		VulkanDescriptorPool(const VulkanDescriptorPool&) = delete;
 		VulkanDescriptorPool& operator=(const VulkanDescriptorPool&) = delete;
@@ -66,7 +63,6 @@ namespace VulkanCore {
 
 		inline VkDescriptorPool GetDescriptorPool() { return m_DescriptorPool; }
 	private:
-		VulkanDevice& m_VulkanDevice;
 		VkDescriptorPool m_DescriptorPool;
 
 		friend class VulkanDescriptorWriter;

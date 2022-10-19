@@ -102,7 +102,7 @@ namespace VulkanCore {
 		const auto device = VulkanContext::GetCurrentDevice();
 		m_Renderer = std::make_unique<VulkanRenderer>(*std::dynamic_pointer_cast<WindowsWindow>(m_Window), *device);
 
-		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder(*device);
+		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
 		descriptorPoolBuilder.SetMaxSets(VulkanSwapChain::MaxFramesInFlight).AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VulkanSwapChain::MaxFramesInFlight);
 		descriptorPoolBuilder.SetMaxSets(VulkanSwapChain::MaxFramesInFlight).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VulkanSwapChain::MaxFramesInFlight);
 		m_GlobalPool = descriptorPoolBuilder.Build();

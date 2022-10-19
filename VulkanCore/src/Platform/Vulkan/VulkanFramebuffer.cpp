@@ -2,7 +2,6 @@
 #include "VulkanFramebuffer.h"
 
 #include "VulkanSwapChain.h"
-#include "VulkanContext.h"
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
 
@@ -62,6 +61,9 @@ namespace VulkanCore {
 			if (images[0].GetSpecification().Samples == 1)
 				return images;
 		}
+
+		VK_CORE_ASSERT(false, "No Resolve Images present");
+		return {};
 	}
 
 	void VulkanFramebuffer::Invalidate()

@@ -34,7 +34,7 @@ namespace VulkanCore {
 
 	void ImGuiLayer::OnAttach()
 	{
-		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder(*VulkanContext::GetCurrentDevice());
+		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, 1000);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000);
