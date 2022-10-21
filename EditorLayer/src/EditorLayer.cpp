@@ -24,6 +24,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "VulkanCore/Renderer/Renderer.h"
 
 namespace VulkanCore {
 
@@ -132,11 +133,18 @@ namespace VulkanCore {
 
 		int frameIndex = VulkanRenderer::Get()->GetCurrentFrameIndex();
 
+		auto sceneRenderPass = m_SceneRenderer->GetRenderPass();
+		auto sceneCmd = m_SceneRenderer->GetCommandBuffer(frameIndex);
+
+		vkCmdResetQueryPool(sceneCmd, VulkanRenderer::Get()->GetPerfQueryPool(), 0, 2);
+		
+		Renderer::BeginRenderPass(sceneCmd, sceneRenderPass);
+
 		m_SceneRender.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
-		m_SceneRender.CommandBuffer = m_SceneRenderer->GetCommandBuffer(frameIndex);
+		m_SceneRender.CommandBuffer = sceneCmd;
 
 		m_PointLightScene.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
-		m_PointLightScene.CommandBuffer = m_SceneRenderer->GetCommandBuffer(frameIndex);
+		m_PointLightScene.CommandBuffer = sceneCmd;
 
 		UBCameraandLights uniformBuffer{};
 		uniformBuffer.Projection = m_EditorCamera.GetProjectionMatrix();
@@ -148,6 +156,8 @@ namespace VulkanCore {
 
 		m_Scene->OnUpdate(m_SceneRender);
 		m_Scene->OnUpdateLights(m_PointLightScene);
+
+		Renderer::EndRenderPass(sceneCmd, sceneRenderPass);
 	}
 
 	void EditorLayer::OnEvent(Event& e)
