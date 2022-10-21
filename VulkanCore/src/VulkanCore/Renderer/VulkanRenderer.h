@@ -19,8 +19,8 @@ namespace VulkanCore {
 
 		VkCommandBuffer BeginFrame();
 		void EndFrame();
-		VkCommandBuffer BeginSceneFrame();
-		void EndSceneFrame();
+		VkCommandBuffer BeginScene();
+		void EndScene();
 		void BeginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 		void EndSwapChainRenderPass(VkCommandBuffer commandBuffer);
 		void BeginSceneRenderPass(VkCommandBuffer commandBuffer);

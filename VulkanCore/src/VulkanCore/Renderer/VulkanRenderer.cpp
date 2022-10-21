@@ -64,7 +64,7 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer), "Failed to Record Command Buffer!");
 	}
 
-	VkCommandBuffer VulkanRenderer::BeginSceneFrame()
+	VkCommandBuffer VulkanRenderer::BeginScene()
 	{
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -75,7 +75,7 @@ namespace VulkanCore {
 		return commandBuffer;
 	}
 
-	void VulkanRenderer::EndSceneFrame()
+	void VulkanRenderer::EndScene()
 	{
 		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer(m_CurrentFrameIndex);
 		VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer), "Failed to Record Command Buffer!");

@@ -132,13 +132,13 @@ namespace VulkanCore {
 				m_Renderer->EndFrame();
 			}
 
-			if (auto commandBuffer = m_Renderer->BeginSceneFrame())
+			if (auto commandBuffer = m_Renderer->BeginScene())
 			{
 				m_Renderer->BeginSceneRenderPass(commandBuffer);
 				for (Layer* layer : m_LayerStack)
 					layer->OnUpdate();
 				m_Renderer->EndSceneRenderPass(commandBuffer);
-				m_Renderer->EndSceneFrame();
+				m_Renderer->EndScene();
 			}
 
 			m_Renderer->FinalQueueSubmit();
