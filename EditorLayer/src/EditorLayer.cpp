@@ -266,7 +266,7 @@ namespace VulkanCore {
 
 	bool EditorLayer::OnKeyEvent(KeyPressedEvent& keyevent)
 	{
-		// Gizmos
+		// Gizmos: Unreal Engine Controls
 		switch (keyevent.GetKeyCode())
 		{
 		case Key::Q:
