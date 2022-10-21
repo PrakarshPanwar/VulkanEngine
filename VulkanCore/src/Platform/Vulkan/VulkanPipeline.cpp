@@ -11,6 +11,21 @@ namespace VulkanCore {
 
 	namespace Utils {
 
+		static VkShaderModule CreateShaderModule(const std::vector<uint32_t>& shaderSource)
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+
+			VkShaderModuleCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			createInfo.codeSize = shaderSource.size() * sizeof(uint32_t);
+			createInfo.pCode = shaderSource.data();
+
+			VkShaderModule shaderModule;
+			VK_CHECK_RESULT(vkCreateShaderModule(device->GetVulkanDevice(), &createInfo, nullptr, &shaderModule), "Failed to Create Shader Module!");
+		
+			return shaderModule;
+		}
+
 		static VkSampleCountFlagBits VulkanSampleCount(uint32_t sampleCount)
 		{
 			switch (sampleCount)
@@ -50,6 +65,11 @@ namespace VulkanCore {
 			m_Shader = std::make_shared<Shader>(vertFilepath, fragFilepath, geomFilepath);
 			CreateGraphicsPipeline(m_Shader, pipelineInfo);
 		}
+	}
+
+	VulkanPipeline::VulkanPipeline(const PipelineSpecification& spec)
+		: m_Specification(spec)
+	{
 	}
 
 	VulkanPipeline::~VulkanPipeline()
@@ -144,6 +164,51 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device->GetVulkanDevice(),
 			VK_NULL_HANDLE, 1, &graphicsPipelineInfo, nullptr, &m_GraphicsPipeline),
 			"Failed to Create Graphics Pipeline!");
+
+		delete[] shaderStages;
+	}
+
+	// For Pipeline Specification
+	void VulkanPipeline::CreateGraphicsPipeline(std::shared_ptr<Shader> shader)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+		auto& shaderSources = shader->GetShaderModules();
+
+		m_vertShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Vertex]);
+		m_fragShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Fragment]);
+
+		if (shader->CheckIfGeometryShaderExists())
+			m_geomShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Geometry]);
+
+		const uint32_t shaderStageCount = shader->CheckIfGeometryShaderExists() ? 3 : 2;
+		VkPipelineShaderStageCreateInfo* shaderStages = new VkPipelineShaderStageCreateInfo[shaderStageCount];
+
+		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+		shaderStages[0].module = m_vertShaderModule;
+		shaderStages[0].pName = "main";
+		shaderStages[0].flags = 0;
+		shaderStages[0].pNext = nullptr;
+		shaderStages[0].pSpecializationInfo = nullptr;
+
+		shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		shaderStages[1].module = m_fragShaderModule;
+		shaderStages[1].pName = "main";
+		shaderStages[1].flags = 0;
+		shaderStages[1].pNext = nullptr;
+		shaderStages[1].pSpecializationInfo = nullptr;
+
+		if (shader->CheckIfGeometryShaderExists())
+		{
+			shaderStages[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			shaderStages[2].stage = VK_SHADER_STAGE_GEOMETRY_BIT;
+			shaderStages[2].module = m_geomShaderModule;
+			shaderStages[2].pName = "main";
+			shaderStages[2].flags = 0;
+			shaderStages[2].pNext = nullptr;
+			shaderStages[2].pSpecializationInfo = nullptr;
+		}
 
 		delete[] shaderStages;
 	}
