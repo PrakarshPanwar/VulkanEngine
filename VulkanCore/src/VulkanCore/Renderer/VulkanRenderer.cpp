@@ -130,13 +130,13 @@ namespace VulkanCore {
 		// TODO: This have to shifted in VulkanRenderCommandBuffer
 		vkCmdResetQueryPool(commandBuffer, m_QueryPool, 0, 2);
 		auto renderPass = sceneRenderer->GetRenderPass();
-		Renderer::BeginRenderPass(commandBuffer, renderPass);
+		Renderer::BeginRenderPass(renderPass);
 	}
 
 	void VulkanRenderer::EndSceneRenderPass(VkCommandBuffer commandBuffer)
 	{
 		auto renderPass = SceneRenderer::GetSceneRenderer()->GetRenderPass();
-		Renderer::EndRenderPass(commandBuffer, renderPass);
+		Renderer::EndRenderPass(renderPass);
 	}
 
 	void VulkanRenderer::CreateCommandBuffers()
