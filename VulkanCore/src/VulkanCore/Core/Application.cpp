@@ -98,8 +98,6 @@ namespace VulkanCore {
 	void Application::Init()
 	{
 		m_Context = std::make_unique<VulkanContext>(std::dynamic_pointer_cast<WindowsWindow>(m_Window));
-
-		const auto device = VulkanContext::GetCurrentDevice();
 		m_Renderer = std::make_unique<VulkanRenderer>(std::dynamic_pointer_cast<WindowsWindow>(m_Window));
 
 		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();

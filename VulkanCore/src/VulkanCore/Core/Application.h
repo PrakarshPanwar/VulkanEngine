@@ -44,7 +44,7 @@ namespace VulkanCore {
 		std::shared_ptr<Window> m_Window;
 		std::unique_ptr<VulkanContext> m_Context;
 		std::unique_ptr<VulkanRenderer> m_Renderer;
-		std::unique_ptr<VulkanDescriptorPool> m_GlobalPool;
+		std::shared_ptr<VulkanDescriptorPool> m_GlobalPool;
 		std::shared_ptr<ImGuiLayer> m_ImGuiLayer;
 		std::unique_ptr<Timer> m_AppTimer;
 
