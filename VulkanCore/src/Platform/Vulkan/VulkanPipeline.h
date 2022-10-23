@@ -36,6 +36,20 @@ namespace VulkanCore {
 		uint32_t SubPass = 0;
 	};
 
+	struct PipelineConfiguration
+	{
+		VkPipelineViewportStateCreateInfo ViewportInfo;
+		VkPipelineInputAssemblyStateCreateInfo InputAssemblyInfo;
+		VkPipelineRasterizationStateCreateInfo RasterizationInfo;
+		VkPipelineMultisampleStateCreateInfo MultisampleInfo;
+		VkPipelineColorBlendAttachmentState ColorBlendAttachment;
+		VkPipelineColorBlendStateCreateInfo ColorBlendInfo;
+		VkPipelineDepthStencilStateCreateInfo DepthStencilInfo;
+		std::vector<VkDynamicState> DynamicStateEnables;
+		VkPipelineDynamicStateCreateInfo DynamicStateInfo;
+		uint32_t Subpass = 0;
+	};
+
 	class VulkanPipeline
 	{
 	public:
@@ -50,9 +64,10 @@ namespace VulkanCore {
 		static void EnableAlphaBlending(PipelineConfigInfo& pipelineConfigInfo);
 
 		void Bind(VkCommandBuffer commandBuffer);
+		void SetPushConstants(size_t size);
 	private:
 		void CreateGraphicsPipeline(std::shared_ptr<Shader> shader, const PipelineConfigInfo& pipelineInfo);
-		void CreateGraphicsPipeline(std::shared_ptr<Shader> shader);
+		void CreateGraphicsPipeline();
 		void CreateShaderModule(const std::string& shaderSource, VkShaderModule* shaderModule);
 		void CreateShaderModule(const std::vector<uint32_t>& shaderSource, VkShaderModule* shaderModule);
 		void CreatePipelineCache();

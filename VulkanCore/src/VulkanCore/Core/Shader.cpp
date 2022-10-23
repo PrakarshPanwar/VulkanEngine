@@ -109,6 +109,60 @@ namespace VulkanCore {
 
 	}
 
+	std::shared_ptr<VulkanDescriptorSetLayout> Shader::CreateDescriptorSets()
+	{
+		static uint32_t funcCallCount = 0;
+		funcCallCount++;
+		VK_CORE_ASSERT(funcCallCount <= 1, "Descriptor already created for this shader!");
+
+		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
+
+		for (auto&& [stage, source] : m_VulkanSPIRV)
+		{
+			SpvReflectShaderModule shaderModule = {};
+
+			SpvReflectResult result = spvReflectCreateShaderModule(
+				source.size() * sizeof(uint32_t),
+				source.data(),
+				&shaderModule);
+
+			VK_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS, "Failed to Generate Reflection Result!");
+
+			uint32_t count = 0;
+			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, nullptr);
+			VK_CORE_ASSERT(count <= 1, "More than one Descriptor Sets are not supported yet!");
+
+			std::vector<SpvReflectDescriptorSet*> DescriptorSets(count);
+			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, DescriptorSets.data());
+
+			for (uint32_t i = 0; i < count; ++i)
+			{
+				const SpvReflectDescriptorSet& reflectionSet = *(DescriptorSets.at(i));
+				for (uint32_t j = 0; j < reflectionSet.binding_count; ++j)
+				{
+					const SpvReflectDescriptorBinding& reflectionBinding = *(reflectionSet.bindings[j]);
+
+					uint32_t arrayCount = 1;
+					for (uint32_t k = 0; k < reflectionBinding.array.dims_count; ++k)
+						arrayCount *= reflectionBinding.array.dims[k];
+
+					static VkShaderStageFlags shaderStageFlags;
+					shaderStageFlags |= (VkShaderStageFlags)shaderModule.shader_stage;
+
+					descriptorSetLayoutBuilder.AddBinding(
+						reflectionBinding.binding,
+						(VkDescriptorType)reflectionBinding.descriptor_type,
+						shaderStageFlags,
+						arrayCount);
+				}
+			}
+
+			spvReflectDestroyShaderModule(&shaderModule);
+		}
+
+		return descriptorSetLayoutBuilder.Build();
+	}
+
 	std::tuple<std::string, std::string> Shader::ParseShader(const std::string& vsfilepath, const std::string& fsfilepath)
 	{
 		std::ifstream VertexSource(vsfilepath, std::ios::binary);
