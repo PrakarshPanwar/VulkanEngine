@@ -17,6 +17,7 @@
 #include "imgui_impl_vulkan.h"
 
 #include <filesystem>
+#include "../Renderer/RenderThread.h"
 
 namespace VulkanCore {
 
@@ -81,6 +82,7 @@ namespace VulkanCore {
 
 		m_AppTimer = std::make_unique<Timer>("Application Initialization");
 		Log::Init();
+		RenderThread::Init(1);
 
 		std::filesystem::current_path("../VulkanCore");
 		m_Window = std::make_shared<WindowsWindow>(WindowSpecs(1920, 1080, "Vulkan Application"));
@@ -93,6 +95,8 @@ namespace VulkanCore {
 	{
 		vkDeviceWaitIdle(VulkanContext::GetCurrentDevice()->GetVulkanDevice());
 		m_ImGuiLayer->ShutDown();
+
+		RenderThread::NotifyandDestroy();
 	}
 
 	void Application::Init()

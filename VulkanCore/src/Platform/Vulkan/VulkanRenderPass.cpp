@@ -56,7 +56,14 @@ namespace VulkanCore {
 	VulkanRenderPass::VulkanRenderPass(const RenderPassSpecification& spec)
 		: m_Specification(spec)
 	{
+#if USE_RENDER_THREAD
+		Renderer::Submit([this]
+		{
+			Invalidate();
+		});
+#else
 		Invalidate();
+#endif
 	}
 
 	VulkanRenderPass::~VulkanRenderPass()

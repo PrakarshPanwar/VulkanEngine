@@ -16,11 +16,6 @@
 #include <imgui_impl_vulkan.h>
 #include <ImGuizmo.h>
 
-#include <memory>
-#include <filesystem>
-#include <numbers>
-#include <future>
-
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>

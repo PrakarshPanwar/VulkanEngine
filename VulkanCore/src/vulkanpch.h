@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <queue>
 #include <set>
 #include <tuple>
 #include <unordered_map>
@@ -11,4 +12,6 @@
 #include <fstream>
 #include <sstream>
 
+#include <thread>
+#include <condition_variable>
 #include <functional>
