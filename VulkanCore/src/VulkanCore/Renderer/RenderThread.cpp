@@ -38,6 +38,7 @@ namespace VulkanCore {
 				}
 
 				VK_CORE_WARN("Thread {} does a Job", m_Threads.at(i).get_id());
+
 				JobWork = std::move(m_JobQueue.front());
 				m_JobQueue.erase(m_JobQueue.begin());
 			}
@@ -47,15 +48,22 @@ namespace VulkanCore {
 		}
 	}
 
-	void RenderThread::NotifyandDestroy()
+	void RenderThread::WaitandDestroy()
 	{
-		if (m_Threads.empty())
-			return;
+		{
+			if (m_Threads.empty())
+				return;
 
-		std::unique_lock<std::mutex> threadLock(m_Mutex);
+			std::unique_lock<std::mutex> threadLock(m_Mutex);
 
-		m_ShutDown = true;
-		m_CondVar.notify_all();
+			m_ShutDown = true;
+			m_CondVar.notify_all();
+		}
+
+		for (auto& qthread : m_Threads)
+			qthread.join();
+
+		m_Threads.clear();
 	}
 
 }
