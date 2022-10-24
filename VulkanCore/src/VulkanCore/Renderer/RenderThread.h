@@ -17,7 +17,7 @@ namespace VulkanCore {
 			m_CondVar.notify_one();
 		}
 
-		static void NotifyandDestroy();
+		static void WaitandDestroy();
 	private:
 		static std::mutex m_Mutex;
 		static std::condition_variable m_CondVar;

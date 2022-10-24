@@ -96,7 +96,7 @@ namespace VulkanCore {
 		vkDeviceWaitIdle(VulkanContext::GetCurrentDevice()->GetVulkanDevice());
 		m_ImGuiLayer->ShutDown();
 
-		RenderThread::NotifyandDestroy();
+		RenderThread::WaitandDestroy();
 	}
 
 	void Application::Init()
