@@ -12,6 +12,8 @@ namespace VulkanCore {
 		bool BackfaceCulling = false;
 		bool DepthTest = true;
 		bool DepthWrite = true;
+		bool Blend = false;
+		size_t PushConstantSize = 0;
 		std::pair<std::vector<VkVertexInputBindingDescription>,
 			std::vector<VkVertexInputAttributeDescription>> Layout;
 	};
@@ -77,6 +79,7 @@ namespace VulkanCore {
 		VkPipeline m_GraphicsPipeline;
 		VkShaderModule m_vertShaderModule, m_fragShaderModule, m_geomShaderModule = nullptr;
 		std::shared_ptr<Shader> m_Shader;
+		std::shared_ptr<VulkanDescriptorSetLayout> m_DescriptorSetLayout;
 	};
 
 }

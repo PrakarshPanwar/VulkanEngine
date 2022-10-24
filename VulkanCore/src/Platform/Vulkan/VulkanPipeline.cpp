@@ -102,13 +102,15 @@ namespace VulkanCore {
 			pipelineConfig.MultisampleInfo.alphaToCoverageEnable = VK_FALSE;
 			pipelineConfig.MultisampleInfo.alphaToOneEnable = VK_FALSE;
 
+			// TODO: We have to add multiple blending attachments as
+			// there could multiple be RenderPass attachments
 			pipelineConfig.ColorBlendAttachment.colorWriteMask =
 				VK_COLOR_COMPONENT_R_BIT |
 				VK_COLOR_COMPONENT_G_BIT |
 				VK_COLOR_COMPONENT_B_BIT |
 				VK_COLOR_COMPONENT_A_BIT;
 
-			pipelineConfig.ColorBlendAttachment.blendEnable = VK_FALSE;
+			pipelineConfig.ColorBlendAttachment.blendEnable = spec.Blend ? VK_TRUE : VK_FALSE;
 			pipelineConfig.ColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
 			pipelineConfig.ColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
 			pipelineConfig.ColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;              // Optional
@@ -341,8 +343,8 @@ namespace VulkanCore {
 		graphicsPipelineInfo.pMultisampleState = &pipelineInfo.MultisampleInfo;
 		graphicsPipelineInfo.pDynamicState = &pipelineInfo.DynamicStateInfo;
 
-		auto descriptorSetLayout = shader->CreateDescriptorSets();
-		auto pipelineLayout = Utils::CreatePipelineLayout(*descriptorSetLayout);
+		m_DescriptorSetLayout = shader->CreateDescriptorSets();
+		auto pipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, m_Specification.PushConstantSize);
 
 		graphicsPipelineInfo.layout = pipelineLayout;
 		graphicsPipelineInfo.renderPass = m_Specification.RenderPass->GetRenderPass();
@@ -351,8 +353,13 @@ namespace VulkanCore {
 		graphicsPipelineInfo.basePipelineIndex = -1;
 		graphicsPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device->GetVulkanDevice(),
-			VK_NULL_HANDLE, 1, &graphicsPipelineInfo, nullptr, &m_GraphicsPipeline),
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(
+			device->GetVulkanDevice(),
+			VK_NULL_HANDLE,
+			1,
+			&graphicsPipelineInfo,
+			nullptr,
+			&m_GraphicsPipeline),
 			"Failed to Create Graphics Pipeline!");
 
 		delete[] shaderStages;
@@ -485,12 +492,9 @@ namespace VulkanCore {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 	}
 
+	// TODO: Will be implemented in future
 	void VulkanPipeline::SetPushConstants(size_t size)
 	{
-		VkPushConstantRange pushConstantRange{};
-		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-		pushConstantRange.offset = 0;
-		pushConstantRange.size = size;
 	}
 
 }
