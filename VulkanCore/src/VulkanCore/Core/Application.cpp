@@ -12,12 +12,12 @@
 #include "VulkanCore/Renderer/Camera.h"
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
+#include "VulkanCore/Renderer/RenderThread.h"
 
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
 
 #include <filesystem>
-#include "../Renderer/RenderThread.h"
 
 namespace VulkanCore {
 
@@ -82,7 +82,7 @@ namespace VulkanCore {
 
 		m_AppTimer = std::make_unique<Timer>("Application Initialization");
 		Log::Init();
-		RenderThread::Init(1);
+		RenderThread::Init();
 
 		std::filesystem::current_path("../VulkanCore");
 		m_Window = std::make_shared<WindowsWindow>(WindowSpecs(1920, 1080, "Vulkan Application"));
@@ -96,7 +96,7 @@ namespace VulkanCore {
 		vkDeviceWaitIdle(VulkanContext::GetCurrentDevice()->GetVulkanDevice());
 		m_ImGuiLayer->ShutDown();
 
-		RenderThread::WaitandDestroy();
+		//RenderThread::WaitandDestroy();
 	}
 
 	void Application::Init()
@@ -117,6 +117,7 @@ namespace VulkanCore {
 
 	void Application::Run()
 	{
+		RenderThread::WaitandDestroy();
 		m_AppTimer.reset();
 
 		while (m_Running)

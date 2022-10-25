@@ -2,45 +2,48 @@
 #include "RenderThread.h"
 #include "../Core/Log.h"
 
+#include <Windows.h>
+
 namespace VulkanCore {
 
-	std::mutex RenderThread::m_Mutex;
-	std::condition_variable RenderThread::m_CondVar;
-	std::vector<std::function<void()>> RenderThread::m_JobQueue;
-	std::vector<std::jthread> RenderThread::m_Threads;
-	bool RenderThread::m_ShutDown;
+	std::mutex RenderThread::m_RTMutex;
+	std::condition_variable RenderThread::m_RTCondVar;
+	std::vector<std::function<void()>> RenderThread::m_RTQueue;
+	std::jthread RenderThread::m_RenderThread;
+	bool RenderThread::m_RTShutDown;
 
-	void RenderThread::Init(uint16_t threadCount)
+	void RenderThread::Init()
 	{
-		m_ShutDown = false;
-		m_Threads.reserve(threadCount);
+		m_RTShutDown = false;
+		m_RenderThread = std::jthread(std::bind(&RenderThread::ThreadEntryPoint));
 
-		for (int i = 0; i < threadCount; i++)
-			m_Threads.emplace_back(std::bind(&RenderThread::ThreadEntryPoint, i));
+		auto threadHandle = m_RenderThread.native_handle();
+
+		SetThreadDescription(threadHandle, L"Render Thread");
 	}
 
-	void RenderThread::ThreadEntryPoint(int i)
-	{
+	void RenderThread::ThreadEntryPoint()
+{
 		std::function<void()> JobWork;
 
 		while (true)
 		{
 			{
-				std::unique_lock<std::mutex> CondVarMutex(m_Mutex);
+				std::unique_lock<std::mutex> entryLock(m_RTMutex);
 
-				while (!m_ShutDown && m_JobQueue.empty())
-					m_CondVar.wait(CondVarMutex);
+				while (!m_RTShutDown && m_RTQueue.empty())
+					m_RTCondVar.wait(entryLock);
 
-				if (m_JobQueue.empty())
+				if (m_RTQueue.empty())
 				{
-					VK_CORE_WARN("Thread {} Terminates", m_Threads.at(i).get_id());
+					VK_CORE_WARN("Render Thread(ID: {}) Terminates", m_RenderThread.get_id());
 					return;
 				}
 
-				VK_CORE_WARN("Thread {} does a Job", m_Threads.at(i).get_id());
+				VK_CORE_WARN("Render Thread(ID: {}) performs Task", m_RenderThread.get_id());
 
-				JobWork = std::move(m_JobQueue.front());
-				m_JobQueue.erase(m_JobQueue.begin());
+				JobWork = std::move(m_RTQueue.front());
+				m_RTQueue.erase(m_RTQueue.begin());
 			}
 
 			// Do the job without holding any locks
@@ -51,19 +54,14 @@ namespace VulkanCore {
 	void RenderThread::WaitandDestroy()
 	{
 		{
-			if (m_Threads.empty())
-				return;
+			std::unique_lock<std::mutex> waitLock(m_RTMutex);
 
-			std::unique_lock<std::mutex> threadLock(m_Mutex);
-
-			m_ShutDown = true;
-			m_CondVar.notify_all();
+			m_RTShutDown = true;
+			m_RTCondVar.notify_all();
 		}
 
-		for (auto& qthread : m_Threads)
-			qthread.join();
-
-		m_Threads.clear();
+		if (m_RenderThread.joinable())
+			m_RenderThread.join();
 	}
 
 }
