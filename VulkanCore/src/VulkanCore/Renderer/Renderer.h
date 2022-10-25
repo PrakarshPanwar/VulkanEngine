@@ -19,6 +19,8 @@ namespace VulkanCore {
 		{
 			RenderThread::SubmitToThread(func);
 		}
+
+		static void WaitandRender();
 	private:
 		static std::vector<VkCommandBuffer> m_CommandBuffers;
 	};

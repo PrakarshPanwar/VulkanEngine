@@ -28,4 +28,9 @@ namespace VulkanCore {
 		renderPass->End(endPassCmd);
 	}
 
+	void Renderer::WaitandRender()
+	{
+		RenderThread::WaitandDestroy();
+	}
+
 }

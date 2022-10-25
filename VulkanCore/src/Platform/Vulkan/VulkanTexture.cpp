@@ -24,7 +24,14 @@ namespace VulkanCore {
 	VulkanTexture::VulkanTexture(const std::string& filepath)
 		: m_FilePath(filepath)
 	{
+#if 0
+		Renderer::Submit([this]
+		{
+			Invalidate();
+		});
+#else
 		Invalidate();
+#endif
 	}
 
 	VulkanTexture::VulkanTexture(uint32_t width, uint32_t height)
