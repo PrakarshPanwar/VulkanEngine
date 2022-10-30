@@ -111,10 +111,6 @@ namespace VulkanCore {
 
 	std::shared_ptr<VulkanDescriptorSetLayout> Shader::CreateDescriptorSets()
 	{
-		static uint32_t funcCallCount = 0;
-		funcCallCount++;
-		VK_CORE_ASSERT(funcCallCount <= 1, "Descriptor already created for this shader!");
-
 		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
 
 		for (auto&& [stage, source] : m_VulkanSPIRV)

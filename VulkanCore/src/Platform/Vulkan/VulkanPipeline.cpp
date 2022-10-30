@@ -110,13 +110,27 @@ namespace VulkanCore {
 				VK_COLOR_COMPONENT_B_BIT |
 				VK_COLOR_COMPONENT_A_BIT;
 
-			pipelineConfig.ColorBlendAttachment.blendEnable = spec.Blend ? VK_TRUE : VK_FALSE;
-			pipelineConfig.ColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-			pipelineConfig.ColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-			pipelineConfig.ColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;              // Optional
-			pipelineConfig.ColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-			pipelineConfig.ColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-			pipelineConfig.ColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
+			if (spec.Blend)
+			{
+				pipelineConfig.ColorBlendAttachment.blendEnable = VK_TRUE;
+				pipelineConfig.ColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
+				pipelineConfig.ColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
+				pipelineConfig.ColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;              // Optional
+				pipelineConfig.ColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
+				pipelineConfig.ColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
+				pipelineConfig.ColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
+			}
+
+			else
+			{
+				pipelineConfig.ColorBlendAttachment.blendEnable = VK_FALSE;
+				pipelineConfig.ColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;			// Optional
+				pipelineConfig.ColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; 	// Optional
+				pipelineConfig.ColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;								// Optional
+				pipelineConfig.ColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;					// Optional
+				pipelineConfig.ColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;					// Optional
+				pipelineConfig.ColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;								// Optional
+			}
 
 			pipelineConfig.ColorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 			pipelineConfig.ColorBlendInfo.logicOpEnable = VK_FALSE;
