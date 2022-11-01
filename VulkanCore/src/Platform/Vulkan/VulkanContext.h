@@ -1,5 +1,6 @@
 #pragma once
 #include "VulkanDevice.h"
+#include "Platform/Windows/WindowsWindow.h"
 
 namespace VulkanCore {
 

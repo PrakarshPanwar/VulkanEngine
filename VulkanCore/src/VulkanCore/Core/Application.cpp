@@ -1,20 +1,9 @@
 #include "vulkanpch.h"
 #include "Application.h"
 
-#include "VulkanCore/Systems/RenderSystem.h"
-#include "VulkanCore/Systems/PointLightSystem.h"
-#include "Platform/Vulkan/VulkanBuffer.h"
-#include "Platform/Vulkan/VulkanTexture.h"
-
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Core.h"
-#include "VulkanCore/Renderer/Camera.h"
-#include "VulkanCore/Scene/Entity.h"
-#include "VulkanCore/Scene/SceneRenderer.h"
-
-#include "imgui.h"
-#include "imgui_impl_vulkan.h"
 
 #include <filesystem>
 
