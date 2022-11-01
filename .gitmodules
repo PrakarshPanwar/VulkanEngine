@@ -2,3 +2,6 @@
 [submodule "VulkanCore/vendor/imgui"]
 	path = VulkanCore/vendor/imgui
 	url = https://github.com/PrakarshPanwar/imgui.git
+[submodule "VulkanCore/vendor/glfw"]
+	path = VulkanCore/vendor/glfw
+	url = https://github.com/PrakarshPanwar/glfw.git
