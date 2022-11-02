@@ -10,6 +10,7 @@
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Camera.h"
+#include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
 
@@ -93,6 +94,7 @@ namespace VulkanCore {
 	{
 		vkDeviceWaitIdle(VulkanContext::GetCurrentDevice()->GetVulkanDevice());
 		m_ImGuiLayer->ShutDown();
+		Renderer::DestroyShaders();
 	}
 
 	void Application::Init()
@@ -107,6 +109,8 @@ namespace VulkanCore {
 
 		m_ImGuiLayer = std::make_shared<ImGuiLayer>();
 		m_ImGuiLayer->OnAttach();
+
+		Renderer::BuildShaders();
 	}
 
 	void Application::Run()

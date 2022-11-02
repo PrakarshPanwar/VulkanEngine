@@ -1,6 +1,8 @@
 #pragma once
 #include "VulkanDevice.h"
 
+#define USE_PIPELINE_SPEC 1
+
 namespace VulkanCore {
 
 	class VulkanContext

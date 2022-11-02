@@ -40,11 +40,13 @@ namespace VulkanCore {
 
 	struct PipelineConfiguration
 	{
+		PipelineConfiguration() = default;
+
 		VkPipelineViewportStateCreateInfo ViewportInfo;
 		VkPipelineInputAssemblyStateCreateInfo InputAssemblyInfo;
 		VkPipelineRasterizationStateCreateInfo RasterizationInfo;
 		VkPipelineMultisampleStateCreateInfo MultisampleInfo;
-		VkPipelineColorBlendAttachmentState ColorBlendAttachment;
+		std::shared_ptr<VkPipelineColorBlendAttachmentState> ColorBlendAttachment;
 		VkPipelineColorBlendStateCreateInfo ColorBlendInfo;
 		VkPipelineDepthStencilStateCreateInfo DepthStencilInfo;
 		std::vector<VkDynamicState> DynamicStateEnables;
@@ -67,6 +69,9 @@ namespace VulkanCore {
 
 		void Bind(VkCommandBuffer commandBuffer);
 		void SetPushConstants(size_t size);
+
+		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
+		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
 	private:
 		void CreateGraphicsPipeline(std::shared_ptr<Shader> shader, const PipelineConfigInfo& pipelineInfo);
 		void CreateGraphicsPipeline();
@@ -77,6 +82,7 @@ namespace VulkanCore {
 		PipelineSpecification m_Specification;
 
 		VkPipeline m_GraphicsPipeline;
+		VkPipelineLayout m_PipelineLayout = nullptr;
 		VkShaderModule m_vertShaderModule, m_fragShaderModule, m_geomShaderModule = nullptr;
 		std::shared_ptr<Shader> m_Shader;
 		std::shared_ptr<VulkanDescriptorSetLayout> m_DescriptorSetLayout;
