@@ -5,8 +5,6 @@
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
 
-#include <filesystem>
-
 namespace VulkanCore {
 
 	namespace Utils {

@@ -18,8 +18,6 @@
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
 
-#include <filesystem>
-
 namespace VulkanCore {
 
 	Application* Application::s_Instance;
