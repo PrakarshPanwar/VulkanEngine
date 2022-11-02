@@ -1,6 +1,8 @@
 #include "vulkanpch.h"
 #include "Shader.h"
 
+#include "Platform/Vulkan/VulkanSwapChain.h"
+#include "Application.h"
 #include "Assert.h"
 #include "Log.h"
 #include "Timer.h"
@@ -11,6 +13,7 @@
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
 #include <spirv_cross/spirv_glsl.hpp>
+#include "Platform/Vulkan/VulkanDescriptor.h"
 
 namespace VulkanCore {
 
@@ -109,7 +112,7 @@ namespace VulkanCore {
 
 	}
 
-	std::shared_ptr<VulkanDescriptorSetLayout> Shader::CreateDescriptorSets()
+	std::shared_ptr<VulkanDescriptorSetLayout> Shader::CreateDescriptorSetLayout()
 	{
 		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
 
@@ -142,8 +145,13 @@ namespace VulkanCore {
 					for (uint32_t k = 0; k < reflectionBinding.array.dims_count; ++k)
 						arrayCount *= reflectionBinding.array.dims[k];
 
-					static VkShaderStageFlags shaderStageFlags;
-					shaderStageFlags |= (VkShaderStageFlags)shaderModule.shader_stage;
+					VkShaderStageFlags shaderStageFlags = 0;
+
+					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+						shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
 					descriptorSetLayoutBuilder.AddBinding(
 						reflectionBinding.binding,

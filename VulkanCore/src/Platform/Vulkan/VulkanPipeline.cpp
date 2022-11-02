@@ -104,7 +104,9 @@ namespace VulkanCore {
 
 			// TODO: We have to add multiple blending attachments as
 			// there could multiple be RenderPass attachments
-			pipelineConfig.ColorBlendAttachment.colorWriteMask =
+			pipelineConfig.ColorBlendAttachment = std::make_shared<VkPipelineColorBlendAttachmentState>();
+
+			pipelineConfig.ColorBlendAttachment->colorWriteMask =
 				VK_COLOR_COMPONENT_R_BIT |
 				VK_COLOR_COMPONENT_G_BIT |
 				VK_COLOR_COMPONENT_B_BIT |
@@ -112,31 +114,31 @@ namespace VulkanCore {
 
 			if (spec.Blend)
 			{
-				pipelineConfig.ColorBlendAttachment.blendEnable = VK_TRUE;
-				pipelineConfig.ColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-				pipelineConfig.ColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-				pipelineConfig.ColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;              // Optional
-				pipelineConfig.ColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-				pipelineConfig.ColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-				pipelineConfig.ColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
+				pipelineConfig.ColorBlendAttachment->blendEnable = VK_TRUE;
+				pipelineConfig.ColorBlendAttachment->srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
+				pipelineConfig.ColorBlendAttachment->dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
+				pipelineConfig.ColorBlendAttachment->colorBlendOp = VK_BLEND_OP_ADD;              // Optional
+				pipelineConfig.ColorBlendAttachment->srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
+				pipelineConfig.ColorBlendAttachment->dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
+				pipelineConfig.ColorBlendAttachment->alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
 			}
 
 			else
 			{
-				pipelineConfig.ColorBlendAttachment.blendEnable = VK_FALSE;
-				pipelineConfig.ColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;			// Optional
-				pipelineConfig.ColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; 	// Optional
-				pipelineConfig.ColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;								// Optional
-				pipelineConfig.ColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;					// Optional
-				pipelineConfig.ColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;					// Optional
-				pipelineConfig.ColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;								// Optional
+				pipelineConfig.ColorBlendAttachment->blendEnable = VK_FALSE;
+				pipelineConfig.ColorBlendAttachment->srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;			// Optional
+				pipelineConfig.ColorBlendAttachment->dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; 	// Optional
+				pipelineConfig.ColorBlendAttachment->colorBlendOp = VK_BLEND_OP_ADD;								// Optional
+				pipelineConfig.ColorBlendAttachment->srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;					// Optional
+				pipelineConfig.ColorBlendAttachment->dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;					// Optional
+				pipelineConfig.ColorBlendAttachment->alphaBlendOp = VK_BLEND_OP_ADD;								// Optional
 			}
 
 			pipelineConfig.ColorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 			pipelineConfig.ColorBlendInfo.logicOpEnable = VK_FALSE;
 			pipelineConfig.ColorBlendInfo.logicOp = VK_LOGIC_OP_COPY;  // Optional
 			pipelineConfig.ColorBlendInfo.attachmentCount = 1;
-			pipelineConfig.ColorBlendInfo.pAttachments = &pipelineConfig.ColorBlendAttachment;
+			pipelineConfig.ColorBlendInfo.pAttachments = pipelineConfig.ColorBlendAttachment.get();
 			pipelineConfig.ColorBlendInfo.blendConstants[0] = 0.0f;  // Optional
 			pipelineConfig.ColorBlendInfo.blendConstants[1] = 0.0f;  // Optional
 			pipelineConfig.ColorBlendInfo.blendConstants[2] = 0.0f;  // Optional
@@ -173,7 +175,7 @@ namespace VulkanCore {
 
 			m_Shader = std::make_shared<Shader>(vertFilepath, fragFilepath);
 			CreateGraphicsPipeline(m_Shader, pipelineInfo);
-			m_Shader->CreateDescriptorSets();
+			m_Shader->CreateDescriptorSetLayout();
 		}
 
 		else
@@ -202,6 +204,9 @@ namespace VulkanCore {
 
 		if (m_geomShaderModule != VK_NULL_HANDLE)
 			vkDestroyShaderModule(device->GetVulkanDevice(), m_geomShaderModule, nullptr);
+
+		if (m_PipelineLayout)
+			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 
 		vkDestroyPipeline(device->GetVulkanDevice(), m_GraphicsPipeline, nullptr);
 	}
@@ -297,15 +302,15 @@ namespace VulkanCore {
 		auto shader = m_Specification.pShader;
 		auto& shaderSources = shader->GetShaderModules();
 
-		const auto vertexShader = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Vertex]);
-		const auto fragmentShader = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Fragment]);
+		m_vertShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Vertex]);
+		m_fragShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Fragment]);
 
 		const uint32_t shaderStageCount = shader->CheckIfGeometryShaderExists() ? 3 : 2;
 		VkPipelineShaderStageCreateInfo* shaderStages = new VkPipelineShaderStageCreateInfo[shaderStageCount];
 
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		shaderStages[0].module = vertexShader;
+		shaderStages[0].module = m_vertShaderModule;
 		shaderStages[0].pName = "main";
 		shaderStages[0].flags = 0;
 		shaderStages[0].pNext = nullptr;
@@ -313,7 +318,7 @@ namespace VulkanCore {
 
 		shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		shaderStages[1].module = fragmentShader;
+		shaderStages[1].module = m_fragShaderModule;
 		shaderStages[1].pName = "main";
 		shaderStages[1].flags = 0;
 		shaderStages[1].pNext = nullptr;
@@ -342,6 +347,10 @@ namespace VulkanCore {
 		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 		vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 
+		m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
+		auto pipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, m_Specification.PushConstantSize);
+		m_PipelineLayout = pipelineLayout;
+
 		auto pipelineInfo = Utils::GetPipelineConfiguration(m_Specification);
 
 		VkGraphicsPipelineCreateInfo graphicsPipelineInfo{};
@@ -356,9 +365,6 @@ namespace VulkanCore {
 		graphicsPipelineInfo.pDepthStencilState = &pipelineInfo.DepthStencilInfo;
 		graphicsPipelineInfo.pMultisampleState = &pipelineInfo.MultisampleInfo;
 		graphicsPipelineInfo.pDynamicState = &pipelineInfo.DynamicStateInfo;
-
-		m_DescriptorSetLayout = shader->CreateDescriptorSets();
-		auto pipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, m_Specification.PushConstantSize);
 
 		graphicsPipelineInfo.layout = pipelineLayout;
 		graphicsPipelineInfo.renderPass = m_Specification.RenderPass->GetRenderPass();

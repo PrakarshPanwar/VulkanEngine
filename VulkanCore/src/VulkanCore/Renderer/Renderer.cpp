@@ -43,4 +43,9 @@ namespace VulkanCore {
 		m_Shaders["PointLightShader"] = Utils::MakeShader("assets/shaders/PointLightShader");
 	}
 
+	void Renderer::DestroyShaders()
+	{
+		m_Shaders.clear();
+	}
+
 }

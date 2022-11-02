@@ -84,11 +84,10 @@ namespace VulkanCore {
 		SpecularMaps.push_back(m_SpecularMap3->GetDescriptorImageInfo());
 
 		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
-		descriptorSetLayoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);
+		descriptorSetLayoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 		descriptorSetLayoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
 		descriptorSetLayoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
 		descriptorSetLayoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
-		descriptorSetLayoutBuilder.AddBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT);
 		auto globalSetLayout = descriptorSetLayoutBuilder.Build();
 
 		std::vector<VulkanDescriptorWriter> vkGlobalDescriptorWriter(VulkanSwapChain::MaxFramesInFlight,
@@ -222,6 +221,7 @@ namespace VulkanCore {
 
 		style.WindowMinSize.x = minWinSizeX;
 
+		// TODO: Shift these operations in Renderer
 		constexpr std::array<uint64_t, 2> queryPoolBuffer = { 0, 0 };
 		vkGetQueryPoolResults(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
 			VulkanRenderer::Get()->GetPerfQueryPool(),

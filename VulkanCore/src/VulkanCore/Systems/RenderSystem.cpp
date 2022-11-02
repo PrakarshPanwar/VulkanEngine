@@ -3,20 +3,34 @@
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Renderer/Renderer.h"
 #include "Platform/Vulkan/VulkanContext.h"
+#include "Platform/Vulkan/VulkanMesh.h"
 
 namespace VulkanCore {
 
 	RenderSystem::RenderSystem(std::shared_ptr<VulkanRenderPass> renderPass, VkDescriptorSetLayout globalSetLayout)
 	{
+#if USE_PIPELINE_SPEC
+		PipelineSpecification spec;
+		spec.pShader = Renderer::GetShader("FirstShader");
+		spec.RenderPass = renderPass;
+		spec.PushConstantSize = sizeof(PushConstantsDataComponent);
+		spec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
+
+		m_Pipeline = std::make_unique<VulkanPipeline>(spec);
+#else
 		CreatePipelineLayout(globalSetLayout);
 		CreatePipeline(renderPass);
+#endif
 	}
 
 	RenderSystem::~RenderSystem()
 	{
+#if !USE_PIPELINE_SPEC
 		auto device = VulkanContext::GetCurrentDevice();
 		vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
+#endif
 	}
 
 	void RenderSystem::CreatePipeline(std::shared_ptr<VulkanRenderPass> renderPass)
