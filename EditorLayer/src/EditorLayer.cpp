@@ -7,18 +7,14 @@
 #include "VulkanCore/Events/Input.h"
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 #include "Platform/Vulkan/VulkanMesh.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
+#include "Platform/Vulkan/VulkanContext.h"
 
 #include <imgui_impl_vulkan.h>
 #include <ImGuizmo.h>
-
-#include <memory>
-#include <filesystem>
-#include <numbers>
-#include <future>
-#include "Platform/Vulkan/VulkanContext.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
@@ -130,14 +126,14 @@ namespace VulkanCore {
 	{
 		m_EditorCamera.OnUpdate();
 
-		int frameIndex = VulkanRenderer::Get()->GetCurrentFrameIndex();
+		int frameIndex = Renderer::GetCurrentFrameIndex();
 
 		auto sceneRenderPass = m_SceneRenderer->GetRenderPass();
 		auto sceneCmd = m_SceneRenderer->GetCommandBuffer(frameIndex);
 
 		vkCmdResetQueryPool(sceneCmd, VulkanRenderer::Get()->GetPerfQueryPool(), 0, 2);
 		
-		Renderer::BeginRenderPass(sceneCmd, sceneRenderPass);
+		Renderer::BeginRenderPass(sceneRenderPass);
 
 		m_SceneRender.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
 		m_SceneRender.CommandBuffer = sceneCmd;
@@ -156,7 +152,7 @@ namespace VulkanCore {
 		m_Scene->OnUpdate(m_SceneRender);
 		m_Scene->OnUpdateLights(m_PointLightScene);
 
-		Renderer::EndRenderPass(sceneCmd, sceneRenderPass);
+		Renderer::EndRenderPass(sceneRenderPass);
 	}
 
 	void EditorLayer::OnEvent(Event& e)
@@ -264,7 +260,7 @@ namespace VulkanCore {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
-		ImGui::Image(m_SceneTextureIDs[VulkanRenderer::Get()->GetCurrentFrameIndex()], region);
+		ImGui::Image(m_SceneTextureIDs[Renderer::GetCurrentFrameIndex()], region);
 
 		RenderGizmo();
 		ImGui::End(); // End of Viewport

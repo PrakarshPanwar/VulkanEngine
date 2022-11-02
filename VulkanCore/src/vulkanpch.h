@@ -11,4 +11,6 @@
 #include <fstream>
 #include <sstream>
 
+#include <thread>
+#include <condition_variable>
 #include <functional>

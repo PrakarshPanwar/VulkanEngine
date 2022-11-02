@@ -196,6 +196,7 @@ namespace VulkanCore {
 		return commandBuffer;
 	}
 
+	// TODO: Maybe we also have to create a fence to check whether command has completed or not
 	void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer)
 	{
 		vkEndCommandBuffer(commandBuffer);

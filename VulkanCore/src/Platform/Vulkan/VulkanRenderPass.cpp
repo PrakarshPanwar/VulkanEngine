@@ -4,6 +4,7 @@
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include "VulkanContext.h"
@@ -55,7 +56,14 @@ namespace VulkanCore {
 	VulkanRenderPass::VulkanRenderPass(const RenderPassSpecification& spec)
 		: m_Specification(spec)
 	{
+#if USE_RENDER_THREAD
+		Renderer::Submit([this]
+		{
+			Invalidate();
+		});
+#else
 		Invalidate();
+#endif
 	}
 
 	VulkanRenderPass::~VulkanRenderPass()
@@ -200,7 +208,7 @@ namespace VulkanCore {
 		VkRenderPassBeginInfo beginPassInfo{};
 		beginPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		beginPassInfo.renderPass = m_RenderPass;
-		beginPassInfo.framebuffer = Framebuffer->GetVulkanFramebuffers()[VulkanRenderer::Get()->GetCurrentFrameIndex()];
+		beginPassInfo.framebuffer = Framebuffer->GetVulkanFramebuffers()[Renderer::GetCurrentFrameIndex()];
 		beginPassInfo.renderArea.offset = { 0, 0 };
 		beginPassInfo.renderArea.extent = framebufferExtent;
 

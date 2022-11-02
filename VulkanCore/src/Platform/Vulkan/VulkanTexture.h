@@ -12,7 +12,7 @@ namespace VulkanCore {
 		uint32_t Height = 0;
 		ImageFormat Format = ImageFormat::RGBA8_SRGB;
 		TextureWrap SamplerWrap = TextureWrap::Clamp;
-		bool GenerateMips = false;
+		bool GenerateMips = true;
 	};
 
 	class VulkanTexture
