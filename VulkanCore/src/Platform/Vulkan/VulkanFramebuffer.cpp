@@ -4,6 +4,7 @@
 #include "VulkanSwapChain.h"
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 namespace VulkanCore {
 
@@ -41,8 +42,15 @@ namespace VulkanCore {
 				m_ColorAttachmentSpecifications.emplace_back(specification);
 		}
 
-		s_InstanceCount++;
+#if USE_RENDER_THREAD
+		Renderer::Submit([this]
+		{
+			Invalidate();
+		});
+#else
 		Invalidate();
+#endif
+		s_InstanceCount++;
 	}
 
 	VulkanFramebuffer::~VulkanFramebuffer()

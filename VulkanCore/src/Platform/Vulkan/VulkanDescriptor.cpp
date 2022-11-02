@@ -12,7 +12,6 @@ namespace VulkanCore {
 
 	DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::AddBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, uint32_t count)
 	{
-		//VK_CORE_ASSERT(m_Bindings.count(binding) == 0, "Binding already in Use!");
 		VkDescriptorSetLayoutBinding layoutBinding{};
 		layoutBinding.binding = binding;
 		layoutBinding.descriptorType = descriptorType;

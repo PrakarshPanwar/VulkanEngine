@@ -1,14 +1,19 @@
 #pragma once
 #include "Platform/Vulkan/VulkanRenderPass.h"
 #include "VulkanCore/Core/Shader.h"
+#include "VulkanCore/Renderer/RenderThread.h"
+
+#define USE_RENDER_THREAD 1
 
 namespace VulkanCore {
 
 	class Renderer
 	{
 	public:
-		static void BeginRenderPass(VkCommandBuffer beginCmd, std::shared_ptr<VulkanRenderPass> renderPass);
-		static void EndRenderPass(VkCommandBuffer beginCmd, std::shared_ptr<VulkanRenderPass> renderPass);
+		static void SetCommandBuffers(const std::vector<VkCommandBuffer>& cmdBuffers);
+		static int GetCurrentFrameIndex();
+		static void BeginRenderPass(std::shared_ptr<VulkanRenderPass> renderPass);
+		static void EndRenderPass(std::shared_ptr<VulkanRenderPass> renderPass);
 		static void BuildShaders();
 		static void DestroyShaders();
 
@@ -19,8 +24,16 @@ namespace VulkanCore {
 
 			return m_Shaders[name];
 		}
+		
+		template<typename FuncT>
+		static void Submit(FuncT&& func)
+		{
+			RenderThread::SubmitToThread(func);
+		}
+
+		static void WaitandRender();
 	private:
-		static VkCommandBuffer m_CommandBuffer;
+		static std::vector<VkCommandBuffer> m_CommandBuffers;
 		static std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
 	};
 

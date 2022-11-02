@@ -13,6 +13,7 @@
 #include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
+#include "VulkanCore/Renderer/RenderThread.h"
 
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
@@ -82,6 +83,7 @@ namespace VulkanCore {
 
 		m_AppTimer = std::make_unique<Timer>("Application Initialization");
 		Log::Init();
+		RenderThread::Init();
 
 		std::filesystem::current_path("../VulkanCore");
 		m_Window = std::make_shared<WindowsWindow>(WindowSpecs(1920, 1080, "Vulkan Application"));
@@ -115,6 +117,7 @@ namespace VulkanCore {
 
 	void Application::Run()
 	{
+		RenderThread::WaitandDestroy();
 		m_AppTimer.reset();
 
 		while (m_Running)
