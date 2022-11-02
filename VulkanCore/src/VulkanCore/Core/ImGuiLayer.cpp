@@ -15,7 +15,6 @@
 #include "ImGuizmo.h"
 
 #include <glm/gtx/log_base.hpp>
-#include <filesystem>
 
 #define IMGUI_VIEWPORTS 1
 

@@ -2,18 +2,15 @@
 #include "Shader.h"
 
 #include "Platform/Vulkan/VulkanSwapChain.h"
+#include "Platform/Vulkan/VulkanDescriptor.h"
 #include "Application.h"
 #include "Assert.h"
 #include "Log.h"
 #include "Timer.h"
 
-#include <filesystem>
-#include <mutex>
-
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
 #include <spirv_cross/spirv_glsl.hpp>
-#include "Platform/Vulkan/VulkanDescriptor.h"
 
 namespace VulkanCore {
 
@@ -61,9 +58,9 @@ namespace VulkanCore {
 		{
 			switch (stage)
 			{
-			case ShaderType::Vertex:   return ".cache_vert.spv";
-			case ShaderType::Fragment: return ".cache_frag.spv";
-			case ShaderType::Geometry: return ".cache_geom.spv";
+			case ShaderType::Vertex:   return ".vert.spv";
+			case ShaderType::Fragment: return ".frag.spv";
+			case ShaderType::Geometry: return ".geom.spv";
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
@@ -229,8 +226,11 @@ namespace VulkanCore {
 
 			shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, Utils::GLShaderStageToShaderC(stage), shaderFilePath.string().c_str(), options);
 
-			VK_CORE_ASSERT(module.GetCompilationStatus() == shaderc_compilation_status_success,
-				"{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
+			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
+			{
+				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
+				__debugbreak();
+			}
 
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
 
