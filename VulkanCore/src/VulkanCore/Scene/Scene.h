@@ -26,7 +26,7 @@ namespace VulkanCore {
 		Entity CreateEntity(const std::string& name);
 		void OnUpdate(SceneInfo& sceneInfo);
 		void OnUpdateLights(SceneInfo& sceneInfo);
-		void UpdateUniformBuffer(UBCameraandLights& ubo);
+		void UpdatePointLightUB(UBPointLights& ubo);
 		void DestroyEntity(Entity entity);
 	private:
 		entt::registry m_Registry;

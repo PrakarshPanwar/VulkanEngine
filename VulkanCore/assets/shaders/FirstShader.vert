@@ -12,41 +12,24 @@ layout(location = 2) out vec3 v_FragNormalWorld;
 layout(location = 3) out vec2 v_FragTexCoord;
 layout(location = 4) out flat int v_TexIndex;
 
-layout(push_constant) uniform Push
+layout(push_constant) uniform Model
 {
 	mat4 modelMatrix;
 	mat4 normalMatrix;
-	float timestep;
-} push;
+} u_Model;
 
-struct PointLight
-{
-	vec4 position;
-	vec4 color;
-};
-
-layout(set = 0, binding = 0) uniform GlobalUniformBuffer
+layout(set = 0, binding = 0) uniform Camera
 {
 	mat4 projection;
 	mat4 view;
 	mat4 invView;
-	vec4 ambientLightColor;
-	PointLight pointLights[10];
-	int numLights;
-} ubo;
-
-const vec2 TexCoords[4] = vec2[](
-	vec2(1.0, 0.0),
-	vec2(0.0, 0.0),
-	vec2(0.0, 1.0),
-	vec2(1.0, 1.0)
-);
+} u_Camera;
 
 void main()
 {
-	vec4 positionWorld = push.modelMatrix * vec4(a_Position, 1.0);
-	gl_Position = ubo.projection * ubo.view * positionWorld;
-	v_FragNormalWorld = normalize(mat3(push.normalMatrix) * a_Normal);
+	vec4 positionWorld = u_Model.modelMatrix * vec4(a_Position, 1.0);
+	gl_Position = u_Camera.projection * u_Camera.view * positionWorld;
+	v_FragNormalWorld = normalize(mat3(u_Model.normalMatrix) * a_Normal);
 	v_FragPosWorld = positionWorld.xyz;
 	v_FragColor = a_FragColor;
 	v_FragTexCoord = a_TexCoord;

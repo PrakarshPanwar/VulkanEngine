@@ -101,24 +101,27 @@ namespace VulkanCore {
 			: PointLightInstance(pointLight), LightIntensity(intensity) {}
 	};
 
-	struct PushConstantsDataComponent
-	{
-		glm::mat4 ModelMatrix{ 1.f };
-		glm::mat4 NormalMatrix{};
-		float timestep;
-	};
-
-	struct UBCameraandLights
+	struct UBCamera
 	{
 		glm::mat4 Projection{ 1.0f };
 		glm::mat4 View{ 1.0f };
 		glm::mat4 InverseView{ 1.0f };
+	};
+
+	struct UBPointLights
+	{
 		glm::vec4 AmbientLightColor{ 1.0f, 1.0f, 1.0f, 0.02f };
 		PointLight PointLights[10];
 		int NumLights;
 	};
 
-	struct PointLightPushConstants
+	struct PCModelData
+	{
+		glm::mat4 ModelMatrix{ 1.f };
+		glm::mat4 NormalMatrix{};
+	};
+
+	struct PCPointLight
 	{
 		glm::vec4 Position{};
 		glm::vec4 Color{};

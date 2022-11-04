@@ -42,13 +42,21 @@ namespace VulkanCore {
 		m_SceneRenderer = std::make_shared<SceneRenderer>();
 		LoadEntities();
 
-		for (auto& UniformBuffer : m_UniformBuffers)
+		for (int i = 0; i < m_CameraUBs.size(); ++i)
 		{
-			UniformBuffer = std::make_unique<VulkanBuffer>(sizeof(UBCameraandLights), 1,
+			auto& CameraUB = m_CameraUBs.at(i);
+			CameraUB = std::make_unique<VulkanBuffer>(sizeof(UBCamera), 1,
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-			UniformBuffer->Map();
+			CameraUB->Map();
+
+			auto& PointLightUB = m_PointLightUBs.at(i);
+			PointLightUB = std::make_unique<VulkanBuffer>(sizeof(UBPointLights), 1,
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+			PointLightUB->Map();
 		}
 
 		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg");
@@ -81,9 +89,10 @@ namespace VulkanCore {
 
 		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
 		descriptorSetLayoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-		descriptorSetLayoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
+		descriptorSetLayoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 		descriptorSetLayoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
 		descriptorSetLayoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
+		descriptorSetLayoutBuilder.AddBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
 		auto globalSetLayout = descriptorSetLayoutBuilder.Build();
 
 		std::vector<VulkanDescriptorWriter> vkGlobalDescriptorWriter(VulkanSwapChain::MaxFramesInFlight,
@@ -91,11 +100,15 @@ namespace VulkanCore {
 
 		for (int i = 0; i < m_GlobalDescriptorSets.size(); i++)
 		{
-			auto bufferInfo = m_UniformBuffers[i]->DescriptorInfo();
-			vkGlobalDescriptorWriter[i].WriteBuffer(0, &bufferInfo);
-			vkGlobalDescriptorWriter[i].WriteImage(1, DiffuseMaps);
-			vkGlobalDescriptorWriter[i].WriteImage(2, NormalMaps);
-			vkGlobalDescriptorWriter[i].WriteImage(3, SpecularMaps);
+			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
+			vkGlobalDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+
+			auto pointLightUBInfo = m_PointLightUBs[i]->DescriptorInfo();
+			vkGlobalDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
+
+			vkGlobalDescriptorWriter[i].WriteImage(2, DiffuseMaps);
+			vkGlobalDescriptorWriter[i].WriteImage(3, NormalMaps);
+			vkGlobalDescriptorWriter[i].WriteImage(4, SpecularMaps);
 
 			vkGlobalDescriptorWriter[i].Build(m_GlobalDescriptorSets[i]);
 		}
@@ -141,13 +154,17 @@ namespace VulkanCore {
 		m_PointLightScene.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
 		m_PointLightScene.CommandBuffer = sceneCmd;
 
-		UBCameraandLights uniformBuffer{};
-		uniformBuffer.Projection = m_EditorCamera.GetProjectionMatrix();
-		uniformBuffer.View = m_EditorCamera.GetViewMatrix();
-		uniformBuffer.InverseView = glm::inverse(m_EditorCamera.GetViewMatrix());
-		m_Scene->UpdateUniformBuffer(uniformBuffer);
-		m_UniformBuffers[frameIndex]->WriteToBuffer(&uniformBuffer);
-		m_UniformBuffers[frameIndex]->FlushBuffer();
+		UBCamera cameraUB{};
+		cameraUB.Projection = m_EditorCamera.GetProjectionMatrix();
+		cameraUB.View = m_EditorCamera.GetViewMatrix();
+		cameraUB.InverseView = glm::inverse(m_EditorCamera.GetViewMatrix());
+		m_CameraUBs[frameIndex]->WriteToBuffer(&cameraUB);
+		m_CameraUBs[frameIndex]->FlushBuffer();
+
+		UBPointLights pointLightUB{};
+		m_Scene->UpdatePointLightUB(pointLightUB);
+		m_PointLightUBs[frameIndex]->WriteToBuffer(&pointLightUB);
+		m_PointLightUBs[frameIndex]->FlushBuffer();
 
 		m_Scene->OnUpdate(m_SceneRender);
 		m_Scene->OnUpdateLights(m_PointLightScene);

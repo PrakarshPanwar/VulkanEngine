@@ -15,7 +15,7 @@ namespace VulkanCore {
 		PipelineSpecification spec;
 		spec.pShader = Renderer::GetShader("FirstShader");
 		spec.RenderPass = renderPass;
-		spec.PushConstantSize = sizeof(PushConstantsDataComponent);
+		spec.PushConstantSize = sizeof(PCModelData);
 		spec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
 
 		m_Pipeline = std::make_unique<VulkanPipeline>(spec);
@@ -67,7 +67,7 @@ namespace VulkanCore {
 		VkPushConstantRange pushConstantRange{};
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		pushConstantRange.offset = 0;
-		pushConstantRange.size = sizeof(PushConstantsDataComponent);
+		pushConstantRange.size = sizeof(PCModelData);
 
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ globalSetLayout };
 

@@ -61,7 +61,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::RecreateScene()
 {
-		VK_CORE_INFO("Scene has been Recreated!");		
+		VK_CORE_INFO("Scene has been Recreated!");
 		m_SceneRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 	}
 
