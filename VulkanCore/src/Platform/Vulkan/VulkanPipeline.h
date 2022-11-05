@@ -46,7 +46,7 @@ namespace VulkanCore {
 		VkPipelineInputAssemblyStateCreateInfo InputAssemblyInfo;
 		VkPipelineRasterizationStateCreateInfo RasterizationInfo;
 		VkPipelineMultisampleStateCreateInfo MultisampleInfo;
-		std::shared_ptr<VkPipelineColorBlendAttachmentState> ColorBlendAttachment;
+		std::vector<VkPipelineColorBlendAttachmentState> ColorBlendAttachments;
 		VkPipelineColorBlendStateCreateInfo ColorBlendInfo;
 		VkPipelineDepthStencilStateCreateInfo DepthStencilInfo;
 		std::vector<VkDynamicState> DynamicStateEnables;
