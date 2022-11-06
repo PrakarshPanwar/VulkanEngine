@@ -39,8 +39,8 @@ namespace VulkanCore {
 
 		std::unique_ptr<Timer> editorInit = std::make_unique<Timer>("Editor Initialization");
 
-		m_SceneRenderer = std::make_shared<SceneRenderer>();
 		LoadEntities();
+		m_SceneRenderer = std::make_shared<SceneRenderer>();
 
 		for (int i = 0; i < m_CameraUBs.size(); ++i)
 		{
@@ -76,6 +76,7 @@ namespace VulkanCore {
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
 			m_SceneTextureIDs[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetImage(i));
 
+		// TODO: Shift these operations to SceneRenderer
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
 		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
 		DiffuseMaps.push_back(m_DiffuseMap2->GetDescriptorImageInfo());
@@ -120,8 +121,8 @@ namespace VulkanCore {
 		m_RenderSystem = std::make_shared<RenderSystem>(sceneRenderPass, globalSetLayout->GetDescriptorSetLayout());
 		m_PointLightSystem = std::make_shared<PointLightSystem>(sceneRenderPass, globalSetLayout->GetDescriptorSetLayout());
 
-		m_SceneRender.ScenePipeline = m_RenderSystem->GetPipeline();
-		m_SceneRender.PipelineLayout = m_RenderSystem->GetPipelineLayout();
+		m_CompositeScene.ScenePipeline = m_RenderSystem->GetPipeline();
+		m_CompositeScene.PipelineLayout = m_RenderSystem->GetPipelineLayout();
 
 		m_PointLightScene.ScenePipeline = m_PointLightSystem->GetPipeline();
 		m_PointLightScene.PipelineLayout = m_PointLightSystem->GetPipelineLayout();
@@ -148,8 +149,8 @@ namespace VulkanCore {
 		
 		Renderer::BeginRenderPass(sceneRenderPass);
 
-		m_SceneRender.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
-		m_SceneRender.CommandBuffer = sceneCmd;
+		m_CompositeScene.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
+		m_CompositeScene.CommandBuffer = sceneCmd;
 
 		m_PointLightScene.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
 		m_PointLightScene.CommandBuffer = sceneCmd;
@@ -166,7 +167,7 @@ namespace VulkanCore {
 		m_PointLightUBs[frameIndex]->WriteToBuffer(&pointLightUB);
 		m_PointLightUBs[frameIndex]->FlushBuffer();
 
-		m_Scene->OnUpdate(m_SceneRender);
+		m_Scene->OnUpdate(m_CompositeScene);
 		m_Scene->OnUpdateLights(m_PointLightScene);
 
 		Renderer::EndRenderPass(sceneRenderPass);

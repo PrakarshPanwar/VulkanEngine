@@ -36,7 +36,7 @@ namespace VulkanCore {
 	{
 		for (auto specification : m_Specification.Attachments.Attachments)
 		{
-			if (Utils::IsDepthFormat(specification.ImageFormat))
+			if (Utils::IsDepthFormat(specification.ImgFormat))
 				m_DepthAttachmentSpecification = specification;
 			else
 				m_ColorAttachmentSpecifications.emplace_back(specification);
@@ -94,7 +94,7 @@ namespace VulkanCore {
 				spec.Width = m_Specification.Width;
 				spec.Height = m_Specification.Height;
 				spec.Samples = m_Specification.Samples;
-				spec.Format = attachment.ImageFormat;
+				spec.Format = attachment.ImgFormat;
 				spec.Usage = ImageUsage::Attachment;
 
 				auto& attachmentColorImage = AttachmentImages.emplace_back(spec);
@@ -121,34 +121,37 @@ namespace VulkanCore {
 		// Image Creation for Resolve Attachment
 		if (Utils::IsMultisampled(m_Specification))
 		{
-			std::vector<VulkanImage> ResolveImages;
-			ResolveImages.reserve(VulkanSwapChain::MaxFramesInFlight);
-
-			for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
+			for (auto& attachment : m_ColorAttachmentSpecifications)
 			{
-				ImageSpecification spec;
-				spec.Width = m_Specification.Width;
-				spec.Height = m_Specification.Height;
-				spec.Samples = 1;
-				spec.Format = ImageFormat::RGBA8_SRGB;
-				spec.Usage = ImageUsage::Attachment;
+				std::vector<VulkanImage> ResolveImages;
+				ResolveImages.reserve(VulkanSwapChain::MaxFramesInFlight);
 
-				auto& resolveColorImage = ResolveImages.emplace_back(spec);
-				resolveColorImage.Invalidate();
+				for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
+				{
+					ImageSpecification spec;
+					spec.Width = m_Specification.Width;
+					spec.Height = m_Specification.Height;
+					spec.Samples = 1;
+					spec.Format = attachment.ImgFormat;
+					spec.Usage = ImageUsage::Attachment;
 
-				// Resolve Transition
-				VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+					auto& resolveColorImage = ResolveImages.emplace_back(spec);
+					resolveColorImage.Invalidate();
 
-				Utils::InsertImageMemoryBarrier(barrierCmd, resolveColorImage.GetVulkanImageInfo().Image,
-					VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+					// Resolve Transition
+					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
-				device->FlushCommandBuffer(barrierCmd);
+					Utils::InsertImageMemoryBarrier(barrierCmd, resolveColorImage.GetVulkanImageInfo().Image,
+						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+						VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+					device->FlushCommandBuffer(barrierCmd);
+				}
+
+				m_ColorAttachments.emplace_back(std::move(ResolveImages));
 			}
-
-			m_ColorAttachments.emplace_back(std::move(ResolveImages));
 		}
 
 		// Image Creation for Depth Attachment
@@ -162,7 +165,7 @@ namespace VulkanCore {
 				spec.Width = m_Specification.Width;
 				spec.Height = m_Specification.Height;
 				spec.Samples = m_Specification.Samples;
-				spec.Format = m_DepthAttachmentSpecification.ImageFormat;
+				spec.Format = m_DepthAttachmentSpecification.ImgFormat;
 				spec.Usage = ImageUsage::Attachment;
 
 				auto& depthImage = m_DepthAttachment.emplace_back(spec);

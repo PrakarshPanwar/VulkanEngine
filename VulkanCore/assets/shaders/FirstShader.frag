@@ -28,9 +28,9 @@ layout(set = 0, binding = 1) uniform PointLight
 	int numLights;
 } u_PointLight;
 
-layout(set = 0, binding = 2) uniform sampler2D u_TexDiffSamplers[3];
-layout(set = 0, binding = 3) uniform sampler2D u_TexNormSamplers[3];
-layout(set = 0, binding = 4) uniform sampler2D u_TexSpecSamplers[3];
+layout(set = 0, binding = 2) uniform sampler2D u_DiffuseTex[3];
+layout(set = 0, binding = 3) uniform sampler2D u_NormalTex[3];
+layout(set = 0, binding = 4) uniform sampler2D u_SpecularTex[3];
 
 void main()
 {
@@ -40,10 +40,10 @@ void main()
 	vec3 viewDirection = normalize(cameraPosWorld - v_FragPosWorld);
 
 	//vec3 surfaceNormal = normalize(v_FragNormalWorld);
-	vec3 surfaceNormal = texture(u_TexNormSamplers[v_TexIndex], v_FragTexCoord).rgb;
+	vec3 surfaceNormal = texture(u_NormalTex[v_TexIndex], v_FragTexCoord).rgb;
 	surfaceNormal = normalize(surfaceNormal * 2.0 - 1.0);
 
-	vec4 specColorMap = texture(u_TexSpecSamplers[v_TexIndex], v_FragTexCoord);
+	vec4 specColorMap = texture(u_SpecularTex[v_TexIndex], v_FragTexCoord);
 
 	for (int i = 0; i < u_PointLight.numLights; i++)
 	{
@@ -63,7 +63,7 @@ void main()
 		specularLight += pointLight.color.xyz * intensity * blinnTerm;
 	}
 
-	vec3 diffColorMap = texture(u_TexDiffSamplers[v_TexIndex], v_FragTexCoord).rgb;
+	vec3 diffColorMap = texture(u_DiffuseTex[v_TexIndex], v_FragTexCoord).rgb;
 
 	vec3 rDiffuse = diffuseLight * diffColorMap;
 	vec3 rSpecular = specularLight * specColorMap.rgb;

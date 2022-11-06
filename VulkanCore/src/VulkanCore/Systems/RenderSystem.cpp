@@ -11,7 +11,6 @@ namespace VulkanCore {
 
 	RenderSystem::RenderSystem(std::shared_ptr<VulkanRenderPass> renderPass, VkDescriptorSetLayout globalSetLayout)
 	{
-#if USE_PIPELINE_SPEC
 		PipelineSpecification spec;
 		spec.pShader = Renderer::GetShader("FirstShader");
 		spec.RenderPass = renderPass;
@@ -19,18 +18,10 @@ namespace VulkanCore {
 		spec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
 
 		m_Pipeline = std::make_unique<VulkanPipeline>(spec);
-#else
-		CreatePipelineLayout(globalSetLayout);
-		CreatePipeline(renderPass);
-#endif
 	}
 
 	RenderSystem::~RenderSystem()
 	{
-#if !USE_PIPELINE_SPEC
-		auto device = VulkanContext::GetCurrentDevice();
-		vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
-#endif
 	}
 
 	void RenderSystem::CreatePipeline(std::shared_ptr<VulkanRenderPass> renderPass)
@@ -39,7 +30,7 @@ namespace VulkanCore {
 
 		PipelineConfigInfo pipelineConfig{};
 		pipelineConfig.RenderPass = renderPass;
-		VulkanPipeline::DefaultPipelineConfigInfo(pipelineConfig);
+		VulkanPipeline::SetDefaultPipelineConfiguration(pipelineConfig);
 		pipelineConfig.PipelineLayout = m_PipelineLayout;
 
 #define USE_GEOMETRY_SHADER 0

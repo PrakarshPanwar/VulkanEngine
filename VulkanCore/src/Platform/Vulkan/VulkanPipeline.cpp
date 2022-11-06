@@ -417,7 +417,7 @@ namespace VulkanCore {
 		cacheInfo.pInitialData = nullptr;
 	}
 
-	void VulkanPipeline::DefaultPipelineConfigInfo(PipelineConfigInfo& pipelineConfigInfo)
+	void VulkanPipeline::SetDefaultPipelineConfiguration(PipelineConfigInfo& pipelineConfigInfo)
 	{
 		pipelineConfigInfo.InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 		pipelineConfigInfo.InputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;

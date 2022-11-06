@@ -90,7 +90,7 @@ namespace VulkanCore {
 		for (const auto& attachmentSpec : Framebuffer->GetColorAttachments())
 		{
 			VkAttachmentDescription colorAttachment = {};
-			colorAttachment.format = Utils::VulkanImageFormat(attachmentSpec.ImageFormat);
+			colorAttachment.format = Utils::VulkanImageFormat(attachmentSpec.ImgFormat);
 			colorAttachment.samples = samples;
 			colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 			colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -107,23 +107,26 @@ namespace VulkanCore {
 		VkAttachmentDescription colorAttachmentResolve = {};
 		if (Utils::IsMultisampled(m_Specification))
 		{
-			colorAttachmentResolve.format = Utils::VulkanImageFormat(ImageFormat::RGBA8_SRGB);
-			colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
-			colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			colorAttachmentResolve.flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
-			attachmentDescriptions.push_back(colorAttachmentResolve);
+			for (const auto& attachmentSpec : Framebuffer->GetColorAttachments())
+			{
+				colorAttachmentResolve.format = Utils::VulkanImageFormat(attachmentSpec.ImgFormat);
+				colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+				colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+				colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+				colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+				colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				colorAttachmentResolve.flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
+				attachmentDescriptions.push_back(colorAttachmentResolve);
+			}
 		}
 
 		// Depth Attachment Description
 		if (Framebuffer->HasDepthAttachment())
 		{
 			VkAttachmentDescription depthAttachment = {};
-			depthAttachment.format = Utils::VulkanImageFormat(Framebuffer->GetDepthAttachment().ImageFormat);
+			depthAttachment.format = Utils::VulkanImageFormat(Framebuffer->GetDepthAttachment().ImgFormat);
 			depthAttachment.samples = samples;
 			depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 			depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -144,12 +147,15 @@ namespace VulkanCore {
 		}
 
 		// Resolve Attachment Reference(Only applicable if multisampling is present)
-		VkAttachmentReference colorAttachmentResolveRef = {};
 		if (Utils::IsMultisampled(m_Specification))
 		{
-			colorAttachmentResolveRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
-			colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			attachmentRefs.push_back(colorAttachmentResolveRef);
+			for (int i = 0; i < Framebuffer->GetColorAttachments().size(); i++)
+			{
+				VkAttachmentReference colorAttachmentResolveRef = {};
+				colorAttachmentResolveRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
+				colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+				attachmentRefs.push_back(colorAttachmentResolveRef);
+			}
 		}
 
 		// Depth Attachment Reference
@@ -166,7 +172,8 @@ namespace VulkanCore {
 		// TODO: We are using single resolve attachment but,
 		// I think we need a vector of it for multiple color attachments
 		subpass.pDepthStencilAttachment = Framebuffer->HasDepthAttachment() ? &depthAttachmentRef : nullptr;
-		subpass.pResolveAttachments = Utils::IsMultisampled(m_Specification) ? &colorAttachmentResolveRef : nullptr;
+		subpass.pResolveAttachments = Utils::IsMultisampled(m_Specification) ?
+			attachmentRefs.data() + Framebuffer->GetColorAttachments().size() : nullptr;
 
 		VkSubpassDependency dependency = {}; // TODO: Changes need to be made
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;

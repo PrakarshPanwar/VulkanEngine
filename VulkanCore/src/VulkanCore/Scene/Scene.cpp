@@ -19,7 +19,6 @@ namespace VulkanCore {
 	{
 		Entity entity = { m_Registry.create(), this };
 		entity.AddComponent<TagComponent>(name);
-		//entity.AddComponent<TransformComponent>();
 
 		return entity;
 	}
@@ -88,7 +87,6 @@ namespace VulkanCore {
 
 				vkCmdDraw(sceneInfo.CommandBuffer, 6, 1, 0, 0);
 			}
-
 		}
 	}
 
