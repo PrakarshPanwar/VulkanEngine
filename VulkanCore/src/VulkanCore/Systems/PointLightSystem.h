@@ -14,7 +14,11 @@ namespace VulkanCore {
 		PointLightSystem(std::shared_ptr<VulkanRenderPass> renderPass, VkDescriptorSetLayout globalSetLayout);
 		~PointLightSystem();
 
-		inline VkPipelineLayout GetPipelineLayout() { return m_PipelineLayout; }
+#if USE_PIPELINE_SPEC
+		inline VkPipelineLayout GetPipelineLayout() const { return m_Pipeline->GetVulkanPipelineLayout(); }
+#else
+		inline VkPipelineLayout GetPipelineLayout() const { return m_PipelineLayout; }
+#endif
 		inline VulkanPipeline* GetPipeline() const { return m_Pipeline.get(); }
 	private:
 		void CreatePipeline(std::shared_ptr<VulkanRenderPass> renderPass);

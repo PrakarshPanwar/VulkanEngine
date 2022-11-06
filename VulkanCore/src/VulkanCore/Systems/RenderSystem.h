@@ -14,11 +14,7 @@ namespace VulkanCore {
 		RenderSystem(std::shared_ptr<VulkanRenderPass> renderPass, VkDescriptorSetLayout globalSetLayout);
 		~RenderSystem();
 
-#if USE_PIPELINE_SPEC
 		inline VkPipelineLayout GetPipelineLayout() const { return m_Pipeline->GetVulkanPipelineLayout(); }
-#else
-		inline VkPipelineLayout GetPipelineLayout() const { return m_PipelineLayout; }
-#endif
 		inline VulkanPipeline* GetPipeline() const { return m_Pipeline.get(); }
 	private:
 		void CreatePipeline(std::shared_ptr<VulkanRenderPass> renderPass);

@@ -64,7 +64,7 @@ namespace VulkanCore {
 
 		~VulkanPipeline();
 
-		static void DefaultPipelineConfigInfo(PipelineConfigInfo& pipelineConfigInfo);
+		static void SetDefaultPipelineConfiguration(PipelineConfigInfo& pipelineConfigInfo);
 		static void EnableAlphaBlending(PipelineConfigInfo& pipelineConfigInfo);
 
 		void Bind(VkCommandBuffer commandBuffer);

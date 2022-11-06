@@ -5,19 +5,32 @@
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Components.h"
 #include "Platform/Vulkan/VulkanContext.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 namespace VulkanCore {
 
 	PointLightSystem::PointLightSystem(std::shared_ptr<VulkanRenderPass> renderPass, VkDescriptorSetLayout globalSetLayout)
 	{
+#if USE_PIPELINE_SPEC
+		PipelineSpecification spec;
+		spec.pShader = Renderer::GetShader("PointLightShader");
+		spec.Blend = true;
+		spec.RenderPass = renderPass;
+		spec.PushConstantSize = sizeof(PCPointLight);
+
+		m_Pipeline = std::make_unique<VulkanPipeline>(spec);
+#else
 		CreatePipelineLayout(globalSetLayout);
 		CreatePipeline(renderPass);
+#endif
 	}
 
 	PointLightSystem::~PointLightSystem()
 	{
+#if !USE_PIPELINE_SPEC
 		auto device = VulkanContext::GetCurrentDevice();
 		vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
+#endif
 	}
 
 	void PointLightSystem::CreatePipeline(std::shared_ptr<VulkanRenderPass> renderPass)
@@ -26,7 +39,7 @@ namespace VulkanCore {
 
 		PipelineConfigInfo pipelineConfig{};
 		pipelineConfig.RenderPass = renderPass;
-		VulkanPipeline::DefaultPipelineConfigInfo(pipelineConfig);
+		VulkanPipeline::SetDefaultPipelineConfiguration(pipelineConfig);
 		VulkanPipeline::EnableAlphaBlending(pipelineConfig);
 		pipelineConfig.AttributeDescriptions.clear();
 		pipelineConfig.BindingDescriptions.clear();
