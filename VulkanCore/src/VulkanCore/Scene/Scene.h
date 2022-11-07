@@ -14,7 +14,7 @@ namespace VulkanCore {
 		VkCommandBuffer CommandBuffer;
 		VulkanPipeline* ScenePipeline;
 		VkPipelineLayout PipelineLayout;
-		VkDescriptorSet SceneDescriptorSet;
+		VkDescriptorSet DescriptorSet;
 	};
 
 	class Scene

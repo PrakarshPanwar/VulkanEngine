@@ -23,6 +23,8 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanDescriptorSetLayout> CreateDescriptorSetLayout();
 
 		inline std::unordered_map<uint32_t, std::vector<uint32_t>>& GetShaderModules() { return m_VulkanSPIRV; }
+		inline uint32_t GetPushConstantSize() const { return m_PushConstantSize; }
+
 		inline bool CheckIfGeometryShaderExists() const { return m_HasGeometryShader; };
 	private:
 		std::tuple<std::string, std::string> ParseShader(const std::string& vsfilepath, const std::string& fsfilepath);
@@ -35,6 +37,7 @@ namespace VulkanCore {
 		std::unordered_map<uint32_t, std::vector<uint32_t>> m_VulkanSPIRV;
 		std::vector<std::future<void>> m_Futures;
 		std::vector<VkDescriptorSet> m_DescriptorSet;
+		size_t m_PushConstantSize = 0;
 
 		bool m_HasGeometryShader = false;
 	};

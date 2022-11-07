@@ -101,8 +101,12 @@ namespace VulkanCore {
 
 		// TODO: Might want to create a "DescriptorPoolManager" class that handles this case, and builds
 		// a new pool whenever an old pool fills up. But this is beyond our current scope
-		if (vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, &descriptor) != VK_SUCCESS)
+		auto allocResult = vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, &descriptor);
+		if (allocResult != VK_SUCCESS)
+		{
+			VK_CORE_ERROR("Error occured in allocating Descriptors!");
 			return false;
+		}
 
 		return true;
 	}

@@ -13,7 +13,6 @@ namespace VulkanCore {
 		bool DepthTest = true;
 		bool DepthWrite = true;
 		bool Blend = false;
-		size_t PushConstantSize = 0;
 		std::pair<std::vector<VkVertexInputBindingDescription>,
 			std::vector<VkVertexInputAttributeDescription>> Layout;
 	};

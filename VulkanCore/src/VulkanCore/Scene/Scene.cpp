@@ -28,7 +28,7 @@ namespace VulkanCore {
 		sceneInfo.ScenePipeline->Bind(sceneInfo.CommandBuffer);
 
 		vkCmdBindDescriptorSets(sceneInfo.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sceneInfo.PipelineLayout,
-			0, 1, &sceneInfo.SceneDescriptorSet, 0, nullptr);
+			0, 1, &sceneInfo.DescriptorSet, 0, nullptr);
 
 		auto view = m_Registry.view<TransformComponent>();
 
@@ -63,7 +63,7 @@ namespace VulkanCore {
 		sceneInfo.ScenePipeline->Bind(sceneInfo.CommandBuffer);
 
 		vkCmdBindDescriptorSets(sceneInfo.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sceneInfo.PipelineLayout,
-			0, 1, &sceneInfo.SceneDescriptorSet, 0, nullptr);
+			0, 1, &sceneInfo.DescriptorSet, 0, nullptr);
 
 		auto view = m_Registry.view<TransformComponent>();
 
