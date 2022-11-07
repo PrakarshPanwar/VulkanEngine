@@ -1,29 +1,27 @@
 #include "EditorLayer.h"
 
 #include "VulkanCore/Core/Application.h"
+#include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
 #include "VulkanCore/Events/Input.h"
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 #include "Platform/Vulkan/VulkanMesh.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
+#include "Platform/Vulkan/VulkanContext.h"
 
 #include <imgui_impl_vulkan.h>
 #include <ImGuizmo.h>
-
-#include <memory>
-#include <filesystem>
-#include <numbers>
-#include <future>
-#include "Platform/Vulkan/VulkanContext.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "VulkanCore/Renderer/Renderer.h"
 
 namespace VulkanCore {
 
@@ -42,16 +40,24 @@ namespace VulkanCore {
 
 		std::unique_ptr<Timer> editorInit = std::make_unique<Timer>("Editor Initialization");
 
-		m_SceneRenderer = std::make_shared<SceneRenderer>();
 		LoadEntities();
+		m_SceneRenderer = std::make_shared<SceneRenderer>();
 
-		for (auto& UniformBuffer : m_UniformBuffers)
+		for (int i = 0; i < m_CameraUBs.size(); ++i)
 		{
-			UniformBuffer = std::make_unique<VulkanBuffer>(sizeof(UBCameraandLights), 1,
+			auto& CameraUB = m_CameraUBs.at(i);
+			CameraUB = std::make_unique<VulkanBuffer>(sizeof(UBCamera), 1,
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-			UniformBuffer->Map();
+			CameraUB->Map();
+
+			auto& PointLightUB = m_PointLightUBs.at(i);
+			PointLightUB = std::make_unique<VulkanBuffer>(sizeof(UBPointLights), 1,
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+			PointLightUB->Map();
 		}
 
 		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg");
@@ -71,6 +77,7 @@ namespace VulkanCore {
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
 			m_SceneTextureIDs[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetImage(i));
 
+		// TODO: Shift these operations to SceneRenderer
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
 		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
 		DiffuseMaps.push_back(m_DiffuseMap2->GetDescriptorImageInfo());
@@ -83,36 +90,58 @@ namespace VulkanCore {
 		SpecularMaps.push_back(m_SpecularMap3->GetDescriptorImageInfo());
 
 		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
-		descriptorSetLayoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS);
-		descriptorSetLayoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
+		descriptorSetLayoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+		auto pointLightDescriptorSetLayout = descriptorSetLayoutBuilder.Build();
+
+		descriptorSetLayoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 		descriptorSetLayoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
 		descriptorSetLayoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
-		descriptorSetLayoutBuilder.AddBinding(4, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT);
-		auto globalSetLayout = descriptorSetLayoutBuilder.Build();
+		descriptorSetLayoutBuilder.AddBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
+		auto sceneDescriptorSetLayout = descriptorSetLayoutBuilder.Build();
 
-		std::vector<VulkanDescriptorWriter> vkGlobalDescriptorWriter(VulkanSwapChain::MaxFramesInFlight,
-			{ *globalSetLayout, *Application::Get()->GetVulkanDescriptorPool() });
+		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
 
-		for (int i = 0; i < m_GlobalDescriptorSets.size(); i++)
+		std::vector<VulkanDescriptorWriter> sceneDescriptorWriter(
+			VulkanSwapChain::MaxFramesInFlight,
+			{ *sceneDescriptorSetLayout, *vulkanDescriptorPool });
+
+		for (int i = 0; i < m_SceneDescriptorSets.size(); i++)
 		{
-			auto bufferInfo = m_UniformBuffers[i]->DescriptorInfo();
-			vkGlobalDescriptorWriter[i].WriteBuffer(0, &bufferInfo);
-			vkGlobalDescriptorWriter[i].WriteImage(1, DiffuseMaps);
-			vkGlobalDescriptorWriter[i].WriteImage(2, NormalMaps);
-			vkGlobalDescriptorWriter[i].WriteImage(3, SpecularMaps);
+			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
+			sceneDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
-			vkGlobalDescriptorWriter[i].Build(m_GlobalDescriptorSets[i]);
+			auto pointLightUBInfo = m_PointLightUBs[i]->DescriptorInfo();
+			sceneDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
+
+			sceneDescriptorWriter[i].WriteImage(2, DiffuseMaps);
+			sceneDescriptorWriter[i].WriteImage(3, NormalMaps);
+			sceneDescriptorWriter[i].WriteImage(4, SpecularMaps);
+
+			sceneDescriptorWriter[i].Build(m_SceneDescriptorSets[i]);
+		}
+
+		std::vector<VulkanDescriptorWriter> pointLightDescriptorWriter(
+			VulkanSwapChain::MaxFramesInFlight,
+			{ *pointLightDescriptorSetLayout, *vulkanDescriptorPool });
+
+		for (int i = 0; i < m_PointLightDescriptorSets.size(); i++)
+		{
+			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
+			pointLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+
+			bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i]);
+			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 		}
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 
 		auto sceneRenderPass = m_SceneRenderer->GetRenderPass();
 		// TODO: In future these classes will be deprecated, and all pipeline creation will move into SceneRenderer
-		m_RenderSystem = std::make_shared<RenderSystem>(sceneRenderPass, globalSetLayout->GetDescriptorSetLayout());
-		m_PointLightSystem = std::make_shared<PointLightSystem>(sceneRenderPass, globalSetLayout->GetDescriptorSetLayout());
+		m_RenderSystem = std::make_shared<RenderSystem>(sceneRenderPass, sceneDescriptorSetLayout->GetDescriptorSetLayout());
+		m_PointLightSystem = std::make_shared<PointLightSystem>(sceneRenderPass, pointLightDescriptorSetLayout->GetDescriptorSetLayout());
 
-		m_SceneRender.ScenePipeline = m_RenderSystem->GetPipeline();
-		m_SceneRender.PipelineLayout = m_RenderSystem->GetPipelineLayout();
+		m_CompositeScene.ScenePipeline = m_RenderSystem->GetPipeline();
+		m_CompositeScene.PipelineLayout = m_RenderSystem->GetPipelineLayout();
 
 		m_PointLightScene.ScenePipeline = m_PointLightSystem->GetPipeline();
 		m_PointLightScene.PipelineLayout = m_PointLightSystem->GetPipelineLayout();
@@ -130,24 +159,37 @@ namespace VulkanCore {
 	{
 		m_EditorCamera.OnUpdate();
 
-		int frameIndex = VulkanRenderer::Get()->GetCurrentFrameIndex();
+		int frameIndex = Renderer::GetCurrentFrameIndex();
 
-		m_SceneRender.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
-		m_SceneRender.CommandBuffer = m_SceneRenderer->GetCommandBuffer(frameIndex);
+		auto sceneRenderPass = m_SceneRenderer->GetRenderPass();
+		auto sceneCmd = m_SceneRenderer->GetCommandBuffer(frameIndex);
 
-		m_PointLightScene.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
-		m_PointLightScene.CommandBuffer = m_SceneRenderer->GetCommandBuffer(frameIndex);
+		vkCmdResetQueryPool(sceneCmd, VulkanRenderer::Get()->GetPerfQueryPool(), 0, 2);
+		
+		Renderer::BeginRenderPass(sceneRenderPass);
 
-		UBCameraandLights uniformBuffer{};
-		uniformBuffer.Projection = m_EditorCamera.GetProjectionMatrix();
-		uniformBuffer.View = m_EditorCamera.GetViewMatrix();
-		uniformBuffer.InverseView = glm::inverse(m_EditorCamera.GetViewMatrix());
-		m_Scene->UpdateUniformBuffer(uniformBuffer);
-		m_UniformBuffers[frameIndex]->WriteToBuffer(&uniformBuffer);
-		m_UniformBuffers[frameIndex]->FlushBuffer();
+		m_CompositeScene.DescriptorSet = m_SceneDescriptorSets[frameIndex];
+		m_CompositeScene.CommandBuffer = sceneCmd;
 
-		m_Scene->OnUpdate(m_SceneRender);
+		m_PointLightScene.DescriptorSet = m_PointLightDescriptorSets[frameIndex];
+		m_PointLightScene.CommandBuffer = sceneCmd;
+
+		UBCamera cameraUB{};
+		cameraUB.Projection = m_EditorCamera.GetProjectionMatrix();
+		cameraUB.View = m_EditorCamera.GetViewMatrix();
+		cameraUB.InverseView = glm::inverse(m_EditorCamera.GetViewMatrix());
+		m_CameraUBs[frameIndex]->WriteToBuffer(&cameraUB);
+		m_CameraUBs[frameIndex]->FlushBuffer();
+
+		UBPointLights pointLightUB{};
+		m_Scene->UpdatePointLightUB(pointLightUB);
+		m_PointLightUBs[frameIndex]->WriteToBuffer(&pointLightUB);
+		m_PointLightUBs[frameIndex]->FlushBuffer();
+
+		m_Scene->OnUpdate(m_CompositeScene);
 		m_Scene->OnUpdateLights(m_PointLightScene);
+
+		Renderer::EndRenderPass(sceneRenderPass);
 	}
 
 	void EditorLayer::OnEvent(Event& e)
@@ -212,6 +254,7 @@ namespace VulkanCore {
 
 		style.WindowMinSize.x = minWinSizeX;
 
+		// TODO: Shift these operations in Renderer
 		constexpr std::array<uint64_t, 2> queryPoolBuffer = { 0, 0 };
 		vkGetQueryPoolResults(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
 			VulkanRenderer::Get()->GetPerfQueryPool(),
@@ -254,7 +297,7 @@ namespace VulkanCore {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
-		ImGui::Image(m_SceneTextureIDs[VulkanRenderer::Get()->GetCurrentFrameIndex()], region);
+		ImGui::Image(m_SceneTextureIDs[Renderer::GetCurrentFrameIndex()], region);
 
 		RenderGizmo();
 		ImGui::End(); // End of Viewport

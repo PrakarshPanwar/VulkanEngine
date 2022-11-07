@@ -3,20 +3,24 @@
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Renderer/Renderer.h"
 #include "Platform/Vulkan/VulkanContext.h"
+#include "Platform/Vulkan/VulkanMesh.h"
 
 namespace VulkanCore {
 
 	RenderSystem::RenderSystem(std::shared_ptr<VulkanRenderPass> renderPass, VkDescriptorSetLayout globalSetLayout)
 	{
-		CreatePipelineLayout(globalSetLayout);
-		CreatePipeline(renderPass);
+		PipelineSpecification spec;
+		spec.pShader = Renderer::GetShader("FirstShader");
+		spec.RenderPass = renderPass;
+		spec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
+
+		m_Pipeline = std::make_unique<VulkanPipeline>(spec);
 	}
 
 	RenderSystem::~RenderSystem()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-		vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 	}
 
 	void RenderSystem::CreatePipeline(std::shared_ptr<VulkanRenderPass> renderPass)
@@ -25,7 +29,7 @@ namespace VulkanCore {
 
 		PipelineConfigInfo pipelineConfig{};
 		pipelineConfig.RenderPass = renderPass;
-		VulkanPipeline::DefaultPipelineConfigInfo(pipelineConfig);
+		VulkanPipeline::SetDefaultPipelineConfiguration(pipelineConfig);
 		pipelineConfig.PipelineLayout = m_PipelineLayout;
 
 #define USE_GEOMETRY_SHADER 0
@@ -53,7 +57,7 @@ namespace VulkanCore {
 		VkPushConstantRange pushConstantRange{};
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		pushConstantRange.offset = 0;
-		pushConstantRange.size = sizeof(PushConstantsDataComponent);
+		pushConstantRange.size = sizeof(PCModelData);
 
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ globalSetLayout };
 

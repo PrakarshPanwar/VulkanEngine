@@ -19,7 +19,6 @@ namespace VulkanCore {
 	{
 		Entity entity = { m_Registry.create(), this };
 		entity.AddComponent<TagComponent>(name);
-		//entity.AddComponent<TransformComponent>();
 
 		return entity;
 	}
@@ -29,7 +28,7 @@ namespace VulkanCore {
 		sceneInfo.ScenePipeline->Bind(sceneInfo.CommandBuffer);
 
 		vkCmdBindDescriptorSets(sceneInfo.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sceneInfo.PipelineLayout,
-			0, 1, &sceneInfo.SceneDescriptorSet, 0, nullptr);
+			0, 1, &sceneInfo.DescriptorSet, 0, nullptr);
 
 		auto view = m_Registry.view<TransformComponent>();
 
@@ -40,14 +39,13 @@ namespace VulkanCore {
 		{
 			Entity entity = { ent, this };
 
-			PushConstantsDataComponent pushConstants{};
+			PCModelData pushConstants{};
 			pushConstants.ModelMatrix = entity.GetComponent<TransformComponent>().GetTransform();
 			pushConstants.NormalMatrix = entity.GetComponent<TransformComponent>().GetNormalMatrix();
-			pushConstants.timestep = (float)glfwGetTime();
 
 			vkCmdPushConstants(sceneInfo.CommandBuffer, sceneInfo.PipelineLayout,
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				0, sizeof(PushConstantsDataComponent), &pushConstants);
+				0, sizeof(PCModelData), &pushConstants);
 
 			if (entity.HasComponent<MeshComponent>())
 			{
@@ -65,7 +63,7 @@ namespace VulkanCore {
 		sceneInfo.ScenePipeline->Bind(sceneInfo.CommandBuffer);
 
 		vkCmdBindDescriptorSets(sceneInfo.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sceneInfo.PipelineLayout,
-			0, 1, &sceneInfo.SceneDescriptorSet, 0, nullptr);
+			0, 1, &sceneInfo.DescriptorSet, 0, nullptr);
 
 		auto view = m_Registry.view<TransformComponent>();
 
@@ -73,7 +71,7 @@ namespace VulkanCore {
 		{
 			Entity lightEntity = { ent, this };
 
-			PointLightPushConstants push{};
+			PCPointLight push{};
 			auto& lightTransform = lightEntity.GetComponent<TransformComponent>();
 
 			if (lightEntity.HasComponent<PointLightComponent>())
@@ -85,15 +83,14 @@ namespace VulkanCore {
 				push.Radius = lightTransform.Scale.x;
 
 				vkCmdPushConstants(sceneInfo.CommandBuffer, sceneInfo.PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-					0, sizeof(PointLightPushConstants), &push);
+					0, sizeof(PCPointLight), &push);
 
 				vkCmdDraw(sceneInfo.CommandBuffer, 6, 1, 0, 0);
 			}
-
 		}
 	}
 
-	void Scene::UpdateUniformBuffer(UBCameraandLights& ubo)
+	void Scene::UpdatePointLightUB(UBPointLights& ubo)
 	{
 		auto view = m_Registry.view<TransformComponent>();
 		int lightIndex = 0;

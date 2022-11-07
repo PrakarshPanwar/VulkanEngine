@@ -12,7 +12,6 @@ namespace VulkanCore {
 
 	DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::AddBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, uint32_t count)
 	{
-		VK_CORE_ASSERT(m_Bindings.count(binding) == 0, "Binding already in Use!");
 		VkDescriptorSetLayoutBinding layoutBinding{};
 		layoutBinding.binding = binding;
 		layoutBinding.descriptorType = descriptorType;
@@ -23,9 +22,9 @@ namespace VulkanCore {
 		return *this;
 	}
 
-	std::unique_ptr<VulkanDescriptorSetLayout> DescriptorSetLayoutBuilder::Build() const
+	std::shared_ptr<VulkanDescriptorSetLayout> DescriptorSetLayoutBuilder::Build() const
 	{
-		return std::make_unique<VulkanDescriptorSetLayout>(m_Bindings);
+		return std::make_shared<VulkanDescriptorSetLayout>(m_Bindings);
 	}
 
 	DescriptorPoolBuilder::DescriptorPoolBuilder()
@@ -50,9 +49,9 @@ namespace VulkanCore {
 		return *this;
 	}
 
-	std::unique_ptr<VulkanDescriptorPool> DescriptorPoolBuilder::Build() const
+	std::shared_ptr<VulkanDescriptorPool> DescriptorPoolBuilder::Build() const
 	{
-		return std::make_unique<VulkanDescriptorPool>(m_MaxSets, m_PoolFlags, m_PoolSizes);
+		return std::make_shared<VulkanDescriptorPool>(m_MaxSets, m_PoolFlags, m_PoolSizes);
 	}
 
 	VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
@@ -102,8 +101,12 @@ namespace VulkanCore {
 
 		// TODO: Might want to create a "DescriptorPoolManager" class that handles this case, and builds
 		// a new pool whenever an old pool fills up. But this is beyond our current scope
-		if (vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, &descriptor) != VK_SUCCESS)
+		auto allocResult = vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, &descriptor);
+		if (allocResult != VK_SUCCESS)
+		{
+			VK_CORE_ERROR("Error occured in allocating Descriptors!");
 			return false;
+		}
 
 		return true;
 	}

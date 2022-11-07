@@ -4,6 +4,7 @@
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Timer.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanTexture.h"
@@ -60,7 +61,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::RecreateScene()
 {
-		VK_CORE_INFO("Scene has been Recreated!");		
+		VK_CORE_INFO("Scene has been Recreated!");
 		m_SceneRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 	}
 
@@ -78,6 +79,8 @@ namespace VulkanCore {
 		allocInfo.commandBufferCount = static_cast<uint32_t>(m_SceneCommandBuffers.size());
 
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_SceneCommandBuffers.data()), "Failed to Allocate Scene Command Buffers!");
+
+		Renderer::SetCommandBuffers(m_SceneCommandBuffers);
 	}
 
 }

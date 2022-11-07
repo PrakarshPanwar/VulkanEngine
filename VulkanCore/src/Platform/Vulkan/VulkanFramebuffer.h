@@ -9,11 +9,11 @@ namespace VulkanCore {
 	{
 		FramebufferTextureSpecification() = default;
 		FramebufferTextureSpecification(ImageFormat format)
-			: ImageFormat(format) {}
+			: ImgFormat(format) {}
 
-		ImageFormat ImageFormat = ImageFormat::None;
+		ImageFormat ImgFormat = ImageFormat::None;
 
-		operator bool() const { return ImageFormat == ImageFormat::None ? false : true; }
+		operator bool() const { return ImgFormat == ImageFormat::None ? false : true; }
 	};
 
 	struct FramebufferAttachmentSpecification

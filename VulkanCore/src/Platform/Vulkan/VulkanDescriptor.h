@@ -11,7 +11,7 @@ namespace VulkanCore {
 		DescriptorSetLayoutBuilder();
 
 		DescriptorSetLayoutBuilder& AddBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, uint32_t count = 1);
-		std::unique_ptr<VulkanDescriptorSetLayout> Build() const;
+		std::shared_ptr<VulkanDescriptorSetLayout> Build() const;
 	private:
 		std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> m_Bindings;
 	};
@@ -26,7 +26,7 @@ namespace VulkanCore {
 		DescriptorPoolBuilder& AddPoolSize(VkDescriptorType descriptorType, uint32_t count);
 		DescriptorPoolBuilder& SetPoolFlags(VkDescriptorPoolCreateFlags flags);
 		DescriptorPoolBuilder& SetMaxSets(uint32_t count);
-		std::unique_ptr<VulkanDescriptorPool> Build() const;
+		std::shared_ptr<VulkanDescriptorPool> Build() const;
 	private:
 		std::vector<VkDescriptorPoolSize> m_PoolSizes;
 		uint32_t m_MaxSets = 1000;
