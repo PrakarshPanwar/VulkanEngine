@@ -337,6 +337,7 @@ namespace VulkanCore {
 				const auto& bufferType = compiler.get_type(resource.base_type_id);
 				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
 				size_t memberCount = bufferType.member_types.size();
+				m_PushConstantSize = bufferSize;
 
 				VK_CORE_TRACE("\t  Size = {0}", bufferSize);
 				VK_CORE_TRACE("\t  Members = {0}", memberCount);

@@ -1,6 +1,7 @@
 #include "EditorLayer.h"
 
 #include "VulkanCore/Core/Application.h"
+#include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
@@ -90,36 +91,54 @@ namespace VulkanCore {
 
 		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
 		descriptorSetLayoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+		auto pointLightDescriptorSetLayout = descriptorSetLayoutBuilder.Build();
+
 		descriptorSetLayoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 		descriptorSetLayoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
 		descriptorSetLayoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
 		descriptorSetLayoutBuilder.AddBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
-		auto globalSetLayout = descriptorSetLayoutBuilder.Build();
+		auto sceneDescriptorSetLayout = descriptorSetLayoutBuilder.Build();
 
-		std::vector<VulkanDescriptorWriter> vkGlobalDescriptorWriter(VulkanSwapChain::MaxFramesInFlight,
-			{ *globalSetLayout, *Application::Get()->GetVulkanDescriptorPool() });
+		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
 
-		for (int i = 0; i < m_GlobalDescriptorSets.size(); i++)
+		std::vector<VulkanDescriptorWriter> sceneDescriptorWriter(
+			VulkanSwapChain::MaxFramesInFlight,
+			{ *sceneDescriptorSetLayout, *vulkanDescriptorPool });
+
+		for (int i = 0; i < m_SceneDescriptorSets.size(); i++)
 		{
 			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
-			vkGlobalDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+			sceneDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
 			auto pointLightUBInfo = m_PointLightUBs[i]->DescriptorInfo();
-			vkGlobalDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
+			sceneDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
 
-			vkGlobalDescriptorWriter[i].WriteImage(2, DiffuseMaps);
-			vkGlobalDescriptorWriter[i].WriteImage(3, NormalMaps);
-			vkGlobalDescriptorWriter[i].WriteImage(4, SpecularMaps);
+			sceneDescriptorWriter[i].WriteImage(2, DiffuseMaps);
+			sceneDescriptorWriter[i].WriteImage(3, NormalMaps);
+			sceneDescriptorWriter[i].WriteImage(4, SpecularMaps);
 
-			vkGlobalDescriptorWriter[i].Build(m_GlobalDescriptorSets[i]);
+			sceneDescriptorWriter[i].Build(m_SceneDescriptorSets[i]);
+		}
+
+		std::vector<VulkanDescriptorWriter> pointLightDescriptorWriter(
+			VulkanSwapChain::MaxFramesInFlight,
+			{ *pointLightDescriptorSetLayout, *vulkanDescriptorPool });
+
+		for (int i = 0; i < m_PointLightDescriptorSets.size(); i++)
+		{
+			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
+			pointLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+
+			bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i]);
+			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 		}
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 
 		auto sceneRenderPass = m_SceneRenderer->GetRenderPass();
 		// TODO: In future these classes will be deprecated, and all pipeline creation will move into SceneRenderer
-		m_RenderSystem = std::make_shared<RenderSystem>(sceneRenderPass, globalSetLayout->GetDescriptorSetLayout());
-		m_PointLightSystem = std::make_shared<PointLightSystem>(sceneRenderPass, globalSetLayout->GetDescriptorSetLayout());
+		m_RenderSystem = std::make_shared<RenderSystem>(sceneRenderPass, sceneDescriptorSetLayout->GetDescriptorSetLayout());
+		m_PointLightSystem = std::make_shared<PointLightSystem>(sceneRenderPass, pointLightDescriptorSetLayout->GetDescriptorSetLayout());
 
 		m_CompositeScene.ScenePipeline = m_RenderSystem->GetPipeline();
 		m_CompositeScene.PipelineLayout = m_RenderSystem->GetPipelineLayout();
@@ -149,10 +168,10 @@ namespace VulkanCore {
 		
 		Renderer::BeginRenderPass(sceneRenderPass);
 
-		m_CompositeScene.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
+		m_CompositeScene.DescriptorSet = m_SceneDescriptorSets[frameIndex];
 		m_CompositeScene.CommandBuffer = sceneCmd;
 
-		m_PointLightScene.SceneDescriptorSet = m_GlobalDescriptorSets[frameIndex];
+		m_PointLightScene.DescriptorSet = m_PointLightDescriptorSets[frameIndex];
 		m_PointLightScene.CommandBuffer = sceneCmd;
 
 		UBCamera cameraUB{};

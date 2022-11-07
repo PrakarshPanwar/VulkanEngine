@@ -102,34 +102,37 @@ namespace VulkanCore {
 
 			// TODO: We have to add multiple blending attachments as
 			// there could multiple be RenderPass attachments
-			pipelineConfig.ColorBlendAttachments.resize(1);
+			pipelineConfig.ColorBlendAttachments.resize(Framebuffer->GetColorAttachments().size());
 
-			pipelineConfig.ColorBlendAttachments[0].colorWriteMask =
-				VK_COLOR_COMPONENT_R_BIT |
-				VK_COLOR_COMPONENT_G_BIT |
-				VK_COLOR_COMPONENT_B_BIT |
-				VK_COLOR_COMPONENT_A_BIT;
-
-			if (spec.Blend)
+			for (int i = 0; i < Framebuffer->GetColorAttachments().size(); i++)
 			{
-				pipelineConfig.ColorBlendAttachments[0].blendEnable = VK_TRUE;
-				pipelineConfig.ColorBlendAttachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-				pipelineConfig.ColorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-				pipelineConfig.ColorBlendAttachments[0].colorBlendOp = VK_BLEND_OP_ADD;              // Optional
-				pipelineConfig.ColorBlendAttachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-				pipelineConfig.ColorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-				pipelineConfig.ColorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
-			}
+				pipelineConfig.ColorBlendAttachments[i].colorWriteMask =
+					VK_COLOR_COMPONENT_R_BIT |
+					VK_COLOR_COMPONENT_G_BIT |
+					VK_COLOR_COMPONENT_B_BIT |
+					VK_COLOR_COMPONENT_A_BIT;
 
-			else
-			{
-				pipelineConfig.ColorBlendAttachments[0].blendEnable = VK_FALSE;
-				pipelineConfig.ColorBlendAttachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;			// Optional
-				pipelineConfig.ColorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; 	// Optional
-				pipelineConfig.ColorBlendAttachments[0].colorBlendOp = VK_BLEND_OP_ADD;								// Optional
-				pipelineConfig.ColorBlendAttachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;					// Optional
-				pipelineConfig.ColorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;					// Optional
-				pipelineConfig.ColorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;								// Optional
+				if (!spec.Blend)
+				{
+					pipelineConfig.ColorBlendAttachments[i].blendEnable = VK_FALSE;
+					pipelineConfig.ColorBlendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
+					pipelineConfig.ColorBlendAttachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
+					pipelineConfig.ColorBlendAttachments[i].colorBlendOp = VK_BLEND_OP_ADD;              // Optional
+					pipelineConfig.ColorBlendAttachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
+					pipelineConfig.ColorBlendAttachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
+					pipelineConfig.ColorBlendAttachments[i].alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
+				}
+
+				else
+				{
+					pipelineConfig.ColorBlendAttachments[i].blendEnable = VK_TRUE;
+					pipelineConfig.ColorBlendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;			// Optional
+					pipelineConfig.ColorBlendAttachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; 	// Optional
+					pipelineConfig.ColorBlendAttachments[i].colorBlendOp = VK_BLEND_OP_ADD;								// Optional
+					pipelineConfig.ColorBlendAttachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;					// Optional
+					pipelineConfig.ColorBlendAttachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;					// Optional
+					pipelineConfig.ColorBlendAttachments[i].alphaBlendOp = VK_BLEND_OP_ADD;								// Optional
+				}
 			}
 
 			pipelineConfig.ColorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -346,7 +349,8 @@ namespace VulkanCore {
 		vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 
 		m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
-		auto pipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, m_Specification.PushConstantSize);
+
+		auto pipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());
 		m_PipelineLayout = pipelineLayout;
 
 		auto pipelineInfo = Utils::GetPipelineConfiguration(m_Specification);

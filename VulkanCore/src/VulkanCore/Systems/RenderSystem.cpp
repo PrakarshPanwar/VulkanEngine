@@ -14,7 +14,6 @@ namespace VulkanCore {
 		PipelineSpecification spec;
 		spec.pShader = Renderer::GetShader("FirstShader");
 		spec.RenderPass = renderPass;
-		spec.PushConstantSize = sizeof(PCModelData);
 		spec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
 
 		m_Pipeline = std::make_unique<VulkanPipeline>(spec);

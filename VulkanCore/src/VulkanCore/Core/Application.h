@@ -37,6 +37,7 @@ namespace VulkanCore {
 		static Application* Get() { return s_Instance; }
 
 		inline VulkanDescriptorPool* GetVulkanDescriptorPool() { return m_GlobalPool.get(); }
+		inline std::shared_ptr<VulkanDescriptorPool> GetDescriptorPool() { return m_GlobalPool; }
 	private:
 		bool OnWindowClose(WindowCloseEvent& window);
 		bool OnWindowResize(WindowResizeEvent& window);
