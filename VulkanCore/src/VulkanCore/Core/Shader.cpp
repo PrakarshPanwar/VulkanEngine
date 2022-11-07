@@ -1,12 +1,12 @@
 #include "vulkanpch.h"
 #include "Shader.h"
 
+#include "Platform/Vulkan/VulkanSwapChain.h"
+#include "Platform/Vulkan/VulkanDescriptor.h"
+#include "Application.h"
 #include "Assert.h"
 #include "Log.h"
 #include "Timer.h"
-
-#include <filesystem>
-#include <mutex>
 
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
@@ -58,9 +58,9 @@ namespace VulkanCore {
 		{
 			switch (stage)
 			{
-			case ShaderType::Vertex:   return ".cache_vert.spv";
-			case ShaderType::Fragment: return ".cache_frag.spv";
-			case ShaderType::Geometry: return ".cache_geom.spv";
+			case ShaderType::Vertex:   return ".vert.spv";
+			case ShaderType::Fragment: return ".frag.spv";
+			case ShaderType::Geometry: return ".geom.spv";
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
@@ -107,6 +107,61 @@ namespace VulkanCore {
 	Shader::~Shader()
 	{
 
+	}
+
+	std::shared_ptr<VulkanDescriptorSetLayout> Shader::CreateDescriptorSetLayout()
+	{
+		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
+
+		for (auto&& [stage, source] : m_VulkanSPIRV)
+		{
+			SpvReflectShaderModule shaderModule = {};
+
+			SpvReflectResult result = spvReflectCreateShaderModule(
+				source.size() * sizeof(uint32_t),
+				source.data(),
+				&shaderModule);
+
+			VK_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS, "Failed to Generate Reflection Result!");
+
+			uint32_t count = 0;
+			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, nullptr);
+			VK_CORE_ASSERT(count <= 1, "More than one Descriptor Sets are not supported yet!");
+
+			std::vector<SpvReflectDescriptorSet*> DescriptorSets(count);
+			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, DescriptorSets.data());
+
+			for (uint32_t i = 0; i < count; ++i)
+			{
+				const SpvReflectDescriptorSet& reflectionSet = *(DescriptorSets.at(i));
+				for (uint32_t j = 0; j < reflectionSet.binding_count; ++j)
+				{
+					const SpvReflectDescriptorBinding& reflectionBinding = *(reflectionSet.bindings[j]);
+
+					uint32_t arrayCount = 1;
+					for (uint32_t k = 0; k < reflectionBinding.array.dims_count; ++k)
+						arrayCount *= reflectionBinding.array.dims[k];
+
+					VkShaderStageFlags shaderStageFlags = 0;
+
+					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+						shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+
+					descriptorSetLayoutBuilder.AddBinding(
+						reflectionBinding.binding,
+						(VkDescriptorType)reflectionBinding.descriptor_type,
+						shaderStageFlags,
+						arrayCount);
+				}
+			}
+
+			spvReflectDestroyShaderModule(&shaderModule);
+		}
+
+		return descriptorSetLayoutBuilder.Build();
 	}
 
 	std::tuple<std::string, std::string> Shader::ParseShader(const std::string& vsfilepath, const std::string& fsfilepath)
@@ -171,8 +226,11 @@ namespace VulkanCore {
 
 			shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, Utils::GLShaderStageToShaderC(stage), shaderFilePath.string().c_str(), options);
 
-			VK_CORE_ASSERT(module.GetCompilationStatus() == shaderc_compilation_status_success,
-				"{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
+			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
+			{
+				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
+				__debugbreak();
+			}
 
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
 
@@ -279,6 +337,7 @@ namespace VulkanCore {
 				const auto& bufferType = compiler.get_type(resource.base_type_id);
 				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
 				size_t memberCount = bufferType.member_types.size();
+				m_PushConstantSize = bufferSize;
 
 				VK_CORE_TRACE("\t  Size = {0}", bufferSize);
 				VK_CORE_TRACE("\t  Members = {0}", memberCount);

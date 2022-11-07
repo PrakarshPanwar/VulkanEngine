@@ -4,6 +4,7 @@
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
 #include "VulkanAllocator.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 namespace VulkanCore {
 
@@ -45,8 +46,6 @@ namespace VulkanCore {
 
 	VkResult VulkanBuffer::Map()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-
 		VK_CORE_ASSERT(m_Buffer, "Called Map on Buffer before its creation!");
 		return vmaMapMemory(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, &m_dstMapped);
 	}

@@ -41,14 +41,15 @@ namespace VulkanCore {
 		std::shared_ptr<SceneRenderer> m_SceneRenderer;
 		EditorCamera m_EditorCamera;
 
-		SceneInfo m_SceneRender{}, m_PointLightScene{};
-		std::vector<VkDescriptorSet> m_GlobalDescriptorSets{ VulkanSwapChain::MaxFramesInFlight };
-		std::vector<std::unique_ptr<VulkanBuffer>> m_UniformBuffers{ VulkanSwapChain::MaxFramesInFlight };
+		SceneInfo m_CompositeScene{}, m_PointLightScene{};
+		std::vector<VkDescriptorSet> m_SceneDescriptorSets{ VulkanSwapChain::MaxFramesInFlight };
+		std::vector<VkDescriptorSet> m_PointLightDescriptorSets{ VulkanSwapChain::MaxFramesInFlight };
+		std::vector<std::unique_ptr<VulkanBuffer>> m_CameraUBs{ VulkanSwapChain::MaxFramesInFlight };
+		std::vector<std::unique_ptr<VulkanBuffer>> m_PointLightUBs{ VulkanSwapChain::MaxFramesInFlight };
 
 		std::shared_ptr<RenderSystem> m_RenderSystem;
 		std::shared_ptr<PointLightSystem> m_PointLightSystem;
 
-		std::shared_ptr<VulkanImage> m_TextureImage;
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap, m_DiffuseMap2, m_NormalMap2,
 			m_SpecularMap2, m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
 

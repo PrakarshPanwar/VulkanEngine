@@ -5,7 +5,8 @@
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Core.h"
 
-#include <filesystem>
+#include "VulkanCore/Renderer/Renderer.h"
+#include "VulkanCore/Renderer/RenderThread.h"
 
 namespace VulkanCore {
 
@@ -70,6 +71,7 @@ namespace VulkanCore {
 
 		m_AppTimer = std::make_unique<Timer>("Application Initialization");
 		Log::Init();
+		RenderThread::Init();
 
 		std::filesystem::current_path("../VulkanCore");
 		m_Window = std::make_shared<WindowsWindow>(WindowSpecs(1920, 1080, "Vulkan Application"));
@@ -82,26 +84,28 @@ namespace VulkanCore {
 	{
 		vkDeviceWaitIdle(VulkanContext::GetCurrentDevice()->GetVulkanDevice());
 		m_ImGuiLayer->ShutDown();
+		Renderer::DestroyShaders();
 	}
 
 	void Application::Init()
 	{
 		m_Context = std::make_unique<VulkanContext>(std::dynamic_pointer_cast<WindowsWindow>(m_Window));
-
-		const auto device = VulkanContext::GetCurrentDevice();
 		m_Renderer = std::make_unique<VulkanRenderer>(std::dynamic_pointer_cast<WindowsWindow>(m_Window));
 
 		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
-		descriptorPoolBuilder.SetMaxSets(VulkanSwapChain::MaxFramesInFlight).AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VulkanSwapChain::MaxFramesInFlight);
-		descriptorPoolBuilder.SetMaxSets(VulkanSwapChain::MaxFramesInFlight).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VulkanSwapChain::MaxFramesInFlight);
+		descriptorPoolBuilder.SetMaxSets(100).AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10);
+		descriptorPoolBuilder.SetMaxSets(100).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10);
 		m_GlobalPool = descriptorPoolBuilder.Build();
 
 		m_ImGuiLayer = std::make_shared<ImGuiLayer>();
 		m_ImGuiLayer->OnAttach();
+
+		Renderer::BuildShaders();
 	}
 
 	void Application::Run()
 	{
+		RenderThread::WaitandDestroy();
 		m_AppTimer.reset();
 
 		while (m_Running)
@@ -123,10 +127,9 @@ namespace VulkanCore {
 
 			if (auto commandBuffer = m_Renderer->BeginScene())
 			{
-				m_Renderer->BeginSceneRenderPass(commandBuffer);
 				for (Layer* layer : m_LayerStack)
 					layer->OnUpdate();
-				m_Renderer->EndSceneRenderPass(commandBuffer);
+
 				m_Renderer->EndScene();
 			}
 

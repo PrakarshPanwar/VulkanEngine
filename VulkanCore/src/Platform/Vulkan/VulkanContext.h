@@ -2,6 +2,8 @@
 #include "VulkanDevice.h"
 #include "Platform/Windows/WindowsWindow.h"
 
+#define USE_PIPELINE_SPEC 1
+
 namespace VulkanCore {
 
 	class VulkanContext

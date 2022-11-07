@@ -5,19 +5,22 @@
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Components.h"
 #include "Platform/Vulkan/VulkanContext.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 namespace VulkanCore {
 
 	PointLightSystem::PointLightSystem(std::shared_ptr<VulkanRenderPass> renderPass, VkDescriptorSetLayout globalSetLayout)
 	{
-		CreatePipelineLayout(globalSetLayout);
-		CreatePipeline(renderPass);
+		PipelineSpecification spec;
+		spec.pShader = Renderer::GetShader("PointLightShader");
+		spec.Blend = true;
+		spec.RenderPass = renderPass;
+
+		m_Pipeline = std::make_unique<VulkanPipeline>(spec);
 	}
 
 	PointLightSystem::~PointLightSystem()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-		vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 	}
 
 	void PointLightSystem::CreatePipeline(std::shared_ptr<VulkanRenderPass> renderPass)
@@ -26,7 +29,7 @@ namespace VulkanCore {
 
 		PipelineConfigInfo pipelineConfig{};
 		pipelineConfig.RenderPass = renderPass;
-		VulkanPipeline::DefaultPipelineConfigInfo(pipelineConfig);
+		VulkanPipeline::SetDefaultPipelineConfiguration(pipelineConfig);
 		VulkanPipeline::EnableAlphaBlending(pipelineConfig);
 		pipelineConfig.AttributeDescriptions.clear();
 		pipelineConfig.BindingDescriptions.clear();
@@ -46,7 +49,7 @@ namespace VulkanCore {
 		VkPushConstantRange pushConstantRange{};
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		pushConstantRange.offset = 0;
-		pushConstantRange.size = sizeof(PointLightPushConstants);
+		pushConstantRange.size = sizeof(PCPointLight);
 
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ globalSetLayout };
 
