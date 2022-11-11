@@ -10,7 +10,7 @@ namespace VulkanCore {
 		~VulkanBuffer();
 
 		VkResult MapOld(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
-		VkResult Map();
+		void Map();
 		void UnmapOld();
 		void Unmap();
 
@@ -36,7 +36,7 @@ namespace VulkanCore {
 	private:
 		static VkDeviceSize GetAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment);
 	private:
-		void* m_dstMapped = nullptr;
+		uint8_t* m_dstMapped = nullptr;
 		VkBuffer m_Buffer = VK_NULL_HANDLE;
 		VkDeviceMemory m_Memory = VK_NULL_HANDLE;
 		VmaAllocation m_MemoryAllocation;

@@ -1,14 +1,13 @@
 #include "vulkanpch.h"
-#include "VulkanAllocator.h"
-
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
+#include "VulkanAllocator.h"
 
 namespace VulkanCore {
 
 	namespace Utils {
 
-		VkMemoryPropertyFlags VulkanMemoryFlags(VmaMemoryUsage usage)
+		static VkMemoryPropertyFlags VulkanMemoryFlags(VmaMemoryUsage usage)
 		{
 			switch (usage)
 			{
@@ -41,6 +40,12 @@ namespace VulkanCore {
 
 		VmaAllocation vmaAllocation;
 		VK_CHECK_RESULT(vmaCreateBuffer(m_VkMemoryAllocator, &bufInfo, &allocInfo, &buffer, &vmaAllocation, nullptr), "{0}: Failed to Allocate Buffer!", m_DebugName);
+		
+		VmaAllocationInfo vmaAllocInfo = {};
+		vmaGetAllocationInfo(m_VkMemoryAllocator, vmaAllocation, &vmaAllocInfo);
+
+		VK_CORE_TRACE("Buffer Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
+		
 		return vmaAllocation;
 	}
 
@@ -52,17 +57,13 @@ namespace VulkanCore {
 
 		VmaAllocation vmaAllocation;
 		VK_CHECK_RESULT(vmaCreateImage(m_VkMemoryAllocator, &imgInfo, &allocInfo, &image, &vmaAllocation, nullptr), "{0}: Failed to Allocate Image!", m_DebugName);
+		
+		VmaAllocationInfo vmaAllocInfo = {};
+		vmaGetAllocationInfo(m_VkMemoryAllocator, vmaAllocation, &vmaAllocInfo);
+
+		VK_CORE_TRACE("Image Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
+		
 		return vmaAllocation;
-	}
-
-	template<typename T>
-	T* VulkanAllocator::MapMemory(VmaAllocation allocation)
-	{
-		void* mappedData;
-		VK_CHECK_RESULT(vmaMapMemory(m_VkMemoryAllocator, allocation, &mappedData), "{}: Failed to Map Memory!", m_DebugName);
-
-		static_assert(std::integral<T>, "Type is not Integral");
-		return (T*)mappedData;
 	}
 
 	void VulkanAllocator::UnmapMemory(VmaAllocation allocation)
