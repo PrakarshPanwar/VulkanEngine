@@ -8,6 +8,22 @@
 
 namespace VulkanCore {
 
+	namespace Utils {
+
+		static VmaMemoryUsage VulkanMemoryFlags(VkMemoryPropertyFlags flags)
+		{
+			switch (flags)
+			{
+			case VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT: return VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+			case VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT:   return VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
+			default:
+				VK_CORE_ASSERT(false, "Could not find necessary Format!");
+				return (VmaMemoryUsage)0;
+			}
+		}
+
+	}
+
 	VulkanBuffer::VulkanBuffer(VkDeviceSize instanceSize, uint32_t instanceCount, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize minOffsetAlignment)
 		: m_InstanceSize(instanceSize), m_InstanceCount(instanceCount), m_UsageFlags(usageFlags),
 		m_MemoryPropertyFlags(memoryPropertyFlags)
@@ -18,14 +34,14 @@ namespace VulkanCore {
 		m_AlignmentSize = GetAlignment(m_InstanceSize, minOffsetAlignment);
 		m_BufferSize = m_AlignmentSize * m_InstanceCount;
 
-		// TODO: To use VulkanAllocator
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferInfo.size = m_BufferSize;
 		bufferInfo.usage = m_UsageFlags;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		m_MemoryAllocation = device->CreateBuffer(m_BufferSize, m_UsageFlags, m_MemoryPropertyFlags, m_Buffer);
+		const auto vmaMemoryFlag = Utils::VulkanMemoryFlags(m_MemoryPropertyFlags);
+		m_MemoryAllocation = allocator.AllocateBuffer(bufferInfo, vmaMemoryFlag, m_Buffer);
 	}
 
 	VulkanBuffer::~VulkanBuffer()
@@ -41,13 +57,13 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 
 		VK_CORE_ASSERT(m_Buffer && m_Memory, "Called Map on Buffer before its creation!");
-		return vkMapMemory(device->GetVulkanDevice(), m_Memory, offset, size, 0, &m_dstMapped);
+		return vkMapMemory(device->GetVulkanDevice(), m_Memory, offset, size, 0, (void**)&m_dstMapped);
 	}
 
-	VkResult VulkanBuffer::Map()
+	void VulkanBuffer::Map()
 	{
-		VK_CORE_ASSERT(m_Buffer, "Called Map on Buffer before its creation!");
-		return vmaMapMemory(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, &m_dstMapped);
+		VulkanAllocator allocator("Buffer Mapping");
+		m_dstMapped = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
 	}
 
 	void VulkanBuffer::UnmapOld()
@@ -64,10 +80,11 @@ namespace VulkanCore {
 	void VulkanBuffer::Unmap()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
+		VulkanAllocator allocator("Buffer Unmapping");
 
 		if (m_dstMapped)
 		{
-			vmaUnmapMemory(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation);
+			allocator.UnmapMemory(m_MemoryAllocation);
 			m_dstMapped = nullptr;
 		}
 	}

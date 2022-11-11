@@ -28,10 +28,10 @@ namespace VulkanCore {
 	void SceneRenderer::Init()
 	{
 		CreateCommandBuffers();
-		CreateRenderPasswithFramebuffers();
+		CreateRenderPass();
 	}
 
-	void SceneRenderer::CreateRenderPasswithFramebuffers()
+	void SceneRenderer::CreateRenderPass()
 	{
 		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Render Pass Creation");
 

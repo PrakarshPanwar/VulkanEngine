@@ -30,7 +30,7 @@ namespace VulkanCore {
 		inline const VulkanImage& GetImage(uint32_t index) { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
 	private:
 		void CreateCommandBuffers();
-		void CreateRenderPasswithFramebuffers();
+		void CreateRenderPass();
 	private:
 		std::vector<VkCommandBuffer> m_SceneCommandBuffers;
 		std::shared_ptr<VulkanFramebuffer> m_SceneFramebuffer;
