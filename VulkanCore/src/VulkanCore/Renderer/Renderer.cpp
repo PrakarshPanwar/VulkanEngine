@@ -9,7 +9,6 @@ namespace VulkanCore {
 
 	std::unordered_map<std::string, std::shared_ptr<Shader>> Renderer::m_Shaders;
 	std::vector<VkCommandBuffer> Renderer::m_CommandBuffers;
-	std::unique_ptr<VulkanBuffer> Renderer::m_QuadBuffer;
 
 	namespace Utils {
 
@@ -63,42 +62,6 @@ namespace VulkanCore {
 		m_Shaders.clear();
 	}
 
-	void Renderer::CreateQuadBuffer()
-	{
-		std::vector<QuadVertex> quadVertices = {
-			{ glm::vec3{ -1.0f, -1.0f, 0.0f }, glm::vec2{ 0.0f, 0.0f } },
-			{ glm::vec3{ -1.0f,  1.0f, 0.0f }, glm::vec2{ 0.0f, 1.0f } },
-			{ glm::vec3{  1.0f,  1.0f, 0.0f }, glm::vec2{ 1.0f, 1.0f } },
-			{ glm::vec3{  1.0f, -1.0f, 0.0f }, glm::vec2{ 1.0f, 0.0f } }
-		};
-
-		auto vertexCount = (uint32_t)quadVertices.size();
-		VK_CORE_ASSERT(vertexCount >= 3, "Vertex Count should be at least greater than or equal to 3!");
-
-		VkDeviceSize bufferSize = sizeof(quadVertices[0]) * vertexCount;
-		uint32_t vertexSize = sizeof(quadVertices[0]);
-
-		VulkanBuffer stagingBuffer{ vertexSize, vertexCount,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
-
-		stagingBuffer.Map();
-		stagingBuffer.WriteToBuffer((void*)quadVertices.data());
-
-		m_QuadBuffer = std::make_unique<VulkanBuffer>(vertexSize, vertexCount,
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		auto device = VulkanContext::GetCurrentDevice();
-
-		device->CopyBuffer(stagingBuffer.GetBuffer(), m_QuadBuffer->GetBuffer(), bufferSize);
-	}
-
-	void Renderer::ClearResources()
-	{
-		m_QuadBuffer.reset();
-	}
-
 	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
 	{
 		auto drawCmd = m_CommandBuffers[GetCurrentFrameIndex()];
@@ -112,11 +75,7 @@ namespace VulkanCore {
 			0, 1, &dstSet,
 			0, nullptr);
 
-		VkBuffer buffers[] = { m_QuadBuffer->GetBuffer() };
-		VkDeviceSize offsets[] = { 0 };
-
-		vkCmdBindVertexBuffers(drawCmd, 0, 1, buffers, offsets);
-		vkCmdDraw(drawCmd, 4, 1, 0, 0);
+		vkCmdDraw(drawCmd, 3, 1, 0, 0);
 	}
 
 	void Renderer::RenderMesh(std::shared_ptr<VulkanMesh> mesh)

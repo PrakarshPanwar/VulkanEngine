@@ -18,8 +18,6 @@ namespace VulkanCore {
 		static void BuildShaders();
 		static void DestroyShaders();
 
-		static void CreateQuadBuffer();
-		static void ClearResources();
 		static void SubmitFullscreenQuad(const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
 		static void RenderMesh(std::shared_ptr<VulkanMesh> mesh);
 
@@ -41,7 +39,6 @@ namespace VulkanCore {
 	private:
 		static std::vector<VkCommandBuffer> m_CommandBuffers;
 		static std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
-		static std::unique_ptr<VulkanBuffer> m_QuadBuffer;
 	};
 
 }

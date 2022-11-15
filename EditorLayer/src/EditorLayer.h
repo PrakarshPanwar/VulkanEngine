@@ -4,8 +4,6 @@
 #include "VulkanCore/Events/MouseEvent.h"
 #include "VulkanCore/Scene/Scene.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
-#include "VulkanCore/Systems/RenderSystem.h"
-#include "VulkanCore/Systems/PointLightSystem.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
 
 #include "Platform/Vulkan/VulkanSwapChain.h"

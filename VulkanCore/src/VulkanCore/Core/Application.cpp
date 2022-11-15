@@ -1,8 +1,6 @@
 #include "vulkanpch.h"
 #include "Application.h"
 
-#include "VulkanCore/Systems/RenderSystem.h"
-#include "VulkanCore/Systems/PointLightSystem.h"
 #include "Platform/Vulkan/VulkanBuffer.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 
