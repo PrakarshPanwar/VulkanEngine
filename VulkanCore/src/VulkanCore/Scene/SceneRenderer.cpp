@@ -68,6 +68,7 @@ namespace VulkanCore {
 			compFramebufferSpec.Width = 1920;
 			compFramebufferSpec.Height = 1080;
 			compFramebufferSpec.Attachments = { ImageFormat::RGBA8_SRGB };
+			compFramebufferSpec.Samples = 8;
 
 			RenderPassSpecification compRenderPassSpec;
 			compRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(compFramebufferSpec);
@@ -78,14 +79,19 @@ namespace VulkanCore {
 			compPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(compRenderPassSpec);
 			compPipelineSpec.DepthTest = false;
 			compPipelineSpec.DepthWrite = false;
-			//compPipelineSpec.Layout = { QuadVertex::GetBindingDescriptions(), QuadVertex::GetAttributeDescriptions() };
 
 			m_CompositePipeline = std::make_shared<VulkanPipeline>(compPipelineSpec);
+		}
+
+		// Compute Testing Pipeline
+		{
+			//m_ComputeDemoPipeline = std::make_shared<VulkanComputePipeline>();
 		}
 	}
 
 	void SceneRenderer::CreateDescriptorSets()
 	{
+		// Uniform Buffers
 		for (int i = 0; i < m_CameraUBs.size(); ++i)
 		{
 			auto& CameraUB = m_CameraUBs.at(i);
