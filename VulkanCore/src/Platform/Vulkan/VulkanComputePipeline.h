@@ -14,6 +14,9 @@ namespace VulkanCore {
 
 		void Bind(VkCommandBuffer commandBuffer);
 		void Dispatch(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+
+		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
+		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
 	private:
 		void CreateComputePipeline();
 	private:

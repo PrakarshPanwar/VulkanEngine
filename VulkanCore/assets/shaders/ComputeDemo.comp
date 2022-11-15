@@ -1,9 +1,61 @@
 #version 460 core
 
-layout(binding = 0) uniform image2D o_Image;
+layout(binding = 0) uniform writeonly image2D o_Image;
 layout(binding = 1) uniform sampler2D u_InputTexture;
 
+layout(binding = 2) uniform LodAndMode
+{
+	vec2 lodAndMode;
+} u_LodAndMode;
+
+vec3 DownsampleBox13(sampler2D tex, float lod, vec2 uv, vec2 texelSize)
+{
+	// Center
+	vec3 A = textureLod(tex, uv, lod).rgb;
+
+	// Inner Box
+	vec3 B = textureLod(tex, uv + texelSize * vec2(-1.0, -1.0), lod).rgb;
+	vec3 C = textureLod(tex, uv + texelSize * vec2(-1.0, 1.0), lod).rgb;
+	vec3 D = textureLod(tex, uv + texelSize * vec2(1.0, 1.0), lod).rgb;
+	vec3 E = textureLod(tex, uv + texelSize * vec2(1.0, -1.0), lod).rgb;
+
+	// Outer Box
+	vec3 F = textureLod(tex, uv + texelSize * vec2(-2.0, -2.0), lod).rgb;
+	vec3 G = textureLod(tex, uv + texelSize * vec2(-2.0, 0.0), lod).rgb;
+	vec3 H = textureLod(tex, uv + texelSize * vec2(0.0, 2.0), lod).rgb;
+	vec3 I = textureLod(tex, uv + texelSize * vec2(2.0, 2.0), lod).rgb;
+	vec3 J = textureLod(tex, uv + texelSize * vec2(2.0, 2.0), lod).rgb;
+	vec3 K = textureLod(tex, uv + texelSize * vec2(2.0, 0.0), lod).rgb;
+	vec3 L = textureLod(tex, uv + texelSize * vec2(-2.0, -2.0), lod).rgb;
+	vec3 M = textureLod(tex, uv + texelSize * vec2(0.0, -2.0), lod).rgb;
+
+	// Weights
+	vec3 result = vec3(0.0);
+
+	result += (B + C + D + E) * 0.5;
+	result += (F + G + A + M) * 0.125;
+	result += (G + H + I + A) * 0.125;
+	result += (A + I + J + K) * 0.125;
+	result += (M + A + K + L) * 0.125;
+
+	result *= 0.25;
+
+	return result;
+}
+
+layout(local_size_x = 16, local_size_y = 16) in;
 void main()
 {
-	
+	vec2 imgSize = vec2(imageSize(o_Image));
+
+	ivec2 invocID = ivec2(gl_GlobalInvocationID);
+	vec2 texCoords = vec2(float(invocID.x) / imgSize.x, float(invocID.y) / imgSize.y);
+	texCoords += (1.0 / imgSize) * 0.5;
+
+	vec2 texSize = vec2(textureSize(u_InputTexture, int(u_LodAndMode.lodAndMode.x)));
+	vec4 color = vec4(1, 0, 1, 1);
+
+	color.rgb = DownsampleBox13(u_InputTexture, u_LodAndMode.lodAndMode.x, texCoords, 1.0 / texSize);
+
+	imageStore(o_Image, ivec2(gl_GlobalInvocationID), color);
 }
