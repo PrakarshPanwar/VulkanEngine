@@ -11,6 +11,8 @@
 #include <glm/glm.hpp>
 #include "Scene.h"
 
+#define TEST_COMPUTE_SHADER 0
+
 namespace VulkanCore {
 
 	class SceneRenderer
@@ -42,7 +44,19 @@ namespace VulkanCore {
 		void CreateDescriptorSets();
 
 		void GeometryPass();
+		void ComputeDemoPass();
 		void CompositePass();
+	private:
+		struct LodAndMode
+		{
+			float LOD = 1.0f;
+			float Mode = 1.0f;
+		};
+
+		struct SceneSettings
+		{
+			float Exposure = 1.0f;
+		};
 	private:
 		std::shared_ptr<Scene> m_Scene;
 
@@ -63,18 +77,22 @@ namespace VulkanCore {
 		std::vector<VkDescriptorSet> m_CompositeDescriptorSets;
 		std::vector<VkDescriptorSet> m_ComputeDemoDescriptorSets;
 
-		// TODO: In future we could have to setup a Material Table and Instanced Rendering
+		// TODO: In future we could have to setup Material Table and Instanced Rendering
 		// Material Resources
 		std::vector<std::unique_ptr<VulkanBuffer>> m_CameraUBs{ VulkanSwapChain::MaxFramesInFlight };
 		std::vector<std::unique_ptr<VulkanBuffer>> m_PointLightUBs{ VulkanSwapChain::MaxFramesInFlight };
 		std::vector<std::unique_ptr<VulkanBuffer>> m_ExposureUBs{ VulkanSwapChain::MaxFramesInFlight };
+		std::vector<std::unique_ptr<VulkanBuffer>> m_LodUBs{ VulkanSwapChain::MaxFramesInFlight };
 
+		std::shared_ptr<VulkanImage> m_ComputeDemoImage = nullptr;
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap,
 			m_DiffuseMap2, m_NormalMap2, m_SpecularMap2,
 			m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
 
 		glm::ivec2 m_ViewportSize;
-		float m_Exposure = 1.0f;
+
+		SceneSettings m_SceneSettings;
+		LodAndMode m_LodAndMode;
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;

@@ -102,11 +102,11 @@ namespace VulkanCore {
 	{
 	}
 
-	VulkanImage::VulkanImage(uint32_t width, uint32_t height, ImageUsage usage)
+	VulkanImage::VulkanImage(uint32_t width, uint32_t height, ImageUsage usage, ImageFormat format)
 	{
 		m_Specification.Width = width;
 		m_Specification.Height = height;
-		m_Specification.Format = ImageFormat::RGBA8_SRGB;
+		m_Specification.Format = format;
 		m_Specification.Usage = usage;
 	}
 

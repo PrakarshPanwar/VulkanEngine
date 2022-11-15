@@ -164,10 +164,13 @@ namespace VulkanCore {
 					VkShaderStageFlags shaderStageFlags = 0;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-						shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+						shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+
+					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
 
 					descriptorSetLayoutBuilder.AddBinding(
 						reflectionBinding.binding,
@@ -339,6 +342,9 @@ namespace VulkanCore {
 	void Shader::ReflectShaderData()
 	{
 		std::filesystem::path shaderFilePath = m_VertexFilePath;
+		if (!std::filesystem::exists(shaderFilePath))
+			shaderFilePath = m_ComputeFilePath;
+
 		VK_CORE_INFO("In {0}:", shaderFilePath.stem());
 
 		for (auto&& [stage, shader] : m_VulkanSPIRV)
