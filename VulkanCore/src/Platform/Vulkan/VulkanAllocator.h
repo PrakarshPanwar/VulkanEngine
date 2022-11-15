@@ -13,7 +13,14 @@ namespace VulkanCore {
 		VmaAllocation AllocateImage(const VkImageCreateInfo& imgInfo, VmaMemoryUsage usage, VkImage& image);
 
 		template<typename T>
-		[[nodiscard]] T* MapMemory(VmaAllocation allocation);
+		T* MapMemory(VmaAllocation allocation)
+		{
+			void* mappedData;
+			VK_CHECK_RESULT(vmaMapMemory(m_VkMemoryAllocator, allocation, &mappedData), "{}: Failed to Map Memory!", m_DebugName);
+
+			static_assert(std::integral<T>, "Type is not Integral");
+			return (T*)mappedData;
+		}
 
 		void UnmapMemory(VmaAllocation allocation);
 

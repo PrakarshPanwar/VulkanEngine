@@ -1,9 +1,10 @@
 #pragma once
 #include "Platform/Vulkan/VulkanRenderPass.h"
+#include "Platform/Vulkan/VulkanMesh.h"
 #include "VulkanCore/Core/Shader.h"
 #include "VulkanCore/Renderer/RenderThread.h"
 
-#define USE_RENDER_THREAD 1
+#define USE_RENDER_THREAD 0
 
 namespace VulkanCore {
 
@@ -16,6 +17,8 @@ namespace VulkanCore {
 		static void EndRenderPass(std::shared_ptr<VulkanRenderPass> renderPass);
 		static void BuildShaders();
 		static void DestroyShaders();
+
+		static void RenderMesh(std::shared_ptr<VulkanMesh> mesh);
 
 		static std::shared_ptr<Shader> GetShader(const std::string& name)
 		{
