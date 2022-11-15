@@ -23,6 +23,7 @@ namespace VulkanCore {
 			case ShaderType::Vertex:   return shaderc_glsl_vertex_shader;
 			case ShaderType::Fragment: return shaderc_glsl_fragment_shader;
 			case ShaderType::Geometry: return shaderc_glsl_geometry_shader;
+			case ShaderType::Compute:  return shaderc_glsl_compute_shader;
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
@@ -36,6 +37,7 @@ namespace VulkanCore {
 			case ShaderType::Vertex:   return "Vertex";
 			case ShaderType::Fragment: return "Fragment";
 			case ShaderType::Geometry: return "Geometry";
+			case ShaderType::Compute:  return "Compute";
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
@@ -61,6 +63,7 @@ namespace VulkanCore {
 			case ShaderType::Vertex:   return ".vert.spv";
 			case ShaderType::Fragment: return ".frag.spv";
 			case ShaderType::Geometry: return ".geom.spv";
+			case ShaderType::Compute:  return ".comp.spv";
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
@@ -100,6 +103,22 @@ namespace VulkanCore {
 			m_ShaderSources = Sources;
 			CompileOrGetVulkanBinaries(Sources);
 		}
+
+		ReflectShaderData();
+	}
+
+	Shader::Shader(const std::string& cmpfilepath)
+		: m_ComputeFilePath(cmpfilepath)
+	{
+		auto ComputeSrc = ParseShader(cmpfilepath);
+
+		Utils::CreateCacheDirectoryIfRequired();
+
+		std::unordered_map<uint32_t, std::string> Sources;
+		Sources[(uint32_t)ShaderType::Compute] = ComputeSrc;
+
+		m_ShaderSources = Sources;
+		CompileOrGetVulkanBinaries(Sources);
 
 		ReflectShaderData();
 	}
@@ -199,6 +218,18 @@ namespace VulkanCore {
 		return { VertexStream.str(), FragmentStream.str(), GeometryStream.str() };
 	}
 
+	std::string Shader::ParseShader(const std::string& cmpfilepath)
+	{
+		std::ifstream ComputeSource(cmpfilepath, std::ios::binary);
+
+		VK_CORE_ASSERT(ComputeSource.is_open(), "Failed to Open Compute Shader File!");
+
+		std::stringstream ComputeStream;
+		ComputeStream << ComputeSource.rdbuf();
+
+		return ComputeStream.str();
+	}
+
 	void Shader::CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources)
 	{
 		shaderc::Compiler compiler;
@@ -267,6 +298,9 @@ namespace VulkanCore {
 				break;
 			case ShaderType::Geometry:
 				shaderFilePath = m_GeometryFilePath;
+				break;
+			case ShaderType::Compute:
+				shaderFilePath = m_ComputeFilePath;
 				break;
 			default:
 				VK_CORE_ASSERT(false, "Cannot find Shader Type!");

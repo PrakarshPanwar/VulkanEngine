@@ -1,0 +1,9 @@
+#version 460 core
+
+layout(binding = 0) uniform image2D o_Image;
+layout(binding = 1) uniform sampler2D u_InputTexture;
+
+void main()
+{
+	
+}

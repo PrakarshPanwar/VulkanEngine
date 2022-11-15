@@ -3,6 +3,7 @@
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanRenderPass.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
+#include "Platform/Vulkan/VulkanComputePipeline.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanBuffer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
@@ -53,12 +54,14 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanPipeline> m_GeometryPipeline;
 		std::shared_ptr<VulkanPipeline> m_PointLightPipeline;
 		std::shared_ptr<VulkanPipeline> m_CompositePipeline;
+		std::shared_ptr<VulkanComputePipeline> m_ComputeDemoPipeline;
 
 		// TODO: Setup VulkanMaterial to do this
 		// Descriptor Sets
 		std::vector<VkDescriptorSet> m_GeometryDescriptorSets;
 		std::vector<VkDescriptorSet> m_PointLightDescriptorSets;
 		std::vector<VkDescriptorSet> m_CompositeDescriptorSets;
+		std::vector<VkDescriptorSet> m_ComputeDemoDescriptorSets;
 
 		// TODO: In future we could have to setup a Material Table and Instanced Rendering
 		// Material Resources

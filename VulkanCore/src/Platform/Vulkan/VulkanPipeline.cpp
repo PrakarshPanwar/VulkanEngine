@@ -361,9 +361,7 @@ namespace VulkanCore {
 		}
 
 		m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
-
-		auto pipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());
-		m_PipelineLayout = pipelineLayout;
+		m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());
 
 		auto pipelineInfo = Utils::GetPipelineConfiguration(m_Specification);
 
@@ -380,7 +378,7 @@ namespace VulkanCore {
 		graphicsPipelineInfo.pMultisampleState = &pipelineInfo.MultisampleInfo;
 		graphicsPipelineInfo.pDynamicState = &pipelineInfo.DynamicStateInfo;
 
-		graphicsPipelineInfo.layout = pipelineLayout;
+		graphicsPipelineInfo.layout = m_PipelineLayout;
 		graphicsPipelineInfo.renderPass = m_Specification.RenderPass->GetRenderPass();
 		graphicsPipelineInfo.subpass = pipelineInfo.Subpass;
 

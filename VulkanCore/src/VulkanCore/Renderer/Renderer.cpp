@@ -15,15 +15,19 @@ namespace VulkanCore {
 		std::shared_ptr<Shader> MakeShader(const std::string& path)
 		{
 			const std::filesystem::path shaderPath = "assets/shaders";
-			std::filesystem::path vertexShaderPath = shaderPath / path, fragmentShaderPath = shaderPath / path;
+			std::filesystem::path vertexShaderPath = shaderPath / path, fragmentShaderPath = shaderPath / path, computeShaderPath = shaderPath / path;
 			vertexShaderPath.replace_extension(".vert");
 			fragmentShaderPath.replace_extension(".frag");
+			computeShaderPath.replace_extension(".comp");
 
-			bool shaderassert = std::filesystem::exists(vertexShaderPath) && std::filesystem::exists(fragmentShaderPath);
+			if (std::filesystem::exists(vertexShaderPath) && std::filesystem::exists(fragmentShaderPath))
+				return std::make_shared<Shader>(vertexShaderPath.string(), fragmentShaderPath.string());
 
-			VK_CORE_ASSERT(shaderassert, "Shader: {} is Incomplete!", path);
+			if (std::filesystem::exists(computeShaderPath))
+				return std::make_shared<Shader>(computeShaderPath.string());
 
-			return std::make_shared<Shader>(vertexShaderPath.string(), fragmentShaderPath.string());
+			VK_CORE_ASSERT(false, "Shader: {} does not exist!", path);
+			return std::make_shared<Shader>();
 		}
 
 	}
@@ -55,6 +59,7 @@ namespace VulkanCore {
 		m_Shaders["CoreShader"] = Utils::MakeShader("CoreShader");
 		m_Shaders["PointLight"] = Utils::MakeShader("PointLight");
 		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
+		m_Shaders["ComputeDemo"] = Utils::MakeShader("ComputeDemo");
 	}
 
 	void Renderer::DestroyShaders()
