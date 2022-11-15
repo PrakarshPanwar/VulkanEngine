@@ -41,7 +41,7 @@ namespace VulkanCore {
 		std::shared_ptr<SceneRenderer> m_SceneRenderer;
 		EditorCamera m_EditorCamera;
 
-		std::vector<VkDescriptorSet> m_SceneImageSet;
+		std::vector<VkDescriptorSet> m_SceneImages;
 		bool m_ImGuiShowWindow = true, m_ViewportHovered = false, m_ViewportFocused = false, m_WindowResized = false;
 		ImVec2 m_ViewportSize = { 1904.0f, 991.0f }; // TODO: Calculate this by function
 
