@@ -3,6 +3,7 @@
 #include "Entity.h"
 #include "Platform/Vulkan/VulkanMesh.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
+#include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 
 namespace VulkanCore {
@@ -58,6 +59,39 @@ namespace VulkanCore {
 			VulkanRenderer::Get()->GetPerfQueryPool(), 1);
 	}
 
+	void Scene::OnUpdateGeometry(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
+	{
+		auto draw_bindCmd = cmdBuffers[Renderer::GetCurrentFrameIndex()];
+		pipeline->Bind(draw_bindCmd);
+
+		vkCmdBindDescriptorSets(draw_bindCmd,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipeline->GetVulkanPipelineLayout(),
+			0, 1, descriptorSet.data(),
+			0, nullptr);
+
+		auto view = m_Registry.view<TransformComponent>();
+
+		for (auto ent : view)
+		{
+			Entity entity = { ent, this };
+
+			if (entity.HasComponent<MeshComponent>())
+			{
+				PCModelData pushConstants{};
+				pushConstants.ModelMatrix = entity.GetComponent<TransformComponent>().GetTransform();
+				pushConstants.NormalMatrix = entity.GetComponent<TransformComponent>().GetNormalMatrix();
+
+				vkCmdPushConstants(draw_bindCmd,
+					pipeline->GetVulkanPipelineLayout(),
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+					0, sizeof(PCModelData), &pushConstants);
+
+				Renderer::RenderMesh(entity.GetComponent<MeshComponent>().Mesh);
+			}
+		}
+	}
+
 	void Scene::OnUpdateLights(SceneInfo& sceneInfo)
 	{
 		sceneInfo.ScenePipeline->Bind(sceneInfo.CommandBuffer);
@@ -86,6 +120,45 @@ namespace VulkanCore {
 					0, sizeof(PCPointLight), &push);
 
 				vkCmdDraw(sceneInfo.CommandBuffer, 6, 1, 0, 0);
+			}
+		}
+	}
+
+	void Scene::OnUpdateLights(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
+	{
+		auto draw_bindCmd = cmdBuffers[Renderer::GetCurrentFrameIndex()];
+		pipeline->Bind(draw_bindCmd);
+
+		vkCmdBindDescriptorSets(draw_bindCmd,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipeline->GetVulkanPipelineLayout(),
+			0, 1, descriptorSet.data(),
+			0, nullptr);
+
+		auto view = m_Registry.view<TransformComponent>();
+
+		for (auto ent : view)
+		{
+			Entity entity = { ent, this };
+
+			if (entity.HasComponent<PointLightComponent>())
+			{
+				Entity lightEntity = { ent, this };
+
+				PCPointLight push{};
+				auto& lightTransform = lightEntity.GetComponent<TransformComponent>();
+				auto& pointLightComp = lightEntity.GetComponent<PointLightComponent>();
+
+				push.Position = glm::vec4(lightTransform.Translation, 1.0f);
+				push.Color = pointLightComp.PointLightInstance->Color;
+				push.Radius = lightTransform.Scale.x;
+
+				vkCmdPushConstants(draw_bindCmd,
+					pipeline->GetVulkanPipelineLayout(),
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+					0, sizeof(PCPointLight), &push);
+
+				vkCmdDraw(draw_bindCmd, 6, 1, 0, 0);
 			}
 		}
 	}

@@ -70,6 +70,7 @@ namespace VulkanCore {
 		void SetPushConstants(size_t size);
 
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
+		inline PipelineSpecification GetSpecification() const { return m_Specification; }
 		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
 	private:
 		void CreateGraphicsPipeline(std::shared_ptr<Shader> shader, const PipelineConfigInfo& pipelineInfo);

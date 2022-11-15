@@ -26,6 +26,8 @@ namespace VulkanCore {
 		Entity CreateEntity(const std::string& name);
 		void OnUpdate(SceneInfo& sceneInfo);
 		void OnUpdateLights(SceneInfo& sceneInfo);
+		void OnUpdateGeometry(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
+		void OnUpdateLights(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
 		void UpdatePointLightUB(UBPointLights& ubo);
 		void DestroyEntity(Entity entity);
 	private:
@@ -33,6 +35,7 @@ namespace VulkanCore {
 
 		friend class Entity;
 		friend class SceneHierarchyPanel;
+		friend class SceneRenderer;
 	};
 
 }

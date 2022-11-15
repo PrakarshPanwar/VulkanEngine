@@ -315,7 +315,7 @@ namespace VulkanCore {
 			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			imageInfo.flags = 0;
 
-			// TODO: Use VMA method/allocator
+			// TODO: Use VMA allocator
 			m_ColorImageMemories[i] = device->CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_ColorImages[i]);
 
 			VkImageViewCreateInfo viewInfo{};
@@ -363,7 +363,7 @@ namespace VulkanCore {
 			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			imageInfo.flags = 0;
 
-			// TODO: Use VMA method/allocator
+			// TODO: Use VMA allocator
 			device->CreateImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImages[i], m_DepthImageMemories[i]);
 
 			VkImageViewCreateInfo viewInfo{};
