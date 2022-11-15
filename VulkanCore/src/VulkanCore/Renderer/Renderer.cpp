@@ -53,12 +53,29 @@ namespace VulkanCore {
 	void Renderer::BuildShaders()
 	{
 		m_Shaders["CoreShader"] = Utils::MakeShader("CoreShader");
-		m_Shaders["PointLightShader"] = Utils::MakeShader("PointLightShader");
+		m_Shaders["PointLight"] = Utils::MakeShader("PointLight");
+		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
 	}
 
 	void Renderer::DestroyShaders()
 	{
 		m_Shaders.clear();
+	}
+
+	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
+	{
+		auto drawCmd = m_CommandBuffers[GetCurrentFrameIndex()];
+		auto dstSet = descriptorSet[GetCurrentFrameIndex()];
+
+		pipeline->Bind(drawCmd);
+
+		vkCmdBindDescriptorSets(drawCmd,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipeline->GetVulkanPipelineLayout(),
+			0, 1, &dstSet,
+			0, nullptr);
+
+		vkCmdDraw(drawCmd, 3, 1, 0, 0);
 	}
 
 	void Renderer::RenderMesh(std::shared_ptr<VulkanMesh> mesh)

@@ -388,4 +388,24 @@ namespace VulkanCore {
 		}
 	}
 
+	std::vector<VkVertexInputBindingDescription> QuadVertex::GetBindingDescriptions()
+	{
+		std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
+		bindingDescriptions[0].binding = 0;
+		bindingDescriptions[0].stride = sizeof(QuadVertex);
+		bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		return bindingDescriptions;
+	}
+
+	std::vector<VkVertexInputAttributeDescription> QuadVertex::GetAttributeDescriptions()
+	{
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+
+		attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(QuadVertex, Position) });
+		attributeDescriptions.push_back({ 1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(QuadVertex, TexCoord) });
+
+		return attributeDescriptions;
+	}
+
 }

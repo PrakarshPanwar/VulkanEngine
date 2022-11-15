@@ -10,8 +10,6 @@
 #include <glm/glm.hpp>
 #include "Scene.h"
 
-#define USE_SCENE_RENDERER_TO_DRAW 1
-
 namespace VulkanCore {
 
 	class SceneRenderer
@@ -23,6 +21,7 @@ namespace VulkanCore {
 		void Init();
 		void Release();
 		void RecreateScene();
+		void OnImGuiRender();
 
 		void SetViewportSize(uint32_t width, uint32_t height) { m_ViewportSize.x = width; m_ViewportSize.y = height; }
 		void RenderScene(EditorCamera& camera);
@@ -33,14 +32,16 @@ namespace VulkanCore {
 		inline VkCommandBuffer GetCommandBuffer(uint32_t index) { return m_SceneCommandBuffers[index]; }
 		inline std::shared_ptr<VulkanFramebuffer> GetFramebuffer() { return m_SceneFramebuffer; }
 		inline std::shared_ptr<VulkanRenderPass> GetRenderPass() { return m_SceneRenderPass; }
-		inline VkFramebuffer GetVulkanFramebuffer(uint32_t index) { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
+		inline VkFramebuffer GetFinalVulkanFramebuffer(uint32_t index) { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
 		inline VkRenderPass GetVulkanRenderPass() { return m_SceneRenderPass->GetRenderPass(); }
-		inline const VulkanImage& GetImage(uint32_t index) { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
+		inline const VulkanImage& GetFinalPassImage(uint32_t index) { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
 	private:
 		void CreateCommandBuffers();
-		void CreateRenderPass();
 		void CreatePipelines();
 		void CreateDescriptorSets();
+
+		void GeometryPass();
+		void CompositePass();
 	private:
 		std::shared_ptr<Scene> m_Scene;
 
@@ -53,21 +54,24 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanPipeline> m_PointLightPipeline;
 		std::shared_ptr<VulkanPipeline> m_CompositePipeline;
 
-		// TODO: Setting up VulkanMaterial to do this
+		// TODO: Setup VulkanMaterial to do this
 		// Descriptor Sets
 		std::vector<VkDescriptorSet> m_GeometryDescriptorSets;
 		std::vector<VkDescriptorSet> m_PointLightDescriptorSets;
 		std::vector<VkDescriptorSet> m_CompositeDescriptorSets;
 
+		// TODO: In future we could have to setup a Material Table and Instanced Rendering
 		// Material Resources
 		std::vector<std::unique_ptr<VulkanBuffer>> m_CameraUBs{ VulkanSwapChain::MaxFramesInFlight };
 		std::vector<std::unique_ptr<VulkanBuffer>> m_PointLightUBs{ VulkanSwapChain::MaxFramesInFlight };
+		std::vector<std::unique_ptr<VulkanBuffer>> m_ExposureUBs{ VulkanSwapChain::MaxFramesInFlight };
 
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap,
 			m_DiffuseMap2, m_NormalMap2, m_SpecularMap2,
 			m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
 
 		glm::ivec2 m_ViewportSize;
+		float m_Exposure = 1.0f;
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;

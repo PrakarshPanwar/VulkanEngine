@@ -240,7 +240,11 @@ namespace VulkanCore {
 
 		DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
 		{
-			ImGui::ColorEdit4("Color", glm::value_ptr(component.PointLightInstance->Color));
+			ImGuiColorEditFlags colorEditFlags = ImGuiColorEditFlags_PickerHueWheel;
+			if (component.PointLightInstance->Color.r > 1.0f)
+				colorEditFlags |= ImGuiColorEditFlags_HDR;
+
+			ImGui::ColorEdit4("Color", glm::value_ptr(component.PointLightInstance->Color), colorEditFlags);
 		});
 
 		DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)

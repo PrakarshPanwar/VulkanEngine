@@ -61,13 +61,15 @@ namespace VulkanCore {
 
 	void Scene::OnUpdateGeometry(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
 	{
-		auto draw_bindCmd = cmdBuffers[Renderer::GetCurrentFrameIndex()];
-		pipeline->Bind(draw_bindCmd);
+		auto drawCmd = cmdBuffers[Renderer::GetCurrentFrameIndex()];
+		auto dstSet = descriptorSet[Renderer::GetCurrentFrameIndex()];
 
-		vkCmdBindDescriptorSets(draw_bindCmd,
+		pipeline->Bind(drawCmd);
+
+		vkCmdBindDescriptorSets(drawCmd,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
 			pipeline->GetVulkanPipelineLayout(),
-			0, 1, descriptorSet.data(),
+			0, 1, &dstSet,
 			0, nullptr);
 
 		auto view = m_Registry.view<TransformComponent>();
@@ -82,7 +84,7 @@ namespace VulkanCore {
 				pushConstants.ModelMatrix = entity.GetComponent<TransformComponent>().GetTransform();
 				pushConstants.NormalMatrix = entity.GetComponent<TransformComponent>().GetNormalMatrix();
 
-				vkCmdPushConstants(draw_bindCmd,
+				vkCmdPushConstants(drawCmd,
 					pipeline->GetVulkanPipelineLayout(),
 					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 					0, sizeof(PCModelData), &pushConstants);
@@ -126,13 +128,15 @@ namespace VulkanCore {
 
 	void Scene::OnUpdateLights(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
 	{
-		auto draw_bindCmd = cmdBuffers[Renderer::GetCurrentFrameIndex()];
-		pipeline->Bind(draw_bindCmd);
+		auto drawCmd = cmdBuffers[Renderer::GetCurrentFrameIndex()];
+		auto dstSet = descriptorSet[Renderer::GetCurrentFrameIndex()];
 
-		vkCmdBindDescriptorSets(draw_bindCmd,
+		pipeline->Bind(drawCmd);
+
+		vkCmdBindDescriptorSets(drawCmd,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
 			pipeline->GetVulkanPipelineLayout(),
-			0, 1, descriptorSet.data(),
+			0, 1, &dstSet,
 			0, nullptr);
 
 		auto view = m_Registry.view<TransformComponent>();
@@ -153,12 +157,12 @@ namespace VulkanCore {
 				push.Color = pointLightComp.PointLightInstance->Color;
 				push.Radius = lightTransform.Scale.x;
 
-				vkCmdPushConstants(draw_bindCmd,
+				vkCmdPushConstants(drawCmd,
 					pipeline->GetVulkanPipelineLayout(),
 					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 					0, sizeof(PCPointLight), &push);
 
-				vkCmdDraw(draw_bindCmd, 6, 1, 0, 0);
+				vkCmdDraw(drawCmd, 6, 1, 0, 0);
 			}
 		}
 	}

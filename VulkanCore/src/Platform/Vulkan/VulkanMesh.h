@@ -25,6 +25,14 @@ namespace VulkanCore {
 		}
 	};
 
+	struct QuadVertex
+	{
+		glm::vec3 Position;
+		glm::vec2 TexCoord;
+
+		static std::vector<VkVertexInputBindingDescription> GetBindingDescriptions();
+		static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
+	};
 
 	struct MeshBuilder
 	{

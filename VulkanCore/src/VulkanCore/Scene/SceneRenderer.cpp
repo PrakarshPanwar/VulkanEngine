@@ -10,6 +10,8 @@
 #include "Platform/Vulkan/VulkanMesh.h"
 #include "Platform/Vulkan/VulkanAllocator.h"
 
+#include <imgui.h>
+
 namespace VulkanCore {
 
 	SceneRenderer* SceneRenderer::s_Instance = nullptr;
@@ -29,33 +31,8 @@ namespace VulkanCore {
 	void SceneRenderer::Init()
 	{
 		CreateCommandBuffers();
-#if USE_SCENE_RENDERER_TO_DRAW
 		CreatePipelines();
 		CreateDescriptorSets();
-#else
-		CreateRenderPass();
-#endif
-	}
-
-	void SceneRenderer::CreateRenderPass()
-	{
-		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Render Pass Creation");
-
-		FramebufferSpecification fbSpec;
-		fbSpec.Width = 1920;
-		fbSpec.Height = 1080;
-		fbSpec.Attachments = { ImageFormat::RGBA8_SRGB, ImageFormat::DEPTH24STENCIL8 };
-		fbSpec.ClearColor = { 0.5f, 0.1f, 0.7f, 1.0f };
-		fbSpec.Samples = 8;
-
-		m_ViewportSize = { fbSpec.Width, fbSpec.Height };
-
-		m_SceneFramebuffer = std::make_shared<VulkanFramebuffer>(fbSpec);
-
-		RenderPassSpecification rpSpec;
-		rpSpec.TargetFramebuffer = m_SceneFramebuffer;
-
-		m_SceneRenderPass = std::make_shared<VulkanRenderPass>(rpSpec);
 	}
 
 	void SceneRenderer::CreatePipelines()
@@ -65,12 +42,11 @@ namespace VulkanCore {
 			FramebufferSpecification geomFramebufferSpec;
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
-			geomFramebufferSpec.Attachments = { ImageFormat::RGBA8_SRGB, ImageFormat::DEPTH24STENCIL8 };
+			geomFramebufferSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::DEPTH24STENCIL8 };
 			geomFramebufferSpec.Samples = 8;
 
 			RenderPassSpecification geomRenderPassSpec;
 			geomRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(geomFramebufferSpec);
-			m_SceneFramebuffer = geomRenderPassSpec.TargetFramebuffer;
 
 			PipelineSpecification geomPipelineSpec;
 			geomPipelineSpec.pShader = Renderer::GetShader("CoreShader");
@@ -78,12 +54,33 @@ namespace VulkanCore {
 			geomPipelineSpec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
 
 			PipelineSpecification pointLightPipelineSpec;
-			pointLightPipelineSpec.pShader = Renderer::GetShader("PointLightShader");
+			pointLightPipelineSpec.pShader = Renderer::GetShader("PointLight");
 			pointLightPipelineSpec.Blend = true;
 			pointLightPipelineSpec.RenderPass = geomPipelineSpec.RenderPass;
 
 			m_GeometryPipeline = std::make_shared<VulkanPipeline>(geomPipelineSpec);
 			m_PointLightPipeline = std::make_shared<VulkanPipeline>(pointLightPipelineSpec);
+		}
+
+		// Composite Pipeline
+		{
+			FramebufferSpecification compFramebufferSpec;
+			compFramebufferSpec.Width = 1920;
+			compFramebufferSpec.Height = 1080;
+			compFramebufferSpec.Attachments = { ImageFormat::RGBA8_SRGB };
+
+			RenderPassSpecification compRenderPassSpec;
+			compRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(compFramebufferSpec);
+			m_SceneFramebuffer = compRenderPassSpec.TargetFramebuffer;
+
+			PipelineSpecification compPipelineSpec;
+			compPipelineSpec.pShader = Renderer::GetShader("SceneComposite");
+			compPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(compRenderPassSpec);
+			compPipelineSpec.DepthTest = false;
+			compPipelineSpec.DepthWrite = false;
+			//compPipelineSpec.Layout = { QuadVertex::GetBindingDescriptions(), QuadVertex::GetAttributeDescriptions() };
+
+			m_CompositePipeline = std::make_shared<VulkanPipeline>(compPipelineSpec);
 		}
 	}
 
@@ -104,6 +101,13 @@ namespace VulkanCore {
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 			PointLightUB->Map();
+
+			auto& ExposureUB = m_ExposureUBs.at(i);
+			ExposureUB = std::make_unique<VulkanBuffer>(sizeof(float), 1,
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+			ExposureUB->Map();
 		}
 
 		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg");
@@ -118,7 +122,6 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
 		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
 
-		// TODO: Shift these operations to SceneRenderer
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
 		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
 		DiffuseMaps.push_back(m_DiffuseMap2->GetDescriptorImageInfo());
@@ -130,43 +133,35 @@ namespace VulkanCore {
 		SpecularMaps.push_back(m_SpecularMap2->GetDescriptorImageInfo());
 		SpecularMaps.push_back(m_SpecularMap3->GetDescriptorImageInfo());
 
-		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
-		descriptorSetLayoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-		auto pointLightDescriptorSetLayout = descriptorSetLayoutBuilder.Build();
-
-		descriptorSetLayoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-		descriptorSetLayoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
-		descriptorSetLayoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
-		descriptorSetLayoutBuilder.AddBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
-		auto sceneDescriptorSetLayout = descriptorSetLayoutBuilder.Build();
-
+		// Writing in Descriptors
 		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
 
 		m_GeometryDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_PointLightDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_CompositeDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 
-		std::vector<VulkanDescriptorWriter> sceneDescriptorWriter(
+		std::vector<VulkanDescriptorWriter> geomDescriptorWriter(
 			VulkanSwapChain::MaxFramesInFlight,
-			{ *sceneDescriptorSetLayout, *vulkanDescriptorPool });
+			{ *m_GeometryPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
 		for (int i = 0; i < m_GeometryDescriptorSets.size(); i++)
 		{
 			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
-			sceneDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+			geomDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
 			auto pointLightUBInfo = m_PointLightUBs[i]->DescriptorInfo();
-			sceneDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
+			geomDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
 
-			sceneDescriptorWriter[i].WriteImage(2, DiffuseMaps);
-			sceneDescriptorWriter[i].WriteImage(3, NormalMaps);
-			sceneDescriptorWriter[i].WriteImage(4, SpecularMaps);
+			geomDescriptorWriter[i].WriteImage(2, DiffuseMaps);
+			geomDescriptorWriter[i].WriteImage(3, NormalMaps);
+			geomDescriptorWriter[i].WriteImage(4, SpecularMaps);
 
-			sceneDescriptorWriter[i].Build(m_GeometryDescriptorSets[i]);
+			geomDescriptorWriter[i].Build(m_GeometryDescriptorSets[i]);
 		}
 
 		std::vector<VulkanDescriptorWriter> pointLightDescriptorWriter(
 			VulkanSwapChain::MaxFramesInFlight,
-			{ *pointLightDescriptorSetLayout, *vulkanDescriptorPool });
+			{ *m_PointLightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
 		for (int i = 0; i < m_PointLightDescriptorSets.size(); i++)
 		{
@@ -174,6 +169,22 @@ namespace VulkanCore {
 			pointLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
 			bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i]);
+			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+		}
+
+		std::vector<VulkanDescriptorWriter> compDescriptorWriter(
+			VulkanSwapChain::MaxFramesInFlight,
+			{ *m_CompositePipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
+
+		for (int i = 0; i < m_CompositeDescriptorSets.size(); i++)
+		{
+			auto sceneUBInfo = m_ExposureUBs[i]->DescriptorInfo();
+			compDescriptorWriter[i].WriteBuffer(1, &sceneUBInfo);
+
+			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
+			compDescriptorWriter[i].WriteImage(0, &imagesInfo);
+
+			bool success = compDescriptorWriter[i].Build(m_CompositeDescriptorSets[i]);
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 		}
 	}
@@ -192,10 +203,15 @@ namespace VulkanCore {
 		m_SceneRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 	}
 
+	void SceneRenderer::OnImGuiRender()
+	{
+		ImGui::Begin("Scene Renderer");
+		ImGui::DragFloat("Exposure Intensity", &m_Exposure, 0.01f);
+		ImGui::End();
+	}
+
 	void SceneRenderer::RenderScene(EditorCamera& camera)
 	{
-		Renderer::BeginRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
-
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
 		UBCamera cameraUB{};
@@ -209,6 +225,24 @@ namespace VulkanCore {
 		m_Scene->UpdatePointLightUB(pointLightUB);
 		m_PointLightUBs[frameIndex]->WriteToBuffer(&pointLightUB);
 		m_PointLightUBs[frameIndex]->FlushBuffer();
+
+		m_ExposureUBs[frameIndex]->WriteToBuffer(&m_Exposure);
+		m_ExposureUBs[frameIndex]->FlushBuffer();
+
+		GeometryPass();
+		CompositePass();
+	}
+
+	void SceneRenderer::CompositePass()
+	{
+		Renderer::BeginRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
+		Renderer::SubmitFullscreenQuad(m_CompositePipeline, m_CompositeDescriptorSets);
+		Renderer::EndRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
+	}
+
+	void SceneRenderer::GeometryPass()
+	{
+		Renderer::BeginRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
 
 		m_Scene->OnUpdateGeometry(m_SceneCommandBuffers, m_GeometryPipeline, m_GeometryDescriptorSets);
 		m_Scene->OnUpdateLights(m_SceneCommandBuffers, m_PointLightPipeline, m_PointLightDescriptorSets);
