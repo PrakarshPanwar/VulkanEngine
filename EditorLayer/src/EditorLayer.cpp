@@ -43,10 +43,10 @@ namespace VulkanCore {
 		LoadEntities();
 		m_SceneRenderer = std::make_shared<SceneRenderer>(m_Scene);
 
-		m_SceneImageSet.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-			m_SceneImageSet[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetImage(i));
+			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 
@@ -169,12 +169,13 @@ namespace VulkanCore {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
-		ImGui::Image(m_SceneImageSet[Renderer::GetCurrentFrameIndex()], region);
+		ImGui::Image(m_SceneImages[Renderer::GetCurrentFrameIndex()], region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		RenderGizmo();
 		ImGui::End(); // End of Viewport
 
 		m_SceneHierarchyPanel.OnImGuiRender();
+		m_SceneRenderer->OnImGuiRender();
 
 		ImGui::End(); // End of DockSpace
 	}
@@ -220,17 +221,16 @@ namespace VulkanCore {
 	bool EditorLayer::OnWindowResize(WindowResizeEvent& windowEvent)
 	{
 		m_WindowResized = true;
-		//m_SceneRenderer->RecreateScene();
 		return false;
 	}
 
 	void EditorLayer::RecreateSceneDescriptors()
 	{
-		m_SceneImageSet.clear();
-		m_SceneImageSet.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_SceneImages.clear();
+		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-			m_SceneImageSet[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetImage(i));
+			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
 	}
 
 	void EditorLayer::LoadEntities()
@@ -257,7 +257,7 @@ namespace VulkanCore {
 
 		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");
 		auto& blueLightTransform = BluePointLight.AddComponent<TransformComponent>(glm::vec3{ -1.0f, 0.0f, 4.5f }, glm::vec3{ 0.1f });
-		std::shared_ptr<PointLight> blueLight = std::make_shared<PointLight>(glm::vec4(blueLightTransform.Translation, 1.0f), glm::vec4{ 0.2f, 0.3f, 0.8f, 2.0f });
+		std::shared_ptr<PointLight> blueLight = std::make_shared<PointLight>(glm::vec4(blueLightTransform.Translation, 1.0f), glm::vec4{ 5.0f, 7.5f, 20.0f, 1.0f });
 		BluePointLight.AddComponent<PointLightComponent>(blueLight);
 
 		Entity RedPointLight = m_Scene->CreateEntity("Red Light");
