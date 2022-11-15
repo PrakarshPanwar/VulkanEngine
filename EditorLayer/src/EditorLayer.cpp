@@ -41,112 +41,15 @@ namespace VulkanCore {
 		std::unique_ptr<Timer> editorInit = std::make_unique<Timer>("Editor Initialization");
 
 		LoadEntities();
-		m_SceneRenderer = std::make_shared<SceneRenderer>();
+		m_SceneRenderer = std::make_shared<SceneRenderer>(m_Scene);
 
-		for (int i = 0; i < m_CameraUBs.size(); ++i)
-		{
-			auto& CameraUB = m_CameraUBs.at(i);
-			CameraUB = std::make_unique<VulkanBuffer>(sizeof(UBCamera), 1,
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-			CameraUB->Map();
-
-			auto& PointLightUB = m_PointLightUBs.at(i);
-			PointLightUB = std::make_unique<VulkanBuffer>(sizeof(UBPointLights), 1,
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-			PointLightUB->Map();
-		}
-
-		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg");
-		m_NormalMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_nor_gl_2k.jpg");
-		m_SpecularMap = std::make_shared<VulkanTexture>("assets/textures/PlainSnow/SnowSpecular.jpg");
-
-		m_DiffuseMap2 = std::make_shared<VulkanTexture>("assets/textures/DeformedSnow/SnowDiffuse.jpg");
-		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/textures/DeformedSnow/SnowNormalGL.png");
-		m_SpecularMap2 = std::make_shared<VulkanTexture>("assets/textures/DeformedSnow/SnowSpecular.jpg");
-
-		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleDiff.png");
-		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
-		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
-
-		m_SceneTextureIDs.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_SceneImageSet.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-			m_SceneTextureIDs[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetImage(i));
-
-		// TODO: Shift these operations to SceneRenderer
-		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
-		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
-		DiffuseMaps.push_back(m_DiffuseMap2->GetDescriptorImageInfo());
-		DiffuseMaps.push_back(m_DiffuseMap3->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_NormalMap->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_NormalMap2->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_NormalMap3->GetDescriptorImageInfo());
-		SpecularMaps.push_back(m_SpecularMap->GetDescriptorImageInfo());
-		SpecularMaps.push_back(m_SpecularMap2->GetDescriptorImageInfo());
-		SpecularMaps.push_back(m_SpecularMap3->GetDescriptorImageInfo());
-
-		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
-		descriptorSetLayoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-		auto pointLightDescriptorSetLayout = descriptorSetLayoutBuilder.Build();
-
-		descriptorSetLayoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-		descriptorSetLayoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
-		descriptorSetLayoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
-		descriptorSetLayoutBuilder.AddBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3);
-		auto sceneDescriptorSetLayout = descriptorSetLayoutBuilder.Build();
-
-		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
-
-		std::vector<VulkanDescriptorWriter> sceneDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *sceneDescriptorSetLayout, *vulkanDescriptorPool });
-
-		for (int i = 0; i < m_SceneDescriptorSets.size(); i++)
-		{
-			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
-			sceneDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
-
-			auto pointLightUBInfo = m_PointLightUBs[i]->DescriptorInfo();
-			sceneDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
-
-			sceneDescriptorWriter[i].WriteImage(2, DiffuseMaps);
-			sceneDescriptorWriter[i].WriteImage(3, NormalMaps);
-			sceneDescriptorWriter[i].WriteImage(4, SpecularMaps);
-
-			sceneDescriptorWriter[i].Build(m_SceneDescriptorSets[i]);
-		}
-
-		std::vector<VulkanDescriptorWriter> pointLightDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *pointLightDescriptorSetLayout, *vulkanDescriptorPool });
-
-		for (int i = 0; i < m_PointLightDescriptorSets.size(); i++)
-		{
-			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
-			pointLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
-
-			bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i]);
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
-		}
+			m_SceneImageSet[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetImage(i));
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 
-		auto sceneRenderPass = m_SceneRenderer->GetRenderPass();
-		// TODO: In future these classes will be deprecated, and all pipeline creation will move into SceneRenderer
-		m_RenderSystem = std::make_shared<RenderSystem>(sceneRenderPass, sceneDescriptorSetLayout->GetDescriptorSetLayout());
-		m_PointLightSystem = std::make_shared<PointLightSystem>(sceneRenderPass, pointLightDescriptorSetLayout->GetDescriptorSetLayout());
-
-		m_CompositeScene.ScenePipeline = m_RenderSystem->GetPipeline();
-		m_CompositeScene.PipelineLayout = m_RenderSystem->GetPipelineLayout();
-
-		m_PointLightScene.ScenePipeline = m_PointLightSystem->GetPipeline();
-		m_PointLightScene.PipelineLayout = m_PointLightSystem->GetPipelineLayout();
-
-		//m_EditorCamera = EditorCamera(glm::radians(45.0f), VulkanRenderer::Get()->GetAspectRatio(), 0.1f, 100.0f);
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 100.0f);
 	}
 
@@ -158,38 +61,7 @@ namespace VulkanCore {
 	void EditorLayer::OnUpdate()
 	{
 		m_EditorCamera.OnUpdate();
-
-		int frameIndex = Renderer::GetCurrentFrameIndex();
-
-		auto sceneRenderPass = m_SceneRenderer->GetRenderPass();
-		auto sceneCmd = m_SceneRenderer->GetCommandBuffer(frameIndex);
-
-		vkCmdResetQueryPool(sceneCmd, VulkanRenderer::Get()->GetPerfQueryPool(), 0, 2);
-		
-		Renderer::BeginRenderPass(sceneRenderPass);
-
-		m_CompositeScene.DescriptorSet = m_SceneDescriptorSets[frameIndex];
-		m_CompositeScene.CommandBuffer = sceneCmd;
-
-		m_PointLightScene.DescriptorSet = m_PointLightDescriptorSets[frameIndex];
-		m_PointLightScene.CommandBuffer = sceneCmd;
-
-		UBCamera cameraUB{};
-		cameraUB.Projection = m_EditorCamera.GetProjectionMatrix();
-		cameraUB.View = m_EditorCamera.GetViewMatrix();
-		cameraUB.InverseView = glm::inverse(m_EditorCamera.GetViewMatrix());
-		m_CameraUBs[frameIndex]->WriteToBuffer(&cameraUB);
-		m_CameraUBs[frameIndex]->FlushBuffer();
-
-		UBPointLights pointLightUB{};
-		m_Scene->UpdatePointLightUB(pointLightUB);
-		m_PointLightUBs[frameIndex]->WriteToBuffer(&pointLightUB);
-		m_PointLightUBs[frameIndex]->FlushBuffer();
-
-		m_Scene->OnUpdate(m_CompositeScene);
-		m_Scene->OnUpdateLights(m_PointLightScene);
-
-		Renderer::EndRenderPass(sceneRenderPass);
+		m_SceneRenderer->RenderScene(m_EditorCamera);
 	}
 
 	void EditorLayer::OnEvent(Event& e)
@@ -297,7 +169,7 @@ namespace VulkanCore {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
-		ImGui::Image(m_SceneTextureIDs[Renderer::GetCurrentFrameIndex()], region);
+		ImGui::Image(m_SceneImageSet[Renderer::GetCurrentFrameIndex()], region);
 
 		RenderGizmo();
 		ImGui::End(); // End of Viewport
@@ -354,11 +226,11 @@ namespace VulkanCore {
 
 	void EditorLayer::RecreateSceneDescriptors()
 	{
-		m_SceneTextureIDs.clear();
-		m_SceneTextureIDs.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_SceneImageSet.clear();
+		m_SceneImageSet.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-			m_SceneTextureIDs[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetImage(i));
+			m_SceneImageSet[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetImage(i));
 	}
 
 	void EditorLayer::LoadEntities()
