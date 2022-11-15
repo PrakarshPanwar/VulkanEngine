@@ -14,7 +14,8 @@ namespace VulkanCore {
 
 		std::shared_ptr<Shader> MakeShader(const std::string& path)
 		{
-			std::filesystem::path vertexShaderPath = path, fragmentShaderPath = path;
+			const std::filesystem::path shaderPath = "assets/shaders";
+			std::filesystem::path vertexShaderPath = shaderPath / path, fragmentShaderPath = shaderPath / path;
 			vertexShaderPath.replace_extension(".vert");
 			fragmentShaderPath.replace_extension(".frag");
 
@@ -51,13 +52,19 @@ namespace VulkanCore {
 
 	void Renderer::BuildShaders()
 	{
-		m_Shaders["FirstShader"] = Utils::MakeShader("assets/shaders/FirstShader");
-		m_Shaders["PointLightShader"] = Utils::MakeShader("assets/shaders/PointLightShader");
+		m_Shaders["CoreShader"] = Utils::MakeShader("CoreShader");
+		m_Shaders["PointLightShader"] = Utils::MakeShader("PointLightShader");
 	}
 
 	void Renderer::DestroyShaders()
 	{
 		m_Shaders.clear();
+	}
+
+	void Renderer::RenderMesh(std::shared_ptr<VulkanMesh> mesh)
+	{
+		mesh->Bind(m_CommandBuffers[GetCurrentFrameIndex()]);
+		mesh->Draw(m_CommandBuffers[GetCurrentFrameIndex()]);
 	}
 
 	void Renderer::WaitandRender()

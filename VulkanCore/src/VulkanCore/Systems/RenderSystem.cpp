@@ -12,7 +12,7 @@ namespace VulkanCore {
 	RenderSystem::RenderSystem(std::shared_ptr<VulkanRenderPass> renderPass, VkDescriptorSetLayout globalSetLayout)
 	{
 		PipelineSpecification spec;
-		spec.pShader = Renderer::GetShader("FirstShader");
+		spec.pShader = Renderer::GetShader("CoreShader");
 		spec.RenderPass = renderPass;
 		spec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
 
@@ -44,8 +44,8 @@ namespace VulkanCore {
 #else
 		m_Pipeline = std::make_unique<VulkanPipeline>(
 			pipelineConfig,
-			"assets/shaders/FirstShader.vert",
-			"assets/shaders/FirstShader.frag"
+			"assets/shaders/CoreShader.vert",
+			"assets/shaders/CoreShader.frag"
 		);
 #endif
 	}

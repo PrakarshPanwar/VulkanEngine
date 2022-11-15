@@ -20,7 +20,8 @@ namespace VulkanCore {
 
 		bool operator==(const Vertex& other) const
 		{
-			return Position == other.Position && Color == other.Color && Normal == other.Normal && TexCoord == other.TexCoord;
+			return Position == other.Position && Color == other.Color && 
+				Normal == other.Normal && TexCoord == other.TexCoord;
 		}
 	};
 
@@ -49,6 +50,9 @@ namespace VulkanCore {
 
 		void Bind(VkCommandBuffer commandBuffer);
 		void Draw(VkCommandBuffer commandBuffer);
+
+		inline uint32_t GetVertexCount() const { return m_VertexCount; }
+		inline uint32_t GetIndexCount() const { return m_IndexCount; }
 
 		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(const std::string& filepath);
 		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(const std::string& filepath, const glm::vec3& modelColor);
