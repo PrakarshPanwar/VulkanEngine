@@ -31,7 +31,6 @@ namespace VulkanCore {
 	void SceneRenderer::Init()
 	{
 		CreateCommandBuffers();
-		Renderer::CreateQuadBuffer();
 		CreatePipelines();
 		CreateDescriptorSets();
 	}
@@ -194,7 +193,6 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		Renderer::ClearResources();
 		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(), 
 			static_cast<uint32_t>(m_SceneCommandBuffers.size()), m_SceneCommandBuffers.data());
 	}
