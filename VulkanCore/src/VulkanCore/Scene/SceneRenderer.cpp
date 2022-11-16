@@ -86,7 +86,7 @@ namespace VulkanCore {
 #if TEST_COMPUTE_SHADER
 		// Compute Testing Pipeline
 		{
-			m_ComputeDemoPipeline = std::make_shared<VulkanComputePipeline>(Renderer::GetShader("ComputeDemo"));
+			m_BloomPipeline = std::make_shared<VulkanComputePipeline>(Renderer::GetShader("ComputeDemo"));
 		}
 #endif
 	}
@@ -135,11 +135,11 @@ namespace VulkanCore {
 		imageSpec.Height = 1080;
 		imageSpec.Format = ImageFormat::RGBA16F;
 		imageSpec.Usage = ImageUsage::Storage;
-		m_ComputeDemoImage = std::make_shared<VulkanImage>(imageSpec);
-		m_ComputeDemoImage->Invalidate();
+		m_BloomTexture = std::make_shared<VulkanImage>(imageSpec);
+		m_BloomTexture->Invalidate();
 
 		auto barrierCmd = device->GetCommandBuffer();
-		Utils::InsertImageMemoryBarrier(barrierCmd, m_ComputeDemoImage->GetVulkanImageInfo().Image,
+		Utils::InsertImageMemoryBarrier(barrierCmd, m_BloomTexture->GetVulkanImageInfo().Image,
 			VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 			VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -178,7 +178,7 @@ namespace VulkanCore {
 		m_GeometryDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_PointLightDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_CompositeDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_ComputeDemoDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_BloomDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		// Geometry Descriptors
 		std::vector<VulkanDescriptorWriter> geomDescriptorWriter(
@@ -218,11 +218,11 @@ namespace VulkanCore {
 		// Compute Demo Descriptors
 		std::vector<VulkanDescriptorWriter> computeDemoDescriptorWriter(
 			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_ComputeDemoPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
+			{ *m_BloomPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-		for (int i = 0; i < m_ComputeDemoDescriptorSets.size(); i++)
+		for (int i = 0; i < m_BloomDescriptorSets.size(); i++)
 		{
-			auto outputImageInfo = m_ComputeDemoImage->GetDescriptorInfo();
+			auto outputImageInfo = m_BloomTexture->GetDescriptorInfo();
 			computeDemoDescriptorWriter[i].WriteImage(0, &outputImageInfo);
 
 			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
@@ -231,7 +231,7 @@ namespace VulkanCore {
 			auto lodUBInfo = m_LodUBs[i]->DescriptorInfo();
 			computeDemoDescriptorWriter[i].WriteBuffer(2, &lodUBInfo);
 
-			bool success = computeDemoDescriptorWriter[i].Build(m_ComputeDemoDescriptorSets[i]);
+			bool success = computeDemoDescriptorWriter[i].Build(m_BloomDescriptorSets[i]);
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 		}
 #endif
@@ -247,7 +247,7 @@ namespace VulkanCore {
 			compDescriptorWriter[i].WriteBuffer(1, &sceneUBInfo);
 
 #if TEST_COMPUTE_SHADER
-			VkDescriptorImageInfo imagesInfo = m_ComputeDemoImage->GetDescriptorInfo();
+			VkDescriptorImageInfo imagesInfo = m_BloomTexture->GetDescriptorInfo();
 #else
 			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
 #endif
@@ -306,7 +306,7 @@ namespace VulkanCore {
 
 		GeometryPass();
 #if TEST_COMPUTE_SHADER
-		ComputeDemoPass();
+		BloomBlurPass();
 #endif
 		CompositePass();
 	}
@@ -328,18 +328,18 @@ namespace VulkanCore {
 		Renderer::EndRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
 	}
 
-	void SceneRenderer::ComputeDemoPass()
+	void SceneRenderer::BloomBlurPass()
 	{
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
 		auto dispatchCmd = m_SceneCommandBuffers[frameIndex];
-		m_ComputeDemoPipeline->Bind(dispatchCmd);
+		m_BloomPipeline->Bind(dispatchCmd);
 
 		vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-			m_ComputeDemoPipeline->GetVulkanPipelineLayout(), 0, 1,
-			&m_ComputeDemoDescriptorSets[frameIndex], 0, nullptr);
+			m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
+			&m_BloomDescriptorSets[frameIndex], 0, nullptr);
 
-		m_ComputeDemoPipeline->Dispatch(dispatchCmd, 128, 128, 1);
+		m_BloomPipeline->Dispatch(dispatchCmd, 128, 128, 1);
 	}
 
 	void SceneRenderer::CreateCommandBuffers()
