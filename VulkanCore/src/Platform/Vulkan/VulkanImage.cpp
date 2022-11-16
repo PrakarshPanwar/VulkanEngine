@@ -212,7 +212,7 @@ namespace VulkanCore {
 			VkImageSubresourceRange subresourceRange{}; // TODO: Add Mips
 			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			subresourceRange.baseMipLevel = 0;
-			subresourceRange.levelCount = 1;
+			subresourceRange.levelCount = m_Specification.MipLevels;
 			subresourceRange.layerCount = 1;
 
 			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
