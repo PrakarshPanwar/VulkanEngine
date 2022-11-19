@@ -206,8 +206,8 @@ namespace VulkanCore {
 			}
 		}
 
-		ImGui::SameLine();
-		ImGui::PushItemWidth(-1);
+		//ImGui::SameLine();
+		//ImGui::PushItemWidth(-1);
 
 		// TODO: Add Different Components
 
@@ -227,7 +227,7 @@ namespace VulkanCore {
 			ImGui::EndPopup();
 		}*/
 
-		ImGui::PopItemWidth();
+		//ImGui::PopItemWidth();
 
 		DrawComponent<TransformComponent>("Transform", entity, [](auto& component)
 		{
