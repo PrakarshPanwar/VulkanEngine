@@ -8,3 +8,6 @@
 [submodule "VulkanCore/vendor/spdlog"]
 	path = VulkanCore/vendor/spdlog
 	url = https://github.com/PrakarshPanwar/spdlog.git
+[submodule "VulkanCore/vendor/ImGuizmo"]
+	path = VulkanCore/vendor/ImGuizmo
+	url = https://github.com/PrakarshPanwar/ImGuizmo.git
