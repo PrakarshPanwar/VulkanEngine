@@ -1,6 +1,5 @@
 #pragma once
 #include <vma/vk_mem_alloc.h>
-#include "Platform/Windows/WindowsWindow.h"
 
 #define USE_VMA 1
 #define VIEWPORT_SUPPORT 1
@@ -40,11 +39,6 @@ namespace VulkanCore {
 	class VulkanDevice
 	{
 	public:
-#ifdef VK_RELEASE
-		const bool m_EnableValidation = false;
-#else
-		const bool m_EnableValidation = true;
-#endif
 		VulkanDevice();
 		~VulkanDevice();
 
@@ -76,7 +70,7 @@ namespace VulkanCore {
 		void CreateLogicalDevice();
 		void PickPhysicalDevice();
 		void CreateCommandPool();
-
+	private:
 		VkAllocationCallbacks m_AllocationCallbacks;
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 		VkPhysicalDeviceProperties m_DeviceProperties;
