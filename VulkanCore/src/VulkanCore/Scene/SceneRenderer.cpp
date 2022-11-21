@@ -83,10 +83,10 @@ namespace VulkanCore {
 			m_CompositePipeline = std::make_shared<VulkanPipeline>(compPipelineSpec);
 		}
 
-#if TEST_COMPUTE_SHADER
+#if BLOOM_COMPUTE_SHADER
 		// Compute Testing Pipeline
 		{
-			m_BloomPipeline = std::make_shared<VulkanComputePipeline>(Renderer::GetShader("ComputeDemo"));
+			m_BloomPipeline = std::make_shared<VulkanComputePipeline>(Renderer::GetShader("Bloom"));
 		}
 #endif
 	}
@@ -119,7 +119,7 @@ namespace VulkanCore {
 
 			ExposureUB->Map();
 
-#if TEST_COMPUTE_SHADER
+#if BLOOM_COMPUTE_SHADER
 			auto& LodUB = m_LodUBs.at(i);
 			LodUB = std::make_unique<VulkanBuffer>(sizeof(LodAndMode), 1,
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -129,7 +129,7 @@ namespace VulkanCore {
 #endif
 		}
 
-#if TEST_COMPUTE_SHADER
+#if BLOOM_COMPUTE_SHADER
 		ImageSpecification imageSpec = {};
 		imageSpec.Width = 1920;
 		imageSpec.Height = 1080;
@@ -214,7 +214,7 @@ namespace VulkanCore {
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 		}
 
-#if TEST_COMPUTE_SHADER
+#if BLOOM_COMPUTE_SHADER
 		// Compute Demo Descriptors
 		std::vector<VulkanDescriptorWriter> computeDemoDescriptorWriter(
 			VulkanSwapChain::MaxFramesInFlight,
@@ -246,7 +246,7 @@ namespace VulkanCore {
 			auto sceneUBInfo = m_ExposureUBs[i]->DescriptorInfo();
 			compDescriptorWriter[i].WriteBuffer(1, &sceneUBInfo);
 
-#if TEST_COMPUTE_SHADER
+#if BLOOM_COMPUTE_SHADER
 			VkDescriptorImageInfo imagesInfo = m_BloomTexture->GetDescriptorInfo();
 #else
 			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
@@ -299,13 +299,13 @@ namespace VulkanCore {
 		m_ExposureUBs[frameIndex]->WriteToBuffer(&m_SceneSettings.Exposure);
 		m_ExposureUBs[frameIndex]->FlushBuffer();
 
-#if TEST_COMPUTE_SHADER
+#if BLOOM_COMPUTE_SHADER
 		m_LodUBs[frameIndex]->WriteToBuffer(&m_LodAndMode);
 		m_LodUBs[frameIndex]->FlushBuffer();
 #endif
 
 		GeometryPass();
-#if TEST_COMPUTE_SHADER
+#if BLOOM_COMPUTE_SHADER
 		BloomBlurPass();
 #endif
 		CompositePass();
