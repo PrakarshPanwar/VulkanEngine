@@ -96,7 +96,10 @@ namespace VulkanCore {
 		VK_CORE_TRACE("Loading Model: {0}", modelFilepath.filename());
 		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
 		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
-		return std::make_shared<VulkanMesh>(builder);
+
+		std::shared_ptr<VulkanMesh> mesh = std::make_shared<VulkanMesh>(builder);
+		mesh->m_FilePath = filepath;
+		return mesh;
 	}
 
 	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromAssimp(const std::string& filepath, int texID)
@@ -110,7 +113,10 @@ namespace VulkanCore {
 		VK_CORE_TRACE("Loading Model: {0}", filepath);
 		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
 		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
-		return std::make_shared<VulkanMesh>(builder);
+
+		std::shared_ptr<VulkanMesh> mesh = std::make_shared<VulkanMesh>(builder);
+		mesh->m_FilePath = filepath;
+		return mesh;
 	}
 
 	void VulkanMesh::CreateVertexBuffers(const std::vector<Vertex>& vertices)
