@@ -1,9 +1,9 @@
 #include "vulkanpch.h"
 #include "VulkanPipeline.h"
-#include "VulkanMesh.h"
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Mesh/Mesh.h"
 
 namespace VulkanCore {
 

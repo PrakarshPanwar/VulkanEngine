@@ -1,7 +1,7 @@
 #include "vulkanpch.h"
 #include "Scene.h"
 #include "Entity.h"
-#include "Platform/Vulkan/VulkanMesh.h"
+#include "VulkanCore/Mesh/Mesh.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
@@ -50,8 +50,8 @@ namespace VulkanCore {
 
 			if (entity.HasComponent<MeshComponent>())
 			{
-				entity.GetComponent<MeshComponent>().Mesh->Bind(sceneInfo.CommandBuffer);
-				entity.GetComponent<MeshComponent>().Mesh->Draw(sceneInfo.CommandBuffer);
+				entity.GetComponent<MeshComponent>().MeshInstance->Bind(sceneInfo.CommandBuffer);
+				entity.GetComponent<MeshComponent>().MeshInstance->Draw(sceneInfo.CommandBuffer);
 			}
 		}
 
@@ -89,7 +89,7 @@ namespace VulkanCore {
 					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 					0, sizeof(PCModelData), &pushConstants);
 
-				Renderer::RenderMesh(entity.GetComponent<MeshComponent>().Mesh);
+				Renderer::RenderMesh(entity.GetComponent<MeshComponent>().MeshInstance);
 			}
 		}
 	}

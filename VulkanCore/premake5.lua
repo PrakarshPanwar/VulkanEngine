@@ -37,6 +37,7 @@ project "VulkanCore"
 		"%{IncludeDir.TinyObjLoader}",
 		"%{IncludeDir.entt}",
 		"%{IncludeDir.ImGui}",
+		"%{IncludeDir.ImGuizmo}",
 		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.Assimp}"
 	}
