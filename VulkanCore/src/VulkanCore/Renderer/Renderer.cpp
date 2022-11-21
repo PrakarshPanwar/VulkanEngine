@@ -59,7 +59,7 @@ namespace VulkanCore {
 		m_Shaders["CoreShader"] = Utils::MakeShader("CoreShader");
 		m_Shaders["PointLight"] = Utils::MakeShader("PointLight");
 		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
-		m_Shaders["ComputeDemo"] = Utils::MakeShader("ComputeDemo");
+		m_Shaders["Bloom"] = Utils::MakeShader("Bloom");
 	}
 
 	void Renderer::DestroyShaders()
