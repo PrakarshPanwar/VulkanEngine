@@ -7,7 +7,7 @@
 #include "VulkanCore/Core/Timer.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
-#include "Platform/Vulkan/Mesh.h"
+#include "VulkanCore/Mesh/Mesh.h"
 #include "Platform/Vulkan/VulkanAllocator.h"
 
 #include <imgui.h>

@@ -2,7 +2,7 @@
 #include "Platform/Windows/WindowsWindow.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
-#include "Platform/Vulkan/Mesh.h"
+#include "VulkanCore/Mesh/Mesh.h"
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
