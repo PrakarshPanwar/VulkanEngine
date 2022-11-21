@@ -240,11 +240,7 @@ namespace VulkanCore {
 
 		DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
 		{
-			ImGuiColorEditFlags colorEditFlags = ImGuiColorEditFlags_PickerHueWheel;
-			if (component.PointLightInstance->Color.r > 1.0f)
-				colorEditFlags |= ImGuiColorEditFlags_HDR;
-
-			ImGui::ColorEdit3("Color", glm::value_ptr(component.PointLightInstance->Color), colorEditFlags);
+			ImGui::ColorEdit3("Color", glm::value_ptr(component.PointLightInstance->Color));
 			ImGui::DragFloat("Intensity", (float*)&component.PointLightInstance->Color.w, 0.01f, 0.0f, 10000.0f);
 		});
 
