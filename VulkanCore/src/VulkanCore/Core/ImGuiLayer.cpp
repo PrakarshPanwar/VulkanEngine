@@ -14,7 +14,9 @@
 #include "imgui_impl_vulkan.h"
 #include "ImGuizmo.h"
 
-#include <glm/gtx/log_base.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/color_space.hpp>
+#include <filesystem>
 
 #define IMGUI_VIEWPORTS 1
 
@@ -169,14 +171,15 @@ namespace VulkanCore {
 
 		// TODO: Better Names of Color Variables or either remove these variables entirely
 		bool squareVal = false;
-		glm::vec3 gammaVal = squareVal ? glm::vec3(2.0f) : glm::vec3(1 / 0.44f);
-		glm::vec3 colorCode1 = glm::pow(glm::vec3(0.11f, 0.105f, 0.11f), gammaVal);
-		glm::vec3 colorCode2 = glm::pow(glm::vec3(0.3f, 0.305f, 0.31f), gammaVal);
-		glm::vec3 colorCode3 = glm::pow(glm::vec3(0.15f, 0.1505f, 0.151f), gammaVal);
-		glm::vec3 colorCode4 = glm::pow(glm::vec3(0.2f, 0.205f, 0.21f), gammaVal);
-		glm::vec3 colorCode5 = glm::pow(glm::vec3(0.38f, 0.3805f, 0.381f), gammaVal);
-		glm::vec3 colorCode6 = glm::pow(glm::vec3(0.28f, 0.2805f, 0.281f), gammaVal);
-		glm::vec3 colorCode7 = glm::pow(glm::vec3(0.08f, 0.08f, 0.08f), gammaVal);
+		float gammaVal = squareVal ? 2.0f : 2.2f;
+
+		glm::vec3 colorCode1 = glm::convertSRGBToLinear(glm::vec3(0.11f, 0.105f, 0.11f), gammaVal);
+		glm::vec3 colorCode2 = glm::convertSRGBToLinear(glm::vec3(0.3f, 0.305f, 0.31f), gammaVal);
+		glm::vec3 colorCode3 = glm::convertSRGBToLinear(glm::vec3(0.15f, 0.1505f, 0.151f), gammaVal);
+		glm::vec3 colorCode4 = glm::convertSRGBToLinear(glm::vec3(0.2f, 0.205f, 0.21f), gammaVal);
+		glm::vec3 colorCode5 = glm::convertSRGBToLinear(glm::vec3(0.38f, 0.3805f, 0.381f), gammaVal);
+		glm::vec3 colorCode6 = glm::convertSRGBToLinear(glm::vec3(0.28f, 0.2805f, 0.281f), gammaVal);
+		glm::vec3 colorCode7 = glm::convertSRGBToLinear(glm::vec3(0.08f, 0.08f, 0.08f), gammaVal);
 
 		colors[ImGuiCol_WindowBg] = ImVec4{ colorCode1.x, colorCode1.y, colorCode1.z, 1.0f };
 
