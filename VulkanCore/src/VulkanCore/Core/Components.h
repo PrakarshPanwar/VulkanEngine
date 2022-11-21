@@ -66,15 +66,15 @@ namespace VulkanCore {
 			: Tag(tag) {}
 	};
 
-	class VulkanMesh;
+	class Mesh;
 
 	struct MeshComponent
 	{
-		std::shared_ptr<VulkanMesh> Mesh;
+		std::shared_ptr<Mesh> Mesh;
 
 		MeshComponent() = default;
 		MeshComponent(const MeshComponent&) = default;
-		MeshComponent(std::shared_ptr<VulkanMesh> mesh)
+		MeshComponent(std::shared_ptr<Mesh> mesh)
 			: Mesh(mesh) {}
 	};
 

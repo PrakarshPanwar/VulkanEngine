@@ -1,6 +1,6 @@
 #pragma once
 #include "Platform/Vulkan/VulkanPipeline.h"
-#include "Platform/Vulkan/VulkanMesh.h"
+#include "Platform/Vulkan/Mesh.h"
 #include "VulkanCore/Core/Shader.h"
 #include "VulkanCore/Renderer/RenderThread.h"
 
@@ -19,7 +19,7 @@ namespace VulkanCore {
 		static void DestroyShaders();
 
 		static void SubmitFullscreenQuad(const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
-		static void RenderMesh(std::shared_ptr<VulkanMesh> mesh);
+		static void RenderMesh(std::shared_ptr<Mesh> mesh);
 
 		static std::shared_ptr<Shader> GetShader(const std::string& name)
 		{

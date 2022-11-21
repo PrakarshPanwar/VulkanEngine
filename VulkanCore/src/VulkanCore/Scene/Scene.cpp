@@ -1,7 +1,7 @@
 #include "vulkanpch.h"
 #include "Scene.h"
 #include "Entity.h"
-#include "Platform/Vulkan/VulkanMesh.h"
+#include "Platform/Vulkan/Mesh.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"

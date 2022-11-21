@@ -1,6 +1,6 @@
 #include "vulkanpch.h"
 #include "VulkanPipeline.h"
-#include "VulkanMesh.h"
+#include "Mesh.h"
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
