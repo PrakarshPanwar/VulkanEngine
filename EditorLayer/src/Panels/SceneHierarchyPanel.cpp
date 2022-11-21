@@ -206,8 +206,8 @@ namespace VulkanCore {
 			}
 		}
 
-		ImGui::SameLine();
-		ImGui::PushItemWidth(-1);
+		//ImGui::SameLine();
+		//ImGui::PushItemWidth(-1);
 
 		// TODO: Add Different Components
 
@@ -227,7 +227,7 @@ namespace VulkanCore {
 			ImGui::EndPopup();
 		}*/
 
-		ImGui::PopItemWidth();
+		//ImGui::PopItemWidth();
 
 		DrawComponent<TransformComponent>("Transform", entity, [](auto& component)
 		{
@@ -240,11 +240,8 @@ namespace VulkanCore {
 
 		DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
 		{
-			ImGuiColorEditFlags colorEditFlags = ImGuiColorEditFlags_PickerHueWheel;
-			if (component.PointLightInstance->Color.r > 1.0f)
-				colorEditFlags |= ImGuiColorEditFlags_HDR;
-
-			ImGui::ColorEdit4("Color", glm::value_ptr(component.PointLightInstance->Color), colorEditFlags);
+			ImGui::ColorEdit3("Color", glm::value_ptr(component.PointLightInstance->Color));
+			ImGui::DragFloat("Intensity", (float*)&component.PointLightInstance->Color.w, 0.01f, 0.0f, 10000.0f);
 		});
 
 		DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)

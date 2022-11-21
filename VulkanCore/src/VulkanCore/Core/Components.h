@@ -91,14 +91,10 @@ namespace VulkanCore {
 	struct PointLightComponent
 	{
 		std::shared_ptr<PointLight> PointLightInstance;
-		float LightIntensity = 1.0f;
 
 		PointLightComponent() = default;
 		PointLightComponent(std::shared_ptr<PointLight> pointLight)
 			: PointLightInstance(pointLight) {}
-
-		PointLightComponent(std::shared_ptr<PointLight> pointLight, float intensity)
-			: PointLightInstance(pointLight), LightIntensity(intensity) {}
 	};
 
 	struct UBCamera

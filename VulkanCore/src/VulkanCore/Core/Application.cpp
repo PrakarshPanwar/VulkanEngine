@@ -1,20 +1,12 @@
 #include "vulkanpch.h"
 #include "Application.h"
 
-#include "Platform/Vulkan/VulkanBuffer.h"
-#include "Platform/Vulkan/VulkanTexture.h"
-
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Core.h"
-#include "VulkanCore/Renderer/Camera.h"
-#include "VulkanCore/Renderer/Renderer.h"
-#include "VulkanCore/Scene/Entity.h"
-#include "VulkanCore/Scene/SceneRenderer.h"
-#include "VulkanCore/Renderer/RenderThread.h"
 
-#include "imgui.h"
-#include "imgui_impl_vulkan.h"
+#include "VulkanCore/Renderer/Renderer.h"
+#include "VulkanCore/Renderer/RenderThread.h"
 
 namespace VulkanCore {
 
