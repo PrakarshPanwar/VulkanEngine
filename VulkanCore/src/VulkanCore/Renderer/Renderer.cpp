@@ -78,7 +78,7 @@ namespace VulkanCore {
 		vkCmdDraw(drawCmd, 3, 1, 0, 0);
 	}
 
-	void Renderer::RenderMesh(std::shared_ptr<VulkanMesh> mesh)
+	void Renderer::RenderMesh(std::shared_ptr<Mesh> mesh)
 	{
 		mesh->Bind(m_CommandBuffers[GetCurrentFrameIndex()]);
 		mesh->Draw(m_CommandBuffers[GetCurrentFrameIndex()]);

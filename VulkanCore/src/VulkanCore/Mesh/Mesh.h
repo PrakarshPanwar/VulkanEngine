@@ -1,6 +1,6 @@
 #pragma once
-#include "VulkanContext.h"
-#include "VulkanBuffer.h"
+#include "Platform/Vulkan/VulkanContext.h"
+#include "Platform/Vulkan/VulkanBuffer.h"
 
 #include <glm/glm.hpp>
 #include <assimp/scene.h>
@@ -47,32 +47,38 @@ namespace VulkanCore {
 		void ProcessMesh(aiMesh* mesh, const aiScene* scene);
 	};
 
-	class VulkanMesh
+	class Mesh
 	{
 	public:
-		VulkanMesh() = default;
-		VulkanMesh(const MeshBuilder& builder);
-		~VulkanMesh();
+		Mesh() = default;
+		Mesh(const MeshBuilder& builder);
+		~Mesh();
 
-		VulkanMesh(const VulkanMesh&) = default;
+		Mesh(const Mesh&) = default;
 
 		void Bind(VkCommandBuffer commandBuffer);
 		void Draw(VkCommandBuffer commandBuffer);
 
+		void SetFilePath(const std::string& filepath) { m_FilePath = filepath; }
+
+		inline std::string& GetFilePath() { return m_FilePath; }
+		inline int GetMaterialID() { return m_MaterialID; }
 		inline uint32_t GetVertexCount() const { return m_VertexCount; }
 		inline uint32_t GetIndexCount() const { return m_IndexCount; }
 
-		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(const std::string& filepath);
-		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(const std::string& filepath, const glm::vec3& modelColor);
-		static std::shared_ptr<VulkanMesh> CreateMeshFromFile(const std::string& filepath, int texID);
-		static std::shared_ptr<VulkanMesh> CreateMeshFromAssimp(const std::string& filepath, int texID);
+		static std::shared_ptr<Mesh> CreateMeshFromFile(const std::string& filepath);
+		static std::shared_ptr<Mesh> CreateMeshFromFile(const std::string& filepath, const glm::vec3& modelColor);
+		static std::shared_ptr<Mesh> CreateMeshFromFile(const std::string& filepath, int texID);
+		static std::shared_ptr<Mesh> CreateMeshFromAssimp(const std::string& filepath, int texID);
 	private:
 		void CreateVertexBuffers(const std::vector<Vertex>& vertices);
 		void CreateIndexBuffers(const std::vector<uint32_t>& indices);
 	private:
+		std::string m_FilePath;
 		std::shared_ptr<VulkanBuffer> m_VertexBuffer;
 		std::shared_ptr<VulkanBuffer> m_IndexBuffer;
 		uint32_t m_VertexCount, m_IndexCount;
+		int m_MaterialID;
 		bool m_HasIndexBuffer = false;
 	};
 
