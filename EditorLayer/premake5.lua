@@ -22,7 +22,8 @@ project "EditorLayer"
 		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.VulkanSDK}",
 		"%{IncludeDir.Assimp}",
-		"%{IncludeDir.ImGui}"
+		"%{IncludeDir.ImGui}",
+		"%{IncludeDir.ImGuizmo}"
 	}
 
 	links { "VulkanCore" }

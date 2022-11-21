@@ -5,16 +5,15 @@
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
+#include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Events/Input.h"
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
-#include "Platform/Vulkan/VulkanMesh.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanContext.h"
 
-#include <imgui_impl_vulkan.h>
 #include <ImGuizmo.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -239,21 +238,21 @@ namespace VulkanCore {
 
 		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
 		CeramicVase.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.2f, 2.5f }, glm::vec3{ 3.5f });
-		CeramicVase.AddComponent<MeshComponent>(VulkanMesh::CreateMeshFromAssimp("assets/models/CeramicVase2K/antique_ceramic_vase_01_2k.obj", 0));
+		CeramicVase.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/CeramicVase2K/antique_ceramic_vase_01_2k.obj", 0));
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
 		FlatPlane.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.3f, 0.0f }, glm::vec3{ 0.5f });
-		FlatPlane.AddComponent<MeshComponent>(VulkanMesh::CreateMeshFromFile("assets/models/FlatPlane.obj", 2));
+		FlatPlane.AddComponent<MeshComponent>(Mesh::CreateMeshFromFile("assets/models/FlatPlane.obj", 2));
 
 		Entity CrateModel = m_Scene->CreateEntity("Wooden Crate");
 		auto& crateTransform = CrateModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 1.5f });
 		crateTransform.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-		CrateModel.AddComponent<MeshComponent>(VulkanMesh::CreateMeshFromAssimp("assets/models/WoodenCrate/WoodenCrate.gltf", 1));
+		CrateModel.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/WoodenCrate/WoodenCrate.gltf", 1));
 
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
 		auto& brassTransform = BrassVase.AddComponent<TransformComponent>(glm::vec3{ 1.5f, 0.0f, 1.5f }, glm::vec3{ 6.0f });
 		brassTransform.Rotation = glm::vec3(glm::radians(90.0f), 0.0f, 0.0f);
-		BrassVase.AddComponent<MeshComponent>(VulkanMesh::CreateMeshFromAssimp("assets/models/BrassVase2K/BrassVase.fbx", 1));
+		BrassVase.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/BrassVase2K/BrassVase.fbx", 1));
 
 		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");
 		auto& blueLightTransform = BluePointLight.AddComponent<TransformComponent>(glm::vec3{ -1.0f, 0.0f, 4.5f }, glm::vec3{ 0.1f });

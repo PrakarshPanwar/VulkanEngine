@@ -1,5 +1,5 @@
 #include "vulkanpch.h"
-#include "VulkanMesh.h"
+#include "Mesh.h"
 
 #include "VulkanCore/Core/HashCombine.h"
 
@@ -36,17 +36,17 @@ namespace std {
 
 namespace VulkanCore {
 
-	VulkanMesh::VulkanMesh(const MeshBuilder& builder)
+	Mesh::Mesh(const MeshBuilder& builder)
 	{
 		CreateVertexBuffers(builder.Vertices);
 		CreateIndexBuffers(builder.Indices);
 	}
 
-	VulkanMesh::~VulkanMesh()
+	Mesh::~Mesh()
 	{
 	}
 
-	void VulkanMesh::Bind(VkCommandBuffer commandBuffer)
+	void Mesh::Bind(VkCommandBuffer commandBuffer)
 	{
 		VkBuffer buffers[] = { m_VertexBuffer->GetBuffer() };
 		VkDeviceSize offsets[] = { 0 };
@@ -57,7 +57,7 @@ namespace VulkanCore {
 			vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
 	}
 
-	void VulkanMesh::Draw(VkCommandBuffer commandBuffer)
+	void Mesh::Draw(VkCommandBuffer commandBuffer)
 	{
 		if (m_HasIndexBuffer)
 			vkCmdDrawIndexed(commandBuffer, m_IndexCount, 1, 0, 0, 0);
@@ -66,7 +66,7 @@ namespace VulkanCore {
 			vkCmdDraw(commandBuffer, m_VertexCount, 1, 0, 0);
 	}
 
-	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromFile(const std::string& filepath)
+	std::shared_ptr<Mesh> Mesh::CreateMeshFromFile(const std::string& filepath)
 	{
 		MeshBuilder builder{};
 		builder.LoadMesh(filepath);
@@ -77,15 +77,15 @@ namespace VulkanCore {
 		VK_CORE_TRACE("Loading Model: {0}", modelFilepath.filename());
 		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
 		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
-		return std::make_shared<VulkanMesh>(builder);
+		return std::make_shared<Mesh>(builder);
 	}
 
-	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromFile(const std::string& filepath, const glm::vec3& modelColor)
+	std::shared_ptr<Mesh> Mesh::CreateMeshFromFile(const std::string& filepath, const glm::vec3& modelColor)
 	{
 		return nullptr;
 	}
 
-	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromFile(const std::string& filepath, int texID)
+	std::shared_ptr<Mesh> Mesh::CreateMeshFromFile(const std::string& filepath, int texID)
 	{
 		MeshBuilder builder{};
 		builder.LoadMesh(filepath, texID);
@@ -97,12 +97,12 @@ namespace VulkanCore {
 		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
 		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
 
-		std::shared_ptr<VulkanMesh> mesh = std::make_shared<VulkanMesh>(builder);
+		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(builder);
 		mesh->m_FilePath = filepath;
 		return mesh;
 	}
 
-	std::shared_ptr<VulkanMesh> VulkanMesh::CreateMeshFromAssimp(const std::string& filepath, int texID)
+	std::shared_ptr<Mesh> Mesh::CreateMeshFromAssimp(const std::string& filepath, int texID)
 	{
 		MeshBuilder builder{};
 		std::filesystem::path modelFilepath = filepath;
@@ -114,12 +114,14 @@ namespace VulkanCore {
 		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
 		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
 
-		std::shared_ptr<VulkanMesh> mesh = std::make_shared<VulkanMesh>(builder);
+		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(builder);
 		mesh->m_FilePath = filepath;
+		mesh->m_MaterialID = texID;
+
 		return mesh;
 	}
 
-	void VulkanMesh::CreateVertexBuffers(const std::vector<Vertex>& vertices)
+	void Mesh::CreateVertexBuffers(const std::vector<Vertex>& vertices)
 	{
 		m_VertexCount = (uint32_t)vertices.size();
 		VK_CORE_ASSERT(m_VertexCount >= 3, "Vertex Count should be at least greater than or equal to 3!");
@@ -143,7 +145,7 @@ namespace VulkanCore {
 		device->CopyBuffer(stagingBuffer.GetBuffer(), m_VertexBuffer->GetBuffer(), bufferSize);
 	}
 
-	void VulkanMesh::CreateIndexBuffers(const std::vector<uint32_t>& indices)
+	void Mesh::CreateIndexBuffers(const std::vector<uint32_t>& indices)
 	{
 		m_IndexCount = (uint32_t)indices.size();
 		m_HasIndexBuffer = m_IndexCount > 0;
