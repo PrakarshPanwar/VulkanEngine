@@ -1,6 +1,8 @@
 #include "SceneHierarchyPanel.h"
 
-#include "Platform/Vulkan/VulkanMesh.h"
+#include "VulkanCore/Mesh/Mesh.h"
+
+#include <filesystem>
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -246,8 +248,41 @@ namespace VulkanCore {
 
 		DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)
 		{
-			ImGui::Text("Vertex Count: %d", component.Mesh->GetVertexCount());
-			ImGui::Text("Index Count: %d", component.Mesh->GetIndexCount());
+			auto& meshFilePath = component.MeshInstance->GetFilePath();
+
+			char buffer[512];
+			memset(buffer, 0, sizeof(buffer));
+			std::strncpy(buffer, meshFilePath.c_str(), sizeof(buffer));
+			if (ImGui::InputText("##MeshFilePath", buffer, sizeof(buffer)))
+			{
+				meshFilePath = std::string(buffer);
+			}
+
+			ImGui::SameLine(0.0f, 11.0f);
+
+			static bool s_ShowMessage = false;
+			if (ImGui::Button("Load"))
+			{
+				if (!std::filesystem::exists(std::filesystem::path(meshFilePath)))
+					s_ShowMessage = true;
+
+				else
+				{
+					std::shared_ptr<Mesh> mesh = Mesh::CreateMeshFromAssimp(meshFilePath, component.MeshInstance->GetMaterialID());
+					mesh->SetFilePath(meshFilePath);
+					component.MeshInstance = mesh;
+
+					s_ShowMessage = false;
+				}
+			}
+
+			if (s_ShowMessage)
+			{
+				ImGui::TextColored(ImVec4{ 0.8f, 0.1f, 0.2f, 1.0f }, "File does not exist!");
+			}
+
+			ImGui::Text("Vertex Count: %d", component.MeshInstance->GetVertexCount());
+			ImGui::Text("Index Count: %d", component.MeshInstance->GetIndexCount());
 		});
 	}
 
