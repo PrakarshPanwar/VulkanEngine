@@ -1,16 +1,11 @@
 #pragma once
-#include "glfw_vulkan.h"
 
 #include "Platform/Windows/WindowsWindow.h"
-#include "Platform/Vulkan/VulkanMesh.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "Platform/Vulkan/VulkanContext.h"
 
-#include "VulkanCore/Scene/Scene.h"
-#include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Events/ApplicationEvent.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
-#include "VulkanCore/Renderer/EditorCamera.h"
 
 #include "ImGuiLayer.h"
 #include "LayerStack.h"

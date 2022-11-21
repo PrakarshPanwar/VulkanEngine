@@ -257,7 +257,7 @@ namespace VulkanCore {
 
 		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");
 		auto& blueLightTransform = BluePointLight.AddComponent<TransformComponent>(glm::vec3{ -1.0f, 0.0f, 4.5f }, glm::vec3{ 0.1f });
-		std::shared_ptr<PointLight> blueLight = std::make_shared<PointLight>(glm::vec4(blueLightTransform.Translation, 1.0f), glm::vec4{ 5.0f, 7.5f, 20.0f, 1.0f });
+		std::shared_ptr<PointLight> blueLight = std::make_shared<PointLight>(glm::vec4(blueLightTransform.Translation, 1.0f), glm::vec4{ 0.2f, 0.3f, 0.8f, 1.0f });
 		BluePointLight.AddComponent<PointLightComponent>(blueLight);
 
 		Entity RedPointLight = m_Scene->CreateEntity("Red Light");
