@@ -11,7 +11,7 @@
 #include <glm/glm.hpp>
 #include "Scene.h"
 
-#define TEST_COMPUTE_SHADER 1
+#define BLOOM_COMPUTE_SHADER 0
 
 namespace VulkanCore {
 

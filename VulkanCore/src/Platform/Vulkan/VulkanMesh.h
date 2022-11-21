@@ -70,6 +70,7 @@ namespace VulkanCore {
 		void CreateVertexBuffers(const std::vector<Vertex>& vertices);
 		void CreateIndexBuffers(const std::vector<uint32_t>& indices);
 	private:
+		std::string m_FilePath;
 		std::shared_ptr<VulkanBuffer> m_VertexBuffer;
 		std::shared_ptr<VulkanBuffer> m_IndexBuffer;
 		uint32_t m_VertexCount, m_IndexCount;
