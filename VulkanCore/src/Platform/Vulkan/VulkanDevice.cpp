@@ -349,7 +349,7 @@ namespace VulkanCore {
 
 		// Might not really be Necessary anymore because device specific Validation Layers
 		// have been deprecated
-		if (m_EnableValidation) 
+		if (VulkanContext::GetCurrentContext()->m_EnableValidation)
 		{
 			createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 			createInfo.ppEnabledLayerNames = validationLayers.data();

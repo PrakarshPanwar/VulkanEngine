@@ -5,8 +5,6 @@
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "Platform/Vulkan/VulkanImage.h"
 
-#include <glm/glm.hpp>
-
 namespace VulkanCore {
 
 	class ImGuiLayer : public Layer
