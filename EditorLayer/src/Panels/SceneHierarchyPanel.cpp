@@ -1,6 +1,6 @@
 #include "SceneHierarchyPanel.h"
 
-#include "Platform/Vulkan/Mesh.h"
+#include "VulkanCore/Mesh/Mesh.h"
 
 #include <filesystem>
 
@@ -248,7 +248,7 @@ namespace VulkanCore {
 
 		DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)
 		{
-			auto& meshFilePath = component.Mesh->GetFilePath();
+			auto& meshFilePath = component.MeshInstance->GetFilePath();
 
 			char buffer[512];
 			memset(buffer, 0, sizeof(buffer));
@@ -268,9 +268,9 @@ namespace VulkanCore {
 
 				else
 				{
-					std::shared_ptr<Mesh> mesh = Mesh::CreateMeshFromAssimp(meshFilePath, component.Mesh->GetMaterialID());
+					std::shared_ptr<Mesh> mesh = Mesh::CreateMeshFromAssimp(meshFilePath, component.MeshInstance->GetMaterialID());
 					mesh->SetFilePath(meshFilePath);
-					component.Mesh = mesh;
+					component.MeshInstance = mesh;
 
 					s_ShowMessage = false;
 				}
@@ -281,8 +281,8 @@ namespace VulkanCore {
 				ImGui::TextColored(ImVec4{ 0.8f, 0.1f, 0.2f, 1.0f }, "File does not exist!");
 			}
 
-			ImGui::Text("Vertex Count: %d", component.Mesh->GetVertexCount());
-			ImGui::Text("Index Count: %d", component.Mesh->GetIndexCount());
+			ImGui::Text("Vertex Count: %d", component.MeshInstance->GetVertexCount());
+			ImGui::Text("Index Count: %d", component.MeshInstance->GetIndexCount());
 		});
 	}
 

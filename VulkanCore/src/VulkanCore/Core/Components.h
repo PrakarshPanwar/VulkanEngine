@@ -70,12 +70,12 @@ namespace VulkanCore {
 
 	struct MeshComponent
 	{
-		std::shared_ptr<Mesh> Mesh;
+		std::shared_ptr<Mesh> MeshInstance;
 
 		MeshComponent() = default;
 		MeshComponent(const MeshComponent&) = default;
 		MeshComponent(std::shared_ptr<Mesh> mesh)
-			: Mesh(mesh) {}
+			: MeshInstance(mesh) {}
 	};
 
 	struct PointLight

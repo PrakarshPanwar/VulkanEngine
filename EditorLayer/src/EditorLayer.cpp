@@ -5,12 +5,12 @@
 #include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
+#include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Events/Input.h"
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
-#include "Platform/Vulkan/Mesh.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanContext.h"
 

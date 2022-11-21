@@ -1,6 +1,6 @@
 #pragma once
 #include "Platform/Vulkan/VulkanPipeline.h"
-#include "Platform/Vulkan/Mesh.h"
+#include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Core/Shader.h"
 #include "VulkanCore/Renderer/RenderThread.h"
 
