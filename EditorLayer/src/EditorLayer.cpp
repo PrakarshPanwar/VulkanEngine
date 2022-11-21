@@ -14,7 +14,6 @@
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanContext.h"
 
-#include <imgui_impl_vulkan.h>
 #include <ImGuizmo.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
