@@ -92,7 +92,9 @@ namespace VulkanCore {
 	{
 		std::shared_ptr<PointLight> PointLightInstance;
 
-		PointLightComponent() = default;
+		PointLightComponent()
+			: PointLightInstance(std::make_shared<PointLight>(glm::vec4{ 0.0f, 0.0f, 0.0f, 1.0f }, glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f })) {}
+
 		PointLightComponent(std::shared_ptr<PointLight> pointLight)
 			: PointLightInstance(pointLight) {}
 	};
