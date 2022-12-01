@@ -4,7 +4,7 @@
 #include "VulkanCore/Core/Shader.h"
 #include "VulkanCore/Renderer/RenderThread.h"
 
-#define USE_RENDER_THREAD 0
+#define USE_RENDER_THREAD 1
 
 namespace VulkanCore {
 
