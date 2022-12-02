@@ -11,7 +11,7 @@
 #include <glm/glm.hpp>
 #include "Scene.h"
 
-#define BLOOM_COMPUTE_SHADER 0
+#define BLOOM_COMPUTE_SHADER 1
 
 namespace VulkanCore {
 
@@ -44,8 +44,8 @@ namespace VulkanCore {
 		void CreateDescriptorSets();
 
 		void GeometryPass();
-		void BloomBlurPass();
 		void CompositePass();
+		void BloomCompute();
 	private:
 		struct LodAndMode
 		{
@@ -60,8 +60,8 @@ namespace VulkanCore {
 
 		struct BloomParams
 		{
-			float Threshold;
-			float Knee;
+			float Threshold = 1.0f;
+			float Knee = 1.0f;
 		};
 	private:
 		std::shared_ptr<Scene> m_Scene;
@@ -82,6 +82,8 @@ namespace VulkanCore {
 		std::vector<VkDescriptorSet> m_PointLightDescriptorSets;
 		std::vector<VkDescriptorSet> m_CompositeDescriptorSets;
 		std::vector<VkDescriptorSet> m_BloomDescriptorSets;
+
+		VkDescriptorSet m_BloomPrefilteredImage;
 
 		// TODO: In future we could have to setup Material Table and Instanced Rendering
 		// Material Resources

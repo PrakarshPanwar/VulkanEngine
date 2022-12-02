@@ -44,9 +44,10 @@ void main()
 {
 	vec3 rColor = texture(u_InputTexture, v_TexCoord).rgb;
 
-//	ivec2 texSize = textureSize(u_InputTexture, 0);
-//	vec2 fTexSize = vec2(float(texSize.x), float(texSize.y));
-//	rColor += UpsampleTent9(u_InputTexture, 0, v_TexCoord, 1.0 / fTexSize, 0.5);
+	ivec2 texSize = textureSize(u_InputTexture, 0);
+	vec2 fTexSize = vec2(float(texSize.x), float(texSize.y));
+	rColor += UpsampleTent9(u_InputTexture, 0, v_TexCoord, 1.0 / fTexSize, 0.5);
+
 	rColor *= v_Exposure;
     rColor = ACESTonemap(rColor);
 
