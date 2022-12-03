@@ -173,7 +173,7 @@ namespace VulkanCore {
 		viewCreateInfo.format = vulkanFormat;
 		viewCreateInfo.subresourceRange.aspectMask = aspectMask;
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
-		viewCreateInfo.subresourceRange.levelCount = 1;
+		viewCreateInfo.subresourceRange.levelCount = m_Specification.MipLevels;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		viewCreateInfo.subresourceRange.layerCount = 1;
 
