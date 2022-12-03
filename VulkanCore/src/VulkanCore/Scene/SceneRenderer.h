@@ -81,7 +81,12 @@ namespace VulkanCore {
 		std::vector<VkDescriptorSet> m_GeometryDescriptorSets;
 		std::vector<VkDescriptorSet> m_PointLightDescriptorSets;
 		std::vector<VkDescriptorSet> m_CompositeDescriptorSets;
-		std::vector<VkDescriptorSet> m_BloomDescriptorSets;
+
+		std::vector<VkDescriptorSet> m_BloomPrefilterSets;
+		std::vector<VkDescriptorSet> m_BloomPingSets;
+		std::vector<VkDescriptorSet> m_BloomPongSets;
+		std::vector<VkDescriptorSet> m_BloomUpsampleFirstSets;
+		std::vector<VkDescriptorSet> m_BloomUpsampleSets;
 
 		VkDescriptorSet m_BloomPrefilteredImage;
 
@@ -94,7 +99,7 @@ namespace VulkanCore {
 		std::vector<std::unique_ptr<VulkanBuffer>> m_BloomParamsUBs{ VulkanSwapChain::MaxFramesInFlight };
 		std::vector<std::unique_ptr<VulkanBuffer>> m_LodUBs{ VulkanSwapChain::MaxFramesInFlight };
 
-		std::shared_ptr<VulkanImage> m_BloomTexture;
+		std::vector<VulkanImage> m_BloomTextures;
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap,
 			m_DiffuseMap2, m_NormalMap2, m_SpecularMap2,
 			m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
