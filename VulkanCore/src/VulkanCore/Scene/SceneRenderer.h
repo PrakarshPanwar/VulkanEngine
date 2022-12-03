@@ -88,7 +88,7 @@ namespace VulkanCore {
 		std::vector<VkDescriptorSet> m_BloomUpsampleFirstSets;
 		std::vector<VkDescriptorSet> m_BloomUpsampleSets;
 
-		VkDescriptorSet m_BloomPrefilteredImage;
+		VkDescriptorSet m_BloomDebugImage;
 
 		// TODO: In future we could have to setup Material Table and Instanced Rendering
 		// Material Resources

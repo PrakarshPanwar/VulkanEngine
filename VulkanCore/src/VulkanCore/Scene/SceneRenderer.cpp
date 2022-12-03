@@ -155,21 +155,28 @@ namespace VulkanCore {
 		
 		m_BloomTextures.reserve(3);
 
+#define USE_MEMORY_BARRIER 0
+	#if USE_MEMORY_BARRIER
 		auto barrierCmd = device->GetCommandBuffer();
+	#endif
 
 		for (int i = 0; i < 3; i++)
 		{
 			VulkanImage& BloomTexture = m_BloomTextures.emplace_back(imageSpec);
 			BloomTexture.Invalidate();
 
+	#if USE_MEMORY_BARRIER
 			Utils::InsertImageMemoryBarrier(barrierCmd, BloomTexture.GetVulkanImageInfo().Image,
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+	#endif
 		}
 
+	#if USE_MEMORY_BARRIER
 		device->FlushCommandBuffer(barrierCmd);
+	#endif
 #endif
 
 		// Textures
@@ -337,18 +344,17 @@ namespace VulkanCore {
 			auto sceneUBInfo = m_ExposureUBs[i]->DescriptorInfo();
 			compDescriptorWriter[i].WriteBuffer(1, &sceneUBInfo);
 
-#if BLOOM_COMPUTE_SHADER
-			VkDescriptorImageInfo imagesInfo = m_BloomTextures[2].GetDescriptorInfo();
-#else
 			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
-#endif
+			VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2].GetDescriptorInfo();
+			
 			compDescriptorWriter[i].WriteImage(0, &imagesInfo);
+			compDescriptorWriter[i].WriteImage(2, &bloomTexInfo);
 
 			bool success = compDescriptorWriter[i].Build(m_CompositeDescriptorSets[i]);
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 		}
 
-		m_BloomPrefilteredImage = ImGuiLayer::AddTexture(m_BloomTextures[2]);
+		m_BloomDebugImage = ImGuiLayer::AddTexture(m_BloomTextures[2]);
 	}
 
 	void SceneRenderer::Release()
@@ -378,7 +384,7 @@ namespace VulkanCore {
 			ImGui::TreePop();
 		}
 
-		ImGui::Image(m_BloomPrefilteredImage, ImGui::GetContentRegionAvail());
+		ImGui::Image(m_BloomDebugImage, ImGui::GetContentRegionAvail());
 		ImGui::End(); // End of Scene Renderer Window
 	}
 
@@ -477,7 +483,7 @@ namespace VulkanCore {
 
 		// Upsample First
 		// TODO: Could have to use VkImageSubresourceRange to set correct mip level
-		m_LodAndMode.LOD = m_BloomTextures[0].GetSpecification().MipLevels - 2;
+		m_LodAndMode.LOD = m_BloomTextures[2].GetSpecification().MipLevels - 2;
 		m_LodAndMode.Mode = 2.0f;
 
 		vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -485,18 +491,19 @@ namespace VulkanCore {
 			&m_BloomUpsampleFirstSets[frameIndex], 0, nullptr);
 
 		bloomMipSize = { m_BloomTextures[0].GetSpecification().Width, m_BloomTextures[0].GetSpecification().Height };
+
 		m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
 		// Upsample Final
-
-		vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-			m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-			&m_BloomUpsampleSets[frameIndex], 0, nullptr);
 
 		for (int i = m_BloomTextures[0].GetSpecification().MipLevels - 2; i >= 0; i--, bloomMipSize /= 2)
 		{
 			m_LodAndMode.LOD = i;
 			m_LodAndMode.Mode = 3.0f;
+
+			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+				m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
+				&m_BloomUpsampleSets[frameIndex], 0, nullptr);
 
 			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 		}

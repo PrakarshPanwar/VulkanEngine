@@ -6,6 +6,7 @@ layout(location = 0) in vec2 v_TexCoord;
 layout(location = 1) in float v_Exposure;
 
 layout(binding = 0) uniform sampler2D u_InputTexture;
+layout(binding = 2) uniform sampler2D u_BloomTexture;
 
 vec3 ReinhardTonemap(vec3 hdrColor)
 {
@@ -44,9 +45,10 @@ void main()
 {
 	vec3 rColor = texture(u_InputTexture, v_TexCoord).rgb;
 
-	ivec2 texSize = textureSize(u_InputTexture, 0);
+	ivec2 texSize = textureSize(u_BloomTexture, 0);
 	vec2 fTexSize = vec2(float(texSize.x), float(texSize.y));
-	rColor += UpsampleTent9(u_InputTexture, 0, v_TexCoord, 1.0 / fTexSize, 0.5);
+	vec3 bloom = UpsampleTent9(u_BloomTexture, 0, v_TexCoord, 1.0 / fTexSize, 0.5);
+	rColor += bloom;
 
 	rColor *= v_Exposure;
     rColor = ACESTonemap(rColor);
