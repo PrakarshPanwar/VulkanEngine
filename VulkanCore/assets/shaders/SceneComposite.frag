@@ -43,15 +43,16 @@ vec3 UpsampleTent9(sampler2D tex, float lod, vec2 uv, vec2 texelSize, float radi
 
 void main()
 {
-	vec3 rColor = texture(u_InputTexture, v_TexCoord).rgb;
+	vec3 color = texture(u_InputTexture, v_TexCoord).rgb;
 
 	ivec2 texSize = textureSize(u_BloomTexture, 0);
 	vec2 fTexSize = vec2(float(texSize.x), float(texSize.y));
 	vec3 bloom = UpsampleTent9(u_BloomTexture, 0, v_TexCoord, 1.0 / fTexSize, 0.5);
-	rColor += bloom;
+	//vec3 bloom = texture(u_BloomTexture, v_TexCoord).rgb;
+	color += bloom;
 
-	rColor *= v_Exposure;
-    rColor = ACESTonemap(rColor);
+	color *= v_Exposure;
+    color = ACESTonemap(color);
 
-	o_Color = vec4(rColor, 1.0);
+	o_Color = vec4(color, 1.0);
 }

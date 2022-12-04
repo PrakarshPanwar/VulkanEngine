@@ -105,6 +105,7 @@ namespace VulkanCore {
 			m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
 
 		glm::ivec2 m_ViewportSize;
+		glm::uvec2 m_BloomMipSize;
 
 		SceneSettings m_SceneSettings;
 		LodAndMode m_LodAndMode;

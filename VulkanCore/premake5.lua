@@ -19,7 +19,8 @@ project "VulkanCore"
 		"vendor/stb_image/**.cpp",
 		"assets/shaders/*.vert",
 		"assets/shaders/*.frag",
-		"assets/shaders/*.geom"
+		"assets/shaders/*.geom",
+		"assets/shaders/*.comp"
 	}
 
 	removefiles {

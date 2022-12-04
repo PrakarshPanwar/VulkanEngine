@@ -35,7 +35,7 @@ layout(set = 0, binding = 4) uniform sampler2D u_SpecularTex[3];
 void main()
 {
 	vec3 diffuseLight = u_PointLight.ambientLightColor.xyz * u_PointLight.ambientLightColor.w;
-	vec3 specularLight = vec3(0.05);
+	vec3 specularLight = vec3(0.0);
 	vec3 cameraPosWorld = u_Camera.invView[3].xyz;
 	vec3 viewDirection = normalize(cameraPosWorld - v_FragPosWorld);
 
