@@ -21,6 +21,18 @@ namespace VulkanCore {
 			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
 		}
 
+		static glm::uvec2 GetMipSize(uint32_t width, uint32_t height, uint32_t level)
+		{
+			while (level != 0)
+			{
+				width /= 2;
+				height /= 2;
+				--level;
+			}
+
+			return glm::uvec2(width, height);
+		}
+
 	}
 
 	SceneRenderer* SceneRenderer::s_Instance = nullptr;
@@ -51,7 +63,7 @@ namespace VulkanCore {
 			FramebufferSpecification geomFramebufferSpec;
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
-			geomFramebufferSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::DEPTH24STENCIL8 };
+			geomFramebufferSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::DEPTH16F };
 			geomFramebufferSpec.Samples = 8;
 
 			RenderPassSpecification geomRenderPassSpec;
@@ -146,18 +158,22 @@ namespace VulkanCore {
 		}
 
 #if BLOOM_COMPUTE_SHADER
+		m_BloomMipSize = { 1920, 1080 };
+		m_BloomMipSize /= 2;
+		m_BloomMipSize += glm::uvec2{ 16 - m_BloomMipSize.x % 16, 16 - m_BloomMipSize.y % 16 };
+
 		ImageSpecification imageSpec = {};
-		imageSpec.Width = 1920;
-		imageSpec.Height = 1080;
+		imageSpec.Width = m_BloomMipSize.x;
+		imageSpec.Height = m_BloomMipSize.y;
 		imageSpec.Format = ImageFormat::RGBA16F;
 		imageSpec.Usage = ImageUsage::Storage;
-		imageSpec.MipLevels = Utils::CalculateMipCount(1920, 1080);
+		imageSpec.MipLevels = Utils::CalculateMipCount(1920, 1080) - 4;
 		
 		m_BloomTextures.reserve(3);
 
-#define USE_MEMORY_BARRIER 0
+#define USE_MEMORY_BARRIER 1
 	#if USE_MEMORY_BARRIER
-		auto barrierCmd = device->GetCommandBuffer();
+		VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 	#endif
 
 		for (int i = 0; i < 3; i++)
@@ -170,7 +186,7 @@ namespace VulkanCore {
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, BloomTexture.GetSpecification().MipLevels, 0, 1 });
 	#endif
 		}
 
@@ -455,11 +471,13 @@ namespace VulkanCore {
 			m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
 			&m_BloomPrefilterSets[frameIndex], 0, nullptr);
 
-		glm::uvec2 bloomMipSize = { m_BloomTextures[0].GetSpecification().Width, m_BloomTextures[0].GetSpecification().Height};
+		uint32_t mips = m_BloomTextures[0].GetSpecification().MipLevels;
+		//glm::uvec2 bloomMipSize = { m_BloomTextures[0].GetSpecification().Width, m_BloomTextures[0].GetSpecification().Height};
+		glm::uvec2 bloomMipSize = m_BloomMipSize;
 
 		m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
-		for (int i = 0; i < m_BloomTextures[0].GetSpecification().MipLevels; i++, bloomMipSize /= 2)
+		for (int i = 0; i < mips; i++, bloomMipSize /= 2)
 		{
 			m_LodAndMode.LOD = i;
 			m_LodAndMode.Mode = 1.0f;
@@ -483,27 +501,28 @@ namespace VulkanCore {
 
 		// Upsample First
 		// TODO: Could have to use VkImageSubresourceRange to set correct mip level
-		m_LodAndMode.LOD = m_BloomTextures[2].GetSpecification().MipLevels - 2;
+		m_LodAndMode.LOD = mips - 1;
 		m_LodAndMode.Mode = 2.0f;
 
 		vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 			m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
 			&m_BloomUpsampleFirstSets[frameIndex], 0, nullptr);
 
-		bloomMipSize = { m_BloomTextures[0].GetSpecification().Width, m_BloomTextures[0].GetSpecification().Height };
+		bloomMipSize = Utils::GetMipSize(m_BloomMipSize.x, m_BloomMipSize.y, mips - 1);
 
 		m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
 		// Upsample Final
+		vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+			m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
+			&m_BloomUpsampleSets[frameIndex], 0, nullptr);
 
-		for (int i = m_BloomTextures[0].GetSpecification().MipLevels - 2; i >= 0; i--, bloomMipSize /= 2)
+		bloomMipSize = m_BloomMipSize;
+
+		for (int i = mips - 2; i >= 0; i--, bloomMipSize /= 2)
 		{
 			m_LodAndMode.LOD = i;
 			m_LodAndMode.Mode = 3.0f;
-
-			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-				m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-				&m_BloomUpsampleSets[frameIndex], 0, nullptr);
 
 			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 		}
