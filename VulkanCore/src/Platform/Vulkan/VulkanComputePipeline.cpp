@@ -30,7 +30,7 @@ namespace VulkanCore {
 			VkPushConstantRange pushConstantRange{};
 			pushConstantRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 			pushConstantRange.offset = 0;
-			pushConstantRange.size = pushConstantSize;
+			pushConstantRange.size = (uint32_t)pushConstantSize;
 
 			std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ descriptorLayout.GetDescriptorSetLayout() };
 

@@ -159,7 +159,7 @@ namespace VulkanCore {
 		{
 			VK_TRACE("Viewport has been Resized!");
 			m_ViewportSize = region;
-			m_SceneRenderer->SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+			m_SceneRenderer->SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 			RecreateSceneDescriptors();
 			m_EditorCamera.SetViewportSize(region.x, region.y);
 		}
