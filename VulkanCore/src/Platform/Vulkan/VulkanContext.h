@@ -48,8 +48,6 @@ namespace VulkanCore {
 		const std::vector<const char*> m_ValidationLayers = { "VK_LAYER_KHRONOS_validation" };
 		const std::vector<const char*> m_DeviceExtensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-			VK_NV_RAY_TRACING_EXTENSION_NAME,
-			VK_NV_FRAMEBUFFER_MIXED_SAMPLES_EXTENSION_NAME,
 			VK_KHR_MAINTENANCE1_EXTENSION_NAME
 		};
 
