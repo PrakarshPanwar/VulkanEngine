@@ -153,9 +153,7 @@ namespace VulkanCore {
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageCreateInfo.format = vulkanFormat;
-		imageCreateInfo.extent.width = m_Specification.Width;
-		imageCreateInfo.extent.height = m_Specification.Height;
-		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.extent = { m_Specification.Width, m_Specification.Height, 1 };
 		imageCreateInfo.arrayLayers = 1;
 		imageCreateInfo.samples = Utils::VulkanSampleCount(m_Specification.Samples);
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
