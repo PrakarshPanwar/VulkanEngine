@@ -83,10 +83,10 @@ namespace VulkanCore {
 		std::vector<VkDescriptorSet> m_CompositeDescriptorSets;
 
 		std::vector<VkDescriptorSet> m_BloomPrefilterSets;
-		std::vector<VkDescriptorSet> m_BloomPingSets;
-		std::vector<VkDescriptorSet> m_BloomPongSets;
+		std::vector<std::vector<VkDescriptorSet>> m_BloomPingSets;
+		std::vector<std::vector<VkDescriptorSet>> m_BloomPongSets;
 		std::vector<VkDescriptorSet> m_BloomUpsampleFirstSets;
-		std::vector<VkDescriptorSet> m_BloomUpsampleSets;
+		std::vector<std::vector<VkDescriptorSet>> m_BloomUpsampleSets;
 
 		VkDescriptorSet m_BloomDebugImage;
 

@@ -1,6 +1,8 @@
 #pragma once
 #include "VulkanContext.h"
 
+#include <glm/glm.hpp>
+
 namespace VulkanCore {
 
 	namespace Utils {
@@ -66,6 +68,7 @@ namespace VulkanCore {
 		void Invalidate();
 		VkImageView CreateImageViewSingleMip(uint32_t mip);
 
+		glm::uvec2 GetMipSize(uint32_t mipLevel);
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
 		inline const VkDescriptorImageInfo& GetDescriptorInfo() const { return m_DescriptorImageInfo; }
 		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
@@ -76,6 +79,8 @@ namespace VulkanCore {
 		VulkanImageInfo m_Info;
 		VkDescriptorImageInfo m_DescriptorImageInfo{};
 		ImageSpecification m_Specification;
+
+		std::vector<VkImageView> m_MipReferences;
 	};
 
 }
