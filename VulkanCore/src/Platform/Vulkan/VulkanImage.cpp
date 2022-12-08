@@ -267,8 +267,22 @@ namespace VulkanCore {
 
 		VkImageView result;
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &result), "Failed to Create Image View!");
+		m_MipReferences.push_back(result);
 
 		return result;
+	}
+
+	glm::uvec2 VulkanImage::GetMipSize(uint32_t mipLevel)
+	{
+		uint32_t width = m_Specification.Width, height = m_Specification.Height;
+		while (mipLevel != 0)
+		{
+			width /= 2;
+			height /= 2;
+			--mipLevel;
+		}
+
+		return { width, height };
 	}
 
 	void VulkanImage::UpdateImageDescriptor()
@@ -292,6 +306,9 @@ namespace VulkanCore {
 		vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
 		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
 		allocator.DestroyImage(m_Info.Image, m_Info.MemoryAlloc);
+
+		for (auto& MipReference : m_MipReferences)
+			vkDestroyImageView(device->GetVulkanDevice(), MipReference, nullptr);
 	}
 
 }
