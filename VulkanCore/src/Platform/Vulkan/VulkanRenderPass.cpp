@@ -138,7 +138,7 @@ namespace VulkanCore {
 		}
 
 		// Color Attachment References
-		for (int i = 0; i < Framebuffer->GetColorAttachments().size(); i++)
+		for (int i = 0; i < Framebuffer->GetColorAttachments().size(); ++i)
 		{
 			VkAttachmentReference colorAttachmentRef = {};
 			colorAttachmentRef.attachment = i;
@@ -149,7 +149,7 @@ namespace VulkanCore {
 		// Resolve Attachment Reference(Only applicable if multisampling is present)
 		if (Utils::IsMultisampled(m_Specification))
 		{
-			for (int i = 0; i < Framebuffer->GetColorAttachments().size(); i++)
+			for (int i = 0; i < Framebuffer->GetColorAttachments().size(); ++i)
 			{
 				VkAttachmentReference colorAttachmentResolveRef = {};
 				colorAttachmentResolveRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
@@ -222,7 +222,7 @@ namespace VulkanCore {
 		// TODO: We may change this in future as there will be multiple allocation/deallocation in
 		// clearValues vector
 		std::vector<VkClearValue> clearValues{ m_AttachmentDescriptions.size() };
-		for (uint32_t i = 0; i < Framebuffer->GetColorAttachments().size(); i++)
+		for (uint32_t i = 0; i < Framebuffer->GetColorAttachments().size(); ++i)
 			clearValues[i].color = { fbSpec.ClearColor.x, fbSpec.ClearColor.y, fbSpec.ClearColor.z, fbSpec.ClearColor.w };
 
 		clearValues[clearValues.size() - 1].depthStencil = { 1.0f, 0 };

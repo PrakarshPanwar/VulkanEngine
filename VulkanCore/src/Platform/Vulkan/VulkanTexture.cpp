@@ -192,7 +192,7 @@ namespace VulkanCore {
 
 		const uint32_t mipLevels = Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height);
 
-		for (uint32_t i = 1; i < mipLevels; i++)
+		for (uint32_t i = 1; i < mipLevels; ++i)
 		{
 			subresourceRange.baseMipLevel = i - 1;
 
@@ -247,16 +247,16 @@ namespace VulkanCore {
 	// -----------------------------TEXTURE CUBE MAPS-----------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------
 
-	VulkanTextureCube::VulkanTextureCube(uint32_t width, uint32_t height)
+	VulkanTextureCube::VulkanTextureCube(uint32_t width, uint32_t height, ImageFormat format)
 	{
 		m_Specification.Width = width;
 		m_Specification.Height = height;
+		m_ReadOnly = false;
 	}
 
 	VulkanTextureCube::VulkanTextureCube(const std::string& filepath, TextureSpecification spec)
 		: m_FilePath(filepath), m_Specification(spec)
 	{
-
 	}
 
 	VulkanTextureCube::~VulkanTextureCube()
@@ -330,8 +330,83 @@ namespace VulkanCore {
 
 		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &sampler, nullptr, &m_Info.Sampler), "Failed to Create Cubemap Image Sampler!");
 
+		// Copy Image Data to cubemap
+		if (!m_FilePath.empty())
+		{
+			std::array<std::filesystem::path, 6> filepathSingleLayer{
+				std::filesystem::path(m_FilePath) / "px.png",
+				std::filesystem::path(m_FilePath) / "nx.png",
+				std::filesystem::path(m_FilePath) / "py.png",
+				std::filesystem::path(m_FilePath) / "ny.png",
+				std::filesystem::path(m_FilePath) / "pz.png",
+				std::filesystem::path(m_FilePath) / "nz.png"
+			};
+
+			VkCommandBuffer copyCmd = device->GetCommandBuffer();
+
+			// TODO: This way is probably inefficient
+			// - Should use SaschaWillems methods of copying Image Data to Cubemap
+			// Copying Image Data per Layer
+			for (int i = 0; i < 6; ++i)
+			{
+				int width, int height, channels;
+				uint8_t* pixelDataPerLayer = stbi_load(filepathSingleLayer[i].string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
+
+				m_Specification.Width = width;
+				m_Specification.Height = height;
+
+				VkDeviceSize imageSize = Utils::GetMemorySize(m_Specification.Format, m_Specification.Width, m_Specification.Height);
+
+				VulkanBuffer stagingBuffer{ imageSize, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
+
+				stagingBuffer.Map();
+				stagingBuffer.WriteToBuffer(pixelDataPerLayer, imageSize);
+				stagingBuffer.Unmap();
+
+				VkBufferImageCopy region{};
+				region.bufferOffset = 0;
+				region.bufferRowLength = 0;
+				region.bufferImageHeight = 0;
+
+				region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				region.imageSubresource.mipLevel = 0;
+				region.imageSubresource.baseArrayLayer = i;
+				region.imageSubresource.layerCount = 1;
+
+				region.imageOffset = { 0, 0, 0 };
+				region.imageExtent = { (uint32_t)width, (uint32_t)height, 1 };
+
+				vkCmdCopyBufferToImage(copyCmd,
+					stagingBuffer.GetBuffer(),
+					m_Info.Image,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					1,
+					&region);
+
+				free(pixelDataPerLayer);
+			}
+
+			if (m_Specification.GenerateMips)
+				GenerateMipMaps();
+
+			else
+			{
+				VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 6 };
+
+				Utils::InsertImageMemoryBarrier(copyCmd, m_Info.Image,
+					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					subresourceRange);
+			}
+
+			device->FlushCommandBuffer(copyCmd);
+		}
+
 		m_DescriptorImageInfo.imageView = m_Info.ImageView;
 		m_DescriptorImageInfo.sampler = m_Info.Sampler;
+		m_DescriptorImageInfo.imageLayout = m_ReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
 	}
 
 	void VulkanTextureCube::Release()
@@ -425,13 +500,13 @@ namespace VulkanCore {
 
 		Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
 			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_ReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
 			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 			subresourceRange);
 
 		device->FlushCommandBuffer(blitCmd);
 
-		m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		m_DescriptorImageInfo.imageLayout = m_ReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
 	}
 
 }

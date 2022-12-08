@@ -42,7 +42,7 @@ namespace VulkanCore {
 	{
 	public:
 		VulkanTextureCube(const std::string& filepath, TextureSpecification spec = {});
-		VulkanTextureCube(uint32_t width, uint32_t height);
+		VulkanTextureCube(uint32_t width, uint32_t height, ImageFormat format = ImageFormat::RGBA32F);
 
 		~VulkanTextureCube();
 
@@ -57,6 +57,8 @@ namespace VulkanCore {
 		TextureSpecification m_Specification;
 		VulkanImageInfo m_Info;
 		VkDescriptorImageInfo m_DescriptorImageInfo;
+
+		bool m_ReadOnly = true;
 	};
 
 }
