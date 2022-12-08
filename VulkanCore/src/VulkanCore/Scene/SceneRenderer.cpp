@@ -30,7 +30,7 @@ namespace VulkanCore {
 				--level;
 			}
 
-			return glm::uvec2(width, height);
+			return { width, height };
 		}
 
 	}
