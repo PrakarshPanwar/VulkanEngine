@@ -64,6 +64,7 @@ namespace VulkanCore {
 		~VulkanImage();
 
 		void Invalidate();
+		VkImageView CreateImageViewSingleMip(uint32_t mip);
 
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
 		inline const VkDescriptorImageInfo& GetDescriptorInfo() const { return m_DescriptorImageInfo; }

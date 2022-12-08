@@ -248,6 +248,29 @@ namespace VulkanCore {
 		UpdateImageDescriptor();
 	}
 
+	VkImageView VulkanImage::CreateImageViewSingleMip(uint32_t mip)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
+
+		VkImageViewCreateInfo viewCreateInfo{};
+		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewCreateInfo.image = m_Info.Image;
+		viewCreateInfo.format = vulkanFormat;
+		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewCreateInfo.subresourceRange.baseMipLevel = mip;
+		viewCreateInfo.subresourceRange.levelCount = 1;
+		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		viewCreateInfo.subresourceRange.layerCount = 1;
+
+		VkImageView result;
+		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &result), "Failed to Create Image View!");
+
+		return result;
+	}
+
 	void VulkanImage::UpdateImageDescriptor()
 	{
 		if (Utils::IsDepthFormat(m_Specification.Format))
