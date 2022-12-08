@@ -185,7 +185,7 @@ namespace VulkanCore {
 			VulkanSwapChain::MaxFramesInFlight,
 			{ *m_GeometryPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-		for (int i = 0; i < m_GeometryDescriptorSets.size(); i++)
+		for (int i = 0; i < m_GeometryDescriptorSets.size(); ++i)
 		{
 			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
 			geomDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
@@ -205,7 +205,7 @@ namespace VulkanCore {
 			VulkanSwapChain::MaxFramesInFlight,
 			{ *m_PointLightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-		for (int i = 0; i < m_PointLightDescriptorSets.size(); i++)
+		for (int i = 0; i < m_PointLightDescriptorSets.size(); ++i)
 		{
 			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
 			pointLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
@@ -220,7 +220,7 @@ namespace VulkanCore {
 			VulkanSwapChain::MaxFramesInFlight,
 			{ *m_BloomPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-		for (int i = 0; i < m_BloomDescriptorSets.size(); i++)
+		for (int i = 0; i < m_BloomDescriptorSets.size(); ++i)
 		{
 			auto outputImageInfo = m_BloomTexture->GetDescriptorInfo();
 			computeDemoDescriptorWriter[i].WriteImage(0, &outputImageInfo);
@@ -241,7 +241,7 @@ namespace VulkanCore {
 			VulkanSwapChain::MaxFramesInFlight,
 			{ *m_CompositePipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-		for (int i = 0; i < m_CompositeDescriptorSets.size(); i++)
+		for (int i = 0; i < m_CompositeDescriptorSets.size(); ++i)
 		{
 			auto sceneUBInfo = m_ExposureUBs[i]->DescriptorInfo();
 			compDescriptorWriter[i].WriteBuffer(1, &sceneUBInfo);
