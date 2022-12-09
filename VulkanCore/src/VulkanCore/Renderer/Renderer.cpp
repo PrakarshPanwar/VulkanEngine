@@ -60,11 +60,30 @@ namespace VulkanCore {
 		m_Shaders["PointLight"] = Utils::MakeShader("PointLight");
 		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
 		m_Shaders["Bloom"] = Utils::MakeShader("Bloom");
+		m_Shaders["Skybox"] = Utils::MakeShader("Skybox");
 	}
 
 	void Renderer::DestroyShaders()
 	{
 		m_Shaders.clear();
+	}
+
+	void Renderer::RenderSkybox(const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<Mesh>& mesh, const std::vector<VkDescriptorSet>& descriptorSet)
+	{
+		auto drawCmd = m_CommandBuffers[GetCurrentFrameIndex()];
+		auto dstSet = descriptorSet[GetCurrentFrameIndex()];
+
+		pipeline->Bind(drawCmd);
+
+		vkCmdBindDescriptorSets(drawCmd,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipeline->GetVulkanPipelineLayout(),
+			0, 1, &dstSet,
+			0, nullptr);
+
+		// Cube/Spherical Mesh
+		mesh->Bind(drawCmd);
+		mesh->Draw(drawCmd);
 	}
 
 	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)

@@ -261,6 +261,8 @@ namespace VulkanCore {
 
 	VulkanTextureCube::~VulkanTextureCube()
 	{
+		if (m_Info.Image)
+			Release();
 	}
 
 	void VulkanTextureCube::Invalidate()
@@ -268,6 +270,21 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 
 		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
+
+		// This process is done to get correct texture dimensions
+		{
+			std::filesystem::path facePath = m_FilePath;
+			facePath /= "px.png";
+
+			int width, height, channels;
+			uint8_t* pixelData = stbi_load(facePath.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
+
+			m_Specification.Width = width;
+			m_Specification.Height = height;
+
+			free(pixelData);
+		}
+
 		uint32_t mipCount = Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height);
 
 		VulkanAllocator allocator("TextureCube");
@@ -333,75 +350,121 @@ namespace VulkanCore {
 		// Copy Image Data to cubemap
 		if (!m_FilePath.empty())
 		{
-			std::array<std::filesystem::path, 6> filepathSingleLayer{
-				std::filesystem::path(m_FilePath) / "px.png",
-				std::filesystem::path(m_FilePath) / "nx.png",
-				std::filesystem::path(m_FilePath) / "py.png",
-				std::filesystem::path(m_FilePath) / "ny.png",
-				std::filesystem::path(m_FilePath) / "pz.png",
-				std::filesystem::path(m_FilePath) / "nz.png"
+			std::filesystem::path textureCubeDirectory = m_FilePath;
+			std::array<std::filesystem::path, 6> layerFilepath{
+				textureCubeDirectory / "px.png",
+				textureCubeDirectory / "nx.png",
+				textureCubeDirectory / "py.png",
+				textureCubeDirectory / "ny.png",
+				textureCubeDirectory / "pz.png",
+				textureCubeDirectory / "nz.png"
 			};
+
+			// Setting Texture Image to optimal layout
+			{
+				VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+
+				VkImageSubresourceRange subresourceRange{};
+				subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				subresourceRange.baseMipLevel = 0;
+				subresourceRange.levelCount = mipCount;
+				subresourceRange.baseArrayLayer = 0;
+				subresourceRange.layerCount = 6;
+
+				Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
+					0, VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					subresourceRange);
+
+				device->FlushCommandBuffer(barrierCmd);
+			}
+
+			// Copying Cubemap Image Data to Vulkan Image
+			std::array<uint8_t*, 6> pixelData{};
+			for (uint32_t i = 0; i < pixelData.size(); ++i)
+			{
+				int width, height, channels;
+				pixelData[i] = stbi_load(layerFilepath[i].string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
+			}
+
+			VkDeviceSize imageSize = Utils::GetMemorySize(m_Specification.Format, m_Specification.Width, m_Specification.Height);
+
+			VulkanBuffer stagingBuffer{ imageSize * 6, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
+
+			std::array<VkDeviceSize, 6> byteOffsets{};
+			VkDeviceSize byteOffset = 0;
+
+			stagingBuffer.Map();
+
+			for (int i = 0; i < pixelData.size(); ++i)
+			{
+				stagingBuffer.WriteToBuffer(pixelData[i], imageSize, byteOffset);
+				byteOffset = imageSize * i;
+			}
+
+			for (int i = 0; i < byteOffsets.size(); ++i)
+			{
+				if (i == 0)
+					byteOffsets[i] = 0;
+				else
+					byteOffsets[i] += imageSize + byteOffsets[i - 1];
+			}
+
+			for (uint8_t* pixels : pixelData)
+				free(pixels);
+
+			std::array<VkBufferImageCopy, 6> bufferCopyRegions;
+			for (int i = 0; i < byteOffsets.size(); ++i)
+			{
+				VkBufferImageCopy bufferCopyRegion{};
+				bufferCopyRegion.bufferOffset = byteOffsets[i];
+				bufferCopyRegion.bufferRowLength = 0;
+				bufferCopyRegion.bufferImageHeight = 0;
+
+				bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				bufferCopyRegion.imageSubresource.mipLevel = 0;
+				bufferCopyRegion.imageSubresource.baseArrayLayer = i;
+				bufferCopyRegion.imageSubresource.layerCount = 1;
+
+				bufferCopyRegion.imageOffset = { 0, 0, 0 };
+				bufferCopyRegion.imageExtent = { m_Specification.Width, m_Specification.Height, 1 };
+				bufferCopyRegions[i] = bufferCopyRegion;
+			}
 
 			VkCommandBuffer copyCmd = device->GetCommandBuffer();
 
-			// TODO: This way is probably inefficient
-			// - Should use SaschaWillems methods of copying Image Data to Cubemap
-			// Copying Image Data per Layer
-			for (int i = 0; i < 6; ++i)
-			{
-				int width, int height, channels;
-				uint8_t* pixelDataPerLayer = stbi_load(filepathSingleLayer[i].string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
+			vkCmdCopyBufferToImage(copyCmd,
+				stagingBuffer.GetBuffer(),
+				m_Info.Image,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				(uint32_t)bufferCopyRegions.size(),
+				bufferCopyRegions.data()
+			);
 
-				m_Specification.Width = width;
-				m_Specification.Height = height;
+			stagingBuffer.Unmap();
 
-				VkDeviceSize imageSize = Utils::GetMemorySize(m_Specification.Format, m_Specification.Width, m_Specification.Height);
-
-				VulkanBuffer stagingBuffer{ imageSize, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
-
-				stagingBuffer.Map();
-				stagingBuffer.WriteToBuffer(pixelDataPerLayer, imageSize);
-				stagingBuffer.Unmap();
-
-				VkBufferImageCopy region{};
-				region.bufferOffset = 0;
-				region.bufferRowLength = 0;
-				region.bufferImageHeight = 0;
-
-				region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				region.imageSubresource.mipLevel = 0;
-				region.imageSubresource.baseArrayLayer = i;
-				region.imageSubresource.layerCount = 1;
-
-				region.imageOffset = { 0, 0, 0 };
-				region.imageExtent = { (uint32_t)width, (uint32_t)height, 1 };
-
-				vkCmdCopyBufferToImage(copyCmd,
-					stagingBuffer.GetBuffer(),
-					m_Info.Image,
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-					1,
-					&region);
-
-				free(pixelDataPerLayer);
-			}
+			device->FlushCommandBuffer(copyCmd);
 
 			if (m_Specification.GenerateMips)
 				GenerateMipMaps();
 
 			else
 			{
-				VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 6 };
+				VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
-				Utils::InsertImageMemoryBarrier(copyCmd, m_Info.Image,
+				VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, mipCount, 0, 6 };
+
+				Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 					subresourceRange);
+			
+				device->FlushCommandBuffer(barrierCmd);
 			}
 
-			device->FlushCommandBuffer(copyCmd);
 		}
 
 		m_DescriptorImageInfo.imageView = m_Info.ImageView;

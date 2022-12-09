@@ -46,6 +46,7 @@ namespace VulkanCore {
 		void GeometryPass();
 		void BloomBlurPass();
 		void CompositePass();
+		void SkyboxPass();
 	private:
 		struct LodAndMode
 		{
@@ -74,6 +75,7 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanPipeline> m_GeometryPipeline;
 		std::shared_ptr<VulkanPipeline> m_PointLightPipeline;
 		std::shared_ptr<VulkanPipeline> m_CompositePipeline;
+		std::shared_ptr<VulkanPipeline> m_SkyboxPipeline;
 		std::shared_ptr<VulkanComputePipeline> m_BloomPipeline;
 
 		// TODO: Setup VulkanMaterial to do this
@@ -82,6 +84,7 @@ namespace VulkanCore {
 		std::vector<VkDescriptorSet> m_PointLightDescriptorSets;
 		std::vector<VkDescriptorSet> m_CompositeDescriptorSets;
 		std::vector<VkDescriptorSet> m_BloomDescriptorSets;
+		std::vector<VkDescriptorSet> m_SkyboxDescriptorSets;
 
 		// TODO: In future we could have to setup Material Table and Instanced Rendering
 		// Material Resources
@@ -96,6 +99,10 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap,
 			m_DiffuseMap2, m_NormalMap2, m_SpecularMap2,
 			m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
+
+		// Skybox Resources
+		std::shared_ptr<VulkanTextureCube> m_CubemapTexture;
+		std::shared_ptr<Mesh> m_SkyboxMesh;
 
 		glm::ivec2 m_ViewportSize;
 
