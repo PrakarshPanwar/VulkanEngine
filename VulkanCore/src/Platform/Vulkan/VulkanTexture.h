@@ -46,9 +46,9 @@ namespace VulkanCore {
 
 		~VulkanTextureCube();
 
-		inline const VkDescriptorImageInfo& GetDescriptorImsgeInfo() const { return m_DescriptorImageInfo; }
-	private:
 		void Invalidate();
+		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_DescriptorImageInfo; }
+	private:
 		void Release();
 		void GenerateMipMaps();
 	private:

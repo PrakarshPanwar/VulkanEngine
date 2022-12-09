@@ -18,6 +18,7 @@ namespace VulkanCore {
 		static void BuildShaders();
 		static void DestroyShaders();
 
+		static void RenderSkybox(const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<Mesh>& mesh, const std::vector<VkDescriptorSet>& descriptorSet);
 		static void SubmitFullscreenQuad(const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
 		static void RenderMesh(std::shared_ptr<Mesh> mesh);
 

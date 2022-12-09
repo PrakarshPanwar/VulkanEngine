@@ -14,6 +14,59 @@
 
 namespace VulkanCore {
 
+	namespace Utils {
+
+		static std::shared_ptr<Mesh> CreateCubeModel()
+		{
+			MeshBuilder modelBuilder{};
+
+			modelBuilder.Vertices = {
+
+				// Left Face
+				{ { -1.0f, -1.0f, -1.0f }, { 0.9f, 0.9f, 0.9f } },
+				{ { -1.0f,  1.0f,  1.0f }, { 0.9f, 0.9f, 0.9f } },
+				{ { -1.0f, -1.0f,  1.0f }, { 0.9f, 0.9f, 0.9f } },
+				{ { -1.0f,  1.0f, -1.0f }, { 0.9f, 0.9f, 0.9f } },
+
+				// Right Face (Yellow)
+				{ {  1.0f, -1.0f, -1.0f }, { 0.8f, 0.8f, 0.1f } },
+				{ {  1.0f,  1.0f,  1.0f }, { 0.8f, 0.8f, 0.1f } },
+				{ {  1.0f, -1.0f,  1.0f }, { 0.8f, 0.8f, 0.1f } },
+				{ {  1.0f,  1.0f, -1.0f }, { 0.8f, 0.8f, 0.1f } },
+
+				// Top Face (Orange, Remember Y-Axis points down)
+				{ { -1.0f, -1.0f, -1.0f }, { 0.9f, 0.6f, 0.1f } },
+				{ {  1.0f, -1.0f,  1.0f }, { 0.9f, 0.6f, 0.1f } },
+				{ { -1.0f, -1.0f,  1.0f }, { 0.9f, 0.6f, 0.1f } },
+				{ {  1.0f, -1.0f, -1.0f }, { 0.9f, 0.6f, 0.1f } },
+
+				// Bottom Face (Red)
+				{ { -1.0f,  1.0f, -1.0f }, { 0.8f, 0.1f, 0.1f } },
+				{ {  1.0f,  1.0f,  1.0f }, { 0.8f, 0.1f, 0.1f } },
+				{ { -1.0f,  1.0f,  1.0f }, { 0.8f, 0.1f, 0.1f } },
+				{ {  1.0f,  1.0f, -1.0f }, { 0.8f, 0.1f, 0.1f } },
+
+				// Nose Face (Blue)
+				{ { -1.0f, -1.0f,  1.0f }, { 0.1f, 0.1f, 0.8f } },
+				{ {  1.0f,  1.0f,  1.0f }, { 0.1f, 0.1f, 0.8f } },
+				{ { -1.0f,  1.0f,  1.0f }, { 0.1f, 0.1f, 0.8f } },
+				{ {  1.0f, -1.0f,  1.0f }, { 0.1f, 0.1f, 0.8f } },
+
+				// Tail Face (green)
+				{ { -1.0f, -1.0f, -1.0f }, { 0.1f, 0.8f, 0.1f } },
+				{ {  1.0f,  1.0f, -1.0f }, { 0.1f, 0.8f, 0.1f } },
+				{ { -1.0f,  1.0f, -1.0f }, { 0.1f, 0.8f, 0.1f } },
+				{ {  1.0f, -1.0f, -1.0f }, { 0.1f, 0.8f, 0.1f } }
+			};
+
+			modelBuilder.Indices = { 0,  1,  2,  0,  3,  1,  4,  5,  6,  4,  7,  5,  8,  9,  10, 8,  11, 9,
+							  12, 13, 14, 12, 15, 13, 16, 17, 18, 16, 19, 17, 20, 21, 22, 20, 23, 21 };
+
+			return std::make_shared<Mesh>(modelBuilder);
+		}
+
+	}
+
 	SceneRenderer* SceneRenderer::s_Instance = nullptr;
 
 	SceneRenderer::SceneRenderer(std::shared_ptr<Scene> scene)
@@ -81,6 +134,16 @@ namespace VulkanCore {
 			compPipelineSpec.DepthWrite = false;
 
 			m_CompositePipeline = std::make_shared<VulkanPipeline>(compPipelineSpec);
+		}
+
+		// Skybox Pipeline
+		{
+			PipelineSpecification skyboxPipelineSpec;
+			skyboxPipelineSpec.pShader = Renderer::GetShader("Skybox");
+			skyboxPipelineSpec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
+			skyboxPipelineSpec.RenderPass = m_GeometryPipeline->GetSpecification().RenderPass;
+
+			m_SkyboxPipeline = std::make_shared<VulkanPipeline>(skyboxPipelineSpec);
 		}
 
 #if BLOOM_COMPUTE_SHADER
@@ -161,6 +224,14 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
 		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
 
+		TextureSpecification cubemapTexSpec;
+		cubemapTexSpec.Format = ImageFormat::RGBA8_NORM;
+		cubemapTexSpec.GenerateMips = false;
+		m_CubemapTexture = std::make_shared<VulkanTextureCube>("assets/cubemaps/SnowyPark", cubemapTexSpec);
+		m_CubemapTexture->Invalidate();
+
+		m_SkyboxMesh = Utils::CreateCubeModel();
+
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
 		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
 		DiffuseMaps.push_back(m_DiffuseMap2->GetDescriptorImageInfo());
@@ -179,6 +250,7 @@ namespace VulkanCore {
 		m_PointLightDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_CompositeDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_BloomDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_SkyboxDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		// Geometry Descriptors
 		std::vector<VulkanDescriptorWriter> geomDescriptorWriter(
@@ -256,6 +328,23 @@ namespace VulkanCore {
 			bool success = compDescriptorWriter[i].Build(m_CompositeDescriptorSets[i]);
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 		}
+
+		// Skybox Descriptors
+		std::vector<VulkanDescriptorWriter> skyboxDescriptorWriter(
+			VulkanSwapChain::MaxFramesInFlight,
+			{ *m_SkyboxPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
+
+		for (int i = 0; i < m_SkyboxDescriptorSets.size(); ++i)
+		{
+			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
+			skyboxDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+
+			VkDescriptorImageInfo imageInfo = m_CubemapTexture->GetDescriptorImageInfo();
+			skyboxDescriptorWriter[i].WriteImage(1, &imageInfo);
+
+			bool success = skyboxDescriptorWriter[i].Build(m_SkyboxDescriptorSets[i]);
+			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+		}
 	}
 
 	void SceneRenderer::Release()
@@ -308,6 +397,7 @@ namespace VulkanCore {
 #if BLOOM_COMPUTE_SHADER
 		BloomBlurPass();
 #endif
+		SkyboxPass();
 		CompositePass();
 	}
 
@@ -316,6 +406,13 @@ namespace VulkanCore {
 		Renderer::BeginRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
 		Renderer::SubmitFullscreenQuad(m_CompositePipeline, m_CompositeDescriptorSets);
 		Renderer::EndRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
+	}
+
+	void SceneRenderer::SkyboxPass()
+	{
+		Renderer::BeginRenderPass(m_SkyboxPipeline->GetSpecification().RenderPass);
+		Renderer::RenderSkybox(m_SkyboxPipeline, m_SkyboxMesh, m_SkyboxDescriptorSets);
+		Renderer::EndRenderPass(m_SkyboxPipeline->GetSpecification().RenderPass);
 	}
 
 	void SceneRenderer::GeometryPass()
