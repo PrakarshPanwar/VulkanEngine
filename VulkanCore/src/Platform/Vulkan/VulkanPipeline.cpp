@@ -148,7 +148,7 @@ namespace VulkanCore {
 			pipelineConfig.DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 			pipelineConfig.DepthStencilInfo.depthTestEnable = spec.DepthTest ? VK_TRUE : VK_FALSE;
 			pipelineConfig.DepthStencilInfo.depthWriteEnable = spec.DepthWrite ? VK_TRUE : VK_FALSE;
-			pipelineConfig.DepthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+			pipelineConfig.DepthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 			pipelineConfig.DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
 			pipelineConfig.DepthStencilInfo.minDepthBounds = 0.0f;  // Optional
 			pipelineConfig.DepthStencilInfo.maxDepthBounds = 1.0f;  // Optional

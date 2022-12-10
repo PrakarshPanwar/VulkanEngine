@@ -14,7 +14,8 @@ layout(location = 0) out vec3 v_TexCoord;
 void main()
 {
 	v_TexCoord = a_Position;
+	mat4 viewMatrix = mat4(mat3(u_Camera.view));
 
-	vec4 position = u_Camera.projection * u_Camera.view * vec4(a_Position.xyz, 0.1);
-	gl_Position = position;
+	vec4 position = u_Camera.projection * viewMatrix * vec4(a_Position.xyz, 1.0);
+	gl_Position = position.xyww;
 }
