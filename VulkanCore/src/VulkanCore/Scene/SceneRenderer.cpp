@@ -22,45 +22,48 @@ namespace VulkanCore {
 
 			modelBuilder.Vertices = {
 
-				// Left Face
-				{ { -1.0f, -1.0f, -1.0f }, { 0.9f, 0.9f, 0.9f } },
-				{ { -1.0f,  1.0f,  1.0f }, { 0.9f, 0.9f, 0.9f } },
-				{ { -1.0f, -1.0f,  1.0f }, { 0.9f, 0.9f, 0.9f } },
-				{ { -1.0f,  1.0f, -1.0f }, { 0.9f, 0.9f, 0.9f } },
+				{ { -1.0f,  1.0f, -1.0f } },
+				{ { -1.0f, -1.0f, -1.0f } },
+				{ {  1.0f, -1.0f, -1.0f } },
+				{ {  1.0f, -1.0f, -1.0f } },
+				{ {  1.0f,  1.0f, -1.0f } },
+				{ { -1.0f,  1.0f, -1.0f } },
 
-				// Right Face (Yellow)
-				{ {  1.0f, -1.0f, -1.0f }, { 0.8f, 0.8f, 0.1f } },
-				{ {  1.0f,  1.0f,  1.0f }, { 0.8f, 0.8f, 0.1f } },
-				{ {  1.0f, -1.0f,  1.0f }, { 0.8f, 0.8f, 0.1f } },
-				{ {  1.0f,  1.0f, -1.0f }, { 0.8f, 0.8f, 0.1f } },
+				{ { -1.0f, -1.0f,  1.0f } },
+				{ { -1.0f, -1.0f, -1.0f } },
+				{ { -1.0f,  1.0f, -1.0f } },
+				{ { -1.0f,  1.0f, -1.0f } },
+				{ { -1.0f,  1.0f,  1.0f } },
+				{ { -1.0f, -1.0f,  1.0f } },
 
-				// Top Face (Orange, Remember Y-Axis points down)
-				{ { -1.0f, -1.0f, -1.0f }, { 0.9f, 0.6f, 0.1f } },
-				{ {  1.0f, -1.0f,  1.0f }, { 0.9f, 0.6f, 0.1f } },
-				{ { -1.0f, -1.0f,  1.0f }, { 0.9f, 0.6f, 0.1f } },
-				{ {  1.0f, -1.0f, -1.0f }, { 0.9f, 0.6f, 0.1f } },
+				{ {  1.0f, -1.0f, -1.0f } },
+				{ {  1.0f, -1.0f,  1.0f } },
+				{ {  1.0f,  1.0f,  1.0f } },
+				{ {  1.0f,  1.0f,  1.0f } },
+				{ {  1.0f,  1.0f, -1.0f } },
+				{ {  1.0f, -1.0f, -1.0f } },
 
-				// Bottom Face (Red)
-				{ { -1.0f,  1.0f, -1.0f }, { 0.8f, 0.1f, 0.1f } },
-				{ {  1.0f,  1.0f,  1.0f }, { 0.8f, 0.1f, 0.1f } },
-				{ { -1.0f,  1.0f,  1.0f }, { 0.8f, 0.1f, 0.1f } },
-				{ {  1.0f,  1.0f, -1.0f }, { 0.8f, 0.1f, 0.1f } },
+				{ { -1.0f, -1.0f,  1.0f } },
+				{ { -1.0f,  1.0f,  1.0f } },
+				{ {  1.0f,  1.0f,  1.0f } },
+				{ {  1.0f,  1.0f,  1.0f } },
+				{ {  1.0f, -1.0f,  1.0f } },
+				{ { -1.0f, -1.0f,  1.0f } },
 
-				// Nose Face (Blue)
-				{ { -1.0f, -1.0f,  1.0f }, { 0.1f, 0.1f, 0.8f } },
-				{ {  1.0f,  1.0f,  1.0f }, { 0.1f, 0.1f, 0.8f } },
-				{ { -1.0f,  1.0f,  1.0f }, { 0.1f, 0.1f, 0.8f } },
-				{ {  1.0f, -1.0f,  1.0f }, { 0.1f, 0.1f, 0.8f } },
+				{ { -1.0f,  1.0f, -1.0f } },
+				{ {  1.0f,  1.0f, -1.0f } },
+				{ {  1.0f,  1.0f,  1.0f } },
+				{ {  1.0f,  1.0f,  1.0f } },
+				{ { -1.0f,  1.0f,  1.0f } },
+				{ { -1.0f,  1.0f, -1.0f } },
 
-				// Tail Face (green)
-				{ { -1.0f, -1.0f, -1.0f }, { 0.1f, 0.8f, 0.1f } },
-				{ {  1.0f,  1.0f, -1.0f }, { 0.1f, 0.8f, 0.1f } },
-				{ { -1.0f,  1.0f, -1.0f }, { 0.1f, 0.8f, 0.1f } },
-				{ {  1.0f, -1.0f, -1.0f }, { 0.1f, 0.8f, 0.1f } }
+				{ { -1.0f, -1.0f, -1.0f } },
+				{ { -1.0f, -1.0f,  1.0f } },
+				{ {  1.0f, -1.0f, -1.0f } },
+				{ {  1.0f, -1.0f, -1.0f } },
+				{ { -1.0f, -1.0f,  1.0f } },
+				{ {  1.0f, -1.0f,  1.0f } }
 			};
-
-			modelBuilder.Indices = { 0,  1,  2,  0,  3,  1,  4,  5,  6,  4,  7,  5,  8,  9,  10, 8,  11, 9,
-							  12, 13, 14, 12, 15, 13, 16, 17, 18, 16, 19, 17, 20, 21, 22, 20, 23, 21 };
 
 			return std::make_shared<Mesh>(modelBuilder);
 		}
@@ -225,8 +228,7 @@ namespace VulkanCore {
 		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
 
 		TextureSpecification cubemapTexSpec;
-		cubemapTexSpec.Format = ImageFormat::RGBA8_NORM;
-		cubemapTexSpec.GenerateMips = false;
+		cubemapTexSpec.Format = ImageFormat::RGBA8_UNORM;
 		m_CubemapTexture = std::make_shared<VulkanTextureCube>("assets/cubemaps/SnowyPark", cubemapTexSpec);
 		m_CubemapTexture->Invalidate();
 
@@ -397,7 +399,6 @@ namespace VulkanCore {
 #if BLOOM_COMPUTE_SHADER
 		BloomBlurPass();
 #endif
-		SkyboxPass();
 		CompositePass();
 	}
 
@@ -408,19 +409,15 @@ namespace VulkanCore {
 		Renderer::EndRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
 	}
 
-	void SceneRenderer::SkyboxPass()
-	{
-		Renderer::BeginRenderPass(m_SkyboxPipeline->GetSpecification().RenderPass);
-		Renderer::RenderSkybox(m_SkyboxPipeline, m_SkyboxMesh, m_SkyboxDescriptorSets);
-		Renderer::EndRenderPass(m_SkyboxPipeline->GetSpecification().RenderPass);
-	}
-
 	void SceneRenderer::GeometryPass()
 	{
 		Renderer::BeginRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
 
 		m_Scene->OnUpdateGeometry(m_SceneCommandBuffers, m_GeometryPipeline, m_GeometryDescriptorSets);
 		m_Scene->OnUpdateLights(m_SceneCommandBuffers, m_PointLightPipeline, m_PointLightDescriptorSets);
+
+		// Rendering Skybox
+		Renderer::RenderSkybox(m_SkyboxPipeline, m_SkyboxMesh, m_SkyboxDescriptorSets);
 
 		Renderer::EndRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
 	}

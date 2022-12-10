@@ -20,6 +20,7 @@ namespace VulkanCore {
 			{
 			case ImageFormat::RGBA8_SRGB:	   return VK_FORMAT_R8G8B8A8_SRGB;
 			case ImageFormat::RGBA8_NORM:	   return VK_FORMAT_R8G8B8A8_SNORM;
+			case ImageFormat::RGBA8_UNORM:	   return VK_FORMAT_R8G8B8A8_UNORM;
 			case ImageFormat::RGBA16F:		   return VK_FORMAT_R16G16B16A16_SFLOAT;
 			case ImageFormat::RGBA32F:		   return VK_FORMAT_R32G32B32A32_SFLOAT;
 			case ImageFormat::DEPTH24STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
@@ -53,6 +54,7 @@ namespace VulkanCore {
 			{
 			case ImageFormat::RGBA8_SRGB: return width * height * 4;
 			case ImageFormat::RGBA8_NORM: return width * height * 4;
+			case ImageFormat::RGBA8_UNORM: return width * height * 4;
 			case ImageFormat::RGBA16F: return width * height * 4 * sizeof(uint16_t);
 			case ImageFormat::RGBA32F: return width * height * 4 * sizeof(float);
 			default:
@@ -386,6 +388,8 @@ namespace VulkanCore {
 			{
 				int width, height, channels;
 				pixelData[i] = stbi_load(layerFilepath[i].string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
+
+				VK_CORE_ASSERT(pixelData[i], "Could not find filepath: {0}", layerFilepath[i].string());
 			}
 
 			VkDeviceSize imageSize = Utils::GetMemorySize(m_Specification.Format, m_Specification.Width, m_Specification.Height);
@@ -401,7 +405,7 @@ namespace VulkanCore {
 			for (int i = 0; i < pixelData.size(); ++i)
 			{
 				stagingBuffer.WriteToBuffer(pixelData[i], imageSize, byteOffset);
-				byteOffset = imageSize * i;
+				byteOffset += imageSize;
 			}
 
 			for (int i = 0; i < byteOffsets.size(); ++i)
@@ -499,8 +503,8 @@ namespace VulkanCore {
 			mipSubRange.layerCount = 1;
 
 			Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
-				0, VK_ACCESS_TRANSFER_WRITE_BIT,
-				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				mipSubRange);
 		}

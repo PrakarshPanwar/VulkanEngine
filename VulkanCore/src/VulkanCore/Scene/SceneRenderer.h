@@ -46,7 +46,6 @@ namespace VulkanCore {
 		void GeometryPass();
 		void BloomBlurPass();
 		void CompositePass();
-		void SkyboxPass();
 	private:
 		struct LodAndMode
 		{
