@@ -261,7 +261,7 @@ namespace VulkanCore {
 		viewCreateInfo.format = vulkanFormat;
 		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		viewCreateInfo.subresourceRange.baseMipLevel = mip;
-		viewCreateInfo.subresourceRange.levelCount = 1;
+		viewCreateInfo.subresourceRange.levelCount = m_Specification.MipLevels - mip;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		viewCreateInfo.subresourceRange.layerCount = 1;
 

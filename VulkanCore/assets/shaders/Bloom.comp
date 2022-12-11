@@ -1,6 +1,6 @@
 #version 460 core
 
-layout(binding = 0, rgba16f) writeonly uniform image2D o_Image;
+layout(binding = 0, rgba16f) restrict writeonly uniform image2D o_Image;
 
 layout(binding = 1) uniform sampler2D u_BloomTexture;
 layout(binding = 2) uniform sampler2D u_Texture;
