@@ -285,14 +285,15 @@ namespace VulkanCore {
 			bool success = bloomDescriptorWriter[i].Build(m_BloomPrefilterSets[i]);
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 
-			m_BloomPingSets[i].resize(mipCount);
-			m_BloomPongSets[i].resize(mipCount);
+			m_BloomPingSets[i].resize(mipCount - 1);
+			m_BloomPongSets[i].resize(mipCount - 1);
 			for (int j = 1; j < mipCount; ++j)
 			{
 				// Set B: Downsampling(Ping)
 				// Binding 0(o_Image): BloomTex[1]
 				// Binding 1(u_Texture): BloomTex[0]
 				// Binding 2(u_BloomTexture): RenderTex
+				int currentIdx = j - 1;
 
 				outputImageInfo = m_BloomTextures[1].GetDescriptorInfo();
 				outputImageInfo.imageView = m_BloomTextures[1].CreateImageViewSingleMip(j);
@@ -301,7 +302,7 @@ namespace VulkanCore {
 				texInfo = m_BloomTextures[0].GetDescriptorInfo();
 				bloomDescriptorWriter[i].WriteImage(1, &texInfo);
 
-				success = bloomDescriptorWriter[i].Build(m_BloomPingSets[i][j]);
+				success = bloomDescriptorWriter[i].Build(m_BloomPingSets[i][currentIdx]);
 				VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 
 				// Set C: Downsampling(Pong)
@@ -316,7 +317,7 @@ namespace VulkanCore {
 				texInfo = m_BloomTextures[1].GetDescriptorInfo();
 				bloomDescriptorWriter[i].WriteImage(1, &texInfo);
 
-				success = bloomDescriptorWriter[i].Build(m_BloomPongSets[i][j]);
+				success = bloomDescriptorWriter[i].Build(m_BloomPongSets[i][currentIdx]);
 				VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 			}
 
@@ -483,30 +484,31 @@ namespace VulkanCore {
 
 		for (int i = 1; i < mips; i++)
 		{
-			m_LodAndMode.LOD = i - 1;
+			m_LodAndMode.LOD = float(i - 1);
 			m_LodAndMode.Mode = 1.0f;
+			int currentIdx = i - 1;
 
 			// Downsample(Ping)
 			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 				m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-				&m_BloomPingSets[frameIndex][i], 0, nullptr);
+				&m_BloomPingSets[frameIndex][currentIdx], 0, nullptr);
 
 			bloomMipSize = m_BloomTextures[0].GetMipSize(i);
 			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
-			m_LodAndMode.LOD = i;
+			m_LodAndMode.LOD = (float)i;
 
 			// Downsample(Pong)
 			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 				m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-				&m_BloomPongSets[frameIndex][i], 0, nullptr);
+				&m_BloomPongSets[frameIndex][currentIdx], 0, nullptr);
 
 			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 		}
 
 		// Upsample First
 		// TODO: Could have to use VkImageSubresourceRange to set correct mip level
-		m_LodAndMode.LOD = mips - 2;
+		m_LodAndMode.LOD = float(mips - 2);
 		m_LodAndMode.Mode = 2.0f;
 
 		vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -519,7 +521,7 @@ namespace VulkanCore {
 		// Upsample Final
 		for (int i = mips - 2; i >= 0; --i)
 		{
-			m_LodAndMode.LOD = i;
+			m_LodAndMode.LOD = (float)i;
 			m_LodAndMode.Mode = 3.0f;
 
 			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
