@@ -1,0 +1,70 @@
+#version 460 core
+
+layout(binding = 0, rgba32f) writeonly uniform imageCube o_CubeMap;
+layout(binding = 1) uniform sampler2D u_EquirectangularTex;
+
+const vec2 cubemapSize = vec2(1024.0, 1024.0);
+const vec2 invAtan = vec2(0.1591, 0.3183);
+vec2 SampleSphericalMap(vec3 v)
+{
+	vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+	uv *= invAtan;
+	uv += 0.5;
+	return uv;
+}
+
+float max3(vec3 v) 
+{
+    return max(max(v.x, v.y), v.z);
+}
+
+ivec3 TexCoordToCube(vec3 texCoord, vec2 cubemapSize)
+{
+    vec3 abst = abs(texCoord);
+    texCoord /= max3(abst);
+
+    float cubeFace;
+    vec2 uvCoord;
+    if (abst.x > abst.y && abst.x > abst.z) 
+    {
+        // x major
+        float negx = step(texCoord.x, 0.0);
+        uvCoord = mix(-texCoord.zy, vec2(texCoord.z, -texCoord.y), negx);
+        cubeFace = negx;
+    } 
+    else if (abst.y > abst.z) 
+    {
+        // y major
+        float negy = step(texCoord.y, 0.0);
+        uvCoord = mix(texCoord.xz, vec2(texCoord.x, -texCoord.z), negy);
+        cubeFace = 2.0 + negy;
+    } 
+    else 
+    {
+        // z major
+        float negz = step(texCoord.z, 0.0);
+        uvCoord = mix(vec2(texCoord.x, -texCoord.y), -texCoord.xy, negz);
+        cubeFace = 4.0 + negz;
+    }
+    uvCoord = (uvCoord + 1.0) * 0.5; // 0..1
+    uvCoord = uvCoord * cubemapSize;
+    uvCoord = clamp(uvCoord, vec2(0.0), cubemapSize - vec2(1.0));
+
+    return ivec3(ivec2(uvCoord), int(cubeFace));
+}
+
+layout(local_size_x = 16, local_size_y = 16) in;
+void main()
+{
+	vec3 invocID = vec3(gl_GlobalInvocationID);
+    vec2 texCoords = vec2(float(invocID.x) / cubemapSize.x, float(invocID.y) / cubemapSize.y);
+	texCoords += (1.0 / cubemapSize) * 0.5;
+
+    ivec3 cubeCoord = TexCoordToCube(ivec3(texCoords, invocID.z), cubemapSize);
+	vec2 uv = SampleSphericalMap(normalize(cubeCoord));
+
+	vec4 color = texture(u_EquirectangularTex, uv);
+	color.a = 1.0;
+
+	imageStore(o_CubeMap, ivec3(gl_GlobalInvocationID), color);
+}
