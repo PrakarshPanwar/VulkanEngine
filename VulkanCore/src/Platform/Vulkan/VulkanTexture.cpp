@@ -78,10 +78,11 @@ namespace VulkanCore {
 #endif
 	}
 
-	VulkanTexture::VulkanTexture(uint32_t width, uint32_t height)
+	VulkanTexture::VulkanTexture(uint32_t width, uint32_t height, ImageFormat format)
 	{
 		m_Specification.Width = width;
 		m_Specification.Height = height;
+		m_Specification.Format = format;
 
 		Invalidate();
 	}
@@ -98,8 +99,17 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		int width, height, channels; // TODO: Ask for HDR Texture
-		uint8_t* pixelData = stbi_load(m_FilePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+		int width, height, channels;
+		uint8_t* pixelData = nullptr;
+
+		if (stbi_is_hdr(m_FilePath.c_str()))
+		{
+			m_Specification.Format = ImageFormat::RGBA32F;
+			pixelData = (uint8_t*)stbi_loadf(m_FilePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+		}
+
+		else
+			pixelData = stbi_load(m_FilePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
 		m_Specification.Width = width;
 		m_Specification.Height = height;
@@ -253,6 +263,8 @@ namespace VulkanCore {
 	{
 		m_Specification.Width = width;
 		m_Specification.Height = height;
+		m_Specification.Format = format;
+
 		m_ReadOnly = false;
 	}
 
@@ -274,6 +286,7 @@ namespace VulkanCore {
 		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
 
 		// This process is done to get correct texture dimensions
+		if (!m_FilePath.empty())
 		{
 			std::filesystem::path facePath = m_FilePath;
 			facePath /= "px.png";
@@ -469,6 +482,21 @@ namespace VulkanCore {
 				device->FlushCommandBuffer(barrierCmd);
 			}
 
+		}
+
+		else
+		{
+			VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+
+			VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, mipCount, 0, 6 };
+
+			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
+				0, VK_ACCESS_SHADER_READ_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				subresourceRange);
+
+			device->FlushCommandBuffer(barrierCmd);
 		}
 
 		m_DescriptorImageInfo.imageView = m_Info.ImageView;

@@ -2,9 +2,11 @@
 #include "VulkanRenderer.h"
 
 #include "../Core/ImGuiLayer.h"
+#include "../Core/Application.h"
 #include "../Scene/SceneRenderer.h"
 #include "Renderer.h"
 #include "Platform/Vulkan/VulkanContext.h"
+#include "Platform/Vulkan/VulkanDescriptor.h"
 
 namespace VulkanCore {
 
@@ -137,6 +139,47 @@ namespace VulkanCore {
 	{
 		auto renderPass = SceneRenderer::GetSceneRenderer()->GetRenderPass();
 		Renderer::EndRenderPass(renderPass);
+	}
+
+	std::shared_ptr<VulkanTextureCube> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+		const uint32_t cubemapSize = 1024;
+
+		std::shared_ptr<VulkanTexture> equirectTex = std::make_shared<VulkanTexture>(filepath);
+		std::shared_ptr<VulkanTextureCube> cubeMap = std::make_shared<VulkanTextureCube>(1024, 1024, ImageFormat::RGBA32F);
+		cubeMap->Invalidate();
+
+		auto equirectShader = Renderer::GetShader("EquirectangularToCubeMap");
+		auto vulkanDescriptorPool = Application::Get()->GetVulkanDescriptorPool();
+
+		std::shared_ptr<VulkanComputePipeline> equirectToCubeMapPipeline = std::make_shared<VulkanComputePipeline>(equirectShader);
+
+		VkDescriptorSet equirectSet;
+		VulkanDescriptorWriter equirectSetWriter(*equirectToCubeMapPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool);
+
+		VkDescriptorImageInfo cubeMapImageInfo = cubeMap->GetDescriptorImageInfo();
+		equirectSetWriter.WriteImage(0, &cubeMapImageInfo);
+
+		VkDescriptorImageInfo equirecTexInfo = equirectTex->GetDescriptorImageInfo();
+		equirectSetWriter.WriteImage(1, &equirecTexInfo);
+
+		equirectSetWriter.Build(equirectSet);
+
+		VkCommandBuffer dispatchCmd = device->GetCommandBuffer();
+
+		vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+			equirectToCubeMapPipeline->GetVulkanPipelineLayout(), 0, 1,
+			&equirectSet, 0, nullptr);
+
+		equirectToCubeMapPipeline->Bind(dispatchCmd);
+
+		for (int i = 0; i < 6; ++i)
+			equirectToCubeMapPipeline->Dispatch(dispatchCmd, cubemapSize / 16, cubemapSize / 16, 6);
+
+		device->FlushCommandBuffer(dispatchCmd);
+
+		return cubeMap;
 	}
 
 	void VulkanRenderer::CreateCommandBuffers()
