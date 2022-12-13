@@ -103,9 +103,9 @@ namespace VulkanCore {
 
 			// TODO: We have to add multiple blending attachments as
 			// there could multiple be RenderPass attachments
-			pipelineConfig.ColorBlendAttachments.resize(Framebuffer->GetColorAttachments().size());
+			pipelineConfig.ColorBlendAttachments.resize(Framebuffer->GetColorAttachmentsTextureSpec().size());
 
-			for (int i = 0; i < Framebuffer->GetColorAttachments().size(); i++)
+			for (int i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); i++)
 			{
 				pipelineConfig.ColorBlendAttachments[i].colorWriteMask =
 					VK_COLOR_COMPONENT_R_BIT |
