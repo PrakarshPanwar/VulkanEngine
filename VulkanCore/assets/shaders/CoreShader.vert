@@ -14,22 +14,22 @@ layout(location = 4) out flat int v_TexIndex;
 
 layout(push_constant) uniform Model
 {
-	mat4 modelMatrix;
-	mat4 normalMatrix;
+	mat4 ModelMatrix;
+	mat4 NormalMatrix;
 } u_Model;
 
 layout(set = 0, binding = 0) uniform Camera
 {
-	mat4 projection;
-	mat4 view;
-	mat4 invView;
+	mat4 Projection;
+	mat4 View;
+	mat4 InvView;
 } u_Camera;
 
 void main()
 {
-	vec4 positionWorld = u_Model.modelMatrix * vec4(a_Position, 1.0);
-	gl_Position = u_Camera.projection * u_Camera.view * positionWorld;
-	v_FragNormalWorld = normalize(mat3(u_Model.normalMatrix) * a_Normal);
+	vec4 positionWorld = u_Model.ModelMatrix * vec4(a_Position, 1.0);
+	gl_Position = u_Camera.Projection * u_Camera.View * positionWorld;
+	v_FragNormalWorld = normalize(mat3(u_Model.NormalMatrix) * a_Normal);
 	v_FragPosWorld = positionWorld.xyz;
 	v_FragColor = a_FragColor;
 	v_FragTexCoord = a_TexCoord;
