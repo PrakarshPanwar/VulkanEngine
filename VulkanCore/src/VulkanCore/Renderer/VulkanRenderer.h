@@ -51,6 +51,9 @@ namespace VulkanCore {
 		std::unique_ptr<VulkanSwapChain> m_SwapChain;
 
 		std::vector<VkCommandBuffer> m_CommandBuffers;
+		std::vector<VkCommandBuffer> m_SecondaryCommandBuffers;
+		std::array<VkCommandBuffer, 2> m_ExecuteCommandBuffers;
+
 		VkQueryPool m_QueryPool;
 		uint32_t m_CurrentImageIndex;
 		int m_CurrentFrameIndex = 0;

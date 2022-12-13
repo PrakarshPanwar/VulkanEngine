@@ -30,17 +30,13 @@ namespace VulkanCore {
 		{
 			{
 				std::unique_lock<std::mutex> entryLock(m_RTMutex);
-
-				while (!m_RTShutDown && m_RTQueue.empty())
-					m_RTCondVar.wait(entryLock);
+				m_RTCondVar.wait(entryLock, [] { return m_RTShutDown || !m_RTQueue.empty(); });
 
 				if (m_RTQueue.empty())
 				{
 					VK_CORE_WARN("Render Thread(ID: {}) Terminates", m_RenderThread.get_id());
 					return;
 				}
-
-				VK_CORE_WARN("Render Thread(ID: {}) performs Task", m_RenderThread.get_id());
 
 				JobWork = std::move(m_RTQueue.front());
 				m_RTQueue.erase(m_RTQueue.begin());
@@ -49,6 +45,25 @@ namespace VulkanCore {
 			// Do the job without holding any locks
 			JobWork();
 		}
+	}
+
+	void RenderThread::Wait()
+	{
+		{
+			std::unique_lock<std::mutex> waitLock(m_RTMutex);
+			m_RTCondVar.wait(waitLock, [] { return m_RTQueue.empty(); });
+		}
+	}
+
+	void RenderThread::WaitAndSet()
+	{
+		{
+			std::unique_lock<std::mutex> waitAndSetLock(m_RTMutex);
+			m_RTShutDown = true;
+			m_RTCondVar.notify_one();
+		}
+
+		m_RTShutDown = false;
 	}
 
 	void RenderThread::WaitandDestroy()
@@ -62,6 +77,14 @@ namespace VulkanCore {
 
 		if (m_RenderThread.joinable())
 			m_RenderThread.join();
+	}
+
+	// This process should take place in Render Thread
+	void RenderThread::NotifyMainThread()
+	{
+		{
+			m_RTCondVar.notify_one();
+		}
 	}
 
 }
