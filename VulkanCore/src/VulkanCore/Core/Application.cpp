@@ -105,30 +105,25 @@ namespace VulkanCore {
 
 	void Application::Run()
 	{
-#if !USE_RENDER_THREAD
-		RenderThread::WaitandDestroy();
-#endif
 		m_AppTimer.reset();
 
 		while (m_Running)
 		{
 			m_Window->OnUpdate();
 
-			Renderer::Submit([this]()
+			if (auto commandBuffer = m_Renderer->BeginFrame())
 			{
-				if (auto commandBuffer = m_Renderer->BeginFrame())
-				{
-					m_Renderer->BeginSwapChainRenderPass(commandBuffer);
+				m_Renderer->BeginSwapChainRenderPass(commandBuffer);
 
-					m_ImGuiLayer->ImGuiBegin();
-					for (Layer* layer : m_LayerStack)
-						layer->OnImGuiRender();
-					m_ImGuiLayer->ImGuiRenderandEnd(commandBuffer);
+				m_ImGuiLayer->ImGuiBegin();
+				Renderer::Submit([this]() { RenderImGui(); });
+				Renderer::Submit([this]() { m_ImGuiLayer->ImGuiEnd(); });
 
-					m_Renderer->EndSwapChainRenderPass(commandBuffer);
-					m_Renderer->EndFrame();
-				}
-			});
+				RenderThread::Wait();
+
+				m_Renderer->EndSwapChainRenderPass(commandBuffer);
+				m_Renderer->EndFrame();
+			}
 
 			if (auto commandBuffer = m_Renderer->BeginScene())
 			{
@@ -141,9 +136,7 @@ namespace VulkanCore {
 			m_Renderer->FinalQueueSubmit();
 		}
 
-#if USE_RENDER_THREAD
 		RenderThread::WaitandDestroy();
-#endif
 	}
 
 	void Application::OnEvent(Event& e)
@@ -182,6 +175,12 @@ namespace VulkanCore {
 	{
 		m_Renderer->RecreateSwapChain();
 		return true;
+	}
+
+	void Application::RenderImGui()
+	{
+		for (Layer* layer : m_LayerStack)
+			layer->OnImGuiRender();
 	}
 
 }

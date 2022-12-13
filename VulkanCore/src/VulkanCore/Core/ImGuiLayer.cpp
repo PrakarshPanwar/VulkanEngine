@@ -8,6 +8,7 @@
 
 #include "VulkanCore/Core/Assert.h"
 #include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -35,6 +36,8 @@ namespace VulkanCore {
 
 	void ImGuiLayer::OnAttach()
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, 1000);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000);
@@ -50,6 +53,15 @@ namespace VulkanCore {
 
 		m_ImGuiGlobalPool = descriptorPoolBuilder.Build();
 
+		m_ImGuiCmdBuffers.resize(VulkanSwapChain::MaxFramesInFlight);
+
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+		allocInfo.commandPool = device->GetRenderThreadCommandPool();
+		allocInfo.commandBufferCount = (uint32_t)m_ImGuiCmdBuffers.size();
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_ImGuiCmdBuffers.data()), "Failed to Allocate ImGui Secondary Command Buffers!");
+
 		ImGui::CreateContext();
 
 		ImGuiIO& io = ImGui::GetIO();
@@ -61,7 +73,6 @@ namespace VulkanCore {
 		GLFWwindow* window = (GLFWwindow*)Application::Get()->GetWindow()->GetNativeWindow();
 		ImGui_ImplGlfw_InitForVulkan(window, true);
 
-		auto device = VulkanContext::GetCurrentDevice();
 		const auto vulkanInstance = VulkanContext::GetCurrentContext()->m_VkInstance;
 
 		ImGui_ImplVulkan_InitInfo init_info = {};
@@ -75,7 +86,6 @@ namespace VulkanCore {
 		init_info.CheckVkResultFn = CheckVkResult;
 		init_info.MSAASamples = device->GetMSAASampleCount();
 
-		//ImGui::StyleColorsDark();
 		ImGuiStyle& style = ImGui::GetStyle();
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
@@ -119,13 +129,30 @@ namespace VulkanCore {
 		ImGuizmo::BeginFrame();
 	}
 
-	void ImGuiLayer::ImGuiRenderandEnd(VkCommandBuffer commandBuffer)
+	void ImGuiLayer::ImGuiEnd()
 	{
+		int currentFrameIndex = Renderer::GetCurrentFrameIndex();
+		auto swapChain = VulkanSwapChain::GetSwapChain();
+		auto commandBuffer = m_ImGuiCmdBuffers[currentFrameIndex];
+
 #if IMGUI_VIEWPORTS
 		ImGuiIO& io = ImGui::GetIO();
 		Application* app = Application::Get();
 		io.DisplaySize = ImVec2{ (float)app->GetWindow()->GetWidth(), (float)app->GetWindow()->GetHeight() };
 #endif
+
+		VkCommandBufferInheritanceInfo inheritanceInfo{};
+		inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+		inheritanceInfo.renderPass = swapChain->GetRenderPass();
+		inheritanceInfo.framebuffer = swapChain->GetFramebuffer(currentFrameIndex);
+
+		VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		cmdBufInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+		cmdBufInfo.pInheritanceInfo = &inheritanceInfo;
+
+		VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &cmdBufInfo), "Failed to Begin Command Buffer!");
+
 		ImGui::Render();
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
@@ -138,11 +165,19 @@ namespace VulkanCore {
 			glfwMakeContextCurrent(backup_current_context);
 		}
 #endif
+
+		vkEndCommandBuffer(commandBuffer);
+
+		RenderThread::NotifyMainThread();
 	}
 
 	void ImGuiLayer::ShutDown()
 	{
+		auto device = VulkanContext::GetCurrentDevice();
 		ImGui_ImplVulkan_Shutdown();
+
+		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetRenderThreadCommandPool(),
+			static_cast<uint32_t>(m_ImGuiCmdBuffers.size()), m_ImGuiCmdBuffers.data());
 	}
 
 	VkDescriptorSet ImGuiLayer::AddTexture(const VulkanImage& Image)
