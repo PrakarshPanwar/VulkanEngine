@@ -74,6 +74,11 @@ namespace VulkanCore {
 		return {};
 	}
 
+	const std::vector<VulkanImage>& VulkanFramebuffer::GetDepthResolveAttachment() const
+	{
+		return m_Specification.ReadDepthTexture ? m_DepthAttachmentResolve : std::vector<VulkanImage>{};
+	}
+
 	void VulkanFramebuffer::Invalidate()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
@@ -159,7 +164,7 @@ namespace VulkanCore {
 		{
 			m_DepthAttachment.reserve(VulkanSwapChain::MaxFramesInFlight);
 
-			for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
+			for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
 			{
 				ImageSpecification spec;
 				spec.Width = m_Specification.Width;
@@ -170,6 +175,35 @@ namespace VulkanCore {
 
 				auto& depthImage = m_DepthAttachment.emplace_back(spec);
 				depthImage.Invalidate();
+			}
+
+			if (m_Specification.ReadDepthTexture)
+			{
+				m_DepthAttachmentResolve.reserve(VulkanSwapChain::MaxFramesInFlight);
+
+				for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
+				{
+					ImageSpecification spec;
+					spec.Width = m_Specification.Width;
+					spec.Height = m_Specification.Height;
+					spec.Samples = 1;
+					spec.Format = m_DepthAttachmentSpecification.ImgFormat;
+					spec.Usage = ImageUsage::Attachment;
+
+					auto& depthImage = m_DepthAttachmentResolve.emplace_back(spec);
+					depthImage.Invalidate();
+
+					// Depth Resolve Transition
+					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+
+					Utils::InsertImageMemoryBarrier(barrierCmd, depthImage.GetVulkanImageInfo().Image,
+						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+						VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
+
+					device->FlushCommandBuffer(barrierCmd);
+				}
 			}
 		}
 	}

@@ -136,6 +136,20 @@ namespace VulkanCore {
 			depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 			attachmentDescriptions.push_back(depthAttachment);
+
+			if (Framebuffer->GetSpecification().ReadDepthTexture)
+			{
+				VkAttachmentDescription depthAttachmentResolve = {};
+				depthAttachmentResolve.format = Utils::VulkanImageFormat(Framebuffer->GetDepthAttachmentTextureSpec().ImgFormat);
+				depthAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				depthAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+				depthAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				depthAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+				depthAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+				depthAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				depthAttachmentResolve.flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
+				attachmentDescriptions.push_back(depthAttachmentResolve);
+			}
 		}
 
 		// Color Attachment References
@@ -172,6 +186,10 @@ namespace VulkanCore {
 
 		// TODO: We are using single resolve attachment but,
 		// I think we need a vector of it for multiple color attachments
+		// 
+		// Another problem is after array of color resolves we are going to encounter
+		// Multisampled Depth Attachment, to solve this we have to copy resolve attachments
+		// to a new array and then store resolved depth attachment there
 		subpass.pDepthStencilAttachment = Framebuffer->HasDepthAttachment() ? &depthAttachmentRef : nullptr;
 		subpass.pResolveAttachments = Utils::IsMultisampled(m_Specification) ?
 			attachmentRefs.data() + Framebuffer->GetColorAttachmentsTextureSpec().size() : nullptr;

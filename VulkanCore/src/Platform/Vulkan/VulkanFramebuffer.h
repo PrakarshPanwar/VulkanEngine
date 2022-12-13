@@ -46,6 +46,7 @@ namespace VulkanCore {
 		inline const FramebufferTextureSpecification& GetDepthAttachmentTextureSpec() const { return m_DepthAttachmentSpecification; }
 		inline bool HasDepthAttachment() { return m_DepthAttachmentSpecification; }
 		const std::vector<VulkanImage>& GetResolveAttachment() const;
+		const std::vector<VulkanImage>& GetDepthResolveAttachment() const;
 
 		void Invalidate();
 		void CreateFramebuffer(VkRenderPass renderPass); // TODO: This could be removed from here
@@ -59,6 +60,7 @@ namespace VulkanCore {
 
 		std::vector<std::vector<VulkanImage>> m_ColorAttachments;
 		std::vector<VulkanImage> m_DepthAttachment;
+		std::vector<VulkanImage> m_DepthAttachmentResolve;
 
 		std::vector<VkFramebuffer> m_Framebuffers;
 
