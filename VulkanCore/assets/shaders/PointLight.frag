@@ -5,9 +5,9 @@ layout(location = 0) out vec4 o_Color;
 
 layout(push_constant) uniform PointLight
 {
-	vec4 position;
-	vec4 color;
-	float radius;
+	vec4 Position;
+	vec4 Color;
+	float Radius;
 } u_PointLight;
 
 const float M_PI = 3.1415926538;
@@ -19,5 +19,5 @@ void main()
 		discard;
 
 	float cosDis = 0.5 * (cos(dis * M_PI) + 1.0);
-	o_Color = vec4(u_PointLight.color.xyz + cosDis, cosDis);
+	o_Color = vec4(u_PointLight.Color.xyz + cosDis, cosDis);
 }
