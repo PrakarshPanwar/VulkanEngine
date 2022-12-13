@@ -88,7 +88,7 @@ namespace VulkanCore {
 		std::vector<VkAttachmentReference> attachmentRefs;
 
 		// Color Attachments Description
-		for (const auto& attachmentSpec : Framebuffer->GetColorAttachments())
+		for (const auto& attachmentSpec : Framebuffer->GetColorAttachmentsTextureSpec())
 		{
 			VkAttachmentDescription colorAttachment = {};
 			colorAttachment.format = Utils::VulkanImageFormat(attachmentSpec.ImgFormat);
@@ -108,7 +108,7 @@ namespace VulkanCore {
 		VkAttachmentDescription colorAttachmentResolve = {};
 		if (Utils::IsMultisampled(m_Specification))
 		{
-			for (const auto& attachmentSpec : Framebuffer->GetColorAttachments())
+			for (const auto& attachmentSpec : Framebuffer->GetColorAttachmentsTextureSpec())
 			{
 				colorAttachmentResolve.format = Utils::VulkanImageFormat(attachmentSpec.ImgFormat);
 				colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -127,7 +127,7 @@ namespace VulkanCore {
 		if (Framebuffer->HasDepthAttachment())
 		{
 			VkAttachmentDescription depthAttachment = {};
-			depthAttachment.format = Utils::VulkanImageFormat(Framebuffer->GetDepthAttachment().ImgFormat);
+			depthAttachment.format = Utils::VulkanImageFormat(Framebuffer->GetDepthAttachmentTextureSpec().ImgFormat);
 			depthAttachment.samples = samples;
 			depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 			depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -139,7 +139,7 @@ namespace VulkanCore {
 		}
 
 		// Color Attachment References
-		for (int i = 0; i < Framebuffer->GetColorAttachments().size(); ++i)
+		for (int i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
 		{
 			VkAttachmentReference colorAttachmentRef = {};
 			colorAttachmentRef.attachment = i;
@@ -150,7 +150,7 @@ namespace VulkanCore {
 		// Resolve Attachment Reference(Only applicable if multisampling is present)
 		if (Utils::IsMultisampled(m_Specification))
 		{
-			for (int i = 0; i < Framebuffer->GetColorAttachments().size(); ++i)
+			for (int i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
 			{
 				VkAttachmentReference colorAttachmentResolveRef = {};
 				colorAttachmentResolveRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
@@ -167,14 +167,14 @@ namespace VulkanCore {
 
 		VkSubpassDescription subpass = {}; // TODO: Changes need to be made
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = static_cast<uint32_t>(Framebuffer->GetColorAttachments().size());
+		subpass.colorAttachmentCount = static_cast<uint32_t>(Framebuffer->GetColorAttachmentsTextureSpec().size());
 		subpass.pColorAttachments = attachmentRefs.data();
 
 		// TODO: We are using single resolve attachment but,
 		// I think we need a vector of it for multiple color attachments
 		subpass.pDepthStencilAttachment = Framebuffer->HasDepthAttachment() ? &depthAttachmentRef : nullptr;
 		subpass.pResolveAttachments = Utils::IsMultisampled(m_Specification) ?
-			attachmentRefs.data() + Framebuffer->GetColorAttachments().size() : nullptr;
+			attachmentRefs.data() + Framebuffer->GetColorAttachmentsTextureSpec().size() : nullptr;
 
 		VkSubpassDependency dependency = {}; // TODO: Changes need to be made
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -223,7 +223,7 @@ namespace VulkanCore {
 		// TODO: We may change this in future as there will be multiple allocation/deallocation in
 		// clearValues vector
 		std::vector<VkClearValue> clearValues{ m_AttachmentDescriptions.size() };
-		for (uint32_t i = 0; i < Framebuffer->GetColorAttachments().size(); ++i)
+		for (uint32_t i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
 			clearValues[i].color = { fbSpec.ClearColor.x, fbSpec.ClearColor.y, fbSpec.ClearColor.z, fbSpec.ClearColor.w };
 
 		clearValues[clearValues.size() - 1].depthStencil = { 1.0f, 0 };
