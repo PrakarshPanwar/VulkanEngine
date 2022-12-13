@@ -43,6 +43,7 @@ namespace VulkanCore {
 		~VulkanDevice();
 
 		inline VkCommandPool GetCommandPool() { return m_CommandPool; }
+		inline VkCommandPool GetRenderThreadCommandPool() { return m_RenderThreadCommandPool; }
 		inline VkDevice GetVulkanDevice() { return m_LogicalDevice; }
 		inline VkPhysicalDevice GetPhysicalDevice() { return m_PhysicalDevice; }
 		inline VkQueue GetGraphicsQueue() { return m_GraphicsQueue; }
@@ -69,13 +70,13 @@ namespace VulkanCore {
 	private:
 		void CreateLogicalDevice();
 		void PickPhysicalDevice();
-		void CreateCommandPool();
+		void CreateCommandPools();
 	private:
 		VkAllocationCallbacks m_AllocationCallbacks;
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 		VkPhysicalDeviceProperties m_DeviceProperties;
 		VkSampleCountFlagBits m_MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-		VkCommandPool m_CommandPool;
+		VkCommandPool m_CommandPool, m_RenderThreadCommandPool;
 
 		VkDevice m_LogicalDevice;
 		VkQueue m_GraphicsQueue;

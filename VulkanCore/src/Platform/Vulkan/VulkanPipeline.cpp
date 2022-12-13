@@ -197,23 +197,21 @@ namespace VulkanCore {
 		CreateGraphicsPipeline();
 	}
 
+	// TODO: Do this process in Render Thread
 	VulkanPipeline::~VulkanPipeline()
 	{
-		Renderer::Submit([this]()
-		{
-			auto device = VulkanContext::GetCurrentDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
-			vkDestroyShaderModule(device->GetVulkanDevice(), m_vertShaderModule, nullptr);
-			vkDestroyShaderModule(device->GetVulkanDevice(), m_fragShaderModule, nullptr);
+		vkDestroyShaderModule(device->GetVulkanDevice(), m_vertShaderModule, nullptr);
+		vkDestroyShaderModule(device->GetVulkanDevice(), m_fragShaderModule, nullptr);
 
-			if (m_geomShaderModule != VK_NULL_HANDLE)
-				vkDestroyShaderModule(device->GetVulkanDevice(), m_geomShaderModule, nullptr);
+		if (m_geomShaderModule != VK_NULL_HANDLE)
+			vkDestroyShaderModule(device->GetVulkanDevice(), m_geomShaderModule, nullptr);
 
-			if (m_PipelineLayout)
-				vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
+		if (m_PipelineLayout)
+			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 
-			vkDestroyPipeline(device->GetVulkanDevice(), m_GraphicsPipeline, nullptr);
-		});
+		vkDestroyPipeline(device->GetVulkanDevice(), m_GraphicsPipeline, nullptr);
 	}
 
 	void VulkanPipeline::CreateGraphicsPipeline(std::shared_ptr<Shader> shader, const PipelineConfigInfo& pipelineInfo)

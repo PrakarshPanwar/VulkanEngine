@@ -127,6 +127,8 @@ namespace VulkanCore {
 		vkCmdSetScissor(m_SecondaryCommandBuffers[m_CurrentFrameIndex], 0, 1, &scissor);
 
 		vkEndCommandBuffer(m_SecondaryCommandBuffers[m_CurrentFrameIndex]);
+
+		m_ExecuteCommandBuffers[0] = m_SecondaryCommandBuffers[m_CurrentFrameIndex];
 	}
 
 	void VulkanRenderer::EndSwapChainRenderPass(VkCommandBuffer commandBuffer)
@@ -134,6 +136,8 @@ namespace VulkanCore {
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndSwapChainRenderPass() if frame is not in progress!");
 		VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot end Render Pass on Command Buffer from a different frame!");
 	
+		m_ExecuteCommandBuffers[1] = ImGuiLayer::Get()->m_ImGuiCmdBuffers[Renderer::GetCurrentFrameIndex()];
+		vkCmdExecuteCommands(commandBuffer, m_ExecuteCommandBuffers.size(), m_ExecuteCommandBuffers.data());
 		vkCmdEndRenderPass(commandBuffer);
 	}
 
@@ -169,6 +173,7 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_CommandBuffers.data()), "Failed to Allocate Command Buffers!");
 
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+		allocInfo.commandPool = device->GetRenderThreadCommandPool();
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_SecondaryCommandBuffers.data()), "Failed to Allocate Secondary Command Buffers!");
 	}
 
@@ -179,7 +184,11 @@ namespace VulkanCore {
 		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(),
 			static_cast<uint32_t>(m_CommandBuffers.size()), m_CommandBuffers.data());
 
+		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetRenderThreadCommandPool(),
+			static_cast<uint32_t>(m_SecondaryCommandBuffers.size()), m_SecondaryCommandBuffers.data());
+
 		m_CommandBuffers.clear();
+		m_SecondaryCommandBuffers.clear();
 	}
 
 	void VulkanRenderer::CreateQueryPool()
@@ -235,7 +244,7 @@ namespace VulkanCore {
 	{
 		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
-		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), m_SecondaryCommandBuffers[m_CurrentFrameIndex], sceneRenderer->GetCommandBuffer(m_CurrentFrameIndex)};
+		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), sceneRenderer->GetCommandBuffer(m_CurrentFrameIndex)};
 		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
