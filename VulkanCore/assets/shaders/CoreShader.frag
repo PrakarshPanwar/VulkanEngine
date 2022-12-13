@@ -8,24 +8,24 @@ layout(location = 2) in vec3 v_FragNormalWorld;
 layout(location = 3) in vec2 v_FragTexCoord;
 layout(location = 4) in flat int v_TexIndex;
 
-struct PointLightData
+struct PointLight
 {
-	vec4 position;
-	vec4 color;
+	vec4 Position;
+	vec4 Color;
 };
 
 layout(set = 0, binding = 0) uniform Camera
 {
-	mat4 projection;
-	mat4 view;
-	mat4 invView;
+	mat4 Projection;
+	mat4 View;
+	mat4 InvView;
 } u_Camera;
 
-layout(set = 0, binding = 1) uniform PointLight
+layout(set = 0, binding = 1) uniform PointLightData
 {
-	vec4 ambientLightColor;
-	PointLightData pointLights[10];
-	int numLights;
+	vec4 AmbientLightColor;
+	PointLight PointLights[10];
+	int Count;
 } u_PointLight;
 
 layout(set = 0, binding = 2) uniform sampler2D u_DiffuseTex[3];
@@ -34,9 +34,9 @@ layout(set = 0, binding = 4) uniform sampler2D u_SpecularTex[3];
 
 void main()
 {
-	vec3 diffuseLight = u_PointLight.ambientLightColor.xyz * u_PointLight.ambientLightColor.w;
+	vec3 diffuseLight = u_PointLight.AmbientLightColor.xyz * u_PointLight.AmbientLightColor.w;
 	vec3 specularLight = vec3(0.05);
-	vec3 cameraPosWorld = u_Camera.invView[3].xyz;
+	vec3 cameraPosWorld = u_Camera.InvView[3].xyz;
 	vec3 viewDirection = normalize(cameraPosWorld - v_FragPosWorld);
 
 	//vec3 surfaceNormal = normalize(v_FragNormalWorld);
@@ -45,14 +45,14 @@ void main()
 
 	vec4 specColorMap = texture(u_SpecularTex[v_TexIndex], v_FragTexCoord);
 
-	for (int i = 0; i < u_PointLight.numLights; ++i)
+	for (int i = 0; i < u_PointLight.Count; i++)
 	{
-		PointLightData pointLight = u_PointLight.pointLights[i];
-		vec3 directionToLight = pointLight.position.xyz - v_FragPosWorld;
+		PointLight pointLight = u_PointLight.PointLights[i];
+		vec3 directionToLight = pointLight.Position.xyz - v_FragPosWorld;
 		float attentuation = 1.0 / dot(directionToLight, directionToLight);
 		directionToLight = normalize(directionToLight);
 		float cosAngIncidence = max(dot(surfaceNormal, directionToLight), 0);
-		vec3 intensity = pointLight.color.xyz * pointLight.color.w * attentuation;
+		vec3 intensity = pointLight.Color.xyz * pointLight.Color.w * attentuation;
 
 		diffuseLight += intensity * cosAngIncidence;
 
@@ -60,7 +60,7 @@ void main()
 		float blinnTerm = dot(surfaceNormal, halfAngle);
 		blinnTerm = clamp(blinnTerm, 0, 1);
 		blinnTerm = pow(blinnTerm, 16.0);
-		specularLight += pointLight.color.xyz * intensity * blinnTerm;
+		specularLight += pointLight.Color.xyz * intensity * blinnTerm;
 	}
 
 	vec3 diffColorMap = texture(u_DiffuseTex[v_TexIndex], v_FragTexCoord).rgb;
