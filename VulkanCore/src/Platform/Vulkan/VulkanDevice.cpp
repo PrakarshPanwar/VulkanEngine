@@ -82,7 +82,6 @@ namespace VulkanCore {
 
 	VulkanDevice::VulkanDevice()
 	{
-		//s_Instance = this;
 		Init();
 	}
 
