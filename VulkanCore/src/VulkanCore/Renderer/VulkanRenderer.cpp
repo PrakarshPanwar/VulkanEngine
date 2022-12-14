@@ -161,41 +161,44 @@ namespace VulkanCore {
 
 	std::shared_ptr<VulkanTextureCube> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-		const uint32_t cubemapSize = 1024;
+		constexpr uint32_t cubemapSize = 1024;
 
-		std::shared_ptr<VulkanTexture> equirectTex = std::make_shared<VulkanTexture>(filepath);
-		std::shared_ptr<VulkanTextureCube> cubeMap = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
-		cubeMap->Invalidate();
+		std::shared_ptr<VulkanTexture> envEquirect = std::make_shared<VulkanTexture>(filepath);
+		std::shared_ptr<VulkanTextureCube> envUnfiltered = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
+		envUnfiltered->Invalidate();
 
-		auto equirectShader = Renderer::GetShader("EquirectangularToCubeMap");
-		auto vulkanDescriptorPool = Application::Get()->GetVulkanDescriptorPool();
+		auto equirectangularConversionShader = Renderer::GetShader("EquirectangularToCubeMap");
+		std::shared_ptr<VulkanComputePipeline> equirectangularConversionPipeline = std::make_shared<VulkanComputePipeline>(equirectangularConversionShader);
 
-		std::shared_ptr<VulkanComputePipeline> equirectToCubeMapPipeline = std::make_shared<VulkanComputePipeline>(equirectShader);
+		Renderer::Submit([equirectangularConversionPipeline, envEquirect, envUnfiltered]()
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			auto vulkanDescriptorPool = Application::Get()->GetVulkanDescriptorPool();
 
-		VkDescriptorSet equirectSet;
-		VulkanDescriptorWriter equirectSetWriter(*equirectToCubeMapPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool);
+			VkDescriptorSet equirectSet;
+			VulkanDescriptorWriter equirectSetWriter(*equirectangularConversionPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool);
 
-		VkDescriptorImageInfo cubeMapImageInfo = cubeMap->GetDescriptorImageInfo();
-		equirectSetWriter.WriteImage(0, &cubeMapImageInfo);
+			VkDescriptorImageInfo cubeMapImageInfo = envUnfiltered->GetDescriptorImageInfo();
+			equirectSetWriter.WriteImage(0, &cubeMapImageInfo);
 
-		VkDescriptorImageInfo equirecTexInfo = equirectTex->GetDescriptorImageInfo();
-		equirectSetWriter.WriteImage(1, &equirecTexInfo);
+			VkDescriptorImageInfo equirecTexInfo = envEquirect->GetDescriptorImageInfo();
+			equirectSetWriter.WriteImage(1, &equirecTexInfo);
 
-		equirectSetWriter.Build(equirectSet);
+			equirectSetWriter.Build(equirectSet);
 
-		VkCommandBuffer dispatchCmd = device->GetCommandBuffer();
+			VkCommandBuffer dispatchCmd = device->GetCommandBuffer();
 
-		vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-			equirectToCubeMapPipeline->GetVulkanPipelineLayout(), 0, 1,
-			&equirectSet, 0, nullptr);
+			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+				equirectangularConversionPipeline->GetVulkanPipelineLayout(), 0, 1,
+				&equirectSet, 0, nullptr);
 
-		equirectToCubeMapPipeline->Bind(dispatchCmd);
-		equirectToCubeMapPipeline->Dispatch(dispatchCmd, cubemapSize / 16, cubemapSize / 16, 6);
+			equirectangularConversionPipeline->Bind(dispatchCmd);
+			equirectangularConversionPipeline->Dispatch(dispatchCmd, cubemapSize / 16, cubemapSize / 16, 6);
 
-		device->FlushCommandBuffer(dispatchCmd);
+			device->FlushCommandBuffer(dispatchCmd);
+		});
 
-		return cubeMap;
+		return envUnfiltered;
 	}
 
 	void VulkanRenderer::CreateCommandBuffers()

@@ -55,19 +55,17 @@ namespace VulkanCore {
 		CreateComputePipeline();
 	}
 
+	// TODO: Do this process in Render Thread
 	VulkanComputePipeline::~VulkanComputePipeline()
 	{
-		Renderer::Submit([this]()
-		{
-			auto device = VulkanContext::GetCurrentDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
-			vkDestroyShaderModule(device->GetVulkanDevice(), m_compShaderModule, nullptr);
+		vkDestroyShaderModule(device->GetVulkanDevice(), m_compShaderModule, nullptr);
 
-			if (m_PipelineLayout)
-				vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
+		if (m_PipelineLayout)
+			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 
-			vkDestroyPipeline(device->GetVulkanDevice(), m_ComputePipeline, nullptr);
-		});
+		vkDestroyPipeline(device->GetVulkanDevice(), m_ComputePipeline, nullptr);
 	}
 
 	void VulkanComputePipeline::Bind(VkCommandBuffer commandBuffer)
