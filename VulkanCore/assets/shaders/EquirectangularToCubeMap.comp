@@ -3,7 +3,6 @@
 layout(binding = 0, rgba32f) writeonly uniform imageCube o_CubeMap;
 layout(binding = 1) uniform sampler2D u_EquirectangularTex;
 
-const vec2 cubemapSize = vec2(1024.0, 1024.0);
 const vec2 invAtan = vec2(0.1591, 0.3183);
 vec2 SampleSphericalMap(vec3 v)
 {
@@ -13,58 +12,33 @@ vec2 SampleSphericalMap(vec3 v)
 	return uv;
 }
 
-float max3(vec3 v) 
+vec3 CubeCoordToWorld(vec2 uv, uint side)
 {
-    return max(max(v.x, v.y), v.z);
-}
+    const vec2 texCoords = uv * 2.0 - 1.0;
 
-ivec3 TexCoordToCube(vec3 texCoord, vec2 cubemapSize)
-{
-    vec3 abst = abs(texCoord);
-    texCoord /= max3(abst);
-
-    float cubeFace;
-    vec2 uvCoord;
-    if (abst.x > abst.y && abst.x > abst.z) 
+    switch (side)
     {
-        // x major
-        float negx = step(texCoord.x, 0.0);
-        uvCoord = mix(-texCoord.zy, vec2(texCoord.z, -texCoord.y), negx);
-        cubeFace = negx;
-    } 
-    else if (abst.y > abst.z) 
-    {
-        // y major
-        float negy = step(texCoord.y, 0.0);
-        uvCoord = mix(texCoord.xz, vec2(texCoord.x, -texCoord.z), negy);
-        cubeFace = 2.0 + negy;
-    } 
-    else 
-    {
-        // z major
-        float negz = step(texCoord.z, 0.0);
-        uvCoord = mix(vec2(texCoord.x, -texCoord.y), -texCoord.xy, negz);
-        cubeFace = 4.0 + negz;
+        case 0: return vec3(1.0, -texCoords.yx);              // +X
+        case 1: return vec3(-1.0, -texCoords.y, texCoords.x); // -X
+        case 2: return vec3(texCoords.x, 1.0, texCoords.y);   // +Y
+        case 3: return vec3(texCoords.x, -1.0, -texCoords.y); // -Y
+        case 4: return vec3(texCoords.x, -texCoords.y, 1.0);  // +Z
+        case 5: return vec3(-texCoords.xy, -1.0);             // -Z
     }
-    uvCoord = (uvCoord + 1.0) * 0.5; // 0..1
-    uvCoord = uvCoord * cubemapSize;
-    uvCoord = clamp(uvCoord, vec2(0.0), cubemapSize - vec2(1.0));
-
-    return ivec3(ivec2(uvCoord), int(cubeFace));
 }
 
 layout(local_size_x = 16, local_size_y = 16) in;
 void main()
 {
 	vec3 invocID = vec3(gl_GlobalInvocationID);
-    vec2 texCoords = vec2(float(invocID.x) / cubemapSize.x, float(invocID.y) / cubemapSize.y);
-	texCoords += (1.0 / cubemapSize) * 0.5;
+    vec2 uv = (gl_GlobalInvocationID.xy + vec2(0.5)) / vec2(imageSize(o_CubeMap).xy);
 
-    ivec3 cubeCoord = TexCoordToCube(ivec3(texCoords, invocID.z), cubemapSize);
-	vec2 uv = SampleSphericalMap(normalize(cubeCoord));
+	for (uint i = 0; i != 6; ++i)
+    {
+        const vec3 localPos = -normalize(CubeCoordToWorld(uv, i));
+        vec2 texCoords = SampleSphericalMap(localPos);
 
-	vec4 color = texture(u_EquirectangularTex, uv);
-	color.a = 1.0;
-
-	imageStore(o_CubeMap, ivec3(gl_GlobalInvocationID), color);
+        vec4 color = vec4(texture(u_EquirectangularTex, texCoords).rgb, 1.0);
+        imageStore(o_CubeMap, ivec3(gl_GlobalInvocationID.xy, i), color);
+    }
 }
