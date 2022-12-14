@@ -227,11 +227,7 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
 		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
 
-		TextureSpecification cubemapTexSpec;
-		cubemapTexSpec.Format = ImageFormat::RGBA8_UNORM;
-		m_CubemapTexture = std::make_shared<VulkanTextureCube>("assets/cubemaps/SnowyPark", cubemapTexSpec);
-		m_CubemapTexture->Invalidate();
-
+		m_CubemapTexture = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/LagoMountains4K.hdr");
 		m_SkyboxMesh = Utils::CreateCubeModel();
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;

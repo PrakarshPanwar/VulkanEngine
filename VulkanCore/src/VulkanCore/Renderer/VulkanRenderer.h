@@ -1,6 +1,7 @@
 #pragma once
 #include "Platform/Windows/WindowsWindow.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
+#include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "VulkanCore/Mesh/Mesh.h"
 
@@ -33,6 +34,8 @@ namespace VulkanCore {
 			VK_CORE_ASSERT(IsFrameStarted, "Cannot get Command Buffer when frame is not in progress!");
 			return m_CommandBuffers[m_CurrentFrameIndex];
 		}
+
+		static std::shared_ptr<VulkanTextureCube> CreateEnviromentMap(const std::string& filepath);
 
 		inline VkRenderPass GetSwapChainRenderPass() const { return m_SwapChain->GetRenderPass(); }
 		inline int GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
