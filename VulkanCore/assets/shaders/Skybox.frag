@@ -7,6 +7,6 @@ layout(location = 0) in vec3 v_TexCoord;
 
 void main()
 {
-	vec4 color = texture(u_CubeMap, v_TexCoord);
-	o_Color = color;
+	vec3 color = texture(u_CubeMap, v_TexCoord).rgb;
+	o_Color = vec4(color, 1.0);
 }
