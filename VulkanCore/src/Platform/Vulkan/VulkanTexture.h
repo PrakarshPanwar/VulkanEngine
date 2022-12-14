@@ -20,7 +20,7 @@ namespace VulkanCore {
 	public:
 		VulkanTexture() = default;
 		VulkanTexture(const std::string& filepath);
-		VulkanTexture(uint32_t width, uint32_t height);
+		VulkanTexture(uint32_t width, uint32_t height, ImageFormat format);
 		~VulkanTexture();
 
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
