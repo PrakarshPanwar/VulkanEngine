@@ -100,6 +100,8 @@ namespace VulkanCore {
 		std::vector<std::unique_ptr<VulkanBuffer>> m_LodUBs{ VulkanSwapChain::MaxFramesInFlight };
 
 		std::vector<VulkanImage> m_BloomTextures;
+		std::vector<VulkanImage> m_SceneCopyImages;
+
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap,
 			m_DiffuseMap2, m_NormalMap2, m_SpecularMap2,
 			m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;

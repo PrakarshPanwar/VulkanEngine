@@ -22,6 +22,11 @@ namespace VulkanCore {
 			}
 		}
 
+		static uint32_t CalculateMipCount(uint32_t width, uint32_t height)
+		{
+			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
+		}
+
 		static bool IsMultisampled(FramebufferSpecification spec)
 		{
 			return spec.Samples > 1 ? true : false;
@@ -78,6 +83,7 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
+		uint32_t mipCount = Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height) - 4;
 		uint32_t attachmentSize = static_cast<uint32_t>(m_Specification.Samples > 1 ? (m_ColorAttachmentSpecifications.size() + 1) : m_ColorAttachmentSpecifications.size());
 		m_ColorAttachments.reserve(attachmentSize);
 
@@ -96,6 +102,7 @@ namespace VulkanCore {
 				spec.Samples = m_Specification.Samples;
 				spec.Format = attachment.ImgFormat;
 				spec.Usage = ImageUsage::Attachment;
+				//spec.MipLevels = mipCount;
 
 				auto& attachmentColorImage = AttachmentImages.emplace_back(spec);
 				attachmentColorImage.Invalidate();
@@ -134,6 +141,7 @@ namespace VulkanCore {
 					spec.Samples = 1;
 					spec.Format = attachment.ImgFormat;
 					spec.Usage = ImageUsage::Attachment;
+					spec.MipLevels = mipCount;
 
 					auto& resolveColorImage = ResolveImages.emplace_back(spec);
 					resolveColorImage.Invalidate();

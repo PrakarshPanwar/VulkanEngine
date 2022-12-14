@@ -158,6 +158,7 @@ namespace VulkanCore {
 		imageSpec.MipLevels = Utils::CalculateMipCount(1920, 1080) - 4;
 		
 		m_BloomTextures.reserve(3);
+		m_SceneCopyImages.reserve(3);
 
 #define USE_MEMORY_BARRIER 1
 	#if USE_MEMORY_BARRIER
