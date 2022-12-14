@@ -147,7 +147,7 @@ namespace VulkanCore {
 		const uint32_t cubemapSize = 1024;
 
 		std::shared_ptr<VulkanTexture> equirectTex = std::make_shared<VulkanTexture>(filepath);
-		std::shared_ptr<VulkanTextureCube> cubeMap = std::make_shared<VulkanTextureCube>(1024, 1024, ImageFormat::RGBA32F);
+		std::shared_ptr<VulkanTextureCube> cubeMap = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
 		cubeMap->Invalidate();
 
 		auto equirectShader = Renderer::GetShader("EquirectangularToCubeMap");
@@ -173,9 +173,7 @@ namespace VulkanCore {
 			&equirectSet, 0, nullptr);
 
 		equirectToCubeMapPipeline->Bind(dispatchCmd);
-
-		for (int i = 0; i < 6; ++i)
-			equirectToCubeMapPipeline->Dispatch(dispatchCmd, cubemapSize / 16, cubemapSize / 16, 6);
+		equirectToCubeMapPipeline->Dispatch(dispatchCmd, cubemapSize / 16, cubemapSize / 16, 6);
 
 		device->FlushCommandBuffer(dispatchCmd);
 
