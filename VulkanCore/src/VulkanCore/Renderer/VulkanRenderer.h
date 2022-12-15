@@ -5,8 +5,7 @@
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "VulkanCore/Mesh/Mesh.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 
 namespace VulkanCore {
 

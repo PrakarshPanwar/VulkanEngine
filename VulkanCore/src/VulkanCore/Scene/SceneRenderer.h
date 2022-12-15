@@ -6,6 +6,7 @@
 #include "Platform/Vulkan/VulkanComputePipeline.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanBuffer.h"
+#include "Platform/Vulkan/VulkanUniformBuffer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
 
 #include <glm/glm.hpp>
@@ -85,14 +86,14 @@ namespace VulkanCore {
 		std::vector<VkDescriptorSet> m_BloomDescriptorSets;
 		std::vector<VkDescriptorSet> m_SkyboxDescriptorSets;
 
-		// TODO: In future we could have to setup Material Table and Instanced Rendering
+		// TODO: In future we have to setup Material Table and Instanced Rendering
 		// Material Resources
-		std::vector<std::unique_ptr<VulkanBuffer>> m_CameraUBs{ VulkanSwapChain::MaxFramesInFlight };
-		std::vector<std::unique_ptr<VulkanBuffer>> m_PointLightUBs{ VulkanSwapChain::MaxFramesInFlight };
-		std::vector<std::unique_ptr<VulkanBuffer>> m_ExposureUBs{ VulkanSwapChain::MaxFramesInFlight };
+		std::vector<VulkanUniformBuffer> m_UBCamera;
+		std::vector<VulkanUniformBuffer> m_UBPointLight;
+		std::vector<VulkanUniformBuffer> m_UBSceneData;
 
-		std::vector<std::unique_ptr<VulkanBuffer>> m_BloomParamsUBs{ VulkanSwapChain::MaxFramesInFlight };
-		std::vector<std::unique_ptr<VulkanBuffer>> m_LodUBs{ VulkanSwapChain::MaxFramesInFlight };
+		std::vector<VulkanUniformBuffer> m_BloomParamsUBs;
+		std::vector<VulkanUniformBuffer> m_LodUBs;
 
 		std::shared_ptr<VulkanImage> m_BloomTexture;
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap,

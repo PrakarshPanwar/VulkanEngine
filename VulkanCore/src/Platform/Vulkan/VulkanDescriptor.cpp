@@ -1,8 +1,7 @@
 #include "vulkanpch.h"
 #include "VulkanDescriptor.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 
 namespace VulkanCore {
 
@@ -172,8 +171,6 @@ namespace VulkanCore {
 	{
 		VK_CORE_ASSERT(m_SetLayout.m_Bindings.count(binding) == 1, "Layout does not contain specified Binding!");
 		auto& bindingDescription = m_SetLayout.m_Bindings[binding];
-
-		//VK_CORE_ASSERT(bindingDescription.descriptorCount == 1, "Binding single Descriptor Info, but binding expects multiple");
 
 		VkWriteDescriptorSet write{};
 		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
