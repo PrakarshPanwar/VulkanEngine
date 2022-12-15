@@ -2,9 +2,11 @@
 #include "VulkanRenderer.h"
 
 #include "../Core/ImGuiLayer.h"
+#include "../Core/Application.h"
 #include "../Scene/SceneRenderer.h"
 #include "Renderer.h"
 #include "Platform/Vulkan/VulkanContext.h"
+#include "Platform/Vulkan/VulkanDescriptor.h"
 
 namespace VulkanCore {
 
@@ -100,7 +102,19 @@ namespace VulkanCore {
 		renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
 		renderPassInfo.pClearValues = clearValues.data();
 
-		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		VkCommandBufferInheritanceInfo inheritanceInfo{};
+		inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+		inheritanceInfo.renderPass = m_SwapChain->GetRenderPass();
+		inheritanceInfo.framebuffer = m_SwapChain->GetFramebuffer(m_CurrentImageIndex);
+
+		VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		cmdBufInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+		cmdBufInfo.pInheritanceInfo = &inheritanceInfo;
+
+		VK_CHECK_RESULT(vkBeginCommandBuffer(m_SecondaryCommandBuffers[m_CurrentFrameIndex], &cmdBufInfo), "Failed to Begin Command Buffer!");
 
 		VkViewport viewport{};
 		viewport.x = 0.0f;
@@ -111,8 +125,12 @@ namespace VulkanCore {
 		viewport.maxDepth = 1.0f;
 
 		VkRect2D scissor{ {0, 0}, m_SwapChain->GetSwapChainExtent() };
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+		vkCmdSetViewport(m_SecondaryCommandBuffers[m_CurrentFrameIndex], 0, 1, &viewport);
+		vkCmdSetScissor(m_SecondaryCommandBuffers[m_CurrentFrameIndex], 0, 1, &scissor);
+
+		vkEndCommandBuffer(m_SecondaryCommandBuffers[m_CurrentFrameIndex]);
+
+		m_ExecuteCommandBuffers[0] = m_SecondaryCommandBuffers[m_CurrentFrameIndex];
 	}
 
 	void VulkanRenderer::EndSwapChainRenderPass(VkCommandBuffer commandBuffer)
@@ -120,6 +138,8 @@ namespace VulkanCore {
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndSwapChainRenderPass() if frame is not in progress!");
 		VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot end Render Pass on Command Buffer from a different frame!");
 	
+		m_ExecuteCommandBuffers[1] = ImGuiLayer::Get()->m_ImGuiCmdBuffers[Renderer::GetCurrentFrameIndex()];
+		vkCmdExecuteCommands(commandBuffer, (uint32_t)m_ExecuteCommandBuffers.size(), m_ExecuteCommandBuffers.data());
 		vkCmdEndRenderPass(commandBuffer);
 	}
 
@@ -139,11 +159,54 @@ namespace VulkanCore {
 		Renderer::EndRenderPass(renderPass);
 	}
 
+	std::shared_ptr<VulkanTextureCube> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
+	{
+		constexpr uint32_t cubemapSize = 1024;
+
+		std::shared_ptr<VulkanTexture> envEquirect = std::make_shared<VulkanTexture>(filepath);
+		std::shared_ptr<VulkanTextureCube> envUnfiltered = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
+		envUnfiltered->Invalidate();
+
+		auto equirectangularConversionShader = Renderer::GetShader("EquirectangularToCubeMap");
+		std::shared_ptr<VulkanComputePipeline> equirectangularConversionPipeline = std::make_shared<VulkanComputePipeline>(equirectangularConversionShader);
+
+		Renderer::Submit([equirectangularConversionPipeline, envEquirect, envUnfiltered]()
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			auto vulkanDescriptorPool = Application::Get()->GetVulkanDescriptorPool();
+
+			VkDescriptorSet equirectSet;
+			VulkanDescriptorWriter equirectSetWriter(*equirectangularConversionPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool);
+
+			VkDescriptorImageInfo cubeMapImageInfo = envUnfiltered->GetDescriptorImageInfo();
+			equirectSetWriter.WriteImage(0, &cubeMapImageInfo);
+
+			VkDescriptorImageInfo equirecTexInfo = envEquirect->GetDescriptorImageInfo();
+			equirectSetWriter.WriteImage(1, &equirecTexInfo);
+
+			equirectSetWriter.Build(equirectSet);
+
+			VkCommandBuffer dispatchCmd = device->GetCommandBuffer();
+
+			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+				equirectangularConversionPipeline->GetVulkanPipelineLayout(), 0, 1,
+				&equirectSet, 0, nullptr);
+
+			equirectangularConversionPipeline->Bind(dispatchCmd);
+			equirectangularConversionPipeline->Dispatch(dispatchCmd, cubemapSize / 16, cubemapSize / 16, 6);
+
+			device->FlushCommandBuffer(dispatchCmd);
+		});
+
+		return envUnfiltered;
+	}
+
 	void VulkanRenderer::CreateCommandBuffers()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
 		m_CommandBuffers.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_SecondaryCommandBuffers.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -152,6 +215,10 @@ namespace VulkanCore {
 		allocInfo.commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size());
 
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_CommandBuffers.data()), "Failed to Allocate Command Buffers!");
+
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+		allocInfo.commandPool = device->GetRenderThreadCommandPool();
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_SecondaryCommandBuffers.data()), "Failed to Allocate Secondary Command Buffers!");
 	}
 
 	void VulkanRenderer::FreeCommandBuffers()
@@ -161,7 +228,11 @@ namespace VulkanCore {
 		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(),
 			static_cast<uint32_t>(m_CommandBuffers.size()), m_CommandBuffers.data());
 
+		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetRenderThreadCommandPool(),
+			static_cast<uint32_t>(m_SecondaryCommandBuffers.size()), m_SecondaryCommandBuffers.data());
+
 		m_CommandBuffers.clear();
+		m_SecondaryCommandBuffers.clear();
 	}
 
 	void VulkanRenderer::CreateQueryPool()
@@ -217,7 +288,7 @@ namespace VulkanCore {
 	{
 		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
-		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), sceneRenderer->GetCommandBuffer(m_CurrentFrameIndex) };
+		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), sceneRenderer->GetCommandBuffer(m_CurrentFrameIndex)};
 		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())

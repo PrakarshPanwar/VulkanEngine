@@ -1,9 +1,7 @@
 #include "EditorLayer.h"
 
-#include "VulkanCore/Core/Application.h"
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Events/Input.h"
@@ -20,7 +18,6 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "VulkanCore/Renderer/Renderer.h"
 
 namespace VulkanCore {
 
@@ -159,7 +156,7 @@ namespace VulkanCore {
 		{
 			VK_TRACE("Viewport has been Resized!");
 			m_ViewportSize = region;
-			m_SceneRenderer->SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+			m_SceneRenderer->SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 			RecreateSceneDescriptors();
 			m_EditorCamera.SetViewportSize(region.x, region.y);
 		}

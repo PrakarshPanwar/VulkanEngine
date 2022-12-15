@@ -20,19 +20,12 @@ namespace VulkanCore {
 	public:
 		VulkanTexture() = default;
 		VulkanTexture(const std::string& filepath);
-		VulkanTexture(uint32_t width, uint32_t height);
+		VulkanTexture(uint32_t width, uint32_t height, ImageFormat format);
 		~VulkanTexture();
 
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_Image->GetDescriptorInfo(); }
 	private:
-		/// Deprecated Methods
-		void CreateTextureImage();
-		void CreateImage();
-		void CreateTextureImageView();
-		void CreateTextureSampler();
-		void TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
-		/// Deprecated Methods
 		void Invalidate();
 		void Release();
 		void GenerateMipMaps();
@@ -43,13 +36,29 @@ namespace VulkanCore {
 
 		std::shared_ptr<VulkanImage> m_Image;
 		VulkanImageInfo m_Info;
-		VkDeviceMemory m_TextureImageMemory;
-
-		// TODO: These members will be removed after deprecated methods are removed
-		stbi_uc* m_Pixels;
-		int m_TexWidth, m_TexHeight, m_Channels; 
 	};
 
+	class VulkanTextureCube
+	{
+	public:
+		VulkanTextureCube(const std::string& filepath, TextureSpecification spec = {});
+		VulkanTextureCube(uint32_t width, uint32_t height, ImageFormat format = ImageFormat::RGBA32F);
 
+		~VulkanTextureCube();
+
+		void Invalidate();
+		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_DescriptorImageInfo; }
+	private:
+		void Release();
+		void GenerateMipMaps();
+	private:
+		std::string m_FilePath;
+
+		TextureSpecification m_Specification;
+		VulkanImageInfo m_Info;
+		VkDescriptorImageInfo m_DescriptorImageInfo;
+
+		bool m_ReadOnly = true;
+	};
 
 }

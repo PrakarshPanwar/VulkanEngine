@@ -1,8 +1,7 @@
 #include "vulkanpch.h"
 #include "VulkanImage.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 #include "VulkanAllocator.h"
 
 namespace VulkanCore {
@@ -15,6 +14,7 @@ namespace VulkanCore {
 			{
 			case ImageFormat::RGBA8_SRGB:	   return VK_FORMAT_R8G8B8A8_SRGB;
 			case ImageFormat::RGBA8_NORM:	   return VK_FORMAT_R8G8B8A8_SNORM;
+			case ImageFormat::RGBA8_UNORM:	   return VK_FORMAT_R8G8B8A8_UNORM;
 			case ImageFormat::RGBA16F:		   return VK_FORMAT_R16G16B16A16_SFLOAT;
 			case ImageFormat::RGBA32F:		   return VK_FORMAT_R32G32B32A32_SFLOAT;
 			case ImageFormat::R11G11B10F:	   return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
@@ -154,9 +154,7 @@ namespace VulkanCore {
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageCreateInfo.format = vulkanFormat;
-		imageCreateInfo.extent.width = m_Specification.Width;
-		imageCreateInfo.extent.height = m_Specification.Height;
-		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.extent = { m_Specification.Width, m_Specification.Height, 1 };
 		imageCreateInfo.arrayLayers = 1;
 		imageCreateInfo.samples = Utils::VulkanSampleCount(m_Specification.Samples);
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
