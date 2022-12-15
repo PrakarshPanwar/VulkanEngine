@@ -9,6 +9,7 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanFramebuffer> TargetFramebuffer;
 	};
 
+	// TODO: To read Depth Image we have to also create its resolve form
 	class VulkanRenderPass
 	{
 	public:

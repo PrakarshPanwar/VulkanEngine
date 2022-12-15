@@ -22,6 +22,8 @@ namespace VulkanCore {
 		void Init();
 		void Run();
 
+		void RenderImGui();
+
 		void OnEvent(Event& e);
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);

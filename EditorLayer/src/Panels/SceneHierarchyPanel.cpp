@@ -208,28 +208,21 @@ namespace VulkanCore {
 			}
 		}
 
-		//ImGui::SameLine();
-		//ImGui::PushItemWidth(-1);
+		ImGui::SameLine();
+		ImGui::PushItemWidth(-1);
 
-		// TODO: Add Different Components
-
-		/*if (ImGui::Button("Add Component"))
+		if (ImGui::Button("Add Component"))
 			ImGui::OpenPopup("AddComponent");
 
 		if (ImGui::BeginPopup("AddComponent"))
 		{
-			DisplayAddComponentEntry<CameraComponent>("Camera");
-			DisplayAddComponentEntry<ScriptComponent>("Script");
-			DisplayAddComponentEntry<SpriteRendererComponent>("Sprite Renderer");
-			DisplayAddComponentEntry<CircleRendererComponent>("Circle Renderer");
-			DisplayAddComponentEntry<Rigidbody2DComponent>("Rigidbody 2D");
-			DisplayAddComponentEntry<BoxCollider2DComponent>("Box Collider 2D");
-			DisplayAddComponentEntry<CircleCollider2DComponent>("Circle Collider 2D");
+			DisplayAddComponentEntry<PointLightComponent>("Point Light");
+			DisplayAddComponentEntry<MeshComponent>("Mesh");
 
 			ImGui::EndPopup();
-		}*/
+		}
 
-		//ImGui::PopItemWidth();
+		ImGui::PopItemWidth();
 
 		DrawComponent<TransformComponent>("Transform", entity, [](auto& component)
 		{
@@ -286,4 +279,16 @@ namespace VulkanCore {
 		});
 	}
 
+	template<typename T>
+	void SceneHierarchyPanel::DisplayAddComponentEntry(const std::string& entryName)
+	{
+		if (!m_SelectionContext.HasComponent<T>())
+		{
+			if (ImGui::MenuItem(entryName.c_str()))
+			{
+				m_SelectionContext.AddComponent<T>();
+				ImGui::CloseCurrentPopup();
+			}
+		}
+	}
 }

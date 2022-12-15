@@ -3,12 +3,15 @@
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanRenderPass.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
+#include "Platform/Vulkan/VulkanComputePipeline.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanBuffer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
 
 #include <glm/glm.hpp>
 #include "Scene.h"
+
+#define BLOOM_COMPUTE_SHADER 0
 
 namespace VulkanCore {
 
@@ -41,7 +44,25 @@ namespace VulkanCore {
 		void CreateDescriptorSets();
 
 		void GeometryPass();
+		void BloomBlurPass();
 		void CompositePass();
+	private:
+		struct LodAndMode
+		{
+			float LOD = 1.0f;
+			float Mode = 1.0f; // 0->PreFilter, 1->Downsample, 2->Upsample-First, 3->Upsample
+		};
+
+		struct SceneSettings
+		{
+			float Exposure = 1.0f;
+		};
+
+		struct BloomParams
+		{
+			float Threshold;
+			float Knee;
+		};
 	private:
 		std::shared_ptr<Scene> m_Scene;
 
@@ -53,25 +74,40 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanPipeline> m_GeometryPipeline;
 		std::shared_ptr<VulkanPipeline> m_PointLightPipeline;
 		std::shared_ptr<VulkanPipeline> m_CompositePipeline;
+		std::shared_ptr<VulkanPipeline> m_SkyboxPipeline;
+		std::shared_ptr<VulkanComputePipeline> m_BloomPipeline;
 
 		// TODO: Setup VulkanMaterial to do this
 		// Descriptor Sets
 		std::vector<VkDescriptorSet> m_GeometryDescriptorSets;
 		std::vector<VkDescriptorSet> m_PointLightDescriptorSets;
 		std::vector<VkDescriptorSet> m_CompositeDescriptorSets;
+		std::vector<VkDescriptorSet> m_BloomDescriptorSets;
+		std::vector<VkDescriptorSet> m_SkyboxDescriptorSets;
 
-		// TODO: In future we could have to setup a Material Table and Instanced Rendering
+		// TODO: In future we could have to setup Material Table and Instanced Rendering
 		// Material Resources
 		std::vector<std::unique_ptr<VulkanBuffer>> m_CameraUBs{ VulkanSwapChain::MaxFramesInFlight };
 		std::vector<std::unique_ptr<VulkanBuffer>> m_PointLightUBs{ VulkanSwapChain::MaxFramesInFlight };
 		std::vector<std::unique_ptr<VulkanBuffer>> m_ExposureUBs{ VulkanSwapChain::MaxFramesInFlight };
 
+		std::vector<std::unique_ptr<VulkanBuffer>> m_BloomParamsUBs{ VulkanSwapChain::MaxFramesInFlight };
+		std::vector<std::unique_ptr<VulkanBuffer>> m_LodUBs{ VulkanSwapChain::MaxFramesInFlight };
+
+		std::shared_ptr<VulkanImage> m_BloomTexture;
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap,
 			m_DiffuseMap2, m_NormalMap2, m_SpecularMap2,
 			m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
 
+		// Skybox Resources
+		std::shared_ptr<VulkanTextureCube> m_CubemapTexture;
+		std::shared_ptr<Mesh> m_SkyboxMesh;
+
 		glm::ivec2 m_ViewportSize;
-		float m_Exposure = 1.0f;
+
+		SceneSettings m_SceneSettings;
+		LodAndMode m_LodAndMode;
+		BloomParams m_BloomParams;
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;
