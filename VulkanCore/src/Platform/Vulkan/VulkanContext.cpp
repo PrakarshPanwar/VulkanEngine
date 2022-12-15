@@ -1,8 +1,7 @@
 #include "vulkanpch.h"
 #include "VulkanContext.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 
 namespace VulkanCore {
 

@@ -1,8 +1,7 @@
 #include "vulkanpch.h"
 #include "VulkanBuffer.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 #include "VulkanAllocator.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
@@ -46,8 +45,6 @@ namespace VulkanCore {
 
 	VulkanBuffer::~VulkanBuffer()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-
 		Unmap();
 		vmaDestroyBuffer(VulkanContext::GetVulkanMemoryAllocator(), m_Buffer, m_MemoryAllocation);
 	}
@@ -118,7 +115,6 @@ namespace VulkanCore {
 
 	VkResult VulkanBuffer::FlushBuffer(VkDeviceSize size, VkDeviceSize offset)
 	{
-		auto device = VulkanContext::GetCurrentDevice();
 		return vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, offset, size);
 	}
 

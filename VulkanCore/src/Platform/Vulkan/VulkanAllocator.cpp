@@ -1,6 +1,6 @@
 #include "vulkanpch.h"
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+
+#include "VulkanCore/Core/Core.h"
 #include "VulkanAllocator.h"
 
 namespace VulkanCore {
