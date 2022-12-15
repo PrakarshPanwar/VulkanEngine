@@ -41,14 +41,11 @@ namespace VulkanCore {
 				m_ColorAttachmentSpecifications.emplace_back(specification);
 		}
 
-#if USE_RENDER_THREAD
 		Renderer::Submit([this]
 		{
 			Invalidate();
 		});
-#else
-		Invalidate();
-#endif
+
 		s_InstanceCount++;
 	}
 
