@@ -1,8 +1,7 @@
 #include "vulkanpch.h"
 #include "VulkanDevice.h"
 
-#include "VulkanCore/Core/Log.h"
-#include "VulkanCore/Core/Assert.h"
+#include "VulkanCore/Core/Core.h"
 #include "VulkanContext.h"
 
 namespace VulkanCore {
@@ -89,12 +88,13 @@ namespace VulkanCore {
 	{
 		PickPhysicalDevice();
 		CreateLogicalDevice();
-		CreateCommandPool();
+		CreateCommandPools();
 	}
 
 	void VulkanDevice::Destroy()
 	{
 		vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
+		vkDestroyCommandPool(m_LogicalDevice, m_RenderThreadCommandPool, nullptr);
 		vkDestroyDevice(m_LogicalDevice, nullptr);
 	}
 
@@ -363,7 +363,7 @@ namespace VulkanCore {
 		vkGetDeviceQueue(m_LogicalDevice, indices.PresentFamily, 0, &m_PresentQueue);
 	}
 
-	void VulkanDevice::CreateCommandPool()
+	void VulkanDevice::CreateCommandPools()
 	{
 		QueueFamilyIndices queueFamilyIndices = FindPhysicalQueueFamilies();
 
@@ -373,6 +373,7 @@ namespace VulkanCore {
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_CommandPool), "Failed to Create Command Pool!");
+		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_RenderThreadCommandPool), "Failed to Create Command Pool!");
 	}
 
 	QueueFamilyIndices VulkanDevice::FindQueueFamilies(VkPhysicalDevice device)

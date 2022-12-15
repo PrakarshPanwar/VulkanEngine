@@ -45,7 +45,7 @@ void main()
 
 	vec4 specColorMap = texture(u_SpecularTex[v_TexIndex], v_FragTexCoord);
 
-	for (int i = 0; i < u_PointLight.Count; i++)
+	for (int i = 0; i < u_PointLight.Count; ++i)
 	{
 		PointLight pointLight = u_PointLight.PointLights[i];
 		vec3 directionToLight = pointLight.Position.xyz - v_FragPosWorld;
