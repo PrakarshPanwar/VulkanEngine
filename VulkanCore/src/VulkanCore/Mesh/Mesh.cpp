@@ -48,13 +48,13 @@ namespace VulkanCore {
 
 	void Mesh::Bind(VkCommandBuffer commandBuffer)
 	{
-		VkBuffer buffers[] = { m_VertexBuffer->GetBuffer() };
+		VkBuffer buffers[] = { m_VertexBuffer->GetVulkanBuffer() };
 		VkDeviceSize offsets[] = { 0 };
 
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 
 		if (m_HasIndexBuffer)
-			vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
 	}
 
 	void Mesh::Draw(VkCommandBuffer commandBuffer)
@@ -126,23 +126,8 @@ namespace VulkanCore {
 		m_VertexCount = (uint32_t)vertices.size();
 		VK_CORE_ASSERT(m_VertexCount >= 3, "Vertex Count should be at least greater than or equal to 3!");
 
-		VkDeviceSize bufferSize = sizeof(vertices[0]) * m_VertexCount;
-		uint32_t vertexSize = sizeof(vertices[0]);
-
-		VulkanBuffer stagingBuffer{ vertexSize, m_VertexCount,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
-
-		stagingBuffer.Map();
-		stagingBuffer.WriteToBuffer((void*)vertices.data());
-
-		m_VertexBuffer = std::make_unique<VulkanBuffer>(vertexSize, m_VertexCount,
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		auto device = VulkanContext::GetCurrentDevice();
-
-		device->CopyBuffer(stagingBuffer.GetBuffer(), m_VertexBuffer->GetBuffer(), bufferSize);
+		uint32_t bufferSize = static_cast<uint32_t>(sizeof(vertices[0]) * m_VertexCount);
+		m_VertexBuffer = std::make_unique<VulkanVertexBuffer>((void*)vertices.data(), bufferSize);
 	}
 
 	void Mesh::CreateIndexBuffers(const std::vector<uint32_t>& indices)
@@ -153,23 +138,8 @@ namespace VulkanCore {
 		if (!m_HasIndexBuffer)
 			return;
 
-		VkDeviceSize bufferSize = sizeof(indices[0]) * m_IndexCount;
-		uint32_t indexSize = sizeof(indices[0]);
-
-		VulkanBuffer stagingBuffer{ indexSize, m_IndexCount, 
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
-
-		stagingBuffer.Map();
-		stagingBuffer.WriteToBuffer((void*)indices.data());
-
-		m_IndexBuffer = std::make_unique<VulkanBuffer>(indexSize, m_IndexCount,
-			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		auto device = VulkanContext::GetCurrentDevice();
-
-		device->CopyBuffer(stagingBuffer.GetBuffer(), m_IndexBuffer->GetBuffer(), bufferSize);
+		uint32_t bufferSize = static_cast<uint32_t>(sizeof(indices[0]) * m_IndexCount);
+		m_IndexBuffer = std::make_unique<VulkanIndexBuffer>((void*)indices.data(), bufferSize);
 	}
 
 	std::vector<VkVertexInputBindingDescription> Vertex::GetBindingDescriptions()

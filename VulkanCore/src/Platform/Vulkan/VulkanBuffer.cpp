@@ -46,8 +46,6 @@ namespace VulkanCore {
 
 	VulkanBuffer::~VulkanBuffer()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-
 		Unmap();
 		vmaDestroyBuffer(VulkanContext::GetVulkanMemoryAllocator(), m_Buffer, m_MemoryAllocation);
 	}
@@ -118,7 +116,6 @@ namespace VulkanCore {
 
 	VkResult VulkanBuffer::FlushBuffer(VkDeviceSize size, VkDeviceSize offset)
 	{
-		auto device = VulkanContext::GetCurrentDevice();
 		return vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, offset, size);
 	}
 

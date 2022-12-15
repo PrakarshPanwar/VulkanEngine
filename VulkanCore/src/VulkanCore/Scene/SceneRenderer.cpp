@@ -209,37 +209,20 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
+		m_UBCamera.reserve(VulkanSwapChain::MaxFramesInFlight);
+		m_UBPointLight.reserve(VulkanSwapChain::MaxFramesInFlight);
+		m_UBSceneData.reserve(VulkanSwapChain::MaxFramesInFlight);
+		m_BloomParamsUBs.reserve(VulkanSwapChain::MaxFramesInFlight);
+		m_LodUBs.reserve(VulkanSwapChain::MaxFramesInFlight);
+
 		// Uniform Buffers
-		for (int i = 0; i < m_CameraUBs.size(); ++i)
+		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
 		{
-			auto& CameraUB = m_CameraUBs.at(i);
-			CameraUB = std::make_unique<VulkanBuffer>(sizeof(UBCamera), 1,
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-			CameraUB->Map();
-
-			auto& PointLightUB = m_PointLightUBs.at(i);
-			PointLightUB = std::make_unique<VulkanBuffer>(sizeof(UBPointLights), 1,
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-			PointLightUB->Map();
-
-			auto& ExposureUB = m_ExposureUBs.at(i);
-			ExposureUB = std::make_unique<VulkanBuffer>(sizeof(SceneSettings), 1,
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-			ExposureUB->Map();
-
+			m_UBCamera.emplace_back(sizeof(Camera));
+			m_UBPointLight.emplace_back(sizeof(UBPointLights));
+			m_UBSceneData.emplace_back(sizeof(SceneSettings));
 #if BLOOM_COMPUTE_SHADER
-			auto& LodUB = m_LodUBs.at(i);
-			LodUB = std::make_unique<VulkanBuffer>(sizeof(LodAndMode), 1,
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-			LodUB->Map();
+			m_LodUBs.emplace_back(sizeof(LodAndMode)):
 #endif
 		}
 
@@ -305,10 +288,10 @@ namespace VulkanCore {
 
 		for (int i = 0; i < m_GeometryDescriptorSets.size(); ++i)
 		{
-			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
+			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
 			geomDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
-			auto pointLightUBInfo = m_PointLightUBs[i]->DescriptorInfo();
+			auto pointLightUBInfo = m_UBPointLight[i].GetDescriptorBufferInfo();
 			geomDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
 
 			geomDescriptorWriter[i].WriteImage(2, DiffuseMaps);
@@ -325,7 +308,7 @@ namespace VulkanCore {
 
 		for (int i = 0; i < m_PointLightDescriptorSets.size(); ++i)
 		{
-			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
+			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
 			pointLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
 			bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i]);
@@ -346,7 +329,7 @@ namespace VulkanCore {
 			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
 			computeDemoDescriptorWriter[i].WriteImage(1, &imagesInfo);
 
-			auto lodUBInfo = m_LodUBs[i]->DescriptorInfo();
+			auto lodUBInfo = m_LodUBs[i].GetDescriptorBufferInfo();
 			computeDemoDescriptorWriter[i].WriteBuffer(2, &lodUBInfo);
 
 			bool success = computeDemoDescriptorWriter[i].Build(m_BloomDescriptorSets[i]);
@@ -361,7 +344,7 @@ namespace VulkanCore {
 
 		for (int i = 0; i < m_CompositeDescriptorSets.size(); ++i)
 		{
-			auto sceneUBInfo = m_ExposureUBs[i]->DescriptorInfo();
+			auto sceneUBInfo = m_UBSceneData[i].GetDescriptorBufferInfo();
 			compDescriptorWriter[i].WriteBuffer(1, &sceneUBInfo);
 
 #if BLOOM_COMPUTE_SHADER
@@ -382,7 +365,7 @@ namespace VulkanCore {
 
 		for (int i = 0; i < m_SkyboxDescriptorSets.size(); ++i)
 		{
-			auto cameraUBInfo = m_CameraUBs[i]->DescriptorInfo();
+			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
 			skyboxDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
 			VkDescriptorImageInfo imageInfo = m_CubemapTexture->GetDescriptorImageInfo();
@@ -418,25 +401,22 @@ namespace VulkanCore {
 	{
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
+		// Camera
 		UBCamera cameraUB{};
 		cameraUB.Projection = camera.GetProjectionMatrix();
 		cameraUB.View = camera.GetViewMatrix();
 		cameraUB.InverseView = glm::inverse(camera.GetViewMatrix());
-		m_CameraUBs[frameIndex]->WriteToBuffer(&cameraUB);
-		m_CameraUBs[frameIndex]->FlushBuffer();
+		m_UBCamera[frameIndex].WriteandFlushBuffer(&cameraUB);
 
+		// Point Light
 		UBPointLights pointLightUB{};
 		m_Scene->UpdatePointLightUB(pointLightUB);
-		m_PointLightUBs[frameIndex]->WriteToBuffer(&pointLightUB);
-		m_PointLightUBs[frameIndex]->FlushBuffer();
+		m_UBPointLight[frameIndex].WriteandFlushBuffer(&pointLightUB);
 
-		// TODO: Compress this in one method
-		m_ExposureUBs[frameIndex]->WriteToBuffer(&m_SceneSettings.Exposure);
-		m_ExposureUBs[frameIndex]->FlushBuffer();
-
+		// Scene Data
+		m_UBSceneData[frameIndex].WriteandFlushBuffer(&m_SceneSettings);
 #if BLOOM_COMPUTE_SHADER
-		m_LodUBs[frameIndex]->WriteToBuffer(&m_LodAndMode);
-		m_LodUBs[frameIndex]->FlushBuffer();
+		m_LodUBs[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
 #endif
 
 		GeometryPass();
