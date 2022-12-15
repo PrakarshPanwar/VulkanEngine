@@ -369,7 +369,7 @@ namespace VulkanCore {
 			bloomDescriptorWriter[i].WriteImage(2, &texInfo);
 
 			auto lodUBInfo = m_UBBloomLod[i].GetDescriptorBufferInfo();
-			bloomDescriptorWriter[i].WriteBuffer(2, &lodUBInfo);
+			bloomDescriptorWriter[i].WriteBuffer(3, &lodUBInfo);
 
 			auto bloomParamUBInfo = m_UBBloomParams[i].GetDescriptorBufferInfo();
 			bloomDescriptorWriter[i].WriteBuffer(4, &bloomParamUBInfo);
@@ -538,7 +538,6 @@ namespace VulkanCore {
 		// Scene Data
 		m_UBSceneData[frameIndex].WriteandFlushBuffer(&m_SceneSettings);
 #if BLOOM_COMPUTE_SHADER
-		m_UBBloomLod[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
 		m_UBBloomParams[frameIndex].WriteandFlushBuffer(&m_BloomParams);
 #endif
 
@@ -579,6 +578,7 @@ namespace VulkanCore {
 		// Prefilter
 		m_LodAndMode.LOD = 0.0f;
 		m_LodAndMode.Mode = 0.0f;
+		m_UBBloomLod[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
 
 		vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 			m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
@@ -593,6 +593,8 @@ namespace VulkanCore {
 		{
 			m_LodAndMode.LOD = float(i - 1);
 			m_LodAndMode.Mode = 1.0f;
+			m_UBBloomLod[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
+
 			int currentIdx = i - 1;
 
 			// Downsample(Ping)
@@ -604,6 +606,7 @@ namespace VulkanCore {
 			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
 			m_LodAndMode.LOD = (float)i;
+			m_UBBloomLod[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
 
 			// Downsample(Pong)
 			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -617,6 +620,7 @@ namespace VulkanCore {
 		// TODO: Could have to use VkImageSubresourceRange to set correct mip level
 		m_LodAndMode.LOD = float(mips - 2);
 		m_LodAndMode.Mode = 2.0f;
+		m_UBBloomLod[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
 
 		vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 			m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
@@ -630,6 +634,7 @@ namespace VulkanCore {
 		{
 			m_LodAndMode.LOD = (float)i;
 			m_LodAndMode.Mode = 3.0f;
+			m_UBBloomLod[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
 
 			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 				m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
@@ -638,6 +643,7 @@ namespace VulkanCore {
 			bloomMipSize = m_BloomTextures[2].GetMipSize(i);
 			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 		}
+
 	}
 
 	void SceneRenderer::CreateCommandBuffers()
