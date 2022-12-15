@@ -139,7 +139,7 @@ namespace VulkanCore {
 		VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot end Render Pass on Command Buffer from a different frame!");
 	
 		m_ExecuteCommandBuffers[1] = ImGuiLayer::Get()->m_ImGuiCmdBuffers[Renderer::GetCurrentFrameIndex()];
-		vkCmdExecuteCommands(commandBuffer, m_ExecuteCommandBuffers.size(), m_ExecuteCommandBuffers.data());
+		vkCmdExecuteCommands(commandBuffer, (uint32_t)m_ExecuteCommandBuffers.size(), m_ExecuteCommandBuffers.data());
 		vkCmdEndRenderPass(commandBuffer);
 	}
 

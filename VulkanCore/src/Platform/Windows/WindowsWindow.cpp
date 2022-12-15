@@ -1,8 +1,7 @@
 #include "vulkanpch.h"
 #include "WindowsWindow.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 
 #include "VulkanCore/Events/ApplicationEvent.h"
 #include "VulkanCore/Events/MouseEvent.h"

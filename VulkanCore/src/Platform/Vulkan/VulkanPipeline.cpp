@@ -1,8 +1,7 @@
 #include "vulkanpch.h"
 #include "VulkanPipeline.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
