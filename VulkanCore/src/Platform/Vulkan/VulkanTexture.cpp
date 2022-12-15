@@ -2,8 +2,7 @@
 #include "VulkanTexture.h"
 #include "stb_image.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
 #include "VulkanBuffer.h"

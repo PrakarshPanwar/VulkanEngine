@@ -6,8 +6,7 @@
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Application.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
 #include <imgui.h>
@@ -17,7 +16,6 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/color_space.hpp>
-#include <filesystem>
 
 #define IMGUI_VIEWPORTS 1
 
