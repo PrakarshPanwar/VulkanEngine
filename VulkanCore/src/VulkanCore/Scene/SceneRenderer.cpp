@@ -217,8 +217,8 @@ namespace VulkanCore {
 		m_UBCamera.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_UBPointLight.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_UBSceneData.reserve(VulkanSwapChain::MaxFramesInFlight);
-		m_BloomParamsUBs.reserve(VulkanSwapChain::MaxFramesInFlight);
-		m_LodUBs.reserve(VulkanSwapChain::MaxFramesInFlight);
+		m_UBBloomParams.reserve(VulkanSwapChain::MaxFramesInFlight);
+		m_UBBloomLod.reserve(VulkanSwapChain::MaxFramesInFlight);
 
 		// Uniform Buffers
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
@@ -227,8 +227,8 @@ namespace VulkanCore {
 			m_UBPointLight.emplace_back(sizeof(UBPointLights));
 			m_UBSceneData.emplace_back(sizeof(SceneSettings));
 #if BLOOM_COMPUTE_SHADER
-			m_LodUBs.emplace_back(sizeof(LodAndMode)):
-			m_BloomParams.emplace_back(sizeof(BloomParams));
+			m_UBBloomLod.emplace_back(sizeof(LodAndMode));
+			m_UBBloomParams.emplace_back(sizeof(BloomParams));
 #endif
 		}
 
@@ -304,7 +304,6 @@ namespace VulkanCore {
 		m_GeometryDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_PointLightDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_CompositeDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_BloomDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_SkyboxDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		// Geometry Descriptors
@@ -369,10 +368,10 @@ namespace VulkanCore {
 			bloomDescriptorWriter[i].WriteImage(1, &texInfo);
 			bloomDescriptorWriter[i].WriteImage(2, &texInfo);
 
-			auto lodUBInfo = m_LodUBs[i].GetDescriptorBufferInfo();
-			computeDemoDescriptorWriter[i].WriteBuffer(2, &lodUBInfo);
+			auto lodUBInfo = m_UBBloomLod[i].GetDescriptorBufferInfo();
+			bloomDescriptorWriter[i].WriteBuffer(2, &lodUBInfo);
 
-			auto bloomParamUBInfo = m_BloomParamsUBs[i].GetDescriptorBufferInfo();
+			auto bloomParamUBInfo = m_UBBloomParams[i].GetDescriptorBufferInfo();
 			bloomDescriptorWriter[i].WriteBuffer(4, &bloomParamUBInfo);
 
 			bool success = bloomDescriptorWriter[i].Build(m_BloomPrefilterSets[i]);
@@ -539,8 +538,8 @@ namespace VulkanCore {
 		// Scene Data
 		m_UBSceneData[frameIndex].WriteandFlushBuffer(&m_SceneSettings);
 #if BLOOM_COMPUTE_SHADER
-		m_LodUBs[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
-		m_BloomParamsUBs[frameIndex]->WriteandFlushBuffer(&m_BloomParams);
+		m_UBBloomLod[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
+		m_UBBloomParams[frameIndex].WriteandFlushBuffer(&m_BloomParams);
 #endif
 
 		GeometryPass();
