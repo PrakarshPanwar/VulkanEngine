@@ -99,8 +99,8 @@ namespace VulkanCore {
 		std::vector<VulkanUniformBuffer> m_UBPointLight;
 		std::vector<VulkanUniformBuffer> m_UBSceneData;
 
-		std::vector<VulkanUniformBuffer> m_BloomParamsUBs;
-		std::vector<VulkanUniformBuffer> m_LodUBs;
+		std::vector<VulkanUniformBuffer> m_UBBloomParams;
+		std::vector<VulkanUniformBuffer> m_UBBloomLod;
 
 		std::vector<VulkanImage> m_BloomTextures;
 		std::vector<VulkanImage> m_SceneCopyImages;
