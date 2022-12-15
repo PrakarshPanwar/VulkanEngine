@@ -1,6 +1,7 @@
 #pragma once
 #include "Platform/Vulkan/VulkanContext.h"
-#include "Platform/Vulkan/VulkanBuffer.h"
+#include "Platform/Vulkan/VulkanVertexBuffer.h"
+#include "Platform/Vulkan/VulkanIndexBuffer.h"
 
 #include <glm/glm.hpp>
 #include <assimp/scene.h>
@@ -75,8 +76,8 @@ namespace VulkanCore {
 		void CreateIndexBuffers(const std::vector<uint32_t>& indices);
 	private:
 		std::string m_FilePath;
-		std::shared_ptr<VulkanBuffer> m_VertexBuffer;
-		std::shared_ptr<VulkanBuffer> m_IndexBuffer;
+		std::unique_ptr<VulkanVertexBuffer> m_VertexBuffer;
+		std::unique_ptr<VulkanIndexBuffer> m_IndexBuffer;
 		uint32_t m_VertexCount, m_IndexCount;
 		int m_MaterialID;
 		bool m_HasIndexBuffer = false;
