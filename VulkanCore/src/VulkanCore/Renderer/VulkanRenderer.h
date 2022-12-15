@@ -1,6 +1,7 @@
 #pragma once
 #include "Platform/Windows/WindowsWindow.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
+#include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "VulkanCore/Mesh/Mesh.h"
 
@@ -34,6 +35,8 @@ namespace VulkanCore {
 			return m_CommandBuffers[m_CurrentFrameIndex];
 		}
 
+		static std::shared_ptr<VulkanTextureCube> CreateEnviromentMap(const std::string& filepath);
+
 		inline VkRenderPass GetSwapChainRenderPass() const { return m_SwapChain->GetRenderPass(); }
 		inline int GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
 		inline VkQueryPool GetPerfQueryPool() const { return m_QueryPool; }
@@ -51,6 +54,9 @@ namespace VulkanCore {
 		std::unique_ptr<VulkanSwapChain> m_SwapChain;
 
 		std::vector<VkCommandBuffer> m_CommandBuffers;
+		std::vector<VkCommandBuffer> m_SecondaryCommandBuffers;
+		std::array<VkCommandBuffer, 2> m_ExecuteCommandBuffers;
+
 		VkQueryPool m_QueryPool;
 		uint32_t m_CurrentImageIndex;
 		int m_CurrentFrameIndex = 0;

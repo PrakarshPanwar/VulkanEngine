@@ -31,8 +31,7 @@ namespace VulkanCore {
 		FramebufferAttachmentSpecification Attachments;
 		uint32_t Samples = 1;
 		glm::vec4 ClearColor = { 0.01f, 0.01f, 0.01f, 1.0f };
-
-		bool SwapChainTarget = false;
+		bool ReadDepthTexture = false;
 	};
 
 	class VulkanFramebuffer

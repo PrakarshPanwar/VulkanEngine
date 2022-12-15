@@ -16,7 +16,12 @@ namespace VulkanCore {
 			m_RTCondVar.notify_one();
 		}
 
+		static void Wait();
+		static void WaitAndSet();
 		static void WaitandDestroy();
+		static void NotifyMainThread();
+
+		bool CommandQueueEmpty() { return m_RTQueue.empty(); }
 	private:
 		static void ThreadEntryPoint();
 	private:

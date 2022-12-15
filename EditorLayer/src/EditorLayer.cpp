@@ -35,7 +35,7 @@ namespace VulkanCore {
 
 	void EditorLayer::OnAttach()
 	{
-		VK_CORE_INFO("Running Editor Layer");
+		VK_INFO("Running Editor Layer");
 
 		std::unique_ptr<Timer> editorInit = std::make_unique<Timer>("Editor Initialization");
 
@@ -157,9 +157,9 @@ namespace VulkanCore {
 
 		if ((m_ViewportSize.x != region.x) && (m_ViewportSize.y != region.y))
 		{
-			VK_CORE_TRACE("Viewport has been Resized!");
+			VK_TRACE("Viewport has been Resized!");
 			m_ViewportSize = region;
-			m_SceneRenderer->SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+			m_SceneRenderer->SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 			RecreateSceneDescriptors();
 			m_EditorCamera.SetViewportSize(region.x, region.y);
 		}

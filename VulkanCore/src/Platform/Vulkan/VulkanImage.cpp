@@ -15,6 +15,7 @@ namespace VulkanCore {
 			{
 			case ImageFormat::RGBA8_SRGB:	   return VK_FORMAT_R8G8B8A8_SRGB;
 			case ImageFormat::RGBA8_NORM:	   return VK_FORMAT_R8G8B8A8_SNORM;
+			case ImageFormat::RGBA8_UNORM:	   return VK_FORMAT_R8G8B8A8_UNORM;
 			case ImageFormat::RGBA16F:		   return VK_FORMAT_R16G16B16A16_SFLOAT;
 			case ImageFormat::RGBA32F:		   return VK_FORMAT_R32G32B32A32_SFLOAT;
 			case ImageFormat::DEPTH24STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
@@ -102,11 +103,11 @@ namespace VulkanCore {
 	{
 	}
 
-	VulkanImage::VulkanImage(uint32_t width, uint32_t height, ImageUsage usage)
+	VulkanImage::VulkanImage(uint32_t width, uint32_t height, ImageUsage usage, ImageFormat format)
 	{
 		m_Specification.Width = width;
 		m_Specification.Height = height;
-		m_Specification.Format = ImageFormat::RGBA8_SRGB;
+		m_Specification.Format = format;
 		m_Specification.Usage = usage;
 	}
 
@@ -153,9 +154,7 @@ namespace VulkanCore {
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageCreateInfo.format = vulkanFormat;
-		imageCreateInfo.extent.width = m_Specification.Width;
-		imageCreateInfo.extent.height = m_Specification.Height;
-		imageCreateInfo.extent.depth = 1;
+		imageCreateInfo.extent = { m_Specification.Width, m_Specification.Height, 1 };
 		imageCreateInfo.arrayLayers = 1;
 		imageCreateInfo.samples = Utils::VulkanSampleCount(m_Specification.Samples);
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -212,7 +211,7 @@ namespace VulkanCore {
 			VkImageSubresourceRange subresourceRange{}; // TODO: Add Mips
 			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			subresourceRange.baseMipLevel = 0;
-			subresourceRange.levelCount = 1;
+			subresourceRange.levelCount = m_Specification.MipLevels;
 			subresourceRange.layerCount = 1;
 
 			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,

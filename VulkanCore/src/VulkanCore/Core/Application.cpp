@@ -105,7 +105,6 @@ namespace VulkanCore {
 
 	void Application::Run()
 	{
-		RenderThread::WaitandDestroy();
 		m_AppTimer.reset();
 
 		while (m_Running)
@@ -117,9 +116,10 @@ namespace VulkanCore {
 				m_Renderer->BeginSwapChainRenderPass(commandBuffer);
 
 				m_ImGuiLayer->ImGuiBegin();
-				for (Layer* layer : m_LayerStack)
-					layer->OnImGuiRender();
-				m_ImGuiLayer->ImGuiRenderandEnd(commandBuffer);
+				Renderer::Submit([this]() { RenderImGui(); });
+				Renderer::Submit([this]() { m_ImGuiLayer->ImGuiEnd(); });
+
+				RenderThread::Wait();
 
 				m_Renderer->EndSwapChainRenderPass(commandBuffer);
 				m_Renderer->EndFrame();
@@ -135,6 +135,8 @@ namespace VulkanCore {
 
 			m_Renderer->FinalQueueSubmit();
 		}
+
+		RenderThread::WaitandDestroy();
 	}
 
 	void Application::OnEvent(Event& e)
@@ -173,6 +175,12 @@ namespace VulkanCore {
 	{
 		m_Renderer->RecreateSwapChain();
 		return true;
+	}
+
+	void Application::RenderImGui()
+	{
+		for (Layer* layer : m_LayerStack)
+			layer->OnImGuiRender();
 	}
 
 }

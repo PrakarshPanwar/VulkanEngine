@@ -16,6 +16,7 @@ namespace VulkanCore {
 		None,
 		RGBA8_SRGB,
 		RGBA8_NORM,
+		RGBA8_UNORM,
 		RGBA16F,
 		RGBA32F,
 
@@ -59,7 +60,7 @@ namespace VulkanCore {
 	{
 	public:
 		VulkanImage(const ImageSpecification& spec);
-		VulkanImage(uint32_t width, uint32_t height, ImageUsage usage);
+		VulkanImage(uint32_t width, uint32_t height, ImageUsage usage, ImageFormat format);
 		~VulkanImage();
 
 		void Invalidate();
