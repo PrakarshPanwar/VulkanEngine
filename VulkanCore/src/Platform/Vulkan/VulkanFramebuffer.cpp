@@ -137,7 +137,7 @@ namespace VulkanCore {
 					spec.Samples = 1;
 					spec.Format = attachment.ImgFormat;
 					spec.Usage = ImageUsage::Attachment;
-					spec.MipLevels = mipCount;
+					//spec.MipLevels = mipCount;
 
 					auto& resolveColorImage = ResolveImages.emplace_back(spec);
 					resolveColorImage.Invalidate();
