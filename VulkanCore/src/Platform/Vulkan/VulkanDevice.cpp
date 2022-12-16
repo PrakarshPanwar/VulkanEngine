@@ -199,6 +199,8 @@ namespace VulkanCore {
 	// TODO: Maybe we also have to create a fence to check whether command has completed or not
 	void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer)
 	{
+		const uint64_t DEFAULT_FENCE_TIMEOUT = 100000000000;
+
 		vkEndCommandBuffer(commandBuffer);
 
 		VkSubmitInfo submitInfo{};
@@ -206,9 +208,19 @@ namespace VulkanCore {
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffer;
 
-		vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(m_GraphicsQueue);
+		VkFenceCreateInfo fenceCreateInfo{};
+		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceCreateInfo.flags = 0;
 
+		VkFence fence;
+		VK_CHECK_RESULT(vkCreateFence(m_LogicalDevice, &fenceCreateInfo, nullptr, &fence), "Failed to Create Fence!");
+
+		// Submit to Queue
+		VK_CHECK_RESULT(vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, fence), "Failed to Submit to Queue!");
+		// Wait for the fence to signal
+		VK_CHECK_RESULT(vkWaitForFences(m_LogicalDevice, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT), "Failed to Wait for Fence to signal!");
+
+		vkDestroyFence(m_LogicalDevice, fence, nullptr);
 		vkFreeCommandBuffers(m_LogicalDevice, m_CommandPool, 1, &commandBuffer);
 	}
 
