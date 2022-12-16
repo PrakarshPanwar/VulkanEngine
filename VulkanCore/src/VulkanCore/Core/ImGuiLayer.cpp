@@ -165,8 +165,6 @@ namespace VulkanCore {
 #endif
 
 		vkEndCommandBuffer(commandBuffer);
-
-		RenderThread::NotifyMainThread();
 	}
 
 	void ImGuiLayer::ShutDown()

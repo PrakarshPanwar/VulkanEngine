@@ -23,7 +23,7 @@ namespace VulkanCore {
 	}
 
 	void RenderThread::ThreadEntryPoint()
-{
+	{
 		std::function<void()> JobWork;
 
 		while (true)
@@ -44,6 +44,8 @@ namespace VulkanCore {
 
 			// Do the job without holding any locks
 			JobWork();
+
+			if (m_RTQueue.empty()) { m_RTCondVar.notify_one(); }
 		}
 	}
 
