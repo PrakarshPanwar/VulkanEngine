@@ -87,7 +87,9 @@ namespace VulkanCore {
 				vkCmdPushConstants(drawCmd,
 					pipeline->GetVulkanPipelineLayout(),
 					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-					0, sizeof(PCModelData), &pushConstants);
+					0,
+					sizeof(PCModelData),
+					&pushConstants);
 
 				Renderer::RenderMesh(entity.GetComponent<MeshComponent>().MeshInstance);
 			}
@@ -118,8 +120,12 @@ namespace VulkanCore {
 				push.Color = pointLightComp.PointLightInstance->Color;
 				push.Radius = lightTransform.Scale.x;
 
-				vkCmdPushConstants(sceneInfo.CommandBuffer, sceneInfo.PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-					0, sizeof(PCPointLight), &push);
+				vkCmdPushConstants(sceneInfo.CommandBuffer,
+					sceneInfo.PipelineLayout,
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+					0,
+					sizeof(PCPointLight),
+					&push);
 
 				vkCmdDraw(sceneInfo.CommandBuffer, 6, 1, 0, 0);
 			}
@@ -160,7 +166,9 @@ namespace VulkanCore {
 				vkCmdPushConstants(drawCmd,
 					pipeline->GetVulkanPipelineLayout(),
 					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-					0, sizeof(PCPointLight), &push);
+					0,
+					sizeof(PCPointLight),
+					&push);
 
 				vkCmdDraw(drawCmd, 6, 1, 0, 0);
 			}
