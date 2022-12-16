@@ -148,6 +148,8 @@ namespace VulkanCore {
 
 		ImGui::Begin("Viewport");
 		auto region = ImGui::GetContentRegionAvail();
+		m_ViewportSize = { region.x, region.y };
+
 		auto windowSize = ImGui::GetWindowSize();
 		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
 		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
@@ -155,12 +157,11 @@ namespace VulkanCore {
 		m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
 		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
 
-		if ((m_ViewportSize.x != region.x) && (m_ViewportSize.y != region.y))
+		if (glm::ivec2 sceneViewportSize = m_SceneRenderer->GetViewportSize();
+			m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
+			(sceneViewportSize.x != m_ViewportSize.x || sceneViewportSize.y != m_ViewportSize.y))
 		{
-			VK_TRACE("Viewport has been Resized!");
-			m_ViewportSize = region;
 			m_SceneRenderer->SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
-			RecreateSceneDescriptors();
 			m_EditorCamera.SetViewportSize(region.x, region.y);
 		}
 
