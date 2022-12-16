@@ -32,6 +32,7 @@ namespace VulkanCore {
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
 		// TODO: Use struct SceneRendererData
+		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		inline VkCommandBuffer GetCommandBuffer(uint32_t index) { return m_SceneCommandBuffers[index]; }
 		inline std::shared_ptr<VulkanFramebuffer> GetFramebuffer() { return m_SceneFramebuffer; }
 		inline std::shared_ptr<VulkanRenderPass> GetRenderPass() { return m_SceneRenderPass; }
