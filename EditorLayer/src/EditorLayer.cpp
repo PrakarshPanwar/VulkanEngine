@@ -122,29 +122,17 @@ namespace VulkanCore {
 
 		style.WindowMinSize.x = minWinSizeX;
 
-		// TODO: Shift these operations in Renderer
-		constexpr std::array<uint64_t, 2> queryPoolBuffer = { 0, 0 };
-		vkGetQueryPoolResults(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
-			VulkanRenderer::Get()->GetPerfQueryPool(),
-			0, 2, sizeof(uint64_t) * 2,
-			(void*)queryPoolBuffer.data(), sizeof(uint64_t),
-			VK_QUERY_RESULT_64_BIT);
-
-		uint64_t timeStamp = queryPoolBuffer[1] - queryPoolBuffer[0];
-
-		std::chrono::duration rasterTime = 
-			std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::nanoseconds(timeStamp));
-
 		//ImGui::ShowDemoWindow(&m_ImGuiShowWindow);
 		ImGui::Begin("Application Stats");
 		SHOW_FRAMERATES;
 		ImGui::Checkbox("Show ImGui Demo Window", &m_ImGuiShowWindow);
-		ImGui::Text("Scene Rasterization Time: %llums", rasterTime.count());
 		ImGui::Text("Camera Aspect Ratio: %.6f", m_EditorCamera.GetAspectRatio());
 		ImGui::End();
 
 		ImGui::Begin("Viewport");
 		auto region = ImGui::GetContentRegionAvail();
+		m_ViewportSize = { region.x, region.y };
+
 		auto windowSize = ImGui::GetWindowSize();
 		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
 		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
@@ -152,12 +140,11 @@ namespace VulkanCore {
 		m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
 		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
 
-		if ((m_ViewportSize.x != region.x) && (m_ViewportSize.y != region.y))
+		if (glm::ivec2 sceneViewportSize = m_SceneRenderer->GetViewportSize();
+			m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
+			(sceneViewportSize.x != m_ViewportSize.x || sceneViewportSize.y != m_ViewportSize.y))
 		{
-			VK_TRACE("Viewport has been Resized!");
-			m_ViewportSize = region;
-			m_SceneRenderer->SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-			RecreateSceneDescriptors();
+			m_SceneRenderer->SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
 			m_EditorCamera.SetViewportSize(region.x, region.y);
 		}
 

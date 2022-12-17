@@ -54,6 +54,7 @@ namespace VulkanCore {
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo), "Failed to Begin Recording Command Buffer!");
+		vkCmdResetQueryPool(commandBuffer, m_QueryPool, 0, m_QueryCount);
 
 		return commandBuffer;
 	}
@@ -148,7 +149,6 @@ namespace VulkanCore {
 		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
 		// TODO: This have to shifted in VulkanRenderCommandBuffer
-		vkCmdResetQueryPool(commandBuffer, m_QueryPool, 0, 2);
 		auto renderPass = sceneRenderer->GetRenderPass();
 		Renderer::BeginRenderPass(renderPass);
 	}
@@ -241,7 +241,7 @@ namespace VulkanCore {
 
 		VkQueryPoolCreateInfo queryPoolInfo{};
 		queryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-		queryPoolInfo.queryCount = 2;
+		queryPoolInfo.queryCount = m_QueryCount;
 		queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
 		
 		vkCreateQueryPool(device->GetVulkanDevice(), &queryPoolInfo, nullptr, &m_QueryPool);

@@ -393,6 +393,16 @@ namespace VulkanCore {
 	{
 		ImGui::Begin("Scene Renderer");
 		ImGui::DragFloat("Exposure Intensity", &m_SceneSettings.Exposure, 0.01f, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+
+		if (ImGui::TreeNode("Scene Renderer Stats##GPUPerf"))
+		{
+			Renderer::RetrieveQueryPoolResults();
+
+			ImGui::Text("Geometry Pass: %lluns", Renderer::GetQueryTime(0));
+			ImGui::Text("Composite Pass: %lluns", Renderer::GetQueryTime(1));
+			ImGui::TreePop();
+		}
+
 		ImGui::End();
 	}
 
@@ -427,13 +437,19 @@ namespace VulkanCore {
 
 	void SceneRenderer::CompositePass()
 	{
+		Renderer::BeginGPUPerfMarker();
+
 		Renderer::BeginRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
 		Renderer::SubmitFullscreenQuad(m_CompositePipeline, m_CompositeDescriptorSets);
 		Renderer::EndRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
+
+		Renderer::EndGPUPerfMarker();
 	}
 
 	void SceneRenderer::GeometryPass()
 	{
+		Renderer::BeginGPUPerfMarker();
+
 		Renderer::BeginRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
 
 		m_Scene->OnUpdateGeometry(m_SceneCommandBuffers, m_GeometryPipeline, m_GeometryDescriptorSets);
@@ -443,6 +459,8 @@ namespace VulkanCore {
 		Renderer::RenderSkybox(m_SkyboxPipeline, m_SkyboxMesh, m_SkyboxDescriptorSets);
 
 		Renderer::EndRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
+
+		Renderer::EndGPUPerfMarker();
 	}
 
 	void SceneRenderer::BloomBlurPass()
