@@ -101,6 +101,7 @@ namespace VulkanCore {
 		m_ImGuiLayer->OnAttach();
 
 		Renderer::BuildShaders();
+		Renderer::SetRendererAPI(m_Renderer.get());
 	}
 
 	void Application::Run()
