@@ -125,24 +125,10 @@ namespace VulkanCore {
 
 		style.WindowMinSize.x = minWinSizeX;
 
-		// TODO: Shift these operations in Renderer
-		constexpr std::array<uint64_t, 2> queryPoolBuffer = { 0, 0 };
-		vkGetQueryPoolResults(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
-			VulkanRenderer::Get()->GetPerfQueryPool(),
-			0, 2, sizeof(uint64_t) * 2,
-			(void*)queryPoolBuffer.data(), sizeof(uint64_t),
-			VK_QUERY_RESULT_64_BIT);
-
-		uint64_t timeStamp = queryPoolBuffer[1] - queryPoolBuffer[0];
-
-		std::chrono::duration rasterTime = 
-			std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::nanoseconds(timeStamp));
-
 		//ImGui::ShowDemoWindow(&m_ImGuiShowWindow);
 		ImGui::Begin("Application Stats");
 		SHOW_FRAMERATES;
 		ImGui::Checkbox("Show ImGui Demo Window", &m_ImGuiShowWindow);
-		ImGui::Text("Scene Rasterization Time: %llums", rasterTime.count());
 		ImGui::Text("Camera Aspect Ratio: %.6f", m_EditorCamera.GetAspectRatio());
 		ImGui::End();
 
