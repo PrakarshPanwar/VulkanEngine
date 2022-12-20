@@ -62,6 +62,14 @@ namespace VulkanCore {
 			}
 		}
 
+		static void SetImageLayout(VkCommandBuffer layoutCmd, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageSubresourceRange subresourceRange)
+		{
+			Utils::InsertImageMemoryBarrier(layoutCmd, image, 0, 0,
+				oldLayout, newLayout,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				subresourceRange);
+		}
+
 	}
 
 	VulkanTexture::VulkanTexture(const std::string& filepath)
@@ -321,6 +329,7 @@ namespace VulkanCore {
 
 		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
 
+		m_DescriptorImageInfo.imageLayout = m_ReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
 		// Create a view for Image
 		VkImageViewCreateInfo viewCreateInfo{};
 		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -450,35 +459,35 @@ namespace VulkanCore {
 				bufferCopyRegions[i] = bufferCopyRegion;
 			}
 
-			VkCommandBuffer copyCmd = device->GetCommandBuffer();
+			// Copy Data
+			{
+				VkCommandBuffer copyCmd = device->GetCommandBuffer();
 
-			vkCmdCopyBufferToImage(copyCmd,
-				stagingBuffer.GetBuffer(),
-				m_Info.Image,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				(uint32_t)bufferCopyRegions.size(),
-				bufferCopyRegions.data()
-			);
+				vkCmdCopyBufferToImage(copyCmd,
+					stagingBuffer.GetBuffer(),
+					m_Info.Image,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					(uint32_t)bufferCopyRegions.size(),
+					bufferCopyRegions.data()
+				);
 
-			stagingBuffer.Unmap();
+				stagingBuffer.Unmap();
 
-			device->FlushCommandBuffer(copyCmd);
+				device->FlushCommandBuffer(copyCmd);
+			}
 
-			if (m_Specification.GenerateMips)
-				GenerateMipMaps();
-
-			else
+			// Set to Descriptor Image Layout
 			{
 				VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
 				VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, mipCount, 0, 6 };
 
 				Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
-					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					VK_ACCESS_TRANSFER_WRITE_BIT, 0,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_DescriptorImageInfo.imageLayout,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 					subresourceRange);
-			
+
 				device->FlushCommandBuffer(barrierCmd);
 			}
 
@@ -486,22 +495,20 @@ namespace VulkanCore {
 
 		else
 		{
-			VkCommandBuffer barrierCmd = device->GetCommandBuffer();
-
 			VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, mipCount, 0, 6 };
+			VkCommandBuffer layoutCmd = device->GetCommandBuffer();
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
-				0, VK_ACCESS_SHADER_READ_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			Utils::SetImageLayout(
+				layoutCmd, m_Info.Image,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_GENERAL,
 				subresourceRange);
 
-			device->FlushCommandBuffer(barrierCmd);
+			device->FlushCommandBuffer(layoutCmd);
 		}
 
 		m_DescriptorImageInfo.imageView = m_Info.ImageView;
 		m_DescriptorImageInfo.sampler = m_Info.Sampler;
-		m_DescriptorImageInfo.imageLayout = m_ReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
 	}
 
 	void VulkanTextureCube::Release()
@@ -514,6 +521,7 @@ namespace VulkanCore {
 		allocator.DestroyImage(m_Info.Image, m_Info.MemoryAlloc);
 	}
 
+	// NOTE: It should not be called inside Invalidate
 	void VulkanTextureCube::GenerateMipMaps()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
@@ -531,8 +539,8 @@ namespace VulkanCore {
 			mipSubRange.layerCount = 1;
 
 			Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
-				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				0, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				mipSubRange);
 		}

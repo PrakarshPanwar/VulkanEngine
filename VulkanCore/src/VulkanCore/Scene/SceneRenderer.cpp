@@ -399,7 +399,8 @@ namespace VulkanCore {
 			Renderer::RetrieveQueryPoolResults();
 
 			ImGui::Text("Geometry Pass: %lluns", Renderer::GetQueryTime(0));
-			ImGui::Text("Composite Pass: %lluns", Renderer::GetQueryTime(1));
+			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(2));
+			ImGui::Text("Composite Pass: %lluns", Renderer::GetQueryTime(3));
 			ImGui::TreePop();
 		}
 
@@ -448,19 +449,25 @@ namespace VulkanCore {
 
 	void SceneRenderer::GeometryPass()
 	{
-		Renderer::BeginGPUPerfMarker();
-
 		Renderer::BeginRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
 
+		// Rendering Geometry
+		Renderer::BeginGPUPerfMarker();
 		m_Scene->OnUpdateGeometry(m_SceneCommandBuffers, m_GeometryPipeline, m_GeometryDescriptorSets);
+		Renderer::EndGPUPerfMarker();
+
+		// Rendering Point Lights
+		Renderer::BeginGPUPerfMarker();
 		m_Scene->OnUpdateLights(m_SceneCommandBuffers, m_PointLightPipeline, m_PointLightDescriptorSets);
+		Renderer::EndGPUPerfMarker();
+
+		Renderer::BeginGPUPerfMarker();
 
 		// Rendering Skybox
 		Renderer::RenderSkybox(m_SkyboxPipeline, m_SkyboxMesh, m_SkyboxDescriptorSets);
+		Renderer::EndGPUPerfMarker();
 
 		Renderer::EndRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
-
-		Renderer::EndGPUPerfMarker();
 	}
 
 	void SceneRenderer::BloomBlurPass()

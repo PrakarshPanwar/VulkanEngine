@@ -117,7 +117,7 @@ namespace VulkanCore {
 				Renderer::Submit([this]() { RenderImGui(); });
 				Renderer::Submit([this]() { m_ImGuiLayer->ImGuiEnd(); });
 
-				RenderThread::Wait();
+				Renderer::WaitandRender();
 
 				m_Renderer->EndSwapChainRenderPass(commandBuffer);
 				m_Renderer->EndFrame();
