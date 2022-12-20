@@ -68,6 +68,7 @@ namespace VulkanCore {
 		m_Shaders["Bloom"] = Utils::MakeShader("Bloom");
 		m_Shaders["Skybox"] = Utils::MakeShader("Skybox");
 		m_Shaders["EquirectangularToCubeMap"] = Utils::MakeShader("EquirectangularToCubeMap");
+		m_Shaders["EnvironmentMipFilter"] = Utils::MakeShader("EnvironmentMipFilter");
 	}
 
 	void Renderer::DestroyShaders()
