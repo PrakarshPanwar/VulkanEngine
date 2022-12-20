@@ -196,6 +196,8 @@ namespace VulkanCore {
 			equirectangularConversionPipeline->Dispatch(dispatchCmd, cubemapSize / 16, cubemapSize / 16, 6);
 
 			device->FlushCommandBuffer(dispatchCmd);
+			
+			envUnfiltered->GenerateMipMaps();
 		});
 
 		return envUnfiltered;

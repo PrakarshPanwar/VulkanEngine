@@ -47,10 +47,10 @@ namespace VulkanCore {
 		~VulkanTextureCube();
 
 		void Invalidate();
+		void GenerateMipMaps();
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_DescriptorImageInfo; }
 	private:
 		void Release();
-		void GenerateMipMaps();
 	private:
 		std::string m_FilePath;
 
