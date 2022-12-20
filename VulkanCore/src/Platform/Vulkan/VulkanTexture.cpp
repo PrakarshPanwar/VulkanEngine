@@ -129,7 +129,7 @@ namespace VulkanCore {
 		spec.Width = m_Specification.Width;
 		spec.Height = m_Specification.Height;
 		spec.Usage = ImageUsage::Texture;
-		spec.Format = m_Specification.Format; // TODO: Change this when HDR Textures come
+		spec.Format = m_Specification.Format;
 		spec.MipLevels = Utils::CalculateMipCount(width, height);
 		m_Image = std::make_shared<VulkanImage>(spec);
 		m_Image->Invalidate();

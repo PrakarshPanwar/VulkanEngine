@@ -30,15 +30,12 @@ vec3 CubeCoordToWorld(vec2 uv, uint side)
 layout(local_size_x = 16, local_size_y = 16) in;
 void main()
 {
-	vec3 invocID = vec3(gl_GlobalInvocationID);
+    ivec3 invocID = ivec3(gl_GlobalInvocationID);
     vec2 uv = (gl_GlobalInvocationID.xy + vec2(0.5)) / vec2(imageSize(o_CubeMap).xy);
 
-	for (uint i = 0; i != 6; ++i)
-    {
-        const vec3 localPos = -normalize(CubeCoordToWorld(uv, i));
-        vec2 texCoords = SampleSphericalMap(localPos);
+    const vec3 localPos = -normalize(CubeCoordToWorld(uv, invocID.z));
+    vec2 texCoords = SampleSphericalMap(localPos);
 
-        vec4 color = vec4(texture(u_EquirectangularTex, texCoords).rgb, 1.0);
-        imageStore(o_CubeMap, ivec3(gl_GlobalInvocationID.xy, i), color);
-    }
+    vec4 color = vec4(texture(u_EquirectangularTex, texCoords).rgb, 1.0);
+    imageStore(o_CubeMap, invocID, color);
 }
