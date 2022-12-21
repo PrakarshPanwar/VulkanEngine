@@ -272,8 +272,6 @@ namespace VulkanCore {
 		m_Specification.Height = height;
 		m_Specification.Format = format;
 		m_Specification.GenerateMips = true;
-
-		m_ReadOnly = false;
 	}
 
 	VulkanTextureCube::VulkanTextureCube(const std::string& filepath, TextureSpecification spec)
@@ -329,7 +327,7 @@ namespace VulkanCore {
 
 		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
 
-		m_DescriptorImageInfo.imageLayout = m_ReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
+		m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		// Create a view for Image
 		VkImageViewCreateInfo viewCreateInfo{};
 		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -516,13 +514,16 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("TextureCube");
 
+		for (auto& mipReference : m_MipReferences)
+			vkDestroyImageView(device->GetVulkanDevice(), mipReference, nullptr);
+
 		vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
 		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
 		allocator.DestroyImage(m_Info.Image, m_Info.MemoryAlloc);
 	}
 
 	// NOTE: It should not be called inside Invalidate
-	void VulkanTextureCube::GenerateMipMaps()
+	void VulkanTextureCube::GenerateMipMaps(bool readonly)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
@@ -603,13 +604,40 @@ namespace VulkanCore {
 
 		Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
 			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_ReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, readonly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
 			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 			subresourceRange);
 
 		device->FlushCommandBuffer(blitCmd);
 
-		m_DescriptorImageInfo.imageLayout = m_ReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
+		m_DescriptorImageInfo.imageLayout = readonly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
+	}
+
+	VkImageView VulkanTextureCube::CreateImageViewSingleMip(uint32_t mip)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
+
+		// Create View for single mip
+		VkImageViewCreateInfo viewCreateInfo{};
+		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+		viewCreateInfo.image = m_Info.Image;
+		viewCreateInfo.format = vulkanFormat;
+		viewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewCreateInfo.subresourceRange.baseMipLevel = mip;
+		viewCreateInfo.subresourceRange.levelCount = 1;
+		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		viewCreateInfo.subresourceRange.layerCount = 6;
+
+		VkImageView result;
+		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &result), "Failed to Create Image View!");
+
+		m_MipReferences.push_back(result);
+
+		return result;
 	}
 
 }
