@@ -207,7 +207,7 @@ namespace VulkanCore {
 		{
 			auto barrierCmd = device->GetCommandBuffer();
 
-			VkImageSubresourceRange subresourceRange{}; // TODO: Add Mips
+			VkImageSubresourceRange subresourceRange{};
 			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			subresourceRange.baseMipLevel = 0;
 			subresourceRange.levelCount = m_Specification.MipLevels;
