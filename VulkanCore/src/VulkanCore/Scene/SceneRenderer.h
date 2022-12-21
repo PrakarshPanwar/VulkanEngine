@@ -104,6 +104,7 @@ namespace VulkanCore {
 		// Skybox Resources
 		std::shared_ptr<VulkanTextureCube> m_CubemapTexture;
 		std::shared_ptr<Mesh> m_SkyboxMesh;
+		float m_SkyboxLOD = 0.0f;
 
 		glm::ivec2 m_ViewportSize;
 
