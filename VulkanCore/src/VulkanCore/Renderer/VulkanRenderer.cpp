@@ -158,9 +158,10 @@ namespace VulkanCore {
 		Renderer::EndRenderPass(renderPass);
 	}
 
-	std::shared_ptr<VulkanTextureCube> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
+	std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
 	{
 		constexpr uint32_t cubemapSize = 1024;
+		constexpr uint32_t irradianceMapSize = 32;
 
 		std::shared_ptr<VulkanTexture> envEquirect = std::make_shared<VulkanTexture>(filepath);
 
@@ -239,20 +240,47 @@ namespace VulkanCore {
 			{
 				uint32_t numGroups = glm::max(1u, size / 16);
 				float roughness = i * deltaRoughness;
-				roughness = glm::max(roughness, 0.05f);
 				environmentMipFilterPipeline->SetPushConstants(dispatchCmd, &roughness, sizeof(float));
-
-				vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-					environmentMipFilterPipeline->GetVulkanPipelineLayout(), 0, 1,
-					&descriptorSets[i], 0, nullptr);
-
-				environmentMipFilterPipeline->Dispatch(dispatchCmd, numGroups, numGroups, 6);
+				environmentMipFilterPipeline->Execute(dispatchCmd, descriptorSets[i], numGroups, numGroups, 6);
 			}
 
 			device->FlushCommandBuffer(dispatchCmd);
 		});
 
-		return envFiltered;
+		auto environmentIrradianceShader = Renderer::GetShader("EnvironmentIrradiance");
+		std::shared_ptr<VulkanComputePipeline> environmentIrradiancePipeline = std::make_shared<VulkanComputePipeline>(environmentIrradianceShader);
+		std::shared_ptr<VulkanTextureCube> irradianceMap = std::make_shared<VulkanTextureCube>(irradianceMapSize, irradianceMapSize, ImageFormat::RGBA32F);
+		irradianceMap->Invalidate();
+
+		Renderer::Submit([environmentIrradiancePipeline, irradianceMap, envFiltered]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			auto vulkanDescriptorPool = Application::Get()->GetVulkanDescriptorPool();
+
+			// Building Descriptor Set
+			VkDescriptorSet descriptorSet;
+			VulkanDescriptorWriter descriptorWriter(*environmentIrradiancePipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool);
+
+			VkDescriptorImageInfo outputTexInfo = irradianceMap->GetDescriptorImageInfo();
+			descriptorWriter.WriteImage(0, &outputTexInfo);
+
+			VkDescriptorImageInfo inputTexInfo = envFiltered->GetDescriptorImageInfo();
+			descriptorWriter.WriteImage(1, &inputTexInfo);
+
+			descriptorWriter.Build(descriptorSet);
+
+			// Dispatch Pipeline
+			VkCommandBuffer dispatchCmd = device->GetCommandBuffer();
+
+			environmentIrradiancePipeline->Bind(dispatchCmd);
+			environmentIrradiancePipeline->Execute(dispatchCmd, descriptorSet, irradianceMapSize / 16, irradianceMapSize / 16, 6);
+
+			device->FlushCommandBuffer(dispatchCmd);
+
+			irradianceMap->GenerateMipMaps(false);
+		});
+
+		return { envFiltered, irradianceMap };
 	}
 
 	void VulkanRenderer::CreateCommandBuffers()

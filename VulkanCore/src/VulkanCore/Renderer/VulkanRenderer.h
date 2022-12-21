@@ -34,7 +34,7 @@ namespace VulkanCore {
 			return m_CommandBuffers[m_CurrentFrameIndex];
 		}
 
-		static std::shared_ptr<VulkanTextureCube> CreateEnviromentMap(const std::string& filepath);
+		static std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> CreateEnviromentMap(const std::string& filepath);
 
 		inline VkRenderPass GetSwapChainRenderPass() const { return m_SwapChain->GetRenderPass(); }
 		inline int GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
