@@ -35,7 +35,6 @@ namespace VulkanCore {
 		bool IsComplete() { return GraphicsFamilyHasValue && PresentFamilyHasValue; }
 	};
 
-	// TODO: In future we could transfer all of this in class `VulkanContext`
 	class VulkanDevice
 	{
 	public:
@@ -57,12 +56,8 @@ namespace VulkanCore {
 		QueueFamilyIndices FindPhysicalQueueFamilies() { return FindQueueFamilies(m_PhysicalDevice); }
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
-		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-		VmaAllocation CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer);
 		VkCommandBuffer GetCommandBuffer();
 		void FlushCommandBuffer(VkCommandBuffer commandBuffer);
-		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
 
 		void CreateImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 		VmaAllocation CreateImage(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image);

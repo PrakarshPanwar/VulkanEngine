@@ -48,7 +48,7 @@ namespace VulkanCore {
 		const std::vector<VulkanImage>& GetResolveAttachment() const;
 
 		void Invalidate();
-		void CreateFramebuffer(VkRenderPass renderPass); // TODO: This could be removed from here
+		void CreateFramebuffer(VkRenderPass renderPass);
 		void Release();
 		void Resize(uint32_t width, uint32_t height);
 	private:
