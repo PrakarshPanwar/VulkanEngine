@@ -197,7 +197,7 @@ namespace VulkanCore {
 
 			device->FlushCommandBuffer(dispatchCmd);
 			
-			envUnfiltered->GenerateMipMaps();
+			envUnfiltered->GenerateMipMaps(true);
 		});
 
 		return envUnfiltered;
