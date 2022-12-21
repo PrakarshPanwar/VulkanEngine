@@ -8,6 +8,8 @@
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 
+#include <glm/gtx/integer.hpp>
+
 namespace VulkanCore {
 
 	VulkanRenderer* VulkanRenderer::s_Instance;
@@ -146,10 +148,7 @@ namespace VulkanCore {
 
 	void VulkanRenderer::BeginSceneRenderPass(VkCommandBuffer commandBuffer)
 	{
-		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
-
-		// TODO: This have to shifted in VulkanRenderCommandBuffer
-		auto renderPass = sceneRenderer->GetRenderPass();
+		auto renderPass = SceneRenderer::GetSceneRenderer()->GetRenderPass();
 		Renderer::BeginRenderPass(renderPass);
 	}
 
@@ -164,7 +163,11 @@ namespace VulkanCore {
 		constexpr uint32_t cubemapSize = 1024;
 
 		std::shared_ptr<VulkanTexture> envEquirect = std::make_shared<VulkanTexture>(filepath);
+
+		std::shared_ptr<VulkanTextureCube> envFiltered = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
 		std::shared_ptr<VulkanTextureCube> envUnfiltered = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
+
+		envFiltered->Invalidate();
 		envUnfiltered->Invalidate();
 
 		auto equirectangularConversionShader = Renderer::GetShader("EquirectangularToCubeMap");
@@ -200,7 +203,56 @@ namespace VulkanCore {
 			envUnfiltered->GenerateMipMaps(true);
 		});
 
-		return envUnfiltered;
+		auto environmentMipFilterShader = Renderer::GetShader("EnvironmentMipFilter");
+		std::shared_ptr<VulkanComputePipeline> environmentMipFilterPipeline = std::make_shared<VulkanComputePipeline>(environmentMipFilterShader);
+
+		Renderer::Submit([environmentMipFilterPipeline, envUnfiltered, envFiltered, cubemapSize]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+
+			const uint32_t mipCount = std::_Floor_of_log_2(cubemapSize) + 1;
+			auto vulkanDescriptorPool = Application::Get()->GetVulkanDescriptorPool();
+
+			// Building Descriptor Sets
+			std::vector<VkDescriptorSet> descriptorSets(mipCount);
+			std::vector<VulkanDescriptorWriter> descriptorWriter(mipCount,
+				{ *environmentMipFilterPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
+
+			for (uint32_t i = 0; i < mipCount; ++i)
+			{
+				VkDescriptorImageInfo inputTexInfo = envUnfiltered->GetDescriptorImageInfo();
+				descriptorWriter[i].WriteImage(1, &inputTexInfo);
+
+				VkDescriptorImageInfo outputTexInfo = envFiltered->GetDescriptorImageInfo();
+				outputTexInfo.imageView = envFiltered->CreateImageViewSingleMip(i);
+				descriptorWriter[i].WriteImage(0, &outputTexInfo);
+
+				descriptorWriter[i].Build(descriptorSets[i]);
+			}
+
+			// Dispatch Pipeline
+			VkCommandBuffer dispatchCmd = device->GetCommandBuffer();
+			environmentMipFilterPipeline->Bind(dispatchCmd);
+
+			const float deltaRoughness = 1.0f / glm::max((float)mipCount - 1.0f, 1.0f);
+			for (uint32_t i = 0, size = cubemapSize; i < mipCount; ++i, size /= 2)
+			{
+				uint32_t numGroups = glm::max(1u, size / 16);
+				float roughness = i * deltaRoughness;
+				roughness = glm::max(roughness, 0.05f);
+				environmentMipFilterPipeline->SetPushConstants(dispatchCmd, &roughness, sizeof(float));
+
+				vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+					environmentMipFilterPipeline->GetVulkanPipelineLayout(), 0, 1,
+					&descriptorSets[i], 0, nullptr);
+
+				environmentMipFilterPipeline->Dispatch(dispatchCmd, numGroups, numGroups, 6);
+			}
+
+			device->FlushCommandBuffer(dispatchCmd);
+		});
+
+		return envFiltered;
 	}
 
 	void VulkanRenderer::CreateCommandBuffers()

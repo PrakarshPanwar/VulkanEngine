@@ -76,12 +76,15 @@ namespace VulkanCore {
 		m_Shaders.clear();
 	}
 
-	void Renderer::RenderSkybox(const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<Mesh>& mesh, const std::vector<VkDescriptorSet>& descriptorSet)
+	void Renderer::RenderSkybox(const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<Mesh>& mesh, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData)
 	{
 		auto drawCmd = m_CommandBuffers[GetCurrentFrameIndex()];
 		auto dstSet = descriptorSet[GetCurrentFrameIndex()];
 
 		pipeline->Bind(drawCmd);
+
+		if (pcData)
+			pipeline->SetPushConstants(drawCmd, pcData, sizeof(float));
 
 		vkCmdBindDescriptorSets(drawCmd,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,

@@ -393,6 +393,7 @@ namespace VulkanCore {
 	{
 		ImGui::Begin("Scene Renderer");
 		ImGui::DragFloat("Exposure Intensity", &m_SceneSettings.Exposure, 0.01f, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::DragFloat("Skybox LOD", &m_SkyboxLOD, 0.01f, 0.0f, 11.0f);
 
 		if (ImGui::TreeNode("Scene Renderer Stats##GPUPerf"))
 		{
@@ -464,7 +465,7 @@ namespace VulkanCore {
 		Renderer::BeginGPUPerfMarker();
 
 		// Rendering Skybox
-		Renderer::RenderSkybox(m_SkyboxPipeline, m_SkyboxMesh, m_SkyboxDescriptorSets);
+		Renderer::RenderSkybox(m_SkyboxPipeline, m_SkyboxMesh, m_SkyboxDescriptorSets, &m_SkyboxLOD);
 		Renderer::EndGPUPerfMarker();
 
 		Renderer::EndRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
