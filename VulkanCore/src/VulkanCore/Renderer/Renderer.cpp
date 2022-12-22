@@ -71,6 +71,7 @@ namespace VulkanCore {
 		m_Shaders["EquirectangularToCubeMap"] = Utils::MakeShader("EquirectangularToCubeMap");
 		m_Shaders["EnvironmentMipFilter"] = Utils::MakeShader("EnvironmentMipFilter");
 		m_Shaders["EnvironmentIrradiance"] = Utils::MakeShader("EnvironmentIrradiance");
+		m_Shaders["GenerateBRDF"] = Utils::MakeShader("GenerateBRDF");
 	}
 
 	void Renderer::DestroyShaders()
