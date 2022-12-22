@@ -228,10 +228,12 @@ namespace VulkanCore {
 		FlatPlane.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.3f, 0.0f }, glm::vec3{ 0.5f });
 		FlatPlane.AddComponent<MeshComponent>(Mesh::CreateMeshFromFile("assets/models/FlatPlane.obj", 2));
 
+#if 0
 		Entity CrateModel = m_Scene->CreateEntity("Wooden Crate");
 		auto& crateTransform = CrateModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 1.5f });
 		crateTransform.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 		CrateModel.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/WoodenCrate/WoodenCrate.gltf", 1));
+#endif
 
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
 		auto& brassTransform = BrassVase.AddComponent<TransformComponent>(glm::vec3{ 1.5f, 0.0f, 1.5f }, glm::vec3{ 6.0f });
