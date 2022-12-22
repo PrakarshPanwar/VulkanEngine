@@ -64,6 +64,12 @@ namespace VulkanCore {
 			float Threshold;
 			float Knee;
 		};
+
+		struct SkyboxSettings
+		{
+			float Intensity = 1.0f;
+			float LOD = 0.0f;
+		};
 	private:
 		std::shared_ptr<Scene> m_Scene;
 
@@ -103,7 +109,7 @@ namespace VulkanCore {
 		// Skybox Resources
 		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture;
 		std::shared_ptr<Mesh> m_SkyboxMesh;
-		float m_SkyboxLOD = 0.0f;
+		SkyboxSettings m_SkyboxSettings;
 
 		glm::ivec2 m_ViewportSize;
 

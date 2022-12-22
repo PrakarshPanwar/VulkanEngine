@@ -72,8 +72,8 @@ namespace VulkanCore {
 
 	}
 
-	VulkanTexture::VulkanTexture(const std::string& filepath)
-		: m_FilePath(filepath)
+	VulkanTexture::VulkanTexture(const std::string& filepath, TextureSpecification spec)
+		: m_FilePath(filepath), m_Specification(spec)
 	{
 #if 0
 		Renderer::Submit([this]
