@@ -96,12 +96,12 @@ namespace VulkanCore {
 		std::vector<VulkanUniformBuffer> m_LodUBs;
 
 		std::shared_ptr<VulkanImage> m_BloomTexture;
-		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap,
-			m_DiffuseMap2, m_NormalMap2, m_SpecularMap2,
-			m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
+		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_ARMMap,
+			m_DiffuseMap2, m_NormalMap2, m_ARMMap2,
+			m_DiffuseMap3, m_NormalMap3, m_ARMMap3;
 
 		// Skybox Resources
-		std::shared_ptr<VulkanTextureCube> m_CubemapTexture;
+		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture;
 		std::shared_ptr<Mesh> m_SkyboxMesh;
 		float m_SkyboxLOD = 0.0f;
 

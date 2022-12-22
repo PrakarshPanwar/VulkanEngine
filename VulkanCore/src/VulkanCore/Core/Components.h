@@ -108,7 +108,6 @@ namespace VulkanCore {
 
 	struct UBPointLights
 	{
-		glm::vec4 AmbientLightColor{ 1.0f, 1.0f, 1.0f, 0.02f };
 		PointLight PointLights[10];
 		int NumLights;
 	};
