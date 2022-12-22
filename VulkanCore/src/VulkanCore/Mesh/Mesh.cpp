@@ -312,13 +312,13 @@ namespace VulkanCore {
 
 	void MeshBuilder::ProcessNode(aiNode* node, const aiScene* scene)
 	{
-		for (uint32_t i = 0; i < node->mNumMeshes; i++)
+		for (uint32_t i = 0; i < node->mNumMeshes; ++i)
 		{
 			aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 			ProcessMesh(mesh, scene);
 		}
 
-		for (uint32_t i = 0; i < node->mNumChildren; i++)
+		for (uint32_t i = 0; i < node->mNumChildren; ++i)
 		{
 			ProcessNode(node->mChildren[i], scene);
 		}
@@ -326,7 +326,7 @@ namespace VulkanCore {
 
 	void MeshBuilder::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 	{
-		for (uint32_t i = 0; i < mesh->mNumVertices; i++)
+		for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
 		{
 			Vertex vertex;
 			glm::vec3 mVector;
@@ -347,7 +347,7 @@ namespace VulkanCore {
 
 			if (mesh->HasTextureCoords(0))
 			{
-				glm::vec2 mTexCoords = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
+				glm::vec2 mTexCoords = { mesh->mTextureCoords[0][i].x, 1.0f - mesh->mTextureCoords[0][i].y };
 				vertex.TexCoord = mTexCoords;
 			}
 
@@ -356,11 +356,11 @@ namespace VulkanCore {
 			Vertices.push_back(vertex);
 		}
 
-		for (uint32_t i = 0; i < mesh->mNumFaces; i++)
+		for (uint32_t i = 0; i < mesh->mNumFaces; ++i)
 		{
 			aiFace face = mesh->mFaces[i];
 
-			for (uint32_t j = 0; j < face.mNumIndices; j++)
+			for (uint32_t j = 0; j < face.mNumIndices; ++j)
 				Indices.push_back(face.mIndices[j]);
 		}
 	}

@@ -58,7 +58,7 @@ namespace VulkanCore {
 
 		VkCommandBuffer GetCommandBuffer(bool useRT = false);
 		void FlushCommandBuffer(VkCommandBuffer commandBuffer);
-		void FlushCommandBufferRT(VkCommandBuffer commandBuffer);
+		void RT_FlushCommandBuffer(VkCommandBuffer commandBuffer);
 
 		void CreateImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 		VmaAllocation CreateImage(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image);

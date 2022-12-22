@@ -178,7 +178,7 @@ namespace VulkanCore {
 		vkFreeCommandBuffers(m_LogicalDevice, m_CommandPool, 1, &commandBuffer);
 	}
 
-	void VulkanDevice::FlushCommandBufferRT(VkCommandBuffer commandBuffer)
+	void VulkanDevice::RT_FlushCommandBuffer(VkCommandBuffer commandBuffer)
 	{
 		const uint64_t DEFAULT_FENCE_TIMEOUT = 100000000000;
 
