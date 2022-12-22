@@ -38,6 +38,23 @@ layout(binding = 5) uniform samplerCube u_IrradianceTexture;
 
 const float PI = 3.14159265359;
 
+vec3 GetNormalsFromMap()
+{
+    vec3 tangentNormal = texture(u_NormalTextures[v_TexIndex], v_FragTexCoord).xyz * 2.0 - 1.0;
+
+    vec3 Q1 = dFdx(v_FragPosWorld);
+    vec3 Q2 = dFdy(v_FragPosWorld);
+    vec2 st1 = dFdx(v_FragTexCoord);
+    vec2 st2 = dFdy(v_FragTexCoord);
+
+    vec3 N = normalize(v_FragNormalWorld);
+    vec3 T = normalize(Q1 * st2.t - Q2 * st1.t);
+    vec3 B = -normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+
+    return normalize(TBN * tangentNormal);
+}
+
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
     float a = roughness * roughness;
@@ -90,8 +107,7 @@ void main()
 
 	vec3 cameraPosWorld = u_Camera.InvView[3].xyz;
 	vec3 V = normalize(cameraPosWorld - v_FragPosWorld);
-    vec3 N = texture(u_NormalTextures[v_TexIndex], v_FragTexCoord).rgb;
-    //N = normalize(N * 2.0 - 1.0);
+    vec3 N = GetNormalsFromMap();
     vec3 R = reflect(-V, N);
 
     // Calculate Reflectance at Normal Incidence; if Di-Electric (like plastic) use F0 

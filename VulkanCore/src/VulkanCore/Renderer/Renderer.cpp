@@ -86,7 +86,7 @@ namespace VulkanCore {
 		pipeline->Bind(drawCmd);
 
 		if (pcData)
-			pipeline->SetPushConstants(drawCmd, pcData, sizeof(float));
+			pipeline->SetPushConstants(drawCmd, pcData, sizeof(glm::vec2));
 
 		vkCmdBindDescriptorSets(drawCmd,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,

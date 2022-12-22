@@ -226,7 +226,7 @@ namespace VulkanCore {
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
 		FlatPlane.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.3f, 0.0f }, glm::vec3{ 0.5f });
-		FlatPlane.AddComponent<MeshComponent>(Mesh::CreateMeshFromFile("assets/models/FlatPlane.obj", 2));
+		FlatPlane.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/FlatPlane.obj", 2));
 
 #if 0
 		Entity CrateModel = m_Scene->CreateEntity("Wooden Crate");
