@@ -199,7 +199,7 @@ namespace VulkanCore {
 			equirectangularConversionPipeline->Bind(dispatchCmd);
 			equirectangularConversionPipeline->Dispatch(dispatchCmd, cubemapSize / 16, cubemapSize / 16, 6);
 
-			device->FlushCommandBufferRT(dispatchCmd);
+			device->RT_FlushCommandBuffer(dispatchCmd);
 			
 			envUnfiltered->GenerateMipMaps(true);
 		});
@@ -244,7 +244,7 @@ namespace VulkanCore {
 				environmentMipFilterPipeline->Execute(dispatchCmd, descriptorSets[i], numGroups, numGroups, 6);
 			}
 
-			device->FlushCommandBufferRT(dispatchCmd);
+			device->RT_FlushCommandBuffer(dispatchCmd);
 		});
 
 		auto environmentIrradianceShader = Renderer::GetShader("EnvironmentIrradiance");
