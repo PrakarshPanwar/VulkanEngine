@@ -110,8 +110,8 @@ void main()
     vec3 N = GetNormalsFromMap();
     vec3 R = reflect(-V, N);
 
-    // Calculate Reflectance at Normal Incidence; if Di-Electric (like plastic) use F0 
-    // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
+    // Calculate Reflectance at Normal Incidence; if Di-Electric (like Plastic) use F0 
+    // of 0.04 and if it's a Metal, use the Albedo color as F0 (Metallic Workflow)    
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo, metallic);
 
@@ -139,18 +139,18 @@ void main()
          // kS is equal to Fresnel
         vec3 kS = F;
         // For Energy Conservation, the Diffuse and Specular Light can't
-        // be above 1.0 (unless the surface emits light); to preserve this
+        // be above 1.0 (unless the Surface Emits Light); to preserve this
         // relationship the Diffuse Component (kD) should equal 1.0 - kS.
         vec3 kD = vec3(1.0) - kS;
-        // multiply kD by the inverse metalness such that only non-metals 
-        // have diffuse lighting, or a linear blend if partly metal (pure metals
+        // Multiply kD by the Inverse Metalness such that only non-metals 
+        // have Diffuse Lighting, or a linear blend if partly metal (pure metals
         // have no diffuse light).
         kD *= 1.0 - metallic;
             
-        // scale light by dotNL
+        // Scale Light by dotNL
         float dotNL = max(dot(N, L), 0.0);
 
-        // add to outgoing radiance Lo
+        // Add to Outgoing Radiance Lo
         Lo += (kD * albedo / PI + specular) * radiance * dotNL;
 	}
 

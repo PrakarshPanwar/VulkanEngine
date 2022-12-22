@@ -238,8 +238,8 @@ namespace VulkanCore {
 #endif
 
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
-		auto& brassTransform = BrassVase.AddComponent<TransformComponent>(glm::vec3{ 1.5f, 0.0f, 1.5f }, glm::vec3{ 6.0f });
-		brassTransform.Rotation = glm::vec3(glm::radians(90.0f), 0.0f, 0.0f);
+		auto& brassTransform = BrassVase.AddComponent<TransformComponent>(glm::vec3{ 1.5f, -1.25f, 1.5f }, glm::vec3{ 6.0f });
+		brassTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
 		BrassVase.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/BrassVase2K/BrassVase.fbx", 1));
 
 		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");
