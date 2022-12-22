@@ -221,13 +221,15 @@ namespace VulkanCore {
 		m_Scene = std::make_shared<Scene>();
 
 		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
-		CeramicVase.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.2f, 2.5f }, glm::vec3{ 3.5f });
+		auto& vaseTransform = CeramicVase.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.2f, 2.5f }, glm::vec3{ 3.5f });
+		vaseTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
 		CeramicVase.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/CeramicVase2K/antique_ceramic_vase_01_2k.fbx", 0));
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
 		FlatPlane.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.3f, 0.0f }, glm::vec3{ 0.5f });
 		FlatPlane.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/FlatPlane.obj", 2));
 
+		// TODO: Texture mapping not working correctly for GLTF mesh formats, fix this in future
 #if 0
 		Entity CrateModel = m_Scene->CreateEntity("Wooden Crate");
 		auto& crateTransform = CrateModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 1.5f });

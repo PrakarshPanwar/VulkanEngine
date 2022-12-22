@@ -243,21 +243,18 @@ namespace VulkanCore {
 
 		device->FlushCommandBuffer(barrierCmd);
 #endif
-
-		TextureSpecification normalMapsSpec{};
-		normalMapsSpec.Format = ImageFormat::RGBA8_UNORM;
 		// Textures
 		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg");
-		m_NormalMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_nor_gl_2k.png", normalMapsSpec);
-		m_ARMMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_arm_2k.png");
+		m_NormalMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_arm_2k.png", ImageFormat::RGBA8_UNORM);
 
 		m_DiffuseMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_diff_2k.jpg");
-		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png", normalMapsSpec);
-		m_ARMMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_arm_2k.png");
+		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_arm_2k.png", ImageFormat::RGBA8_UNORM);
 
 		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleDiff.png");
-		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png", normalMapsSpec);
-		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/marble_01_arm_2k.jpg");
+		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/marble_01_arm_2k.jpg", ImageFormat::RGBA8_UNORM);
 
 		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/SnowyPark2.hdr");
 		m_CubemapTexture = filteredMap;

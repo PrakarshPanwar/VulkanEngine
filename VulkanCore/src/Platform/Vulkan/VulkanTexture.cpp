@@ -94,6 +94,14 @@ namespace VulkanCore {
 		Invalidate();
 	}
 
+	VulkanTexture::VulkanTexture(const std::string& filepath, ImageFormat format)
+		: m_FilePath(filepath)
+	{
+		m_Specification.Format = format;
+
+		Invalidate();
+	}
+
 	VulkanTexture::~VulkanTexture()
 	{
 		if (m_Image->GetDescriptorInfo().imageView == nullptr)
