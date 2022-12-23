@@ -34,7 +34,9 @@ layout(set = 0, binding = 3) uniform sampler2D u_NormalTextures[3];
 layout(set = 0, binding = 4) uniform sampler2D u_AORoughMetalTextures[3];
 
 // IBL
-layout(binding = 5) uniform samplerCube u_IrradianceTexture;
+layout(binding = 5) uniform samplerCube u_IrradianceMap;
+layout(binding = 6) uniform sampler2D u_BRDFTexture;
+layout(binding = 7) uniform samplerCube u_PrefilteredMap;
 
 const float PI = 3.14159265359;
 
@@ -94,6 +96,11 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
+
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+} 
 
 void main()
 {
@@ -155,12 +162,22 @@ void main()
 	}
 
     // Ambient Lighting (We now use IBL as the Ambient Term)
-    vec3 kS = FresnelSchlick(max(dot(N, V), 0.0), F0);
+    vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+    
+    vec3 kS = F;
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
-    vec3 irradiance = texture(u_IrradianceTexture, N).rgb;
+
+    vec3 irradiance = texture(u_IrradianceMap, N).rgb;
     vec3 diffuse = irradiance * albedo;
-    vec3 ambient = (kD * diffuse) * ao;
+
+    // Sample both the Pre-Filter map and the BRDF LUT and combine them together as per the Split-Sum approximation to get the IBL Specular part.
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(u_PrefilteredMap, R, roughness * MAX_REFLECTION_LOD).rgb;
+    vec2 brdf = texture(u_BRDFTexture, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+    vec3 ambient = (kD * diffuse + specular) * ao;
     
     vec3 color = ambient + Lo;
 

@@ -252,14 +252,19 @@ namespace VulkanCore {
 		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
 		m_ARMMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_arm_2k.png", ImageFormat::RGBA8_UNORM);
 
-		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleDiff.png");
-		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/marble_01_arm_2k.jpg", ImageFormat::RGBA8_UNORM);
+		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldDiffuse2.png");
+		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldNormalGL.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldAORM.png", ImageFormat::RGBA8_UNORM);
 
 		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/SnowyPark2.hdr");
 		m_CubemapTexture = filteredMap;
 		m_IrradianceTexture = irradianceMap;
 
+#if USE_PRELOADED_BRDF
+		m_BRDFTexture = std::make_shared<VulkanTexture>("assets/textures/BRDF_LUTMap.png", ImageFormat::RGBA8_UNORM);
+#else
+		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
+#endif
 		m_SkyboxMesh = Utils::CreateCubeModel();
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, ARMMaps, NormalMaps;
@@ -302,6 +307,18 @@ namespace VulkanCore {
 			// Irradiance Map
 			VkDescriptorImageInfo irradianceMapInfo = m_IrradianceTexture->GetDescriptorImageInfo();
 			geomDescriptorWriter[i].WriteImage(5, &irradianceMapInfo);
+
+			// BRDF LUT Texture
+#if USE_PRELOADED_BRDF
+			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorImageInfo();
+#else
+			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorInfo();
+#endif
+			geomDescriptorWriter[i].WriteImage(6, &brdfTextureInfo);
+
+			// Prefiltered Map
+			VkDescriptorImageInfo prefilteredMapInfo = filteredMap->GetDescriptorImageInfo();
+			geomDescriptorWriter[i].WriteImage(7, &prefilteredMapInfo);
 
 			geomDescriptorWriter[i].Build(m_GeometryDescriptorSets[i]);
 		}
