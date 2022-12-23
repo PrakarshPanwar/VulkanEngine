@@ -102,6 +102,12 @@ namespace VulkanCore {
 		Invalidate();
 	}
 
+	VulkanTexture::VulkanTexture(void* data, TextureSpecification spec)
+		: m_Specification(spec), m_LocalStorage((uint8_t*)data)
+	{
+		Invalidate();
+	}
+
 	VulkanTexture::~VulkanTexture()
 	{
 		if (m_Image->GetDescriptorInfo().imageView == nullptr)
@@ -114,24 +120,23 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		int width, height, channels;
-		uint8_t* pixelData = nullptr;
+		int width = (int)m_Specification.Width, height = (int)m_Specification.Height, channels;
 
 		if (stbi_is_hdr(m_FilePath.c_str()))
 		{
 			m_Specification.Format = ImageFormat::RGBA32F;
-			pixelData = (uint8_t*)stbi_loadf(m_FilePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+			m_LocalStorage = (uint8_t*)stbi_loadf(m_FilePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 		}
 
-		else
-			pixelData = stbi_load(m_FilePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+		else if (!m_FilePath.empty())
+			m_LocalStorage = stbi_load(m_FilePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
 		m_Specification.Width = width;
 		m_Specification.Height = height;
 
 		VkDeviceSize imageSize = Utils::GetMemorySize(m_Specification.Format, width, height);
 
-		VK_CORE_ASSERT(pixelData, "Failed to Load Image {0}", m_FilePath);
+		VK_CORE_ASSERT(m_LocalStorage, "Failed to Load Image {0}", m_FilePath);
 
 		ImageSpecification spec;
 		spec.Width = m_Specification.Width;
@@ -143,13 +148,13 @@ namespace VulkanCore {
 		m_Image->Invalidate();
 		m_Info = m_Image->GetVulkanImageInfo();
 
-		if (pixelData)
+		if (m_LocalStorage)
 		{
 			VulkanBuffer stagingBuffer{ imageSize, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
 
 			stagingBuffer.Map();
-			stagingBuffer.WriteToBuffer(pixelData, imageSize);
+			stagingBuffer.WriteToBuffer(m_LocalStorage, imageSize);
 			stagingBuffer.Unmap();
 
 			VkCommandBuffer copyCmd = device->GetCommandBuffer();
@@ -193,7 +198,7 @@ namespace VulkanCore {
 				device->FlushCommandBuffer(barrierCmd);
 			}
 
-			free(pixelData);
+			free(m_LocalStorage);
 		}
 	}
 

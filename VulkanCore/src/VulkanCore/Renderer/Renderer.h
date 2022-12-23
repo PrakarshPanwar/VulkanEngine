@@ -28,6 +28,7 @@ namespace VulkanCore {
 		static void RetrieveQueryPoolResults();
 		static uint64_t GetQueryTime(uint32_t index);
 
+		static std::shared_ptr<VulkanTexture> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
 		static void SubmitFullscreenQuad(const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
 		static void RenderMesh(std::shared_ptr<Mesh> mesh);
 

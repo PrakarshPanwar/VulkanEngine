@@ -21,6 +21,7 @@ namespace VulkanCore {
 		VulkanTexture() = default;
 		VulkanTexture(const std::string& filepath, TextureSpecification spec = {});
 		VulkanTexture(const std::string& filepath, ImageFormat format);
+		VulkanTexture(void* data, TextureSpecification spec = {});
 		VulkanTexture(uint32_t width, uint32_t height, ImageFormat format);
 		~VulkanTexture();
 
@@ -37,6 +38,8 @@ namespace VulkanCore {
 
 		std::shared_ptr<VulkanImage> m_Image;
 		VulkanImageInfo m_Info;
+
+		uint8_t* m_LocalStorage = nullptr;
 	};
 
 	class VulkanTextureCube
