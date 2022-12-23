@@ -108,7 +108,7 @@ namespace VulkanCore {
 
 		// Skybox Resources
 		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture;
-#define USE_PRELOADED_BRDF 1
+#define USE_PRELOADED_BRDF 0
 #if USE_PRELOADED_BRDF
 		std::shared_ptr<VulkanTexture> m_BRDFTexture;
 #else
