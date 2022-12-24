@@ -28,8 +28,8 @@ vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness)
 
 float GeometrySchlickGGX(float dotNV, float roughness)
 {
-    float r = (roughness + 1.0);
-    float k = (r * r) / 8.0;
+    float r = roughness;
+    float k = (r * r) / 2.0;
 
     float nom   = dotNV;
     float denom = dotNV * (1.0 - k) + k;
@@ -62,6 +62,16 @@ vec2 Hammersley(uint i, uint N)
     return vec2(float(i) / float(N), RadicalInverse_VdC(i));
 }
 
+float G_Schlick_GGX(float NoV, float roughness) {
+    const float k = (roughness * roughness) * 0.5;
+    const float denom = NoV * (1.0 - k) + k;
+    return NoV / denom;
+}
+
+float G_Smith(float NoV, float NoL, float roughness) {
+    return G_Schlick_GGX(NoV, roughness) * G_Schlick_GGX(NoL, roughness);
+}
+
 layout(local_size_x = 16, local_size_y = 16) in;
 void main()
 {
@@ -81,8 +91,8 @@ void main()
 
     vec3 N = vec3(0.0, 0.0, 1.0);
     
-    const uint SAMPLE_COUNT = 1024u;
-    for(uint i = 0u; i < SAMPLE_COUNT; ++i)
+    const uint SAMPLE_COUNT = 1024;
+    for (uint i = 0u; i < SAMPLE_COUNT; ++i)
     {
         // Generates a Sample vector that's biased towards the
         // preferred alignment direction (Importance Sampling).
@@ -105,8 +115,6 @@ void main()
         }
     }
 
-    A /= float(SAMPLE_COUNT);
-    B /= float(SAMPLE_COUNT);
-
-    imageStore(o_BRDFTexture, invocID, vec4(A, B, 0.0, 0.0));
+    vec2 color = vec2(A, B) / SAMPLE_COUNT;
+    imageStore(o_BRDFTexture, invocID, vec4(color, 0.0, 0.0));
 }
