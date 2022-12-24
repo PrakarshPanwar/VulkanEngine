@@ -285,7 +285,7 @@ namespace VulkanCore {
 
 	std::shared_ptr<VulkanImage> VulkanRenderer::CreateBRDFTexture()
 	{
-		constexpr uint32_t textureSize = 1024;
+		constexpr uint32_t textureSize = 512;
 
 		ImageSpecification brdfTextureSpec;
 		brdfTextureSpec.Width = textureSize;
@@ -313,12 +313,12 @@ namespace VulkanCore {
 			descriptorWriter.Build(descriptorSet);
 
 			// Dispatch Pipeline
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer();
+			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
 
 			generateBRDFPipeline->Bind(dispatchCmd);
 			generateBRDFPipeline->Execute(dispatchCmd, descriptorSet, textureSize / 16, textureSize / 16, 1);
 
-			device->FlushCommandBuffer(dispatchCmd);
+			device->RT_FlushCommandBuffer(dispatchCmd);
 		});
 
 		return brdfTexture;
