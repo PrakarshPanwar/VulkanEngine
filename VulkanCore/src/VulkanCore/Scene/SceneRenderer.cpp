@@ -451,6 +451,7 @@ namespace VulkanCore {
 		Renderer::BeginGPUPerfMarker();
 
 		Renderer::BeginRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
+		m_CompositePipeline->SetPushConstants(m_SceneCommandBuffers[Renderer::GetCurrentFrameIndex()], &m_DOFSettings, sizeof(DOFSettings));
 		Renderer::SubmitFullscreenQuad(m_CompositePipeline, m_CompositeDescriptorSets);
 		Renderer::EndRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
 
