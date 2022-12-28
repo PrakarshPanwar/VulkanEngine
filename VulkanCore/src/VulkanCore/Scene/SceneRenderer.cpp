@@ -98,7 +98,8 @@ namespace VulkanCore {
 			FramebufferSpecification geomFramebufferSpec;
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
-			geomFramebufferSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::DEPTH24STENCIL8 };
+			geomFramebufferSpec.ReadDepthTexture = true;
+			geomFramebufferSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::DEPTH16F };
 			geomFramebufferSpec.Samples = 8;
 
 			RenderPassSpecification geomRenderPassSpec;
@@ -320,12 +321,17 @@ namespace VulkanCore {
 			auto sceneUBInfo = m_ExposureUBs[i]->DescriptorInfo();
 			compDescriptorWriter[i].WriteBuffer(1, &sceneUBInfo);
 
+			auto geomRenderPass = m_GeometryPipeline->GetSpecification().RenderPass;
 #if BLOOM_COMPUTE_SHADER
 			VkDescriptorImageInfo imagesInfo = m_BloomTexture->GetDescriptorInfo();
 #else
-			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
+			VkDescriptorImageInfo imagesInfo = geomRenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
 #endif
 			compDescriptorWriter[i].WriteImage(0, &imagesInfo);
+
+			VkDescriptorImageInfo depthTextureInfo = geomRenderPass->GetSpecification().TargetFramebuffer->GetDepthResolveAttachment()[i].GetDescriptorInfo();
+			depthTextureInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+			compDescriptorWriter[i].WriteImage(2, &depthTextureInfo);
 
 			bool success = compDescriptorWriter[i].Build(m_CompositeDescriptorSets[i]);
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
@@ -367,6 +373,8 @@ namespace VulkanCore {
 	{
 		ImGui::Begin("Scene Renderer");
 		ImGui::DragFloat("Exposure Intensity", &m_SceneSettings.Exposure, 0.01f, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::DragFloat("Focus Point", &m_DOFSettings.FocusPoint, 0.01f, 0.0f, 50.0f);
+		ImGui::DragFloat("Focus Scale", &m_DOFSettings.FocusScale, 0.01f, 0.0f, 50.0f);
 		ImGui::End();
 	}
 
@@ -405,6 +413,14 @@ namespace VulkanCore {
 	void SceneRenderer::CompositePass()
 	{
 		Renderer::BeginRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
+
+		vkCmdPushConstants(m_SceneCommandBuffers[Renderer::GetCurrentFrameIndex()],
+			m_CompositePipeline->GetVulkanPipelineLayout(),
+			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+			0,
+			(uint32_t)sizeof(DOFSettings),
+			&m_DOFSettings);
+
 		Renderer::SubmitFullscreenQuad(m_CompositePipeline, m_CompositeDescriptorSets);
 		Renderer::EndRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
 	}
