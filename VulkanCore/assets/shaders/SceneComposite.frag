@@ -18,6 +18,14 @@ const float GOLDEN_ANGLE = 2.39996323;
 const float MAX_BLUR_SIZE = 20.0; 
 const float RAD_SCALE = 0.5; // Smaller = nicer blur, larger = faster
 
+const float FAR = 100.0;
+const float NEAR = 10.0;
+
+float LinearizeDepth(const float screenDepth)
+{
+	return FAR * NEAR / (FAR - screenDepth * (FAR - NEAR));
+}
+
 float GetBlurSize(float depth, float focusPoint, float focusScale)
 {
 	float coc = clamp((1.0 / focusPoint - 1.0 / depth) * focusScale, -1.0, 1.0);
@@ -26,8 +34,7 @@ float GetBlurSize(float depth, float focusPoint, float focusScale)
 
 vec3 DepthOfField(vec2 texCoord, float focusPoint, float focusScale, vec2 texelSize)
 {
-	const float far = 10.0f; // TODO: Get this through UB
-	float centerDepth = texture(u_DepthTexture, texCoord).r * far;
+	float centerDepth = LinearizeDepth(texture(u_DepthTexture, texCoord).r);
 	float centerSize = GetBlurSize(centerDepth, focusPoint, focusScale);
 	vec3 color = texture(u_InputTexture, v_TexCoord).rgb;
 	float tot = 1.0;
@@ -36,7 +43,7 @@ vec3 DepthOfField(vec2 texCoord, float focusPoint, float focusScale, vec2 texelS
 	{
 		vec2 tc = texCoord + vec2(cos(ang), sin(ang)) * texelSize * radius;
 		vec3 sampleColor = texture(u_InputTexture, tc).rgb;
-		float sampleDepth = texture(u_DepthTexture, tc).r * far;
+		float sampleDepth = LinearizeDepth(texture(u_DepthTexture, tc).r);
 		float sampleSize = GetBlurSize(sampleDepth, focusPoint, focusScale);
 		if (sampleDepth > centerDepth)
 			sampleSize = clamp(sampleSize, 0.0, centerSize * 2.0);
@@ -45,6 +52,7 @@ vec3 DepthOfField(vec2 texCoord, float focusPoint, float focusScale, vec2 texelS
 		tot += 1.0;   
 		radius += RAD_SCALE / radius;
 	}
+
 	return color /= tot;
 }
 
