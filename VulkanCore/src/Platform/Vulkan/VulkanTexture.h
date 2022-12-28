@@ -20,7 +20,7 @@ namespace VulkanCore {
 	public:
 		VulkanTexture() = default;
 		VulkanTexture(const std::string& filepath);
-		VulkanTexture(uint32_t width, uint32_t height);
+		VulkanTexture(uint32_t width, uint32_t height, ImageFormat format);
 		~VulkanTexture();
 
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
@@ -47,18 +47,18 @@ namespace VulkanCore {
 		~VulkanTextureCube();
 
 		void Invalidate();
+		void GenerateMipMaps(bool readonly);
+		VkImageView CreateImageViewSingleMip(uint32_t mip);
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_DescriptorImageInfo; }
 	private:
 		void Release();
-		void GenerateMipMaps();
 	private:
 		std::string m_FilePath;
+		std::vector<VkImageView> m_MipReferences;
 
 		TextureSpecification m_Specification;
 		VulkanImageInfo m_Info;
 		VkDescriptorImageInfo m_DescriptorImageInfo;
-
-		bool m_ReadOnly = true;
 	};
 
 }

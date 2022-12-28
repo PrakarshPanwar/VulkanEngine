@@ -1,8 +1,7 @@
 #include "vulkanpch.h"
 #include "VulkanRenderPass.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
@@ -57,7 +56,6 @@ namespace VulkanCore {
 	VulkanRenderPass::VulkanRenderPass(const RenderPassSpecification& spec)
 		: m_Specification(spec)
 	{
-#if USE_RENDER_THREAD
 		Renderer::Submit([this]
 		{
 			if (m_Specification.TargetFramebuffer->GetSpecification().ReadDepthTexture)

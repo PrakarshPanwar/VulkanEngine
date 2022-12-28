@@ -1,8 +1,8 @@
 #include "vulkanpch.h"
 #include "VulkanComputePipeline.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 namespace VulkanCore {
 
@@ -54,6 +54,7 @@ namespace VulkanCore {
 		CreateComputePipeline();
 	}
 
+	// TODO: Do this process in Render Thread
 	VulkanComputePipeline::~VulkanComputePipeline()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
@@ -76,42 +77,65 @@ namespace VulkanCore {
 		vkCmdDispatch(commandBuffer, groupCountX, groupCountY, groupCountZ);
 	}
 
+	void VulkanComputePipeline::Execute(VkCommandBuffer cmdBuf, VkDescriptorSet dstSet, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+	{
+		vkCmdBindDescriptorSets(cmdBuf,
+			VK_PIPELINE_BIND_POINT_COMPUTE,
+			m_PipelineLayout, 0, 1,
+			&dstSet, 0, nullptr);
+
+		vkCmdDispatch(cmdBuf, groupCountX, groupCountY, groupCountZ);
+	}
+
+	void VulkanComputePipeline::SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size)
+	{
+		vkCmdPushConstants(cmdBuf,
+			m_PipelineLayout,
+			VK_SHADER_STAGE_COMPUTE_BIT,
+			0,
+			(uint32_t)size,
+			pcData);
+	}
+
 	void VulkanComputePipeline::CreateComputePipeline()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
+		Renderer::Submit([this]()
+		{
+			auto device = VulkanContext::GetCurrentDevice();
 
-		auto& shaderSources = m_Shader->GetShaderModules();
+			auto& shaderSources = m_Shader->GetShaderModules();
 
-		m_compShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Compute]);
+			m_compShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Compute]);
 
-		m_DescriptorSetLayout = m_Shader->CreateDescriptorSetLayout();
-		m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, m_Shader->GetPushConstantSize());
+			m_DescriptorSetLayout = m_Shader->CreateDescriptorSetLayout();
+			m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, m_Shader->GetPushConstantSize());
 
-		VkPipelineShaderStageCreateInfo shaderStage;
-		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		shaderStage.module = m_compShaderModule;
-		shaderStage.pName = "main";
-		shaderStage.flags = 0;
-		shaderStage.pNext = nullptr;
-		shaderStage.pSpecializationInfo = nullptr;
+			VkPipelineShaderStageCreateInfo shaderStage;
+			shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+			shaderStage.module = m_compShaderModule;
+			shaderStage.pName = "main";
+			shaderStage.flags = 0;
+			shaderStage.pNext = nullptr;
+			shaderStage.pSpecializationInfo = nullptr;
 
-		VkComputePipelineCreateInfo computePipelineInfo{};
-		computePipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-		computePipelineInfo.stage = shaderStage;
-		computePipelineInfo.layout = m_PipelineLayout;
+			VkComputePipelineCreateInfo computePipelineInfo{};
+			computePipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+			computePipelineInfo.stage = shaderStage;
+			computePipelineInfo.layout = m_PipelineLayout;
 
-		computePipelineInfo.basePipelineIndex = -1;
-		computePipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+			computePipelineInfo.basePipelineIndex = -1;
+			computePipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-		VK_CHECK_RESULT(vkCreateComputePipelines(
-			device->GetVulkanDevice(),
-			VK_NULL_HANDLE,
-			1,
-			&computePipelineInfo,
-			nullptr,
-			&m_ComputePipeline),
-			"Failed to Create Compute Pipeline!");
+			VK_CHECK_RESULT(vkCreateComputePipelines(
+				device->GetVulkanDevice(),
+				VK_NULL_HANDLE,
+				1,
+				&computePipelineInfo,
+				nullptr,
+				&m_ComputePipeline),
+				"Failed to Create Compute Pipeline!");
+		});
 	}
 
 }

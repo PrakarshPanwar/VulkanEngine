@@ -6,6 +6,7 @@
 #include "Platform/Vulkan/VulkanComputePipeline.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanBuffer.h"
+#include "Platform/Vulkan/VulkanUniformBuffer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
 
 #include <glm/glm.hpp>
@@ -31,7 +32,7 @@ namespace VulkanCore {
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
-		// TODO: Use struct SceneRendererData
+		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		inline VkCommandBuffer GetCommandBuffer(uint32_t index) { return m_SceneCommandBuffers[index]; }
 		inline std::shared_ptr<VulkanFramebuffer> GetFramebuffer() { return m_SceneFramebuffer; }
 		inline std::shared_ptr<VulkanRenderPass> GetRenderPass() { return m_SceneRenderPass; }
@@ -91,14 +92,14 @@ namespace VulkanCore {
 		std::vector<VkDescriptorSet> m_BloomDescriptorSets;
 		std::vector<VkDescriptorSet> m_SkyboxDescriptorSets;
 
-		// TODO: In future we could have to setup Material Table and Instanced Rendering
+		// TODO: In future we have to setup Material Table and Instanced Rendering
 		// Material Resources
-		std::vector<std::unique_ptr<VulkanBuffer>> m_CameraUBs{ VulkanSwapChain::MaxFramesInFlight };
-		std::vector<std::unique_ptr<VulkanBuffer>> m_PointLightUBs{ VulkanSwapChain::MaxFramesInFlight };
-		std::vector<std::unique_ptr<VulkanBuffer>> m_ExposureUBs{ VulkanSwapChain::MaxFramesInFlight };
+		std::vector<VulkanUniformBuffer> m_UBCamera;
+		std::vector<VulkanUniformBuffer> m_UBPointLight;
+		std::vector<VulkanUniformBuffer> m_UBSceneData;
 
-		std::vector<std::unique_ptr<VulkanBuffer>> m_BloomParamsUBs{ VulkanSwapChain::MaxFramesInFlight };
-		std::vector<std::unique_ptr<VulkanBuffer>> m_LodUBs{ VulkanSwapChain::MaxFramesInFlight };
+		std::vector<VulkanUniformBuffer> m_BloomParamsUBs;
+		std::vector<VulkanUniformBuffer> m_LodUBs;
 
 		std::shared_ptr<VulkanImage> m_BloomTexture;
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap,
@@ -108,6 +109,7 @@ namespace VulkanCore {
 		// Skybox Resources
 		std::shared_ptr<VulkanTextureCube> m_CubemapTexture;
 		std::shared_ptr<Mesh> m_SkyboxMesh;
+		float m_SkyboxLOD = 0.0f;
 
 		glm::ivec2 m_ViewportSize;
 

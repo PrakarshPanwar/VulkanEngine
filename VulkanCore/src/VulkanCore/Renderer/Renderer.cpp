@@ -1,14 +1,15 @@
 #include "vulkanpch.h"
 #include "Renderer.h"
-#include "VulkanRenderer.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 
 namespace VulkanCore {
 
 	std::unordered_map<std::string, std::shared_ptr<Shader>> Renderer::m_Shaders;
 	std::vector<VkCommandBuffer> Renderer::m_CommandBuffers;
+	VulkanRenderer* Renderer::s_Renderer = nullptr;
+	uint32_t Renderer::m_QueryIndex = 0;
+	std::array<uint64_t, 10> Renderer::m_QueryResultBuffer;
 
 	namespace Utils {
 
@@ -37,6 +38,11 @@ namespace VulkanCore {
 		m_CommandBuffers = cmdBuffers;
 	}
 
+	void Renderer::SetRendererAPI(VulkanRenderer* vkRenderer)
+	{
+		s_Renderer = vkRenderer;
+	}
+
 	int Renderer::GetCurrentFrameIndex()
 	{
 		return VulkanRenderer::Get()->GetCurrentFrameIndex();
@@ -61,6 +67,9 @@ namespace VulkanCore {
 		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
 		m_Shaders["Bloom"] = Utils::MakeShader("Bloom");
 		m_Shaders["Skybox"] = Utils::MakeShader("Skybox");
+		m_Shaders["EquirectangularToCubeMap"] = Utils::MakeShader("EquirectangularToCubeMap");
+		m_Shaders["EnvironmentMipFilter"] = Utils::MakeShader("EnvironmentMipFilter");
+		m_Shaders["EnvironmentIrradiance"] = Utils::MakeShader("EnvironmentIrradiance");
 	}
 
 	void Renderer::DestroyShaders()
@@ -68,12 +77,15 @@ namespace VulkanCore {
 		m_Shaders.clear();
 	}
 
-	void Renderer::RenderSkybox(const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<Mesh>& mesh, const std::vector<VkDescriptorSet>& descriptorSet)
+	void Renderer::RenderSkybox(const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<Mesh>& mesh, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData)
 	{
 		auto drawCmd = m_CommandBuffers[GetCurrentFrameIndex()];
 		auto dstSet = descriptorSet[GetCurrentFrameIndex()];
 
 		pipeline->Bind(drawCmd);
+
+		if (pcData)
+			pipeline->SetPushConstants(drawCmd, pcData, sizeof(float));
 
 		vkCmdBindDescriptorSets(drawCmd,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -84,6 +96,39 @@ namespace VulkanCore {
 		// Cube/Spherical Mesh
 		mesh->Bind(drawCmd);
 		mesh->Draw(drawCmd);
+	}	
+	
+	void Renderer::BeginGPUPerfMarker()
+	{
+		auto writeTimestampCmd = m_CommandBuffers[GetCurrentFrameIndex()];
+		vkCmdWriteTimestamp(writeTimestampCmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, s_Renderer->GetPerfQueryPool(), m_QueryIndex);
+	}
+
+	void Renderer::EndGPUPerfMarker()
+	{
+		auto writeTimestampCmd = m_CommandBuffers[GetCurrentFrameIndex()];
+		vkCmdWriteTimestamp(writeTimestampCmd, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, s_Renderer->GetPerfQueryPool(), m_QueryIndex + 1);
+
+		m_QueryIndex += 2;
+		m_QueryIndex = m_QueryIndex % 8;
+	}
+
+	void Renderer::RetrieveQueryPoolResults()
+	{
+		uint32_t queryBufferSize = (uint32_t)m_QueryResultBuffer.size();
+
+		vkGetQueryPoolResults(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
+			s_Renderer->GetPerfQueryPool(),
+			0,
+			queryBufferSize, sizeof(uint64_t) * queryBufferSize,
+			(void*)m_QueryResultBuffer.data(), sizeof(uint64_t),
+			VK_QUERY_RESULT_64_BIT);
+	}
+
+	uint64_t Renderer::GetQueryTime(uint32_t index)
+	{
+		uint64_t timeStamp = m_QueryResultBuffer[(index << 1) + 1] - m_QueryResultBuffer[index << 1];
+		return timeStamp;
 	}
 
 	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
@@ -110,7 +155,7 @@ namespace VulkanCore {
 
 	void Renderer::WaitandRender()
 	{
-		RenderThread::WaitandDestroy();
+		RenderThread::Wait();
 	}
 
 }

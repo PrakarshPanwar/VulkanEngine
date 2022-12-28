@@ -1,8 +1,7 @@
 #include "vulkanpch.h"
 #include "VulkanImage.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 #include "VulkanAllocator.h"
 
 namespace VulkanCore {
@@ -208,7 +207,7 @@ namespace VulkanCore {
 		{
 			auto barrierCmd = device->GetCommandBuffer();
 
-			VkImageSubresourceRange subresourceRange{}; // TODO: Add Mips
+			VkImageSubresourceRange subresourceRange{};
 			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			subresourceRange.baseMipLevel = 0;
 			subresourceRange.levelCount = m_Specification.MipLevels;
