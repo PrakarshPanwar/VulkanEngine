@@ -53,6 +53,12 @@ namespace VulkanCore {
 			float Mode = 1.0f; // 0->PreFilter, 1->Downsample, 2->Upsample-First, 3->Upsample
 		};
 
+		struct DOFSettings
+		{
+			float FocusPoint = 1.0f;
+			float FocusScale = 1.0f;
+		};
+
 		struct SceneSettings
 		{
 			float Exposure = 1.0f;
@@ -108,6 +114,7 @@ namespace VulkanCore {
 		SceneSettings m_SceneSettings;
 		LodAndMode m_LodAndMode;
 		BloomParams m_BloomParams;
+		DOFSettings m_DOFSettings;
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;

@@ -17,6 +17,7 @@ namespace VulkanCore {
 		~VulkanRenderPass();
 
 		void Invalidate();
+		void InvalidateWithDepthTexture();
 		void RecreateFramebuffers(uint32_t width, uint32_t height);
 
 		void Begin(VkCommandBuffer beginCmd);

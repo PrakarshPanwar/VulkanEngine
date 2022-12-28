@@ -6,6 +6,47 @@ layout(location = 0) in vec2 v_TexCoord;
 layout(location = 1) in float v_Exposure;
 
 layout(binding = 0) uniform sampler2D u_InputTexture;
+layout(binding = 2) uniform sampler2D u_DepthTexture;
+
+layout(push_constant) uniform DOFData
+{
+	float FocusPoint;
+	float FocusScale;
+} u_DOF;
+
+const float GOLDEN_ANGLE = 2.39996323; 
+const float MAX_BLUR_SIZE = 20.0; 
+const float RAD_SCALE = 0.5; // Smaller = nicer blur, larger = faster
+
+float GetBlurSize(float depth, float focusPoint, float focusScale)
+{
+	float coc = clamp((1.0 / focusPoint - 1.0 / depth) * focusScale, -1.0, 1.0);
+	return abs(coc) * MAX_BLUR_SIZE;
+}
+
+vec3 DepthOfField(vec2 texCoord, float focusPoint, float focusScale, vec2 texelSize)
+{
+	const float far = 10.0f; // TODO: Get this through UB
+	float centerDepth = texture(u_DepthTexture, texCoord).r * far;
+	float centerSize = GetBlurSize(centerDepth, focusPoint, focusScale);
+	vec3 color = texture(u_InputTexture, v_TexCoord).rgb;
+	float tot = 1.0;
+	float radius = RAD_SCALE;
+	for (float ang = 0.0; radius < MAX_BLUR_SIZE; ang += GOLDEN_ANGLE)
+	{
+		vec2 tc = texCoord + vec2(cos(ang), sin(ang)) * texelSize * radius;
+		vec3 sampleColor = texture(u_InputTexture, tc).rgb;
+		float sampleDepth = texture(u_DepthTexture, tc).r * far;
+		float sampleSize = GetBlurSize(sampleDepth, focusPoint, focusScale);
+		if (sampleDepth > centerDepth)
+			sampleSize = clamp(sampleSize, 0.0, centerSize * 2.0);
+		float m = smoothstep(radius - 0.5, radius + 0.5, sampleSize);
+		color += mix(color / tot, sampleColor, m);
+		tot += 1.0;   
+		radius += RAD_SCALE / radius;
+	}
+	return color /= tot;
+}
 
 vec3 ReinhardTonemap(vec3 hdrColor)
 {
@@ -42,11 +83,9 @@ vec3 UpsampleTent9(sampler2D tex, float lod, vec2 uv, vec2 texelSize, float radi
 
 void main()
 {
-	vec3 color = texture(u_InputTexture, v_TexCoord).rgb;
-
-//	ivec2 texSize = textureSize(u_InputTexture, 0);
-//	vec2 fTexSize = vec2(float(texSize.x), float(texSize.y));
-//	rColor += UpsampleTent9(u_InputTexture, 0, v_TexCoord, 1.0 / fTexSize, 0.5);
+	ivec2 texSize = textureSize(u_InputTexture, 0);
+	vec2 fTexSize = vec2(float(texSize.x), float(texSize.y));
+	vec3 color = DepthOfField(v_TexCoord, u_DOF.FocusPoint, u_DOF.FocusScale, 1.0 / fTexSize);
 	color *= v_Exposure;
     color = ACESTonemap(color);
 

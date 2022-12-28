@@ -76,7 +76,7 @@ namespace VulkanCore {
 
 	const std::vector<VulkanImage>& VulkanFramebuffer::GetDepthResolveAttachment() const
 	{
-		return m_Specification.ReadDepthTexture ? m_DepthAttachmentResolve : std::vector<VulkanImage>{};
+		return m_DepthAttachmentResolve;
 	}
 
 	void VulkanFramebuffer::Invalidate()
@@ -224,7 +224,13 @@ namespace VulkanCore {
 			for (const auto& attachment : m_ColorAttachments)
 				Attachments.push_back(attachment[i].GetVulkanImageInfo().ImageView);
 
-			if (HasDepthAttachment())
+			if (HasDepthAttachment() && m_Specification.ReadDepthTexture)
+			{
+				Attachments.push_back(m_DepthAttachment[i].GetVulkanImageInfo().ImageView);
+				Attachments.push_back(m_DepthAttachmentResolve[i].GetVulkanImageInfo().ImageView);
+			}
+
+			else if (HasDepthAttachment())
 				Attachments.push_back(m_DepthAttachment[i].GetVulkanImageInfo().ImageView);
 
 			VkFramebufferCreateInfo framebufferInfo{};
