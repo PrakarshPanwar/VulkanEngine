@@ -63,12 +63,6 @@ namespace VulkanCore {
 			else
 				Invalidate();
 		});
-#else
-		if (m_Specification.TargetFramebuffer->GetSpecification().ReadDepthTexture)
-			InvalidateWithDepthTexture();
-		else
-			Invalidate();
-#endif
 	}
 
 	VulkanRenderPass::~VulkanRenderPass()
