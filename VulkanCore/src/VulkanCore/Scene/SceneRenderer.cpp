@@ -146,7 +146,7 @@ namespace VulkanCore {
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
 			geomFramebufferSpec.ReadDepthTexture = true;
-			geomFramebufferSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::DEPTH16F };
+			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::DEPTH32F };
 			geomFramebufferSpec.Samples = 8;
 
 			RenderPassSpecification geomRenderPassSpec;
