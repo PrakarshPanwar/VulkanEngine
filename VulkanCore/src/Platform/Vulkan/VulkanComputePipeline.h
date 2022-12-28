@@ -14,7 +14,10 @@ namespace VulkanCore {
 
 		void Bind(VkCommandBuffer commandBuffer);
 		void Dispatch(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+		void Execute(VkCommandBuffer cmdBuf, VkDescriptorSet dstSet, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size);
 
+		inline std::shared_ptr<Shader> GetShader() const { return m_Shader; }
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
 		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
 	private:

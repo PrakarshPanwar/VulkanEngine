@@ -16,7 +16,7 @@ namespace VulkanCore {
 		void OnAttach() override;
 		void OnDetach() override;
 		void ImGuiBegin();
-		void ImGuiRenderandEnd(VkCommandBuffer commandBuffer);
+		void ImGuiEnd();
 		void ShutDown();
 
 		static VkDescriptorSet AddTexture(const VulkanImage& Image);
@@ -30,9 +30,13 @@ namespace VulkanCore {
 		void SetDarkThemeColor();
 	private:
 		std::shared_ptr<VulkanDescriptorPool> m_ImGuiGlobalPool;
+		std::vector<VkCommandBuffer> m_ImGuiCmdBuffers;
+
 		bool m_BlockEvents = false;
 
 		static ImGuiLayer* s_Instance;
+
+		friend class VulkanRenderer;
 	};
 
 }

@@ -1,8 +1,7 @@
 #include "vulkanpch.h"
 #include "VulkanDevice.h"
 
-#include "VulkanCore/Core/Log.h"
-#include "VulkanCore/Core/Assert.h"
+#include "VulkanCore/Core/Core.h"
 #include "VulkanContext.h"
 
 namespace VulkanCore {
@@ -82,7 +81,6 @@ namespace VulkanCore {
 
 	VulkanDevice::VulkanDevice()
 	{
-		//s_Instance = this;
 		Init();
 	}
 
@@ -90,12 +88,13 @@ namespace VulkanCore {
 	{
 		PickPhysicalDevice();
 		CreateLogicalDevice();
-		CreateCommandPool();
+		CreateCommandPools();
 	}
 
 	void VulkanDevice::Destroy()
 	{
 		vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
+		vkDestroyCommandPool(m_LogicalDevice, m_RenderThreadCommandPool, nullptr);
 		vkDestroyDevice(m_LogicalDevice, nullptr);
 	}
 
@@ -133,50 +132,6 @@ namespace VulkanCore {
 		VK_CORE_ASSERT(false, "Failed to find Supported Format!");
 	}
 
-	void VulkanDevice::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
-	{
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = size;
-		bufferInfo.usage = usage;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VK_CHECK_RESULT(vkCreateBuffer(m_LogicalDevice, &bufferInfo, nullptr, &buffer), "Failed to Create Buffer!");
-
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(m_LogicalDevice, buffer, &memRequirements);
-
-		VkMemoryAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
-
-		VK_CHECK_RESULT(vkAllocateMemory(m_LogicalDevice, &allocInfo, nullptr, &bufferMemory), "Failed to Allocate Buffer Memory!");
-
-		vkBindBufferMemory(m_LogicalDevice, buffer, bufferMemory, 0);
-	}
-
-	VmaAllocation VulkanDevice::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer)
-	{
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = size;
-		bufferInfo.usage = usage;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocInfo{};
-		allocInfo.usage = (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 2 ?
-			VMA_MEMORY_USAGE_AUTO_PREFER_HOST : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
-
-		allocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-		allocInfo.preferredFlags = properties;
-
-		VmaAllocation allocation;
-
-		VK_CHECK_RESULT(vmaCreateBuffer(VulkanContext::GetVulkanMemoryAllocator(), &bufferInfo, &allocInfo, &buffer, &allocation, nullptr), "Failed to Create Buffer");
-		return allocation;
-	}
-
 	VkCommandBuffer VulkanDevice::GetCommandBuffer()
 	{
 		VkCommandBufferAllocateInfo allocInfo{};
@@ -196,9 +151,10 @@ namespace VulkanCore {
 		return commandBuffer;
 	}
 
-	// TODO: Maybe we also have to create a fence to check whether command has completed or not
 	void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer)
 	{
+		const uint64_t DEFAULT_FENCE_TIMEOUT = 100000000000;
+
 		vkEndCommandBuffer(commandBuffer);
 
 		VkSubmitInfo submitInfo{};
@@ -206,45 +162,20 @@ namespace VulkanCore {
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffer;
 
-		vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(m_GraphicsQueue);
+		VkFenceCreateInfo fenceCreateInfo{};
+		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceCreateInfo.flags = 0;
 
+		VkFence fence;
+		VK_CHECK_RESULT(vkCreateFence(m_LogicalDevice, &fenceCreateInfo, nullptr, &fence), "Failed to Create Fence!");
+
+		// Submit to Queue
+		VK_CHECK_RESULT(vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, fence), "Failed to Submit to Queue!");
+		// Wait for the fence to signal
+		VK_CHECK_RESULT(vkWaitForFences(m_LogicalDevice, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT), "Failed to Wait for Fence to signal!");
+
+		vkDestroyFence(m_LogicalDevice, fence, nullptr);
 		vkFreeCommandBuffers(m_LogicalDevice, m_CommandPool, 1, &commandBuffer);
-	}
-
-	void VulkanDevice::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
-	{
-		VkCommandBuffer commandBuffer = GetCommandBuffer();
-
-		VkBufferCopy copyRegion{};
-		copyRegion.srcOffset = 0;  // Optional
-		copyRegion.dstOffset = 0;  // Optional
-		copyRegion.size = size;
-		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-		FlushCommandBuffer(commandBuffer);
-	}
-
-	void VulkanDevice::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount)
-	{
-		VkCommandBuffer commandBuffer = GetCommandBuffer();
-
-		VkBufferImageCopy region{};
-		region.bufferOffset = 0;
-		region.bufferRowLength = 0;
-		region.bufferImageHeight = 0;
-
-		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		region.imageSubresource.mipLevel = 0;
-		region.imageSubresource.baseArrayLayer = 0;
-		region.imageSubresource.layerCount = layerCount;
-
-		region.imageOffset = { 0, 0, 0 };
-		region.imageExtent = { width, height, 1 };
-
-		vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-		FlushCommandBuffer(commandBuffer);
 	}
 
 	void VulkanDevice::CreateImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
@@ -364,7 +295,7 @@ namespace VulkanCore {
 		vkGetDeviceQueue(m_LogicalDevice, indices.PresentFamily, 0, &m_PresentQueue);
 	}
 
-	void VulkanDevice::CreateCommandPool()
+	void VulkanDevice::CreateCommandPools()
 	{
 		QueueFamilyIndices queueFamilyIndices = FindPhysicalQueueFamilies();
 
@@ -374,6 +305,7 @@ namespace VulkanCore {
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_CommandPool), "Failed to Create Command Pool!");
+		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_RenderThreadCommandPool), "Failed to Create Command Pool!");
 	}
 
 	QueueFamilyIndices VulkanDevice::FindQueueFamilies(VkPhysicalDevice device)

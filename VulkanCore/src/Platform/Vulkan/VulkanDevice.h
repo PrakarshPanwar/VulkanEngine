@@ -35,7 +35,6 @@ namespace VulkanCore {
 		bool IsComplete() { return GraphicsFamilyHasValue && PresentFamilyHasValue; }
 	};
 
-	// TODO: In future we could transfer all of this in class `VulkanContext`
 	class VulkanDevice
 	{
 	public:
@@ -43,6 +42,7 @@ namespace VulkanCore {
 		~VulkanDevice();
 
 		inline VkCommandPool GetCommandPool() { return m_CommandPool; }
+		inline VkCommandPool GetRenderThreadCommandPool() { return m_RenderThreadCommandPool; }
 		inline VkDevice GetVulkanDevice() { return m_LogicalDevice; }
 		inline VkPhysicalDevice GetPhysicalDevice() { return m_PhysicalDevice; }
 		inline VkQueue GetGraphicsQueue() { return m_GraphicsQueue; }
@@ -56,12 +56,8 @@ namespace VulkanCore {
 		QueueFamilyIndices FindPhysicalQueueFamilies() { return FindQueueFamilies(m_PhysicalDevice); }
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
-		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-		VmaAllocation CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer);
 		VkCommandBuffer GetCommandBuffer();
 		void FlushCommandBuffer(VkCommandBuffer commandBuffer);
-		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
 
 		void CreateImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 		VmaAllocation CreateImage(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image);
@@ -69,13 +65,13 @@ namespace VulkanCore {
 	private:
 		void CreateLogicalDevice();
 		void PickPhysicalDevice();
-		void CreateCommandPool();
+		void CreateCommandPools();
 	private:
 		VkAllocationCallbacks m_AllocationCallbacks;
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 		VkPhysicalDeviceProperties m_DeviceProperties;
 		VkSampleCountFlagBits m_MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-		VkCommandPool m_CommandPool;
+		VkCommandPool m_CommandPool, m_RenderThreadCommandPool;
 
 		VkDevice m_LogicalDevice;
 		VkQueue m_GraphicsQueue;

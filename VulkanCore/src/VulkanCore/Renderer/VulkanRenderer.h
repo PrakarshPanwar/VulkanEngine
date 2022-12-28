@@ -1,11 +1,11 @@
 #pragma once
 #include "Platform/Windows/WindowsWindow.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
+#include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "VulkanCore/Mesh/Mesh.h"
 
-#include "VulkanCore/Core/Assert.h"
-#include "VulkanCore/Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 
 namespace VulkanCore {
 
@@ -34,6 +34,8 @@ namespace VulkanCore {
 			return m_CommandBuffers[m_CurrentFrameIndex];
 		}
 
+		static std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> CreateEnviromentMap(const std::string& filepath);
+
 		inline VkRenderPass GetSwapChainRenderPass() const { return m_SwapChain->GetRenderPass(); }
 		inline int GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
 		inline VkQueryPool GetPerfQueryPool() const { return m_QueryPool; }
@@ -51,10 +53,15 @@ namespace VulkanCore {
 		std::unique_ptr<VulkanSwapChain> m_SwapChain;
 
 		std::vector<VkCommandBuffer> m_CommandBuffers;
-		VkQueryPool m_QueryPool;
+		std::vector<VkCommandBuffer> m_SecondaryCommandBuffers;
+		std::array<VkCommandBuffer, 2> m_ExecuteCommandBuffers;
+
 		uint32_t m_CurrentImageIndex;
 		int m_CurrentFrameIndex = 0;
 		bool IsFrameStarted = false;
+
+		VkQueryPool m_QueryPool;
+		const uint32_t m_QueryCount = 10; // TODO: This number could change in future
 
 		static VulkanRenderer* s_Instance;
 	};
