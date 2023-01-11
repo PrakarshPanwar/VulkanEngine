@@ -95,7 +95,7 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 float GeometrySchlickSmithGGX(float dotNL, float dotNV, float roughness)
 {
 	float r = (roughness + 1.0);
-	float k = (r*r) / 8.0;
+	float k = (r * r) / 8.0;
 	float GL = dotNL / (dotNL * (1.0 - k) + k);
 	float GV = dotNV / (dotNV * (1.0 - k) + k);
 	return GL * GV;
@@ -180,7 +180,7 @@ void main()
     vec3 irradiance = texture(u_IrradianceMap, N).rgb;
     vec3 diffuse = irradiance * albedo;
 
-    // Sample both the Pre-Filter map and the BRDF LUT and combine them together as per the Split-Sum approximation to get the IBL Specular part.
+    // Sample both the Pre-Filter map and the BRDF LUT and combine them together as per the Split-Sum approximation to get the IBL Specular part
     const float MAX_REFLECTION_LOD = 9.0; // todo: param/const
 	float lod = roughness * MAX_REFLECTION_LOD;
 	float lodf = floor(lod);

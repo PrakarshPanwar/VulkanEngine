@@ -78,8 +78,8 @@ void main()
     ivec2 invocID = ivec2(gl_GlobalInvocationID.xy);
 
     vec2 uv = (gl_GlobalInvocationID.xy + vec2(0.5)) / vec2(imageSize(o_BRDFTexture).xy);
-    float dotNV = uv.y;
-    float roughness = uv.x;
+    float dotNV = uv.x;
+    float roughness = uv.y;
 
 	vec3 V;
     V.x = sqrt(1.0 - dotNV * dotNV);
@@ -91,7 +91,7 @@ void main()
 
     vec3 N = vec3(0.0, 0.0, 1.0);
     
-    const uint SAMPLE_COUNT = 1024;
+    const uint SAMPLE_COUNT = 4096;
     for (uint i = 0u; i < SAMPLE_COUNT; ++i)
     {
         // Generates a Sample vector that's biased towards the
