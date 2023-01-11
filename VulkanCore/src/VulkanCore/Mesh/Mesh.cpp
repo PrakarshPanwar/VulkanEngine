@@ -293,6 +293,7 @@ namespace VulkanCore {
 			aiProcess_CalcTangentSpace |
 			aiProcess_JoinIdenticalVertices | // For Index Buffer
 			aiProcess_GenUVCoords |           // Generate UV Coords
+			aiProcess_FlipUVs |
 			aiProcess_GenNormals |            // Generate Normals for Mesh
 			aiProcess_SortByPType |
 			aiProcess_ValidateDataStructure
@@ -347,7 +348,7 @@ namespace VulkanCore {
 
 			if (mesh->HasTextureCoords(0))
 			{
-				glm::vec2 mTexCoords = { mesh->mTextureCoords[0][i].x, 1.0f - mesh->mTextureCoords[0][i].y };
+				glm::vec2 mTexCoords = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
 				vertex.TexCoord = mTexCoords;
 			}
 
