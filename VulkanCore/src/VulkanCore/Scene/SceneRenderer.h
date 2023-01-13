@@ -32,7 +32,7 @@ namespace VulkanCore {
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
-		// TODO: Use struct SceneRendererData
+		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		inline VkCommandBuffer GetCommandBuffer(uint32_t index) { return m_SceneCommandBuffers[index]; }
 		inline std::shared_ptr<VulkanFramebuffer> GetFramebuffer() { return m_SceneFramebuffer; }
 		inline std::shared_ptr<VulkanRenderPass> GetRenderPass() { return m_SceneRenderPass; }
@@ -112,6 +112,7 @@ namespace VulkanCore {
 		// Skybox Resources
 		std::shared_ptr<VulkanTextureCube> m_CubemapTexture;
 		std::shared_ptr<Mesh> m_SkyboxMesh;
+		float m_SkyboxLOD = 0.0f;
 
 		glm::ivec2 m_ViewportSize;
 		glm::uvec2 m_BloomMipSize;

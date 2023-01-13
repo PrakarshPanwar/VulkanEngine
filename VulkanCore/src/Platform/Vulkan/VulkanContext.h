@@ -50,8 +50,6 @@ namespace VulkanCore {
 			VK_KHR_MAINTENANCE1_EXTENSION_NAME
 		};
 
-		// TODO: If we are going to return raw pointer,
-		// then this could be a unique_ptr, otherwise a it is going to be a shared_ptr
 		std::unique_ptr<VulkanDevice> m_Device; 
 		std::shared_ptr<WindowsWindow> m_Window;
 

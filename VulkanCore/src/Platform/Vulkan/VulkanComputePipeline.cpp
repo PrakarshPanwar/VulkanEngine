@@ -77,6 +77,26 @@ namespace VulkanCore {
 		vkCmdDispatch(commandBuffer, groupCountX, groupCountY, groupCountZ);
 	}
 
+	void VulkanComputePipeline::Execute(VkCommandBuffer cmdBuf, VkDescriptorSet dstSet, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+	{
+		vkCmdBindDescriptorSets(cmdBuf,
+			VK_PIPELINE_BIND_POINT_COMPUTE,
+			m_PipelineLayout, 0, 1,
+			&dstSet, 0, nullptr);
+
+		vkCmdDispatch(cmdBuf, groupCountX, groupCountY, groupCountZ);
+	}
+
+	void VulkanComputePipeline::SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size)
+	{
+		vkCmdPushConstants(cmdBuf,
+			m_PipelineLayout,
+			VK_SHADER_STAGE_COMPUTE_BIT,
+			0,
+			(uint32_t)size,
+			pcData);
+	}
+
 	void VulkanComputePipeline::CreateComputePipeline()
 	{
 		Renderer::Submit([this]()
