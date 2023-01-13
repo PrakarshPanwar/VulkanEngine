@@ -201,6 +201,19 @@ namespace VulkanCore {
 		return envUnfiltered;
 	}
 
+	void VulkanRenderer::CopyVulkanImage(const VulkanImage& sourceImage, const VulkanImage& destImage)
+	{
+		VkImage srcImage = sourceImage.GetVulkanImageInfo().Image;
+		VkImage dstImage = destImage.GetVulkanImageInfo().Image;
+
+		
+	}
+
+	void VulkanRenderer::BlitVulkanImage(const VulkanImage& image)
+	{
+
+	}
+
 	void VulkanRenderer::CreateCommandBuffers()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
