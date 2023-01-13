@@ -91,7 +91,7 @@ namespace VulkanCore {
 
 		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
 		descriptorPoolBuilder.SetMaxSets(100).AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10);
-		descriptorPoolBuilder.SetMaxSets(100).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10);
+		descriptorPoolBuilder.SetMaxSets(1000).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10);
 		m_GlobalPool = descriptorPoolBuilder.Build();
 
 		m_ImGuiLayer = std::make_shared<ImGuiLayer>();

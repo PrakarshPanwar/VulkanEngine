@@ -35,6 +35,7 @@ namespace VulkanCore {
 		}
 
 		static std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> CreateEnviromentMap(const std::string& filepath);
+		static std::shared_ptr<VulkanImage> CreateBRDFTexture();
 		static void CopyVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& sourceImage, const VulkanImage& destImage);
 		static void BlitVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& image);
 

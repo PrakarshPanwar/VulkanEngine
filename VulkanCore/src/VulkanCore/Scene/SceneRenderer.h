@@ -12,8 +12,6 @@
 #include <glm/glm.hpp>
 #include "Scene.h"
 
-#define BLOOM_COMPUTE_SHADER 1
-
 namespace VulkanCore {
 
 	class SceneRenderer
@@ -64,6 +62,12 @@ namespace VulkanCore {
 			float Threshold = 1.0f;
 			float Knee = 1.0f;
 		};
+
+		struct SkyboxSettings
+		{
+			float Intensity = 1.0f;
+			float LOD = 0.0f;
+		};
 	private:
 		std::shared_ptr<Scene> m_Scene;
 
@@ -102,14 +106,21 @@ namespace VulkanCore {
 		std::vector<VulkanImage> m_BloomTextures;
 		std::vector<VulkanImage> m_SceneRenderTextures;
 
-		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap,
-			m_DiffuseMap2, m_NormalMap2, m_SpecularMap2,
-			m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
+		std::shared_ptr<VulkanImage> m_BloomTexture;
+		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_ARMMap,
+			m_DiffuseMap2, m_NormalMap2, m_ARMMap2,
+			m_DiffuseMap3, m_NormalMap3, m_ARMMap3;
 
 		// Skybox Resources
-		std::shared_ptr<VulkanTextureCube> m_CubemapTexture;
+		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture;
+#define USE_PRELOADED_BRDF 0
+#if USE_PRELOADED_BRDF
+		std::shared_ptr<VulkanTexture> m_BRDFTexture;
+#else
+		std::shared_ptr<VulkanImage> m_BRDFTexture;
+#endif
 		std::shared_ptr<Mesh> m_SkyboxMesh;
-		float m_SkyboxLOD = 0.0f;
+		SkyboxSettings m_SkyboxSettings;
 
 		glm::ivec2 m_ViewportSize;
 		glm::uvec2 m_BloomMipSize;

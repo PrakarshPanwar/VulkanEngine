@@ -132,12 +132,12 @@ namespace VulkanCore {
 		VK_CORE_ASSERT(false, "Failed to find Supported Format!");
 	}
 
-	VkCommandBuffer VulkanDevice::GetCommandBuffer()
-	{
+	VkCommandBuffer VulkanDevice::GetCommandBuffer(bool useRT)
+{
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = m_CommandPool;
+		allocInfo.commandPool = useRT ? m_RenderThreadCommandPool : m_CommandPool;
 		allocInfo.commandBufferCount = 1;
 
 		VkCommandBuffer commandBuffer;
@@ -176,6 +176,33 @@ namespace VulkanCore {
 
 		vkDestroyFence(m_LogicalDevice, fence, nullptr);
 		vkFreeCommandBuffers(m_LogicalDevice, m_CommandPool, 1, &commandBuffer);
+	}
+
+	void VulkanDevice::RT_FlushCommandBuffer(VkCommandBuffer commandBuffer)
+	{
+		const uint64_t DEFAULT_FENCE_TIMEOUT = 100000000000;
+
+		vkEndCommandBuffer(commandBuffer);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		VkFenceCreateInfo fenceCreateInfo{};
+		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceCreateInfo.flags = 0;
+
+		VkFence fence;
+		VK_CHECK_RESULT(vkCreateFence(m_LogicalDevice, &fenceCreateInfo, nullptr, &fence), "Failed to Create Fence!");
+
+		// Submit to Queue
+		VK_CHECK_RESULT(vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, fence), "Failed to Submit to Queue!");
+		// Wait for the fence to signal
+		VK_CHECK_RESULT(vkWaitForFences(m_LogicalDevice, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT), "Failed to Wait for Fence to signal!");
+
+		vkDestroyFence(m_LogicalDevice, fence, nullptr);
+		vkFreeCommandBuffers(m_LogicalDevice, m_RenderThreadCommandPool, 1, &commandBuffer);
 	}
 
 	void VulkanDevice::CreateImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
