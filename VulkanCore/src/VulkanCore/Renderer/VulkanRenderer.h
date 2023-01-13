@@ -35,6 +35,8 @@ namespace VulkanCore {
 		}
 
 		static std::shared_ptr<VulkanTextureCube> CreateEnviromentMap(const std::string& filepath);
+		static void CopyVulkanImage(const VulkanImage& sourceImage, const VulkanImage& destImage);
+		static void BlitVulkanImage(const VulkanImage& image);
 
 		inline VkRenderPass GetSwapChainRenderPass() const { return m_SwapChain->GetRenderPass(); }
 		inline int GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
