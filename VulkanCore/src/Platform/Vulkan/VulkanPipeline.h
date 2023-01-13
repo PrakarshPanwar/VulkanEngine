@@ -67,7 +67,7 @@ namespace VulkanCore {
 		static void EnableAlphaBlending(PipelineConfigInfo& pipelineConfigInfo);
 
 		void Bind(VkCommandBuffer commandBuffer);
-		void SetPushConstants(size_t size);
+		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size);
 
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
 		inline PipelineSpecification GetSpecification() const { return m_Specification; }

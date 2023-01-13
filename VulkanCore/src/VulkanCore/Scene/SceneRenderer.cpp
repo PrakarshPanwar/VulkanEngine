@@ -284,7 +284,8 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
 		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
 
-		m_CubemapTexture = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/SnowyPark2.hdr");
+		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/LagoMountains4K.hdr");
+		m_CubemapTexture = filteredMap;
 		m_SkyboxMesh = Utils::CreateCubeModel();
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
@@ -506,9 +507,19 @@ namespace VulkanCore {
 	{
 		ImGui::Begin("Scene Renderer");
 		ImGui::DragFloat("Exposure Intensity", &m_SceneSettings.Exposure, 0.01f, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::DragFloat("Skybox LOD", &m_SkyboxLOD, 0.01f, 0.0f, 11.0f);
 
-		bool bloomTree = ImGui::TreeNode("BloomSettings");
-		if (bloomTree)
+		if (ImGui::TreeNode("Scene Renderer Stats##GPUPerf"))
+		{
+			Renderer::RetrieveQueryPoolResults();
+
+			ImGui::Text("Geometry Pass: %lluns", Renderer::GetQueryTime(0));
+			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(2));
+			ImGui::Text("Composite Pass: %lluns", Renderer::GetQueryTime(3));
+			ImGui::TreePop();
+		}
+
+		if (ImGui::TreeNode("BloomSettings"))
 		{
 			ImGui::DragFloat("Threshold", &m_BloomParams.Threshold, 0.01f);
 			ImGui::DragFloat("Knee", &m_BloomParams.Knee, 0.01f);
@@ -550,20 +561,34 @@ namespace VulkanCore {
 
 	void SceneRenderer::CompositePass()
 	{
+		Renderer::BeginGPUPerfMarker();
+
 		Renderer::BeginRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
 		Renderer::SubmitFullscreenQuad(m_CompositePipeline, m_CompositeDescriptorSets);
 		Renderer::EndRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
+
+		Renderer::EndGPUPerfMarker();
 	}
 
 	void SceneRenderer::GeometryPass()
 	{
 		Renderer::BeginRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
 
+		// Rendering Geometry
+		Renderer::BeginGPUPerfMarker();
 		m_Scene->OnUpdateGeometry(m_SceneCommandBuffers, m_GeometryPipeline, m_GeometryDescriptorSets);
+		Renderer::EndGPUPerfMarker();
+
+		// Rendering Point Lights
+		Renderer::BeginGPUPerfMarker();
 		m_Scene->OnUpdateLights(m_SceneCommandBuffers, m_PointLightPipeline, m_PointLightDescriptorSets);
+		Renderer::EndGPUPerfMarker();
+
+		Renderer::BeginGPUPerfMarker();
 
 		// Rendering Skybox
-		Renderer::RenderSkybox(m_SkyboxPipeline, m_SkyboxMesh, m_SkyboxDescriptorSets);
+		Renderer::RenderSkybox(m_SkyboxPipeline, m_SkyboxMesh, m_SkyboxDescriptorSets, &m_SkyboxLOD);
+		Renderer::EndGPUPerfMarker();
 
 		Renderer::EndRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
 	}

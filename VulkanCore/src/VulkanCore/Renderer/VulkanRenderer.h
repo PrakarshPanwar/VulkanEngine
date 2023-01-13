@@ -34,7 +34,7 @@ namespace VulkanCore {
 			return m_CommandBuffers[m_CurrentFrameIndex];
 		}
 
-		static std::shared_ptr<VulkanTextureCube> CreateEnviromentMap(const std::string& filepath);
+		static std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> CreateEnviromentMap(const std::string& filepath);
 		static void CopyVulkanImage(const VulkanImage& sourceImage, const VulkanImage& destImage);
 		static void BlitVulkanImage(const VulkanImage& image);
 
@@ -58,10 +58,12 @@ namespace VulkanCore {
 		std::vector<VkCommandBuffer> m_SecondaryCommandBuffers;
 		std::array<VkCommandBuffer, 2> m_ExecuteCommandBuffers;
 
-		VkQueryPool m_QueryPool;
 		uint32_t m_CurrentImageIndex;
 		int m_CurrentFrameIndex = 0;
 		bool IsFrameStarted = false;
+
+		VkQueryPool m_QueryPool;
+		const uint32_t m_QueryCount = 10; // TODO: This number could change in future
 
 		static VulkanRenderer* s_Instance;
 	};

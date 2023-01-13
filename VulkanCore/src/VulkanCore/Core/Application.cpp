@@ -98,6 +98,7 @@ namespace VulkanCore {
 		m_ImGuiLayer->OnAttach();
 
 		Renderer::BuildShaders();
+		Renderer::SetRendererAPI(m_Renderer.get());
 	}
 
 	void Application::Run()
@@ -116,7 +117,7 @@ namespace VulkanCore {
 				Renderer::Submit([this]() { RenderImGui(); });
 				Renderer::Submit([this]() { m_ImGuiLayer->ImGuiEnd(); });
 
-				RenderThread::Wait();
+				Renderer::WaitandRender();
 
 				m_Renderer->EndSwapChainRenderPass(commandBuffer);
 				m_Renderer->EndFrame();
