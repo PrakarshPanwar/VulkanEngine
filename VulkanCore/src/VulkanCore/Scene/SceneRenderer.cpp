@@ -217,8 +217,6 @@ namespace VulkanCore {
 		m_UBCamera.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_UBPointLight.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_UBSceneData.reserve(VulkanSwapChain::MaxFramesInFlight);
-		m_UBBloomParams.reserve(VulkanSwapChain::MaxFramesInFlight);
-		m_UBBloomLod.reserve(VulkanSwapChain::MaxFramesInFlight);
 
 		// Uniform Buffers
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
@@ -226,10 +224,6 @@ namespace VulkanCore {
 			m_UBCamera.emplace_back(sizeof(Camera));
 			m_UBPointLight.emplace_back(sizeof(UBPointLights));
 			m_UBSceneData.emplace_back(sizeof(SceneSettings));
-#if BLOOM_COMPUTE_SHADER
-			m_UBBloomLod.emplace_back(sizeof(LodAndMode));
-			m_UBBloomParams.emplace_back(sizeof(BloomParams));
-#endif
 		}
 
 #if BLOOM_COMPUTE_SHADER
@@ -240,17 +234,16 @@ namespace VulkanCore {
 		ImageSpecification imageSpec = {};
 		imageSpec.Width = m_BloomMipSize.x;
 		imageSpec.Height = m_BloomMipSize.y;
-		imageSpec.Format = ImageFormat::RGBA16F;
+		imageSpec.Format = ImageFormat::RGBA32F;
 		imageSpec.Usage = ImageUsage::Storage;
 		imageSpec.MipLevels = Utils::CalculateMipCount(1920, 1080) - 4;
 		
 		m_BloomTextures.reserve(3);
-		m_SceneCopyImages.reserve(3);
+		m_SceneRenderTextures.reserve(3);
 
 #define USE_MEMORY_BARRIER 1
-	#if USE_MEMORY_BARRIER
+
 		VkCommandBuffer barrierCmd = device->GetCommandBuffer();
-	#endif
 
 		for (int i = 0; i < 3; i++)
 		{
@@ -265,11 +258,28 @@ namespace VulkanCore {
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, BloomTexture.GetSpecification().MipLevels, 0, 1 });
 	#endif
 		}
-
-	#if USE_MEMORY_BARRIER
-		device->FlushCommandBuffer(barrierCmd);
-	#endif
 #endif
+
+		ImageSpecification sceneRTSpec = {};
+		sceneRTSpec.Width = 1920;
+		sceneRTSpec.Height = 1080;
+		sceneRTSpec.Format = ImageFormat::RGBA32F;
+		sceneRTSpec.Usage = ImageUsage::Texture;
+		sceneRTSpec.MipLevels = Utils::CalculateMipCount(1920, 1080);
+
+		for (int i = 0; i < 3; i++)
+		{
+			VulkanImage& SceneTexture = m_SceneRenderTextures.emplace_back(sceneRTSpec);
+			SceneTexture.Invalidate();
+
+			Utils::InsertImageMemoryBarrier(barrierCmd, SceneTexture.GetVulkanImageInfo().Image,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneTexture.GetSpecification().MipLevels, 0, 1 });
+		}
+
+		device->FlushCommandBuffer(barrierCmd);
 
 		// Textures
 		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg");
@@ -284,7 +294,7 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
 		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
 
-		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/LagoMountains4K.hdr");
+		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
 		m_CubemapTexture = filteredMap;
 		m_SkyboxMesh = Utils::CreateCubeModel();
 
@@ -362,18 +372,11 @@ namespace VulkanCore {
 			// Binding 2(u_BloomTexture): RenderTex
 
 			VkDescriptorImageInfo outputImageInfo = m_BloomTextures[0].GetDescriptorInfo();
-			//outputImageInfo.imageView = m_BloomTextures[0].CreateImageViewSingleMip(0);
 			bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
 
-			VkDescriptorImageInfo texInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
+			VkDescriptorImageInfo texInfo = m_SceneRenderTextures[i].GetDescriptorInfo();
 			bloomDescriptorWriter[i].WriteImage(1, &texInfo);
 			bloomDescriptorWriter[i].WriteImage(2, &texInfo);
-
-			auto lodUBInfo = m_UBBloomLod[i].GetDescriptorBufferInfo();
-			bloomDescriptorWriter[i].WriteBuffer(3, &lodUBInfo);
-
-			auto bloomParamUBInfo = m_UBBloomParams[i].GetDescriptorBufferInfo();
-			bloomDescriptorWriter[i].WriteBuffer(4, &bloomParamUBInfo);
 
 			bool success = bloomDescriptorWriter[i].Build(m_BloomPrefilterSets[i]);
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
@@ -519,7 +522,7 @@ namespace VulkanCore {
 			ImGui::TreePop();
 		}
 
-		if (ImGui::TreeNode("BloomSettings"))
+		if (ImGui::TreeNode("Bloom Settings"))
 		{
 			ImGui::DragFloat("Threshold", &m_BloomParams.Threshold, 0.01f);
 			ImGui::DragFloat("Knee", &m_BloomParams.Knee, 0.01f);
@@ -548,9 +551,6 @@ namespace VulkanCore {
 
 		// Scene Data
 		m_UBSceneData[frameIndex].WriteandFlushBuffer(&m_SceneSettings);
-#if BLOOM_COMPUTE_SHADER
-		m_UBBloomParams[frameIndex].WriteandFlushBuffer(&m_BloomParams);
-#endif
 
 		GeometryPass();
 #if BLOOM_COMPUTE_SHADER
@@ -591,6 +591,15 @@ namespace VulkanCore {
 		Renderer::EndGPUPerfMarker();
 
 		Renderer::EndRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
+
+		// TEST: Of Image copying function
+		int frameIndex = Renderer::GetCurrentFrameIndex();
+
+		VulkanRenderer::CopyVulkanImage(m_SceneCommandBuffers[frameIndex],
+			m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[frameIndex],
+			m_SceneRenderTextures[frameIndex]);
+
+		VulkanRenderer::BlitVulkanImage(m_SceneCommandBuffers[frameIndex], m_SceneRenderTextures[frameIndex]);
 	}
 
 	void SceneRenderer::BloomCompute()
@@ -603,7 +612,6 @@ namespace VulkanCore {
 		// Prefilter
 		m_LodAndMode.LOD = 0.0f;
 		m_LodAndMode.Mode = 0.0f;
-		m_UBBloomLod[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
 
 		vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 			m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
@@ -612,13 +620,14 @@ namespace VulkanCore {
 		const uint32_t mips = m_BloomTextures[0].GetSpecification().MipLevels;
 		glm::uvec2 bloomMipSize = m_BloomMipSize;
 
+		m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
+		m_BloomPipeline->SetPushConstants(dispatchCmd, &m_BloomParams, sizeof(glm::vec2), sizeof(glm::vec2));
 		m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
 		for (int i = 1; i < mips; i++)
 		{
 			m_LodAndMode.LOD = float(i - 1);
 			m_LodAndMode.Mode = 1.0f;
-			m_UBBloomLod[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
 
 			int currentIdx = i - 1;
 
@@ -628,16 +637,18 @@ namespace VulkanCore {
 				&m_BloomPingSets[frameIndex][currentIdx], 0, nullptr);
 
 			bloomMipSize = m_BloomTextures[0].GetMipSize(i);
+
+			m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
 			m_LodAndMode.LOD = (float)i;
-			m_UBBloomLod[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
 
 			// Downsample(Pong)
 			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 				m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
 				&m_BloomPongSets[frameIndex][currentIdx], 0, nullptr);
 
+			m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 		}
 
@@ -645,13 +656,14 @@ namespace VulkanCore {
 		// TODO: Could have to use VkImageSubresourceRange to set correct mip level
 		m_LodAndMode.LOD = float(mips - 2);
 		m_LodAndMode.Mode = 2.0f;
-		m_UBBloomLod[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
 
 		vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 			m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
 			&m_BloomUpsampleFirstSets[frameIndex], 0, nullptr);
 
 		bloomMipSize = m_BloomTextures[2].GetMipSize(mips - 1);
+
+		m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 		m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
 		// Upsample Final
@@ -659,13 +671,14 @@ namespace VulkanCore {
 		{
 			m_LodAndMode.LOD = (float)i;
 			m_LodAndMode.Mode = 3.0f;
-			m_UBBloomLod[frameIndex].WriteandFlushBuffer(&m_LodAndMode);
 
 			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 				m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
 				&m_BloomUpsampleSets[frameIndex][i], 0, nullptr);
 
 			bloomMipSize = m_BloomTextures[2].GetMipSize(i);
+
+			m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 		}
 
