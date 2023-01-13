@@ -62,6 +62,7 @@ namespace VulkanCore {
 
 	void Renderer::BuildShaders()
 	{
+		m_Shaders["CorePBR"] = Utils::MakeShader("CorePBR");
 		m_Shaders["CoreShader"] = Utils::MakeShader("CoreShader");
 		m_Shaders["PointLight"] = Utils::MakeShader("PointLight");
 		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
@@ -70,6 +71,7 @@ namespace VulkanCore {
 		m_Shaders["EquirectangularToCubeMap"] = Utils::MakeShader("EquirectangularToCubeMap");
 		m_Shaders["EnvironmentMipFilter"] = Utils::MakeShader("EnvironmentMipFilter");
 		m_Shaders["EnvironmentIrradiance"] = Utils::MakeShader("EnvironmentIrradiance");
+		m_Shaders["GenerateBRDF"] = Utils::MakeShader("GenerateBRDF");
 	}
 
 	void Renderer::DestroyShaders()
@@ -85,7 +87,7 @@ namespace VulkanCore {
 		pipeline->Bind(drawCmd);
 
 		if (pcData)
-			pipeline->SetPushConstants(drawCmd, pcData, sizeof(float));
+			pipeline->SetPushConstants(drawCmd, pcData, sizeof(glm::vec2));
 
 		vkCmdBindDescriptorSets(drawCmd,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -129,6 +131,20 @@ namespace VulkanCore {
 	{
 		uint64_t timeStamp = m_QueryResultBuffer[(index << 1) + 1] - m_QueryResultBuffer[index << 1];
 		return timeStamp;
+	}
+
+	std::shared_ptr<VulkanTexture> Renderer::GetWhiteTexture(ImageFormat format /*= ImageFormat::RGBA8_SRGB*/)
+	{
+		TextureSpecification whiteTexSpec;
+		whiteTexSpec.Width = 1;
+		whiteTexSpec.Height = 1;
+		whiteTexSpec.Format = format;
+		whiteTexSpec.GenerateMips = false;
+
+		uint32_t* textureData = new uint32_t;
+		*textureData = 0xffffffff;
+		auto whiteTexture = std::make_shared<VulkanTexture>(textureData, whiteTexSpec);
+		return whiteTexture;
 	}
 
 	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)

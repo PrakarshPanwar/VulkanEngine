@@ -56,8 +56,9 @@ namespace VulkanCore {
 		QueueFamilyIndices FindPhysicalQueueFamilies() { return FindQueueFamilies(m_PhysicalDevice); }
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
-		VkCommandBuffer GetCommandBuffer();
+		VkCommandBuffer GetCommandBuffer(bool useRT = false);
 		void FlushCommandBuffer(VkCommandBuffer commandBuffer);
+		void RT_FlushCommandBuffer(VkCommandBuffer commandBuffer);
 
 		void CreateImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 		VmaAllocation CreateImage(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image);
