@@ -60,12 +60,12 @@ namespace VulkanCore {
 		struct BloomParams
 		{
 			float Threshold = 1.0f;
-			float Knee = 1.0f;
+			float Knee = 0.5f;
 		};
 
 		struct SkyboxSettings
 		{
-			float Intensity = 1.0f;
+			float Intensity = 0.05f;
 			float LOD = 0.0f;
 		};
 	private:
