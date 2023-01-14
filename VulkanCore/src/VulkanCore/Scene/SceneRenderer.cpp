@@ -537,13 +537,17 @@ namespace VulkanCore {
 
 		if (ImGui::TreeNode("Bloom Settings"))
 		{
-			ImGui::DragFloat("Threshold", &m_BloomParams.Threshold, 0.01f);
-			ImGui::DragFloat("Knee", &m_BloomParams.Knee, 0.01f);
+			ImGui::DragFloat("Threshold", &m_BloomParams.Threshold, 0.01f, 0.0f, 1000.0f);
+			ImGui::DragFloat("Knee", &m_BloomParams.Knee, 0.01f, 0.001f, 1.0f);
 			ImGui::TreePop();
 		}
 
-		ImGui::Image(m_BloomDebugImage, ImGui::GetContentRegionAvail());
 		ImGui::End(); // End of Scene Renderer Window
+
+		// Only for debugging purposes
+		ImGui::Begin("Bloom Debug Image");
+		ImGui::Image(m_BloomDebugImage, ImGui::GetContentRegionAvail());
+		ImGui::End();
 	}
 
 	void SceneRenderer::RenderScene(EditorCamera& camera)
