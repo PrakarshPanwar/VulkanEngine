@@ -296,6 +296,13 @@ namespace VulkanCore {
 			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
+		// Changing Destination Image Layout
+		Utils::InsertImageMemoryBarrier(cmdBuf, dstImage,
+			VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
 		VkImageCopy region{};
 		region.srcOffset = { 0, 0, 0 };
 		region.dstOffset = { 0, 0, 0 };
@@ -371,11 +378,11 @@ namespace VulkanCore {
 			mipSubRange.levelCount = 1;
 			mipSubRange.layerCount = 1;
 
-// 			Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
-// 				0, VK_ACCESS_TRANSFER_WRITE_BIT,
-// 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-// 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-// 				mipSubRange);
+			Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
+				VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				mipSubRange);
 
 			vkCmdBlitImage(cmdBuf,
 				vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -396,9 +403,9 @@ namespace VulkanCore {
 		subresourceRange.levelCount = mipLevels;
 
 		Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
-			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
+			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 			subresourceRange);
 	}		
 	
