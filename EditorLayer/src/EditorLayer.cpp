@@ -21,6 +21,59 @@
 
 namespace VulkanCore {
 
+	namespace Utils {
+
+		static std::shared_ptr<Mesh> CreateCubeModel(glm::vec3 color)
+		{
+			MeshBuilder modelBuilder{};
+
+			modelBuilder.Vertices = {
+
+				// Left Face
+				{ { -1.0f, -1.0f, -1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ { -1.0f,  1.0f,  1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ { -1.0f, -1.0f,  1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ { -1.0f,  1.0f, -1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+
+				// Right Face
+				{ {  1.0f, -1.0f, -1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ {  1.0f,  1.0f,  1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ {  1.0f, -1.0f,  1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ {  1.0f,  1.0f, -1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+
+				// Top Face 
+				{ { -1.0f, -1.0f, -1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ {  1.0f, -1.0f,  1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ { -1.0f, -1.0f,  1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ {  1.0f, -1.0f, -1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+
+				// Bottom Face
+				{ { -1.0f,  1.0f, -1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ {  1.0f,  1.0f,  1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ { -1.0f,  1.0f,  1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ {  1.0f,  1.0f, -1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+
+				// Front Face
+				{ { -1.0f, -1.0f,  1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ {  1.0f,  1.0f,  1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ { -1.0f,  1.0f,  1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ {  1.0f, -1.0f,  1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+
+				// Back Face
+				{ { -1.0f, -1.0f, -1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ {  1.0f,  1.0f, -1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ { -1.0f,  1.0f, -1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 },
+				{ {  1.0f, -1.0f, -1.0f }, color, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f }, 0 }
+			};
+
+			modelBuilder.Indices = { 0,  1,  2,  0,  3,  1,  4,  5,  6,  4,  7,  5,  8,  9,  10, 8,  11, 9,
+							  12, 13, 14, 12, 15, 13, 16, 17, 18, 16, 19, 17, 20, 21, 22, 20, 23, 21 };
+
+			return std::make_shared<Mesh>(modelBuilder);
+		}
+
+	}
+
 	EditorLayer::EditorLayer()
 		: Layer("Editor Layer")
 	{
@@ -223,15 +276,15 @@ namespace VulkanCore {
 		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
 		auto& vaseTransform = CeramicVase.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.2f, 2.5f }, glm::vec3{ 3.5f });
 		vaseTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
-		CeramicVase.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/CeramicVase2K/antique_ceramic_vase_01_2k.fbx", 0));
+		CeramicVase.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/CeramicVase2K/antique_ceramic_vase_01_2k.fbx", 1));
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
 		FlatPlane.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.3f, 0.0f }, glm::vec3{ 10.0f, 0.1f, 10.0f });
-		FlatPlane.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/FlatPlane.fbx", 2));
+		FlatPlane.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/FlatPlane.fbx", 3));
 
 		Entity SphereMesh = m_Scene->CreateEntity("Basic Sphere");
 		SphereMesh.AddComponent<TransformComponent>();
-		SphereMesh.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/Sphere.fbx", 2));
+		SphereMesh.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/Sphere.fbx", 3));
 
 		// TODO: Texture mapping not working correctly for GLTF mesh formats, fix this in future
 #if 0
@@ -244,7 +297,11 @@ namespace VulkanCore {
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
 		auto& brassTransform = BrassVase.AddComponent<TransformComponent>(glm::vec3{ 1.5f, -1.2f, 1.5f }, glm::vec3{ 6.0f });
 		brassTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
-		BrassVase.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/BrassVase2K/BrassVase.fbx", 1));
+		BrassVase.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/BrassVase2K/BrassVase.fbx", 2));
+
+		Entity CubeModel = m_Scene->CreateEntity("Cube Model");
+		CubeModel.AddComponent<TransformComponent>(glm::vec3(0.0f), glm::vec3(1.0f));
+		CubeModel.AddComponent<MeshComponent>(Utils::CreateCubeModel({ 0.0f, 0.0f, 25.0f }));
 
 		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");
 		auto& blueLightTransform = BluePointLight.AddComponent<TransformComponent>(glm::vec3{ -1.0f, 0.0f, 4.5f }, glm::vec3{ 0.1f });

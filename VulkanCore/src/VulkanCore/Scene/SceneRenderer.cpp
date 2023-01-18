@@ -285,6 +285,9 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesNorGL.png", ImageFormat::RGBA8_UNORM);
 		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesARM.png", ImageFormat::RGBA8_UNORM);
 
+		m_SRGBWhiteTexture = Renderer::GetWhiteTexture();
+		m_UNORMWhiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
+
 		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
 		m_CubemapTexture = filteredMap;
 		m_IrradianceTexture = irradianceMap;
@@ -297,12 +300,15 @@ namespace VulkanCore {
 		m_SkyboxMesh = Utils::CreateCubeModel();
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, ARMMaps, NormalMaps;
+		DiffuseMaps.push_back(m_SRGBWhiteTexture->GetDescriptorImageInfo());
 		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
 		DiffuseMaps.push_back(m_DiffuseMap2->GetDescriptorImageInfo());
 		DiffuseMaps.push_back(m_DiffuseMap3->GetDescriptorImageInfo());
+		NormalMaps.push_back(m_UNORMWhiteTexture->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_NormalMap->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_NormalMap2->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_NormalMap3->GetDescriptorImageInfo());
+		ARMMaps.push_back(m_UNORMWhiteTexture->GetDescriptorImageInfo());
 		ARMMaps.push_back(m_ARMMap->GetDescriptorImageInfo());
 		ARMMaps.push_back(m_ARMMap2->GetDescriptorImageInfo());
 		ARMMaps.push_back(m_ARMMap3->GetDescriptorImageInfo());
