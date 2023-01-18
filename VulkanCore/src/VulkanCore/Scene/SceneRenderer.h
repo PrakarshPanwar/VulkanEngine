@@ -100,7 +100,7 @@ namespace VulkanCore {
 		// TODO: In future we have to setup Material Table and Instanced Rendering
 		// Material Resources
 		std::vector<VulkanUniformBuffer> m_UBCamera;
-		std::vector<VulkanUniformBuffer> m_UBPointLight;
+		std::vector<VulkanUniformBuffer> m_UBPointLight; 
 		std::vector<VulkanUniformBuffer> m_UBSceneData;
 
 		std::vector<VulkanImage> m_BloomTextures;
@@ -110,6 +110,9 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_ARMMap,
 			m_DiffuseMap2, m_NormalMap2, m_ARMMap2,
 			m_DiffuseMap3, m_NormalMap3, m_ARMMap3;
+
+		// White Textures
+		std::shared_ptr<VulkanTexture> m_SRGBWhiteTexture, m_UNORMWhiteTexture;
 
 		// Skybox Resources
 		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture;

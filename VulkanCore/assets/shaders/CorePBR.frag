@@ -29,9 +29,9 @@ layout(set = 0, binding = 1) uniform PointLightData
 } u_PointLight;
 
 // Material Data
-layout(set = 0, binding = 2) uniform sampler2D u_DiffuseTextures[3];
-layout(set = 0, binding = 3) uniform sampler2D u_NormalTextures[3];
-layout(set = 0, binding = 4) uniform sampler2D u_AORoughMetalTextures[3];
+layout(set = 0, binding = 2) uniform sampler2D u_DiffuseTextures[4];
+layout(set = 0, binding = 3) uniform sampler2D u_NormalTextures[4];
+layout(set = 0, binding = 4) uniform sampler2D u_AORoughMetalTextures[4];
 
 // IBL
 layout(binding = 5) uniform samplerCube u_IrradianceMap;
@@ -113,7 +113,7 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 
 void main()
 {
-	vec3 albedo = texture(u_DiffuseTextures[v_TexIndex], v_FragTexCoord).rgb;
+	vec3 albedo = texture(u_DiffuseTextures[v_TexIndex], v_FragTexCoord).rgb * v_FragColor;
     // R->Ambient Occlusion, G->Roughness, B->Metallic
     vec3 aorm = texture(u_AORoughMetalTextures[v_TexIndex], v_FragTexCoord).rgb;
 
