@@ -224,15 +224,15 @@ namespace VulkanCore {
 			m_UBSceneData.emplace_back(sizeof(SceneSettings));
 		}
 
-		m_BloomMipSize = { 1920, 1080 };
-		m_BloomMipSize /= 2;
+		m_BloomMipSize = (glm::uvec2(1920, 1080) + 1u) / 2u;
+		m_BloomMipSize += 16u - m_BloomMipSize % 16u;
 
 		ImageSpecification bloomRTSpec = {};
 		bloomRTSpec.Width = m_BloomMipSize.x;
 		bloomRTSpec.Height = m_BloomMipSize.y;
 		bloomRTSpec.Format = ImageFormat::RGBA32F;
 		bloomRTSpec.Usage = ImageUsage::Storage;
-		bloomRTSpec.MipLevels = Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 1;
+		bloomRTSpec.MipLevels = Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2;
 		
 		m_BloomTextures.reserve(3);
 		m_SceneRenderTextures.reserve(3);
@@ -536,7 +536,7 @@ namespace VulkanCore {
 			Renderer::RetrieveQueryPoolResults();
 
 			ImGui::Text("Geometry Pass: %lluns", Renderer::GetQueryTime(0));
-			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(2));
+			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(1));
 			ImGui::Text("Composite Pass: %lluns", Renderer::GetQueryTime(3));
 			ImGui::TreePop();
 		}
@@ -549,11 +549,6 @@ namespace VulkanCore {
 		}
 
 		ImGui::End(); // End of Scene Renderer Window
-
-		// Only for debugging purposes
-		ImGui::Begin("Bloom Debug Image");
-		ImGui::Image(m_BloomDebugImage, ImGui::GetContentRegionAvail());
-		ImGui::End();
 	}
 
 	void SceneRenderer::RenderScene(EditorCamera& camera)
