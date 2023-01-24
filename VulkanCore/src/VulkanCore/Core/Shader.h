@@ -22,7 +22,10 @@ namespace VulkanCore {
 		Shader(const std::string& cmpfilepath);
 		~Shader();
 
-		std::shared_ptr<VulkanDescriptorSetLayout> CreateDescriptorSetLayout();
+		std::shared_ptr<VulkanDescriptorSetLayout> CreateDescriptorSetLayout(int index = 0);
+		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> CreateAllDescriptorSetsLayout();
+		std::vector<VkDescriptorSet> AllocateDescriptorSets();
+		std::vector<VkDescriptorSet> AllocateAllDescriptorSets();
 
 		inline std::unordered_map<uint32_t, std::vector<uint32_t>>& GetShaderModules() { return m_VulkanSPIRV; }
 		inline uint32_t GetPushConstantSize() const { return (uint32_t)m_PushConstantSize; }
