@@ -7,23 +7,26 @@ layout(location = 1) in float v_Exposure;
 
 layout(binding = 0) uniform sampler2D u_InputTexture;
 layout(binding = 2) uniform sampler2D u_DepthTexture;
+layout(binding = 3) uniform sampler2D u_PositionTexture;
 
 layout(push_constant) uniform DOFData
 {
 	float FocusPoint;
 	float FocusScale;
+	float Near;
+	float Far;
 } u_DOF;
 
 const float GOLDEN_ANGLE = 2.39996323; 
 const float MAX_BLUR_SIZE = 20.0; 
 const float RAD_SCALE = 0.5; // Smaller = nicer blur, larger = faster
 
-const float FAR = 100.0;
-const float NEAR = 10.0;
+//const float FAR = 12.0;
+//const float NEAR = 8.0;
 
 float LinearizeDepth(const float screenDepth)
 {
-	return FAR * NEAR / (FAR - screenDepth * (FAR - NEAR));
+	return u_DOF.Far * u_DOF.Near / (u_DOF.Far - screenDepth * (u_DOF.Far - u_DOF.Near));
 }
 
 float GetBlurSize(float depth, float focusPoint, float focusScale)
@@ -91,9 +94,16 @@ vec3 UpsampleTent9(sampler2D tex, float lod, vec2 uv, vec2 texelSize, float radi
 
 void main()
 {
+	vec3 color = texture(u_InputTexture, v_TexCoord).rgb;
 	ivec2 texSize = textureSize(u_InputTexture, 0);
 	vec2 fTexSize = vec2(float(texSize.x), float(texSize.y));
-	vec3 color = DepthOfField(v_TexCoord, u_DOF.FocusPoint, u_DOF.FocusScale, 1.0 / fTexSize);
+
+	vec4 position = texture(u_PositionTexture, v_TexCoord);
+	vec4 focusPoint = texture(u_PositionTexture, vec2(u_DOF.FocusPoint));
+	vec3 dofColor = DepthOfField(v_TexCoord, u_DOF.FocusPoint, u_DOF.FocusScale, 1.0 / fTexSize);
+
+	float blur = smoothstep(u_DOF.Near, u_DOF.Far, length(position.y - focusPoint.y));
+	color = mix(color, dofColor, blur);
 	color *= v_Exposure;
     color = ACESTonemap(color);
 

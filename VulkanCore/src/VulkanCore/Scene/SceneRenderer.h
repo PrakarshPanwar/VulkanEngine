@@ -58,6 +58,8 @@ namespace VulkanCore {
 		{
 			float FocusPoint = 1.0f;
 			float FocusScale = 1.0f;
+			float Near = 8.0f;
+			float Far = 12.0f;
 		};
 
 		struct SceneSettings
