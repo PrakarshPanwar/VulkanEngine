@@ -262,12 +262,12 @@ namespace VulkanCore {
 
 	std::vector<VkDescriptorSet> Shader::AllocateDescriptorSets()
 	{
-		
+		return {};
 	}
 
 	std::vector<VkDescriptorSet> Shader::AllocateAllDescriptorSets()
 	{
-
+		return {};
 	}
 
 	std::tuple<std::string, std::string> Shader::ParseShader(const std::string& vsfilepath, const std::string& fsfilepath)
