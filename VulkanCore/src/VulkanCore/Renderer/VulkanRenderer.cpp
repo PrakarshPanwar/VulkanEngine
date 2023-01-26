@@ -199,7 +199,7 @@ namespace VulkanCore {
 			equirectangularConversionPipeline->Bind(dispatchCmd);
 			equirectangularConversionPipeline->Dispatch(dispatchCmd, cubemapSize / 16, cubemapSize / 16, 6);
 
-			device->RT_FlushCommandBuffer(dispatchCmd);
+			device->FlushCommandBuffer(dispatchCmd, true);
 			
 			envUnfiltered->GenerateMipMaps(true);
 		});
@@ -244,7 +244,7 @@ namespace VulkanCore {
 				environmentMipFilterPipeline->Execute(dispatchCmd, descriptorSets[i], numGroups, numGroups, 6);
 			}
 
-			device->RT_FlushCommandBuffer(dispatchCmd);
+			device->FlushCommandBuffer(dispatchCmd, true);
 		});
 
 		auto environmentIrradianceShader = Renderer::GetShader("EnvironmentIrradiance");
@@ -318,7 +318,7 @@ namespace VulkanCore {
 			generateBRDFPipeline->Bind(dispatchCmd);
 			generateBRDFPipeline->Execute(dispatchCmd, descriptorSet, textureSize / 16, textureSize / 16, 1);
 
-			device->RT_FlushCommandBuffer(dispatchCmd);
+			device->FlushCommandBuffer(dispatchCmd, true);
 		});
 
 		return brdfTexture;
@@ -340,7 +340,7 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_CommandBuffers.data()), "Failed to Allocate Command Buffers!");
 
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		allocInfo.commandPool = device->GetRenderThreadCommandPool();
+		//allocInfo.commandPool = device->GetRenderThreadCommandPool();
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_SecondaryCommandBuffers.data()), "Failed to Allocate Secondary Command Buffers!");
 	}
 
@@ -351,7 +351,7 @@ namespace VulkanCore {
 		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(),
 			static_cast<uint32_t>(m_CommandBuffers.size()), m_CommandBuffers.data());
 
-		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetRenderThreadCommandPool(),
+		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(),
 			static_cast<uint32_t>(m_SecondaryCommandBuffers.size()), m_SecondaryCommandBuffers.data());
 
 		m_CommandBuffers.clear();

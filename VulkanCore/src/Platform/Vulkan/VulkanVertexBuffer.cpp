@@ -33,7 +33,7 @@ namespace VulkanCore {
 		vertexBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		m_MemoryAllocation = allocator.AllocateBuffer(vertexBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_VulkanBuffer);
 
-		VkCommandBuffer copyCmd = device->GetCommandBuffer();
+		VkCommandBuffer copyCmd = device->GetCommandBuffer(true);
 
 		VkBufferCopy copyRegion{};
 		copyRegion.size = m_Size;
@@ -45,7 +45,7 @@ namespace VulkanCore {
 			&copyRegion
 		);
 
-		device->FlushCommandBuffer(copyCmd);
+		device->FlushCommandBuffer(copyCmd, true);
 
 		allocator.DestroyBuffer(stagingBuffer, stagingBufferAlloc);
 	}
