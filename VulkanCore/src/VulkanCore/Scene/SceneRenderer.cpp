@@ -146,7 +146,7 @@ namespace VulkanCore {
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
 			geomFramebufferSpec.ReadDepthTexture = true;
-			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::DEPTH32F };
+			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::RGBA32F, ImageFormat::DEPTH32F };
 			geomFramebufferSpec.Samples = 8;
 
 			RenderPassSpecification geomRenderPassSpec;
@@ -360,6 +360,9 @@ namespace VulkanCore {
 			depthTextureInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 			compDescriptorWriter[i].WriteImage(2, &depthTextureInfo);
 
+			VkDescriptorImageInfo positionTextureInfo = geomRenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment(1)[i].GetDescriptorInfo();
+			compDescriptorWriter[i].WriteImage(3, &positionTextureInfo);
+
 			bool success = compDescriptorWriter[i].Build(m_CompositeDescriptorSets[i]);
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 		}
@@ -402,6 +405,8 @@ namespace VulkanCore {
 		ImGui::DragFloat("Exposure Intensity", &m_SceneSettings.Exposure, 0.01f, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 		ImGui::DragFloat("Focus Point", &m_DOFSettings.FocusPoint, 0.01f, 0.0f, 50.0f);
 		ImGui::DragFloat("Focus Scale", &m_DOFSettings.FocusScale, 0.01f, 0.0f, 50.0f);
+		ImGui::DragFloat("Near Distance", &m_DOFSettings.Near, 0.01f, 0.1f, 100.0f);
+		ImGui::DragFloat("Far Distance", &m_DOFSettings.Far, 0.01f, 1.0f, 1000.0f);
 		ImGui::DragFloat("Skybox LOD", &m_SkyboxLOD, 0.01f, 0.0f, 11.0f);
 
 		if (ImGui::TreeNode("Scene Renderer Stats##GPUPerf"))
@@ -409,7 +414,7 @@ namespace VulkanCore {
 			Renderer::RetrieveQueryPoolResults();
 
 			ImGui::Text("Geometry Pass: %lluns", Renderer::GetQueryTime(0));
-			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(2));
+			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(1));
 			ImGui::Text("Composite Pass: %lluns", Renderer::GetQueryTime(3));
 			ImGui::TreePop();
 		}

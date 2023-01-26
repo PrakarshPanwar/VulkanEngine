@@ -1,6 +1,7 @@
 #version 460 core
 
 layout(location = 0) out vec4 o_Color;
+layout(location = 1) out vec4 o_ViewNormalsLuminance;
 
 layout(location = 0) in vec3 v_FragColor;
 layout(location = 1) in vec3 v_FragPosWorld;
@@ -70,4 +71,5 @@ void main()
 	vec4 resColor = vec4((rDiffuse + rSpecular) * v_FragColor, 1.0);
 
 	o_Color = resColor;
+	o_ViewNormalsLuminance = vec4(v_FragPosWorld, 1.0);
 }
