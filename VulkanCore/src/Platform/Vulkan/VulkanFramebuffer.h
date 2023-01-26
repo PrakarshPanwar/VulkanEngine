@@ -45,7 +45,7 @@ namespace VulkanCore {
 		inline const std::vector<FramebufferTextureSpecification>& GetColorAttachmentsTextureSpec() const { return m_ColorAttachmentSpecifications; }
 		inline const FramebufferTextureSpecification& GetDepthAttachmentTextureSpec() const { return m_DepthAttachmentSpecification; }
 		inline bool HasDepthAttachment() { return m_DepthAttachmentSpecification; }
-		const std::vector<VulkanImage>& GetResolveAttachment() const;
+		const std::vector<VulkanImage>& GetResolveAttachment(uint32_t index = 0) const;
 		const std::vector<VulkanImage>& GetDepthResolveAttachment() const;
 
 		void Invalidate();
