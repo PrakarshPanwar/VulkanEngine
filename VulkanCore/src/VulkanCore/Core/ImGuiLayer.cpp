@@ -56,7 +56,7 @@ namespace VulkanCore {
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		allocInfo.commandPool = device->GetRenderThreadCommandPool();
+		allocInfo.commandPool = device->GetCommandPool();
 		allocInfo.commandBufferCount = (uint32_t)m_ImGuiCmdBuffers.size();
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_ImGuiCmdBuffers.data()), "Failed to Allocate ImGui Secondary Command Buffers!");
 
@@ -174,7 +174,7 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 		ImGui_ImplVulkan_Shutdown();
 
-		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetRenderThreadCommandPool(),
+		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(),
 			static_cast<uint32_t>(m_ImGuiCmdBuffers.size()), m_ImGuiCmdBuffers.data());
 	}
 

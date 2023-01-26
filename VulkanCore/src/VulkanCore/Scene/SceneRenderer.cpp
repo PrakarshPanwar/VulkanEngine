@@ -481,15 +481,15 @@ namespace VulkanCore {
 		m_Scene->OnUpdateGeometry(m_SceneCommandBuffers, m_GeometryPipeline, m_GeometryDescriptorSets);
 		Renderer::EndGPUPerfMarker();
 
-		// Rendering Point Lights
-		Renderer::BeginGPUPerfMarker();
-		m_Scene->OnUpdateLights(m_SceneCommandBuffers, m_PointLightPipeline, m_PointLightDescriptorSets);
-		Renderer::EndGPUPerfMarker();
-
 		Renderer::BeginGPUPerfMarker();
 
 		// Rendering Skybox
 		Renderer::RenderSkybox(m_SkyboxPipeline, m_SkyboxMesh, m_SkyboxDescriptorSets, &m_SkyboxSettings);
+		Renderer::EndGPUPerfMarker();
+
+		// Rendering Point Lights
+		Renderer::BeginGPUPerfMarker();
+		m_Scene->OnUpdateLights(m_SceneCommandBuffers, m_PointLightPipeline, m_PointLightDescriptorSets);
 		Renderer::EndGPUPerfMarker();
 
 		Renderer::EndRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
