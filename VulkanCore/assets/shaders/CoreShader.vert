@@ -8,9 +8,10 @@ layout(location = 4) in int a_TexID;
 
 layout(location = 0) out vec3 v_FragColor;
 layout(location = 1) out vec3 v_FragPosWorld;
-layout(location = 2) out vec3 v_FragNormalWorld;
-layout(location = 3) out vec2 v_FragTexCoord;
-layout(location = 4) out flat int v_TexIndex;
+layout(location = 2) out vec3 v_FragPosView;
+layout(location = 3) out vec3 v_FragNormalWorld;
+layout(location = 4) out vec2 v_FragTexCoord;
+layout(location = 5) out flat int v_TexIndex;
 
 layout(push_constant) uniform Model
 {
@@ -28,9 +29,11 @@ layout(set = 0, binding = 0) uniform Camera
 void main()
 {
 	vec4 positionWorld = u_Model.ModelMatrix * vec4(a_Position, 1.0);
-	gl_Position = u_Camera.Projection * u_Camera.View * positionWorld;
+	vec4 positionView = u_Camera.View * positionWorld;
+	gl_Position = u_Camera.Projection * positionView;
 	v_FragNormalWorld = normalize(mat3(u_Model.NormalMatrix) * a_Normal);
 	v_FragPosWorld = positionWorld.xyz;
+	v_FragPosView = positionView.xyz;
 	v_FragColor = a_FragColor;
 	v_FragTexCoord = a_TexCoord;
 	v_TexIndex = a_TexID;
