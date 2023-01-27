@@ -54,10 +54,20 @@ namespace VulkanCore {
 		renderPass->Begin(beginPassCmd);
 	}
 
+	void Renderer::BeginRenderPass(VkCommandBuffer beginCmd, std::shared_ptr<VulkanRenderPass> renderPass)
+	{
+		renderPass->Begin(beginCmd);
+	}
+
 	void Renderer::EndRenderPass(std::shared_ptr<VulkanRenderPass> renderPass)
 	{
 		auto endPassCmd = m_CommandBuffers[GetCurrentFrameIndex()];
 		renderPass->End(endPassCmd);
+	}
+
+	void Renderer::EndRenderPass(VkCommandBuffer endCmd, std::shared_ptr<VulkanRenderPass> renderPass)
+	{
+		renderPass->End(endCmd);
 	}
 
 	void Renderer::BuildShaders()
@@ -72,6 +82,7 @@ namespace VulkanCore {
 		m_Shaders["EnvironmentMipFilter"] = Utils::MakeShader("EnvironmentMipFilter");
 		m_Shaders["EnvironmentIrradiance"] = Utils::MakeShader("EnvironmentIrradiance");
 		m_Shaders["GenerateBRDF"] = Utils::MakeShader("GenerateBRDF");
+		m_Shaders["GenerateBRDFLUT"] = Utils::MakeShader("GenerateBRDFLUT");
 	}
 
 	void Renderer::DestroyShaders()

@@ -59,6 +59,7 @@ namespace VulkanCore {
 	class VulkanImage
 	{
 	public:
+		VulkanImage() = default;
 		VulkanImage(const ImageSpecification& spec);
 		VulkanImage(uint32_t width, uint32_t height, ImageUsage usage, ImageFormat format);
 		~VulkanImage();

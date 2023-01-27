@@ -256,15 +256,16 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesNorGL.png", ImageFormat::RGBA8_UNORM);
 		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesARM.png", ImageFormat::RGBA8_UNORM);
 
-		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
-		m_CubemapTexture = filteredMap;
-		m_IrradianceTexture = irradianceMap;
-
 #if USE_PRELOADED_BRDF
 		m_BRDFTexture = std::make_shared<VulkanTexture>("assets/textures/BRDF_LUTMap.png", ImageFormat::RGBA8_UNORM);
 #else
 		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
 #endif
+
+		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
+		m_CubemapTexture = filteredMap;
+		m_IrradianceTexture = irradianceMap;
+
 		m_SkyboxMesh = Utils::CreateCubeModel();
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, ARMMaps, NormalMaps;
@@ -312,7 +313,7 @@ namespace VulkanCore {
 #if USE_PRELOADED_BRDF
 			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorImageInfo();
 #else
-			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorInfo();
+			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture.GetDescriptorInfo();
 #endif
 			geomDescriptorWriter[i].WriteImage(6, &brdfTextureInfo);
 
