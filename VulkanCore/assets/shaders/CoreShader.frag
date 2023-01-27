@@ -5,9 +5,10 @@ layout(location = 1) out vec4 o_ViewNormalsLuminance;
 
 layout(location = 0) in vec3 v_FragColor;
 layout(location = 1) in vec3 v_FragPosWorld;
-layout(location = 2) in vec3 v_FragNormalWorld;
-layout(location = 3) in vec2 v_FragTexCoord;
-layout(location = 4) in flat int v_TexIndex;
+layout(location = 2) in vec3 v_FragPosView;
+layout(location = 3) in vec3 v_FragNormalWorld;
+layout(location = 4) in vec2 v_FragTexCoord;
+layout(location = 5) in flat int v_TexIndex;
 
 struct PointLight
 {
@@ -71,5 +72,5 @@ void main()
 	vec4 resColor = vec4((rDiffuse + rSpecular) * v_FragColor, 1.0);
 
 	o_Color = resColor;
-	o_ViewNormalsLuminance = vec4(v_FragPosWorld, 1.0);
+	o_ViewNormalsLuminance = vec4(v_FragPosView, 1.0);
 }

@@ -52,7 +52,7 @@ vec3 DepthOfField(vec2 texCoord, float focusPoint, float focusScale, vec2 texelS
 			sampleSize = clamp(sampleSize, 0.0, centerSize * 2.0);
 		float m = smoothstep(radius - 0.5, radius + 0.5, sampleSize);
 		color += mix(color / tot, sampleColor, m);
-		tot += 1.0;   
+		tot += 1.0;
 		radius += RAD_SCALE / radius;
 	}
 
