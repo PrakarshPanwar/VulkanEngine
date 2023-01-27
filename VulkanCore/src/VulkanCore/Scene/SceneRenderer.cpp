@@ -17,7 +17,7 @@ namespace VulkanCore {
 
 		static std::shared_ptr<Mesh> CreateCubeModel()
 		{
-			MeshBuilder modelBuilder{};
+			MeshSource modelBuilder{};
 
 			modelBuilder.Vertices = {
 
@@ -69,7 +69,7 @@ namespace VulkanCore {
 
 		static std::shared_ptr<Mesh> CreateCubeModel(glm::vec3 color)
 		{
-			MeshBuilder modelBuilder{};
+			MeshSource modelBuilder{};
 
 			modelBuilder.Vertices = {
 
