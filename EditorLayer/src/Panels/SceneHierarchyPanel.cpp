@@ -241,7 +241,7 @@ namespace VulkanCore {
 
 		DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)
 		{
-			auto& meshFilePath = component.MeshInstance->GetFilePath();
+			auto& meshFilePath = component.MeshInstance->GetMeshSource()->GetFilePath();
 
 			char buffer[512];
 			memset(buffer, 0, sizeof(buffer));
@@ -261,8 +261,7 @@ namespace VulkanCore {
 
 				else
 				{
-					std::shared_ptr<Mesh> mesh = Mesh::CreateMeshFromAssimp(meshFilePath, component.MeshInstance->GetMaterialID());
-					mesh->SetFilePath(meshFilePath);
+					std::shared_ptr<Mesh> mesh = Mesh::LoadMesh(meshFilePath.c_str());
 					component.MeshInstance = mesh;
 
 					s_ShowMessage = false;

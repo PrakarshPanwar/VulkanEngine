@@ -9,14 +9,6 @@ namespace VulkanCore {
 
 	class Entity;
 
-	struct SceneInfo
-	{
-		VkCommandBuffer CommandBuffer;
-		VulkanPipeline* ScenePipeline;
-		VkPipelineLayout PipelineLayout;
-		VkDescriptorSet DescriptorSet;
-	};
-
 	class Scene
 	{
 	public:
@@ -24,8 +16,6 @@ namespace VulkanCore {
 		~Scene();
 
 		Entity CreateEntity(const std::string& name);
-		void OnUpdate(SceneInfo& sceneInfo);
-		void OnUpdateLights(SceneInfo& sceneInfo);
 		void OnUpdateGeometry(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
 		void OnUpdateLights(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
 		void UpdatePointLightUB(UBPointLights& ubo);

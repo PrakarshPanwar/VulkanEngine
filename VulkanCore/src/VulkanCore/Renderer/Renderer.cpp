@@ -95,9 +95,7 @@ namespace VulkanCore {
 			0, 1, &dstSet,
 			0, nullptr);
 
-		// Cube/Spherical Mesh
-		mesh->Bind(drawCmd);
-		mesh->Draw(drawCmd);
+
 	}	
 	
 	void Renderer::BeginGPUPerfMarker()
@@ -165,8 +163,6 @@ namespace VulkanCore {
 
 	void Renderer::RenderMesh(std::shared_ptr<Mesh> mesh)
 	{
-		mesh->Bind(m_CommandBuffers[GetCurrentFrameIndex()]);
-		mesh->Draw(m_CommandBuffers[GetCurrentFrameIndex()]);
 	}
 
 	void Renderer::WaitandRender()
