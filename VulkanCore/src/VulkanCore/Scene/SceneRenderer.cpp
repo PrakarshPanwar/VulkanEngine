@@ -357,6 +357,19 @@ namespace VulkanCore {
 		CompositePass();
 	}
 
+	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform, const glm::mat3& normalMatrix)
+	{
+		auto meshSource = mesh->GetMeshSource();
+		
+		uint64_t meshKey = meshSource->GetMeshKey();
+		auto& dc = m_MeshDrawList[meshKey];
+		dc.InstanceCount++;
+
+		auto& transformBuffer = m_MeshTransformMap[meshKey].emplace_back();
+		transformBuffer.TransformMatrix = transform;
+		transformBuffer.NormalMatrix = normalMatrix;
+	}
+
 	void SceneRenderer::CompositePass()
 	{
 		Renderer::BeginGPUPerfMarker();
