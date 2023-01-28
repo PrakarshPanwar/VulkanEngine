@@ -36,6 +36,7 @@ namespace VulkanCore {
 
 		static std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> CreateEnviromentMap(const std::string& filepath);
 		static std::shared_ptr<VulkanImage> CreateBRDFTexture();
+		static void RenderMesh(std::shared_ptr<Mesh> mesh, uint32_t instanceCount);
 
 		inline VkRenderPass GetSwapChainRenderPass() const { return m_SwapChain->GetRenderPass(); }
 		inline int GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
