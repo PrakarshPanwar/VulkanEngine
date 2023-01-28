@@ -29,6 +29,7 @@ namespace VulkanCore {
 
 		void SetViewportSize(uint32_t width, uint32_t height) { m_ViewportSize.x = width; m_ViewportSize.y = height; }
 		void RenderScene(EditorCamera& camera);
+		void SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform, const glm::mat3& normalMatrix);
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
@@ -47,6 +48,12 @@ namespace VulkanCore {
 		void GeometryPass();
 		void BloomBlurPass();
 		void CompositePass();
+
+		struct DrawCommand
+		{
+			std::shared_ptr<Mesh> MeshInstance;
+			uint32_t InstanceCount;
+		};
 	private:
 		struct LodAndMode
 		{
@@ -116,6 +123,9 @@ namespace VulkanCore {
 #endif
 		std::shared_ptr<Mesh> m_SkyboxMesh;
 		SkyboxSettings m_SkyboxSettings;
+
+		std::map<uint64_t, DrawCommand> m_MeshDrawList;
+		std::map<uint64_t, std::vector<TransformData>> m_MeshTransformMap;
 
 		glm::ivec2 m_ViewportSize;
 

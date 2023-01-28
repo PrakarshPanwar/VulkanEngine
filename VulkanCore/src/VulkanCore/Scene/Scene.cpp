@@ -4,6 +4,7 @@
 #include "VulkanCore/Mesh/Mesh.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "VulkanCore/Renderer/Renderer.h"
+#include "SceneRenderer.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 
 namespace VulkanCore {
@@ -51,6 +52,22 @@ namespace VulkanCore {
 
 				pipeline->SetPushConstants(drawCmd, &pushConstants, sizeof(PCModelData));
 				Renderer::RenderMesh(entity.GetComponent<MeshComponent>().MeshInstance);
+			}
+		}
+	}
+
+	void Scene::OnUpdateGeometry(SceneRenderer* renderer)
+	{
+		auto view = m_Registry.view<TransformComponent>();
+
+		for (auto ent : view)
+		{
+			Entity entity = { ent, this };
+
+			if (entity.HasComponent<MeshComponent>())
+			{
+				auto& transformComponent = entity.GetComponent<TransformComponent>();
+				renderer->SubmitMesh(entity.GetComponent<MeshComponent>().MeshInstance, transformComponent.GetTransform(), transformComponent.GetNormalMatrix());
 			}
 		}
 	}

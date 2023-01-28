@@ -8,6 +8,7 @@
 namespace VulkanCore {
 
 	class Entity;
+	class SceneRenderer;
 
 	class Scene
 	{
@@ -16,6 +17,7 @@ namespace VulkanCore {
 		~Scene();
 
 		Entity CreateEntity(const std::string& name);
+		void OnUpdateGeometry(SceneRenderer* renderer);
 		void OnUpdateGeometry(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
 		void OnUpdateLights(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
 		void UpdatePointLightUB(UBPointLights& ubo);

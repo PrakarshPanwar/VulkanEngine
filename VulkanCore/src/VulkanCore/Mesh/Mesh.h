@@ -2,7 +2,10 @@
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Platform/Vulkan/VulkanVertexBuffer.h"
 #include "Platform/Vulkan/VulkanIndexBuffer.h"
+#include "Platform/Vulkan/VulkanStorageBuffer.h"
 
+// TODO: This include should be in PCH
+#include <map>
 #include <glm/glm.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -61,12 +64,14 @@ namespace VulkanCore {
 		~MeshSource();
 
 		const aiScene* GetAssimpScene() const { return m_Scene; }
+		uint64_t GetMeshKey() const { return m_MeshKey; }
 		std::string& GetFilePath() { return m_FilePath; }
 	private:
 		std::string m_FilePath;
 
 		aiScene* m_Scene;
 		std::unique_ptr<Assimp::Importer> m_Importer;
+		uint64_t m_MeshKey;
 
 		std::vector<Submesh> m_Submeshes;
 		std::vector<MeshNode> m_Nodes;
@@ -101,10 +106,15 @@ namespace VulkanCore {
 		inline uint32_t GetIndexCount() const { return (uint32_t)m_MeshSource->m_Indices.size(); }
 
 		static std::shared_ptr<Mesh> LoadMesh(const char* filepath);
+
 	private:
 		std::shared_ptr<MeshSource> m_MeshSource;
 		// TODO: In we will not need this once we have VulkanMaterial and MaterialTable
 		int m_MaterialID;
+
+		// Hash => Filepath Hash Value, Value => Transform Storage Buffer Set
+		static std::map<uint64_t, std::shared_ptr<MeshSource>> s_MeshSourcesMap;
+		static std::map<uint64_t, std::vector<VulkanStorageBuffer>> s_MeshTransformBuffer;
 	};
 
 }
