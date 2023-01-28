@@ -37,28 +37,56 @@ namespace VulkanCore {
 		static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
 	};
 
+	struct MeshNode
+	{
+		std::string Name;
+		uint32_t Parent;
+		std::vector<uint32_t> Submeshes;
+		std::vector<uint32_t> Children;
+		glm::mat4 LocalTransform;
+	};
+
+	struct Submesh
+	{
+		std::string MeshName, NodeName;
+		uint32_t BaseVertex, BaseIndex;
+		uint32_t VertexCount, IndexCount;
+		glm::mat4 LocalTransform;
+	};
+
 	class MeshSource
 	{
 	public:
 		MeshSource(const std::string& filepath);
 		~MeshSource();
+
+		const aiScene* GetAssimpScene() const { return m_Scene; }
+		std::string& GetFilePath() { return m_FilePath; }
 	private:
 		std::string m_FilePath;
 
 		aiScene* m_Scene;
 		std::unique_ptr<Assimp::Importer> m_Importer;
 
+		std::vector<Submesh> m_Submeshes;
+		std::vector<MeshNode> m_Nodes;
+
 		std::vector<Vertex> m_Vertices{};
 		std::vector<uint32_t> m_Indices{};
 
 		std::shared_ptr<VulkanVertexBuffer> m_VertexBuffer;
 		std::shared_ptr<VulkanIndexBuffer> m_IndexBuffer;
+
+		friend class Mesh;
+		friend class AssimpMeshImporter;
 	};
 
 	class AssimpMeshImporter
 	{
 	public:
-		static std::shared_ptr<MeshSource> InvalidateMesh();
+		static void InvalidateMesh(std::shared_ptr<MeshSource> meshSource);
+		static void TraverseNodes(std::shared_ptr<MeshSource> meshSource, aiNode* aNode, uint32_t nodeIndex);
+		static void ProcessMesh(std::shared_ptr<MeshSource> meshSource, aiMesh* mesh, const aiScene* scene);
 	};
 
 	class Mesh
@@ -68,9 +96,14 @@ namespace VulkanCore {
 		Mesh(const std::string& filepath);
 		~Mesh();
 
-		Mesh(const Mesh&) = default;
+		inline std::shared_ptr<MeshSource> GetMeshSource() const { return m_MeshSource; }
+		inline uint32_t GetVertexCount() const { return (uint32_t)m_MeshSource->m_Vertices.size(); }
+		inline uint32_t GetIndexCount() const { return (uint32_t)m_MeshSource->m_Indices.size(); }
+
+		static std::shared_ptr<Mesh> LoadMesh(const char* filepath);
 	private:
 		std::shared_ptr<MeshSource> m_MeshSource;
+		// TODO: In we will not need this once we have VulkanMaterial and MaterialTable
 		int m_MaterialID;
 	};
 
