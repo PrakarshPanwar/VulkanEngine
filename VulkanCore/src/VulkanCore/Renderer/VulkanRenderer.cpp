@@ -324,6 +324,14 @@ namespace VulkanCore {
 		return brdfTexture;
 	}
 
+	void VulkanRenderer::RenderMesh(const std::vector<VkCommandBuffer>& cmdBuffers, std::shared_ptr<Mesh> mesh, uint32_t instanceCount)
+	{
+		auto drawCmd = cmdBuffers[GetCurrentFrameIndex()];
+
+		auto meshSource = mesh->GetMeshSource();
+		vkCmdDrawIndexed(drawCmd, meshSource->GetIndexCount(), instanceCount, 0, 0, 0)
+	}
+
 	void VulkanRenderer::CreateCommandBuffers()
 	{
 		auto device = VulkanContext::GetCurrentDevice();

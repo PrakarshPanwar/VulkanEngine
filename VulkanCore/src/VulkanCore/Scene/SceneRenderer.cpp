@@ -363,6 +363,7 @@ namespace VulkanCore {
 		
 		uint64_t meshKey = meshSource->GetMeshKey();
 		auto& dc = m_MeshDrawList[meshKey];
+		dc.MeshInstance = mesh;
 		dc.InstanceCount++;
 
 		auto& transformBuffer = m_MeshTransformMap[meshKey].emplace_back();

@@ -64,6 +64,8 @@ namespace VulkanCore {
 		~MeshSource();
 
 		const aiScene* GetAssimpScene() const { return m_Scene; }
+		inline uint32_t GetVertexCount() const { return (uint32_t)m_Vertices.size(); }
+		inline uint32_t GetIndexCount() const { return (uint32_t)m_Indices.size(); }
 		uint64_t GetMeshKey() const { return m_MeshKey; }
 		std::string& GetFilePath() { return m_FilePath; }
 	private:
@@ -102,11 +104,7 @@ namespace VulkanCore {
 		~Mesh();
 
 		inline std::shared_ptr<MeshSource> GetMeshSource() const { return m_MeshSource; }
-		inline uint32_t GetVertexCount() const { return (uint32_t)m_MeshSource->m_Vertices.size(); }
-		inline uint32_t GetIndexCount() const { return (uint32_t)m_MeshSource->m_Indices.size(); }
-
 		static std::shared_ptr<Mesh> LoadMesh(const char* filepath);
-
 	private:
 		std::shared_ptr<MeshSource> m_MeshSource;
 		// TODO: In we will not need this once we have VulkanMaterial and MaterialTable
