@@ -105,6 +105,7 @@ namespace VulkanCore {
 		}
 
 		ReflectShaderData();
+		InvalidateDescriptors();
 	}
 
 	Shader::Shader(const std::string& cmpfilepath)
@@ -121,6 +122,7 @@ namespace VulkanCore {
 		CompileOrGetVulkanBinaries(Sources);
 
 		ReflectShaderData();
+		InvalidateDescriptors();
 	}
 
 	Shader::~Shader()
@@ -128,6 +130,7 @@ namespace VulkanCore {
 
 	}
 
+#if USE_VULKAN_DESCRIPTOR
 	std::shared_ptr<VulkanDescriptorSetLayout> Shader::CreateDescriptorSetLayout(int index)
 	{
 		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
@@ -259,10 +262,17 @@ namespace VulkanCore {
 
 		return descriptorSetsLayout;
 	}
+#else
+#endif
 
-	std::vector<VkDescriptorSet> Shader::AllocateDescriptorSets()
+	std::vector<VkDescriptorSet> Shader::AllocateDescriptorSets(uint32_t index)
 	{
-		return {};
+		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
+		VkDescriptorSetLayout setLayout = CreateDescriptorSetLayout(index)->GetDescriptorSetLayout();
+
+		std::vector<VkDescriptorSet> descriptorSets(3);
+		for (uint32_t i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
+			vulkanDescriptorPool->AllocateDescriptorSet(setLayout, descriptorSets[i]);
 	}
 
 	std::vector<VkDescriptorSet> Shader::AllocateAllDescriptorSets()
@@ -467,6 +477,11 @@ namespace VulkanCore {
 				VK_CORE_TRACE("\t  Members = {0}", memberCount);
 			}
 		}
+	}
+
+	void Shader::InvalidateDescriptors()
+	{
+		
 	}
 
 }
