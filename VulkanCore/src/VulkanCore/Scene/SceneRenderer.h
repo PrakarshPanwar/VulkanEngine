@@ -106,7 +106,7 @@ namespace VulkanCore {
 		std::vector<VulkanImage> m_BloomTextures;
 		std::vector<VulkanImage> m_SceneRenderTextures;
 
-		std::shared_ptr<VulkanImage> m_BloomTexture;
+		std::shared_ptr<VulkanTexture> m_BloomDirtTexture;
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_ARMMap,
 			m_DiffuseMap2, m_NormalMap2, m_ARMMap2,
 			m_DiffuseMap3, m_NormalMap3, m_ARMMap3;
