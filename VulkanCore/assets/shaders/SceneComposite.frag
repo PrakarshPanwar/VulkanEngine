@@ -7,7 +7,7 @@ layout(location = 1) in float v_Exposure;
 
 layout(binding = 0) uniform sampler2D u_InputTexture;
 layout(binding = 2) uniform sampler2D u_DepthTexture;
-layout(binding = 3) uniform sampler2D u_PositionTexture;
+layout(binding = 3) uniform sampler2D u_ViewNormalsTexture;
 
 layout(push_constant) uniform DOFData
 {
@@ -98,8 +98,8 @@ void main()
 	ivec2 texSize = textureSize(u_InputTexture, 0);
 	vec2 fTexSize = vec2(float(texSize.x), float(texSize.y));
 
-	vec4 position = texture(u_PositionTexture, v_TexCoord);
-	vec4 focusPoint = texture(u_PositionTexture, vec2(u_DOF.FocusPoint));
+	vec4 position = texture(u_ViewNormalsTexture, v_TexCoord);
+	vec4 focusPoint = texture(u_ViewNormalsTexture, vec2(u_DOF.FocusPoint));
 	vec3 dofColor = DepthOfField(v_TexCoord, u_DOF.FocusPoint, u_DOF.FocusScale, 1.0 / fTexSize);
 
 	float blur = smoothstep(u_DOF.Near, u_DOF.Far, length(position.y - focusPoint.y));
