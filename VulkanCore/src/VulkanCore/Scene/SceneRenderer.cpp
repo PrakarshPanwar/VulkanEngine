@@ -287,6 +287,7 @@ namespace VulkanCore {
 
 		m_SRGBWhiteTexture = Renderer::GetWhiteTexture();
 		m_UNORMWhiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
+		m_BloomDirtTexture = std::make_shared<VulkanTexture>("assets/textures/LensDirt.png");
 
 		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
 		m_CubemapTexture = filteredMap;
@@ -482,9 +483,11 @@ namespace VulkanCore {
 
 			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
 			VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2].GetDescriptorInfo();
-			
+			VkDescriptorImageInfo bloomDirtTexInfo = m_BloomDirtTexture->GetDescriptorImageInfo();
+
 			compDescriptorWriter[i].WriteImage(0, &imagesInfo);
 			compDescriptorWriter[i].WriteImage(2, &bloomTexInfo);
+			compDescriptorWriter[i].WriteImage(3, &bloomDirtTexInfo);
 
 			bool success = compDescriptorWriter[i].Build(m_CompositeDescriptorSets[i]);
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
