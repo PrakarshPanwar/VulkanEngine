@@ -34,7 +34,7 @@ float GeometrySchlickGGX(float dotNV, float roughness)
     float nom   = dotNV;
     float denom = dotNV * (1.0 - k) + k;
 
-    return nom / denom;
+    return nom / max(denom, 1e-5);
 }
 
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
@@ -65,7 +65,7 @@ vec2 Hammersley(uint i, uint N)
 float G_Schlick_GGX(float NoV, float roughness) {
     const float k = (roughness * roughness) * 0.5;
     const float denom = NoV * (1.0 - k) + k;
-    return NoV / denom;
+    return NoV / max(denom, 1e-5);
 }
 
 float G_Smith(float NoV, float NoL, float roughness) {

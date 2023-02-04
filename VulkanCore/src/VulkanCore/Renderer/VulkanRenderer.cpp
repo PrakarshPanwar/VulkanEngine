@@ -283,47 +283,45 @@ namespace VulkanCore {
 		return { envFiltered, irradianceMap };
 	}
 
-	const VulkanImage& VulkanRenderer::CreateBRDFTexture()
-{
+	std::shared_ptr<VulkanImage> VulkanRenderer::CreateBRDFTexture()
+	{
 		constexpr uint32_t textureSize = 512;
-		auto generateBRDFShader = Renderer::GetShader("GenerateBRDFLUT");
-		
-		FramebufferSpecification genBRDFFramebufferSpec;
-		genBRDFFramebufferSpec.Width = textureSize;
-		genBRDFFramebufferSpec.Height = textureSize;
-		genBRDFFramebufferSpec.Attachments = { ImageFormat::RGBA32F };
-		genBRDFFramebufferSpec.Samples = 8;
 
-		RenderPassSpecification genBRDFRenderPassSpec;
-		genBRDFRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(genBRDFFramebufferSpec);
+		ImageSpecification brdfTextureSpec;
+		brdfTextureSpec.Width = textureSize;
+		brdfTextureSpec.Height = textureSize;
+		brdfTextureSpec.Usage = ImageUsage::Storage;
+		brdfTextureSpec.Format = ImageFormat::RGBA32F;
 
-		PipelineSpecification genBRDFPipelineSpec;
-		genBRDFPipelineSpec.pShader = generateBRDFShader;
-		genBRDFPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(genBRDFRenderPassSpec);
-		genBRDFPipelineSpec.DepthTest = false;
-		genBRDFPipelineSpec.DepthWrite = false;
+		auto generateBRDFShader = Renderer::GetShader("GenerateBRDF");
+		std::shared_ptr<VulkanComputePipeline> generateBRDFPipeline = std::make_shared<VulkanComputePipeline>(generateBRDFShader);
+		std::shared_ptr<VulkanImage> brdfTexture = std::make_shared<VulkanImage>(brdfTextureSpec);
+		brdfTexture->Invalidate();
 
-		std::shared_ptr<VulkanPipeline> generateBRDFPipeline = std::make_shared<VulkanPipeline>(genBRDFPipelineSpec);
-
-		Renderer::Submit([generateBRDFPipeline]
+		Renderer::Submit([generateBRDFPipeline, brdfTexture, textureSize]
 		{
 			auto device = VulkanContext::GetCurrentDevice();
+			auto vulkanDescriptorPool = Application::Get()->GetVulkanDescriptorPool();
 
-			VkCommandBuffer drawCmd = device->GetCommandBuffer();
+			// Building Descriptor Set
+			VkDescriptorSet descriptorSet;
+			VulkanDescriptorWriter descriptorWriter(*generateBRDFPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool);
 
-			Renderer::BeginRenderPass(drawCmd, generateBRDFPipeline->GetSpecification().RenderPass);
-			generateBRDFPipeline->Bind(drawCmd);
-			vkCmdDraw(drawCmd, 3, 1, 0, 0);
-			Renderer::EndRenderPass(drawCmd, generateBRDFPipeline->GetSpecification().RenderPass);
+			VkDescriptorImageInfo brdfOutputInfo = brdfTexture->GetDescriptorInfo();
+			descriptorWriter.WriteImage(0, &brdfOutputInfo);
 
-			device->FlushCommandBuffer(drawCmd);
+			descriptorWriter.Build(descriptorSet);
 
-			RenderThread::NotifyMainThread();
+			// Dispatch Pipeline
+			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
+
+			generateBRDFPipeline->Bind(dispatchCmd);
+			generateBRDFPipeline->Execute(dispatchCmd, descriptorSet, textureSize / 16, textureSize / 16, 1);
+
+			device->FlushCommandBuffer(dispatchCmd, true);
 		});
 
-		Renderer::WaitandRender();
-
-		return generateBRDFPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[0];
+		return brdfTexture;
 	}
 
 	void VulkanRenderer::CreateCommandBuffers()

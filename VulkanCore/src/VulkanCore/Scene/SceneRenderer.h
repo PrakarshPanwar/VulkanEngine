@@ -112,7 +112,7 @@ namespace VulkanCore {
 #if USE_PRELOADED_BRDF
 		std::shared_ptr<VulkanTexture> m_BRDFTexture;
 #else
-		VulkanImage m_BRDFTexture = {};
+		std::shared_ptr<VulkanImage> m_BRDFTexture;
 #endif
 		std::shared_ptr<Mesh> m_SkyboxMesh;
 		SkyboxSettings m_SkyboxSettings;

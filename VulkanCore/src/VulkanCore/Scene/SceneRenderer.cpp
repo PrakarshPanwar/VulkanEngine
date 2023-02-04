@@ -140,6 +140,16 @@ namespace VulkanCore {
 
 	void SceneRenderer::CreatePipelines()
 	{
+		VertexBufferLayout vertexLayout = {
+			{ ShaderDataType::Float3, "a_Position" },
+			{ ShaderDataType::Float3, "a_Normal" },
+			{ ShaderDataType::Float3, "a_Tangent" },
+			{ ShaderDataType::Float3, "a_Binormal" },
+			{ ShaderDataType::Float3, "a_FragColor" },
+			{ ShaderDataType::Float2, "a_TexCoord" },
+			{ ShaderDataType::Int,    "a_TexIndex" }
+		};
+
 		// Geometry and Point Light Pipeline
 		{
 			FramebufferSpecification geomFramebufferSpec;
@@ -154,7 +164,7 @@ namespace VulkanCore {
 			PipelineSpecification geomPipelineSpec;
 			geomPipelineSpec.pShader = Renderer::GetShader("CorePBR");
 			geomPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(geomRenderPassSpec);
-			geomPipelineSpec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
+			geomPipelineSpec.Layout = vertexLayout;
 
 			PipelineSpecification pointLightPipelineSpec;
 			pointLightPipelineSpec.pShader = Renderer::GetShader("PointLight");
@@ -177,7 +187,7 @@ namespace VulkanCore {
 			compRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(compFramebufferSpec);
 			m_SceneFramebuffer = compRenderPassSpec.TargetFramebuffer;
 
-			PipelineSpecification compPipelineSpec;
+			PipelineSpecification compPipelineSpec{};
 			compPipelineSpec.pShader = Renderer::GetShader("SceneComposite");
 			compPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(compRenderPassSpec);
 			compPipelineSpec.DepthTest = false;
@@ -190,7 +200,7 @@ namespace VulkanCore {
 		{
 			PipelineSpecification skyboxPipelineSpec;
 			skyboxPipelineSpec.pShader = Renderer::GetShader("Skybox");
-			skyboxPipelineSpec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
+			skyboxPipelineSpec.Layout = vertexLayout;
 			skyboxPipelineSpec.RenderPass = m_GeometryPipeline->GetSpecification().RenderPass;
 
 			m_SkyboxPipeline = std::make_shared<VulkanPipeline>(skyboxPipelineSpec);
@@ -252,9 +262,16 @@ namespace VulkanCore {
 		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
 		m_ARMMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_arm_2k.png", ImageFormat::RGBA8_UNORM);
 
+#define USE_GOLD_MATERIAL 1
+#if USE_GOLD_MATERIAL
+		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldDiffuse2.png");
+		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldNormalGL.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldAORMNew.png", ImageFormat::RGBA8_UNORM);
+#else
 		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesDiff.png");
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesNorGL.png", ImageFormat::RGBA8_UNORM);
 		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesARM.png", ImageFormat::RGBA8_UNORM);
+#endif
 
 #if USE_PRELOADED_BRDF
 		m_BRDFTexture = std::make_shared<VulkanTexture>("assets/textures/BRDF_LUTMap.png", ImageFormat::RGBA8_UNORM);
@@ -313,7 +330,7 @@ namespace VulkanCore {
 #if USE_PRELOADED_BRDF
 			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorImageInfo();
 #else
-			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture.GetDescriptorInfo();
+			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorInfo();
 #endif
 			geomDescriptorWriter[i].WriteImage(6, &brdfTextureInfo);
 

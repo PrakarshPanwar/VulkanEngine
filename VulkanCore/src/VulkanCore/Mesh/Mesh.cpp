@@ -344,6 +344,19 @@ namespace VulkanCore {
 				vertex.Normal = mVector;
 			}
 
+			if (mesh->HasTangentsAndBitangents())
+			{
+				mVector.x = mesh->mTangents[i].x;
+				mVector.y = mesh->mTangents[i].y;
+				mVector.z = mesh->mTangents[i].z;
+				vertex.Tangent = mVector;
+
+				mVector.x = mesh->mBitangents[i].x;
+				mVector.y = mesh->mBitangents[i].y;
+				mVector.z = mesh->mBitangents[i].z;
+				vertex.Binormal = mVector;
+			}
+
 			vertex.Color = glm::vec3{ 1.0f };
 
 			if (mesh->HasTextureCoords(0))
