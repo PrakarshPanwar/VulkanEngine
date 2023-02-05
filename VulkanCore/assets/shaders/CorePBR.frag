@@ -25,7 +25,7 @@ layout(set = 0, binding = 0) uniform Camera
 {
 	mat4 Projection;
 	mat4 View;
-	mat4 InvView;
+	mat4 InverseView;
 } u_Camera;
 
 layout(set = 0, binding = 1) uniform PointLightData
@@ -59,7 +59,8 @@ struct PBRParams
 
 vec3 GetNormalsFromMap()
 {
-    vec3 tangentNormal = normalize(texture(u_NormalTextures[v_MaterialIndex], Input.TexCoord).xyz * 2.0 - 1.0);
+    vec3 normalMap = texture(u_NormalTextures[v_MaterialIndex], Input.TexCoord).rgb;
+    vec3 tangentNormal = normalize(normalMap * 2.0 - 1.0);
     return normalize(Input.WorldNormals * tangentNormal);
 }
 
@@ -117,7 +118,7 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(max(1.0 - cosTheta, 0.0), 5.0);
 }
 
-vec3 LightingContribution(vec3 F0)
+vec3 Lighting(vec3 F0)
 {
     // Reflectance Equation
     vec3 Lo = vec3(0.0);
@@ -189,21 +190,21 @@ void main()
     vec3 aorm = texture(u_AORoughMetalTextures[v_MaterialIndex], Input.TexCoord).rgb;
 
     float ao = aorm.r;
-    m_Params.Roughness = max(aorm.g, 0.05);
+    m_Params.Roughness = aorm.g;
     m_Params.Metallic = aorm.b;
 
-	vec3 cameraPosWorld = u_Camera.InvView[3].xyz;
+	vec3 cameraPosWorld = u_Camera.InverseView[3].xyz;
 	m_Params.View = normalize(cameraPosWorld - Input.WorldPosition);
     m_Params.Normal = GetNormalsFromMap();
     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);
-    vec3 Lr = 2.0 * m_Params.NdotV * m_Params.Normal - m_Params.View;
+    vec3 Lr = reflect(-m_Params.View, m_Params.Normal);
 
     // Calculate Reflectance at Normal Incidence; if Di-Electric (like Plastic) use F0 
     // of 0.04 and if it's a Metal, use the Albedo color as F0 (Metallic Workflow)    
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, m_Params.Albedo, m_Params.Metallic);
 
-    vec3 lightContribution = LightingContribution(F0);
+    vec3 lightContribution = Lighting(F0);
     vec3 iblContribution = IBL(F0, Lr);
 
     vec3 color = iblContribution + lightContribution;
