@@ -293,7 +293,6 @@ namespace VulkanCore {
 			aiProcess_CalcTangentSpace |
 			aiProcess_JoinIdenticalVertices | // For Index Buffer
 			aiProcess_GenUVCoords |           // Generate UV Coords
-			aiProcess_FlipUVs |
 			aiProcess_GenNormals |            // Generate Normals for Mesh
 			aiProcess_SortByPType |
 			aiProcess_ValidateDataStructure

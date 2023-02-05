@@ -30,7 +30,7 @@ layout(set = 0, binding = 0) uniform Camera
 {
 	mat4 Projection;
 	mat4 View;
-	mat4 InvView;
+	mat4 InverseView;
 } u_Camera;
 
 void main()
@@ -39,8 +39,14 @@ void main()
 	gl_Position = u_Camera.Projection * u_Camera.View * positionWorld;
 	Output.Normal = mat3(u_Model.ModelMatrix) * a_Normal;
 	Output.WorldPosition = positionWorld.xyz;
-	Output.WorldNormals = mat3(u_Model.ModelMatrix) * mat3(a_Tangent, a_Binormal, a_Normal);
+
+    vec3 T = normalize(mat3(u_Model.ModelMatrix) * a_Tangent);
+    vec3 N = normalize(mat3(u_Model.ModelMatrix) * a_Normal);
+    T = normalize(T - dot(T, N) * N);
+    vec3 B = cross(N, T);
+
+	Output.WorldNormals = mat3(T, B, N);
 	Output.VertexColor = a_FragColor;
-	Output.TexCoord = a_TexCoord;
+	Output.TexCoord = vec2(a_TexCoord.x, 1.0 - a_TexCoord.y);
 	v_MaterialIndex = a_TexID;
 }

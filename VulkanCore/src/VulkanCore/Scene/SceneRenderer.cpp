@@ -156,7 +156,7 @@ namespace VulkanCore {
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
 			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::DEPTH24STENCIL8 };
-			geomFramebufferSpec.Samples = 8;
+			geomFramebufferSpec.Samples = 1;
 
 			RenderPassSpecification geomRenderPassSpec;
 			geomRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(geomFramebufferSpec);
@@ -262,7 +262,7 @@ namespace VulkanCore {
 		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
 		m_ARMMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_arm_2k.png", ImageFormat::RGBA8_UNORM);
 
-#define USE_GOLD_MATERIAL 1
+#define USE_GOLD_MATERIAL 0
 #if USE_GOLD_MATERIAL
 		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldDiffuse2.png");
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldNormalGL.png", ImageFormat::RGBA8_UNORM);
