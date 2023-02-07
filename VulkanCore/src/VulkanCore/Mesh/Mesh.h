@@ -22,23 +22,11 @@ namespace VulkanCore {
 		glm::vec2 TexCoord;
 		int TexID;
 
-		static std::vector<VkVertexInputBindingDescription> GetBindingDescriptions();
-		static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
-
 		bool operator==(const Vertex& other) const
 		{
 			return Position == other.Position && Color == other.Color && 
 				Normal == other.Normal && TexCoord == other.TexCoord;
 		}
-	};
-
-	struct QuadVertex
-	{
-		glm::vec3 Position;
-		glm::vec2 TexCoord;
-
-		static std::vector<VkVertexInputBindingDescription> GetBindingDescriptions();
-		static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
 	};
 
 	struct MeshNode
@@ -111,6 +99,8 @@ namespace VulkanCore {
 		inline std::shared_ptr<MeshSource> GetMeshSource() const { return m_MeshSource; }
 		static std::shared_ptr<Mesh> LoadMesh(const char* filepath, int materialIndex);
 		static std::shared_ptr<VulkanVertexBuffer> GetTransformBuffer(uint64_t meshKey) { return s_MeshTransformBuffer[meshKey]; }
+
+		static void ClearAllMeshes();
 	private:
 		std::shared_ptr<MeshSource> m_MeshSource;
 		// TODO: In we will not need this once we have VulkanMaterial and MaterialTable

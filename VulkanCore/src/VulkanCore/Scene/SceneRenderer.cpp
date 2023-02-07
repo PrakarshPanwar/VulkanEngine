@@ -315,6 +315,9 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
+		// Deleting all Transforms
+		Mesh::ClearAllMeshes();
+
 		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(), 
 			static_cast<uint32_t>(m_SceneCommandBuffers.size()), m_SceneCommandBuffers.data());
 	}

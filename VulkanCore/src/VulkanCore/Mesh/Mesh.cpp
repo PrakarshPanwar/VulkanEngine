@@ -46,49 +46,6 @@ namespace VulkanCore {
 
 	}
 
-	std::vector<VkVertexInputBindingDescription> Vertex::GetBindingDescriptions()
-	{
-		std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
-		bindingDescriptions[0].binding = 0;
-		bindingDescriptions[0].stride = sizeof(Vertex);
-		bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		return bindingDescriptions;
-	}
-
-	std::vector<VkVertexInputAttributeDescription> Vertex::GetAttributeDescriptions()
-	{
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-
-		attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Position) });
-		attributeDescriptions.push_back({ 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Color) });
-		attributeDescriptions.push_back({ 2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Normal) });
-		attributeDescriptions.push_back({ 3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, TexCoord) });
-		attributeDescriptions.push_back({ 4, 0, VK_FORMAT_R32_SINT, offsetof(Vertex, TexID) });
-
-		return attributeDescriptions;
-	}
-
-	std::vector<VkVertexInputBindingDescription> QuadVertex::GetBindingDescriptions()
-	{
-		std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
-		bindingDescriptions[0].binding = 0;
-		bindingDescriptions[0].stride = sizeof(QuadVertex);
-		bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		return bindingDescriptions;
-	}
-
-	std::vector<VkVertexInputAttributeDescription> QuadVertex::GetAttributeDescriptions()
-	{
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-
-		attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(QuadVertex, Position) });
-		attributeDescriptions.push_back({ 1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(QuadVertex, TexCoord) });
-
-		return attributeDescriptions;
-	}
-
 	std::map<uint64_t, std::shared_ptr<MeshSource>> Mesh::s_MeshSourcesMap;
 	std::map<uint64_t, std::shared_ptr<VulkanVertexBuffer>> Mesh::s_MeshTransformBuffer;
 
@@ -118,6 +75,12 @@ namespace VulkanCore {
 	{
 		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(filepath, materialIndex);
 		return mesh;
+	}
+
+	void Mesh::ClearAllMeshes()
+	{
+		s_MeshTransformBuffer.clear();
+		s_MeshSourcesMap.clear();
 	}
 
 	Mesh::~Mesh()
