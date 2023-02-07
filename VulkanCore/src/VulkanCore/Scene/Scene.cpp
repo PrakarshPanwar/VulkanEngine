@@ -21,6 +21,7 @@ namespace VulkanCore {
 	{
 		Entity entity = { m_Registry.create(), this };
 		entity.AddComponent<TagComponent>(name);
+		entity.AddComponent<TransformComponent>();
 
 		return entity;
 	}
