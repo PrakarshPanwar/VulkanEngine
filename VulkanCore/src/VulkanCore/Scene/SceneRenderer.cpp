@@ -442,7 +442,7 @@ namespace VulkanCore {
 			Renderer::RetrieveQueryPoolResults();
 
 			ImGui::Text("Geometry Pass: %lluns", Renderer::GetQueryTime(0));
-			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(2));
+			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(1));
 			ImGui::Text("Composite Pass: %lluns", Renderer::GetQueryTime(3));
 			ImGui::TreePop();
 		}
