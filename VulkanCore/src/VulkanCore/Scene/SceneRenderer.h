@@ -6,6 +6,7 @@
 #include "Platform/Vulkan/VulkanComputePipeline.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanBuffer.h"
+#include "Platform/Vulkan/VulkanVertexBuffer.h"
 #include "Platform/Vulkan/VulkanUniformBuffer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
 
@@ -29,7 +30,7 @@ namespace VulkanCore {
 
 		void SetViewportSize(uint32_t width, uint32_t height) { m_ViewportSize.x = width; m_ViewportSize.y = height; }
 		void RenderScene(EditorCamera& camera);
-		void SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform, const glm::mat3& normalMatrix);
+		void SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform);
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
@@ -48,10 +49,12 @@ namespace VulkanCore {
 		void GeometryPass();
 		void BloomBlurPass();
 		void CompositePass();
+		void ResetDrawCommands();
 
 		struct DrawCommand
 		{
 			std::shared_ptr<Mesh> MeshInstance;
+			std::shared_ptr<VulkanVertexBuffer> TransformBuffer;
 			uint32_t InstanceCount;
 		};
 	private:

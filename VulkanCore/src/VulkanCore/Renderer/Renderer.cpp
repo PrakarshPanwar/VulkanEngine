@@ -95,7 +95,7 @@ namespace VulkanCore {
 			0, 1, &dstSet,
 			0, nullptr);
 
-
+		//vkCmdDrawIndexed()
 	}	
 	
 	void Renderer::BeginGPUPerfMarker()

@@ -261,7 +261,7 @@ namespace VulkanCore {
 
 				else
 				{
-					std::shared_ptr<Mesh> mesh = Mesh::LoadMesh(meshFilePath.c_str());
+					std::shared_ptr<Mesh> mesh = Mesh::LoadMesh(meshFilePath.c_str(), 0);
 					component.MeshInstance = mesh;
 
 					s_ShowMessage = false;
@@ -273,8 +273,8 @@ namespace VulkanCore {
 				ImGui::TextColored(ImVec4{ 0.8f, 0.1f, 0.2f, 1.0f }, "File does not exist!");
 			}
 
-			ImGui::Text("Vertex Count: %d", component.MeshInstance->GetVertexCount());
-			ImGui::Text("Index Count: %d", component.MeshInstance->GetIndexCount());
+			ImGui::Text("Vertex Count: %d", component.MeshInstance->GetMeshSource()->GetVertexCount());
+			ImGui::Text("Index Count: %d", component.MeshInstance->GetMeshSource()->GetIndexCount());
 		});
 	}
 

@@ -2,7 +2,6 @@
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Platform/Vulkan/VulkanVertexBuffer.h"
 #include "Platform/Vulkan/VulkanIndexBuffer.h"
-#include "Platform/Vulkan/VulkanStorageBuffer.h"
 
 // TODO: This include should be in PCH
 #include <map>
@@ -16,8 +15,10 @@ namespace VulkanCore {
 	struct Vertex
 	{
 		glm::vec3 Position;
-		glm::vec3 Color;
 		glm::vec3 Normal;
+		glm::vec3 Tangent;
+		glm::vec3 Binormal;
+		glm::vec3 Color;
 		glm::vec2 TexCoord;
 		int TexID;
 
@@ -64,16 +65,20 @@ namespace VulkanCore {
 		~MeshSource();
 
 		const aiScene* GetAssimpScene() const { return m_Scene; }
+
+		inline std::shared_ptr<VulkanVertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
+		inline std::shared_ptr<VulkanIndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
 		inline uint32_t GetVertexCount() const { return (uint32_t)m_Vertices.size(); }
 		inline uint32_t GetIndexCount() const { return (uint32_t)m_Indices.size(); }
+
 		uint64_t GetMeshKey() const { return m_MeshKey; }
 		std::string& GetFilePath() { return m_FilePath; }
 	private:
 		std::string m_FilePath;
+		uint64_t m_MeshKey;
 
 		aiScene* m_Scene;
 		std::unique_ptr<Assimp::Importer> m_Importer;
-		uint64_t m_MeshKey;
 
 		std::vector<Submesh> m_Submeshes;
 		std::vector<MeshNode> m_Nodes;
@@ -91,7 +96,7 @@ namespace VulkanCore {
 	class AssimpMeshImporter
 	{
 	public:
-		static void InvalidateMesh(std::shared_ptr<MeshSource> meshSource);
+		static void InvalidateMesh(std::shared_ptr<MeshSource> meshSource, int materialIndex);
 		static void TraverseNodes(std::shared_ptr<MeshSource> meshSource, aiNode* aNode, uint32_t nodeIndex);
 		static void ProcessMesh(std::shared_ptr<MeshSource> meshSource, aiMesh* mesh, const aiScene* scene);
 	};
@@ -100,11 +105,12 @@ namespace VulkanCore {
 	{
 	public:
 		Mesh() = default;
-		Mesh(const std::string& filepath);
+		Mesh(const std::string& filepath, int materialIndex);
 		~Mesh();
 
 		inline std::shared_ptr<MeshSource> GetMeshSource() const { return m_MeshSource; }
-		static std::shared_ptr<Mesh> LoadMesh(const char* filepath);
+		static std::shared_ptr<Mesh> LoadMesh(const char* filepath, int materialIndex);
+		static std::shared_ptr<VulkanVertexBuffer> GetTransformBuffer(uint64_t meshKey) { return s_MeshTransformBuffer[meshKey]; }
 	private:
 		std::shared_ptr<MeshSource> m_MeshSource;
 		// TODO: In we will not need this once we have VulkanMaterial and MaterialTable
@@ -112,7 +118,7 @@ namespace VulkanCore {
 
 		// Hash => Filepath Hash Value, Value => Transform Storage Buffer Set
 		static std::map<uint64_t, std::shared_ptr<MeshSource>> s_MeshSourcesMap;
-		static std::map<uint64_t, std::vector<VulkanStorageBuffer>> s_MeshTransformBuffer;
+		static std::map<uint64_t, std::shared_ptr<VulkanVertexBuffer>> s_MeshTransformBuffer;
 	};
 
 }

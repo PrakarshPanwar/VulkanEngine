@@ -80,8 +80,7 @@ namespace VulkanCore {
 
 	struct TransformData
 	{
-		glm::mat4 TransformMatrix{ 1.0f };
-		glm::mat4 NormalMatrix{ 1.0f };
+		glm::vec4 MRow[3];
 	};
 
 	struct PointLight
