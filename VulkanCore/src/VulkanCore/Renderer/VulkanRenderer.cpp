@@ -332,14 +332,9 @@ namespace VulkanCore {
 		transformBuffer->WriteData((void*)transformData.data(), 0);
 
 		// Bind Vertex Buffer
-		VkBuffer vbMesh[] = { meshSource->GetVertexBuffer()->GetVulkanBuffer() };
-		VkDeviceSize offsets[] = { 0 };
-
-		vkCmdBindVertexBuffers(drawCmd, 0, 1, vbMesh, offsets);
-
-		VkBuffer vbInstance[] = { transformBuffer->GetVulkanBuffer() };
-
-		vkCmdBindVertexBuffers(drawCmd, 1, 1, vbInstance, offsets);
+		VkBuffer buffers[] = { meshSource->GetVertexBuffer()->GetVulkanBuffer(), transformBuffer->GetVulkanBuffer() };
+		VkDeviceSize offsets[] = { 0, 0 };
+		vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
 		vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdDrawIndexed(drawCmd, meshSource->GetIndexCount(), instanceCount, 0, 0, 0);

@@ -97,6 +97,18 @@ namespace VulkanCore {
 				Entity entity{ entityID, m_Context.get() };
 				DrawEntityNode(entity);
 			});
+
+			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+				m_SelectionContext = {};
+
+			// Right-click on blank space
+			if (ImGui::BeginPopupContextWindow("##CreateEntity", 1))
+			{
+				if (ImGui::MenuItem("Create Empty Entity"))
+					m_Context->CreateEntity("Empty Entity");
+
+				ImGui::EndPopup();
+			}
 		}
 
 		ImGui::End();

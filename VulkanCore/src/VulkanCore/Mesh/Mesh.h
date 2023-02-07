@@ -49,6 +49,7 @@ namespace VulkanCore {
 	class MeshSource
 	{
 	public:
+		MeshSource() = default;
 		MeshSource(const std::string& filepath);
 		~MeshSource();
 
@@ -92,7 +93,7 @@ namespace VulkanCore {
 	class Mesh
 	{
 	public:
-		Mesh() = default;
+		Mesh();
 		Mesh(const std::string& filepath, int materialIndex);
 		~Mesh();
 

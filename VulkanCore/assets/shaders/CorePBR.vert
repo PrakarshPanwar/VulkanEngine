@@ -48,6 +48,6 @@ void main()
 	Output.WorldPosition = positionWorld.xyz;
 	Output.WorldNormals = mat3(transform) * mat3(a_Tangent, a_Binormal, a_Normal);
 	Output.VertexColor = a_FragColor;
-	Output.TexCoord = a_TexCoord;
+	Output.TexCoord = vec2(a_TexCoord.x, 1.0 - a_TexCoord.y);
 	v_MaterialIndex = a_TexID;
 }
