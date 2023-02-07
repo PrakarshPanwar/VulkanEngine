@@ -5,6 +5,7 @@
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/Timer.h"
+#include "VulkanCore/Core/Components.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tinyobjloader.h>
@@ -89,9 +90,10 @@ namespace VulkanCore {
 	}
 
 	std::map<uint64_t, std::shared_ptr<MeshSource>> Mesh::s_MeshSourcesMap;
-	std::map<uint64_t, std::vector<VulkanStorageBuffer>> Mesh::s_MeshTransformBuffer;
+	std::map<uint64_t, std::shared_ptr<VulkanVertexBuffer>> Mesh::s_MeshTransformBuffer;
 
-	Mesh::Mesh(const std::string& filepath)
+	Mesh::Mesh(const std::string& filepath, int materialIndex)
+		: m_MaterialID(materialIndex)
 	{
 		uint64_t meshKey = std::filesystem::hash_value(filepath);
 
@@ -102,21 +104,19 @@ namespace VulkanCore {
 			m_MeshSource = std::make_shared<MeshSource>(filepath);
 			s_MeshSourcesMap[meshKey] = m_MeshSource;
 
-			// Allocating Storage Buffer Set for Unique Mesh Sources
-			auto& storageBufferSet = s_MeshTransformBuffer[meshKey];
-			storageBufferSet.reserve(3);
-
-			for (uint32_t i = 0; i < storageBufferSet.capacity(); ++i)
-				storageBufferSet.emplace_back(50 * sizeof(TransformData));
+			// Allocating Vertex Buffer Set for Unique Mesh Sources
+			auto& transformBuffer = s_MeshTransformBuffer[meshKey];
+			// TODO: In future this size will be increased
+			transformBuffer = std::make_shared<VulkanVertexBuffer>(10 * sizeof(TransformData));
 
 			AssimpMeshImporter::TraverseNodes(m_MeshSource, m_MeshSource->m_Scene->mRootNode, 0);
-			AssimpMeshImporter::InvalidateMesh(m_MeshSource);
+			AssimpMeshImporter::InvalidateMesh(m_MeshSource, m_MaterialID);
 		}
 	}
 
-	std::shared_ptr<Mesh> Mesh::LoadMesh(const char* filepath)
+	std::shared_ptr<Mesh> Mesh::LoadMesh(const char* filepath, int materialIndex)
 	{
-		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(filepath);
+		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(filepath, materialIndex);
 		return mesh;
 	}
 
@@ -177,7 +177,7 @@ namespace VulkanCore {
 	{
 	}
 
-	void AssimpMeshImporter::InvalidateMesh(std::shared_ptr<MeshSource> meshSource)
+	void AssimpMeshImporter::InvalidateMesh(std::shared_ptr<MeshSource> meshSource, int materialIndex)
 	{
 		for (uint32_t m = 0; m < (uint32_t)meshSource->m_Submeshes.size(); ++m)
 		{
@@ -200,6 +200,19 @@ namespace VulkanCore {
 					vertex.Normal = mVector;
 				}
 
+				if (mesh->HasTangentsAndBitangents())
+				{
+					mVector.x = mesh->mTangents[i].x;
+					mVector.y = mesh->mTangents[i].y;
+					mVector.z = mesh->mTangents[i].z;
+					vertex.Tangent = mVector;
+
+					mVector.x = mesh->mBitangents[i].x;
+					mVector.y = mesh->mBitangents[i].y;
+					mVector.z = mesh->mBitangents[i].z;
+					vertex.Binormal = mVector;
+				}
+
 				vertex.Color = glm::vec3{ 1.0f };
 
 				if (mesh->HasTextureCoords(0))
@@ -208,7 +221,7 @@ namespace VulkanCore {
 					vertex.TexCoord = mTexCoords;
 				}
 
-				vertex.TexID = 0;
+				vertex.TexID = materialIndex;
 				meshSource->m_Vertices.push_back(vertex);
 			}
 
@@ -221,8 +234,8 @@ namespace VulkanCore {
 			}
 		}
 
-		meshSource->m_VertexBuffer = std::make_shared<VulkanVertexBuffer>(meshSource->m_Vertices.data(), (uint32_t)meshSource->m_Vertices.size());
-		meshSource->m_IndexBuffer = std::make_shared<VulkanIndexBuffer>(meshSource->m_Indices.data(), (uint32_t)meshSource->m_Indices.size());
+		meshSource->m_VertexBuffer = std::make_shared<VulkanVertexBuffer>(meshSource->m_Vertices.data(), (uint32_t)(meshSource->m_Vertices.size() * sizeof(Vertex)));
+		meshSource->m_IndexBuffer = std::make_shared<VulkanIndexBuffer>(meshSource->m_Indices.data(), (uint32_t)(meshSource->m_Indices.size() * 4));
 	}
 
 	void AssimpMeshImporter::TraverseNodes(std::shared_ptr<MeshSource> meshSource, aiNode* aNode, uint32_t nodeIndex)

@@ -324,12 +324,25 @@ namespace VulkanCore {
 		return brdfTexture;
 	}
 
-	void VulkanRenderer::RenderMesh(const std::vector<VkCommandBuffer>& cmdBuffers, std::shared_ptr<Mesh> mesh, uint32_t instanceCount)
+	void VulkanRenderer::RenderMesh(const std::vector<VkCommandBuffer>& drawCmds, std::shared_ptr<Mesh> mesh, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
-		auto drawCmd = cmdBuffers[GetCurrentFrameIndex()];
+		auto drawCmd = drawCmds[Renderer::GetCurrentFrameIndex()];
 
 		auto meshSource = mesh->GetMeshSource();
-		vkCmdDrawIndexed(drawCmd, meshSource->GetIndexCount(), instanceCount, 0, 0, 0)
+		transformBuffer->WriteData((void*)transformData.data(), 0);
+
+		// Bind Vertex Buffer
+		VkBuffer vbMesh[] = { meshSource->GetVertexBuffer()->GetVulkanBuffer() };
+		VkDeviceSize offsets[] = { 0 };
+
+		vkCmdBindVertexBuffers(drawCmd, 0, 1, vbMesh, offsets);
+
+		VkBuffer vbInstance[] = { transformBuffer->GetVulkanBuffer() };
+
+		vkCmdBindVertexBuffers(drawCmd, 1, 1, vbInstance, offsets);
+		vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+		vkCmdDrawIndexed(drawCmd, meshSource->GetIndexCount(), instanceCount, 0, 0, 0);
 	}
 
 	void VulkanRenderer::CreateCommandBuffers()

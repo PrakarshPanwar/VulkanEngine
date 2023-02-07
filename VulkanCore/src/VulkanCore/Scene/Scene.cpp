@@ -67,7 +67,7 @@ namespace VulkanCore {
 			if (entity.HasComponent<MeshComponent>())
 			{
 				auto& transformComponent = entity.GetComponent<TransformComponent>();
-				renderer->SubmitMesh(entity.GetComponent<MeshComponent>().MeshInstance, transformComponent.GetTransform(), transformComponent.GetNormalMatrix());
+				renderer->SubmitMesh(entity.GetComponent<MeshComponent>().MeshInstance, transformComponent.GetTransform());
 			}
 		}
 	}

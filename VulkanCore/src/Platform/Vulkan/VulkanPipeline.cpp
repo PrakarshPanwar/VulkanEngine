@@ -165,6 +165,77 @@ namespace VulkanCore {
 			return pipelineConfig;
 		}
 
+		static VkFormat GetVulkanFormat(ShaderDataType type)
+		{
+			switch (type)
+			{
+			case ShaderDataType::None:	 return VK_FORMAT_UNDEFINED;
+			case ShaderDataType::Float:	 return VK_FORMAT_R32_SFLOAT;
+			case ShaderDataType::Float2: return VK_FORMAT_R32G32_SFLOAT;
+			case ShaderDataType::Float3: return VK_FORMAT_R32G32B32_SFLOAT;
+			case ShaderDataType::Float4: return VK_FORMAT_R32G32B32A32_SFLOAT;
+			case ShaderDataType::Int:	 return VK_FORMAT_R32_SINT;
+			case ShaderDataType::Int2:	 return VK_FORMAT_R32G32_SINT;
+			case ShaderDataType::Int3:	 return VK_FORMAT_R32G32B32_SINT;
+			case ShaderDataType::Int4:	 return VK_FORMAT_R32G32B32A32_SINT;
+			case ShaderDataType::Bool:	 return VK_FORMAT_R8_SINT;
+			default:
+				VK_CORE_ASSERT(false, "Invalid or Not Supported Format!");
+				return VK_FORMAT_UNDEFINED;
+			}
+		}
+
+		static std::vector<VkVertexInputBindingDescription> GetVulkanBindingDescription(const PipelineSpecification& spec)
+		{
+			std::vector<VkVertexInputBindingDescription> bindingDescriptions;
+
+			if (!spec.Layout.GetElements().empty())
+			{
+				auto& vertexBindingDescription = bindingDescriptions.emplace_back();
+				vertexBindingDescription.binding = 0;
+				vertexBindingDescription.stride = spec.Layout.GetStride();
+				vertexBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			}
+
+			if (!spec.InstanceLayout.GetElements().empty())
+			{
+				auto& instanceBindingDescription = bindingDescriptions.emplace_back();
+				instanceBindingDescription.binding = 1;
+				instanceBindingDescription.stride = spec.InstanceLayout.GetStride();
+				instanceBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+			}
+
+			return bindingDescriptions;
+		}
+
+		static std::vector<VkVertexInputAttributeDescription> GetVulkanAttributeDescription(const PipelineSpecification& spec)
+		{
+			std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+
+			uint32_t index = 0;
+			auto& bufferElements = spec.Layout.GetElements();
+			for (auto& bufferElement : bufferElements)
+			{
+				auto& attribElement = attributeDescriptions.emplace_back();
+				attribElement.location = index++;
+				attribElement.binding = 0;
+				attribElement.offset = bufferElement.Offset;
+				attribElement.format = GetVulkanFormat(bufferElement.Type);
+			}
+
+			auto& instanceBufferElements = spec.InstanceLayout.GetElements();
+			for (auto& bufferElement : instanceBufferElements)
+			{
+				auto& attribElement = attributeDescriptions.emplace_back();
+				attribElement.location = index++;
+				attribElement.binding = 1;
+				attribElement.offset = bufferElement.Offset;
+				attribElement.format = GetVulkanFormat(bufferElement.Type);
+			}
+
+			return attributeDescriptions;
+		}
+
 	}
 
 	VulkanPipeline::VulkanPipeline(PipelineConfigInfo& pipelineInfo, const std::string& vertFilepath, const std::string& fragFilepath, const std::string& geomFilepath)
@@ -341,27 +412,15 @@ namespace VulkanCore {
 				shaderStages[2].pSpecializationInfo = nullptr;
 			}
 
-			auto& bindingDescriptions = m_Specification.Layout.first;
-			auto& attributeDescriptions = m_Specification.Layout.second;
+			auto bindingDescriptions = Utils::GetVulkanBindingDescription(m_Specification);
+			auto attributeDescriptions = Utils::GetVulkanAttributeDescription(m_Specification);
 
 			VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-			if (bindingDescriptions.empty() && attributeDescriptions.empty())
-			{
-				vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-				vertexInputInfo.vertexAttributeDescriptionCount = 0;
-				vertexInputInfo.vertexBindingDescriptionCount = 0;
-				vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-				vertexInputInfo.pVertexBindingDescriptions = nullptr;
-			}
-
-			else
-			{
-				vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-				vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-				vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
-				vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-				vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
-			}
+			vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+			vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+			vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
+			vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+			vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 
 			m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
 			m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());

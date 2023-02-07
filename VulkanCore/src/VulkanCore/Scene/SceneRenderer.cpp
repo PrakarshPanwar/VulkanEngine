@@ -36,6 +36,22 @@ namespace VulkanCore {
 
 	void SceneRenderer::CreatePipelines()
 	{
+		VertexBufferLayout vertexLayout = {
+			{ ShaderDataType::Float3, "a_Position" },
+			{ ShaderDataType::Float3, "a_Normal" },
+			{ ShaderDataType::Float3, "a_Tangent" },
+			{ ShaderDataType::Float3, "a_Binormal" },
+			{ ShaderDataType::Float3, "a_FragColor" },
+			{ ShaderDataType::Float2, "a_TexCoord" },
+			{ ShaderDataType::Int,    "a_TexIndex" }
+		};
+
+		VertexBufferLayout instanceLayout = {
+			{ ShaderDataType::Float4, "a_MRow1" },
+			{ ShaderDataType::Float4, "a_MRow2" },
+			{ ShaderDataType::Float4, "a_MRow3" }
+		};
+
 		// Geometry and Point Light Pipeline
 		{
 			FramebufferSpecification geomFramebufferSpec;
@@ -50,7 +66,8 @@ namespace VulkanCore {
 			PipelineSpecification geomPipelineSpec;
 			geomPipelineSpec.pShader = Renderer::GetShader("CorePBR");
 			geomPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(geomRenderPassSpec);
-			geomPipelineSpec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
+			geomPipelineSpec.Layout = vertexLayout;
+			geomPipelineSpec.InstanceLayout = instanceLayout;
 
 			PipelineSpecification pointLightPipelineSpec;
 			pointLightPipelineSpec.pShader = Renderer::GetShader("PointLight");
@@ -86,7 +103,7 @@ namespace VulkanCore {
 		{
 			PipelineSpecification skyboxPipelineSpec;
 			skyboxPipelineSpec.pShader = Renderer::GetShader("Skybox");
-			skyboxPipelineSpec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
+			skyboxPipelineSpec.Layout = vertexLayout;
 			skyboxPipelineSpec.RenderPass = m_GeometryPipeline->GetSpecification().RenderPass;
 
 			m_SkyboxPipeline = std::make_shared<VulkanPipeline>(skyboxPipelineSpec);
@@ -320,7 +337,7 @@ namespace VulkanCore {
 			Renderer::RetrieveQueryPoolResults();
 
 			ImGui::Text("Geometry Pass: %lluns", Renderer::GetQueryTime(0));
-			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(2));
+			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(1));
 			ImGui::Text("Composite Pass: %lluns", Renderer::GetQueryTime(3));
 			ImGui::TreePop();
 		}
@@ -355,20 +372,24 @@ namespace VulkanCore {
 		BloomBlurPass();
 #endif
 		CompositePass();
+
+		ResetDrawCommands();
 	}
 
-	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform, const glm::mat3& normalMatrix)
+	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform)
 	{
 		auto meshSource = mesh->GetMeshSource();
-		
 		uint64_t meshKey = meshSource->GetMeshKey();
+		
+		auto& transformBuffer = m_MeshTransformMap[meshKey].emplace_back();
+		transformBuffer.MRow[0] = { transform[0][0], transform[1][0], transform[2][0], transform[3][0] };
+		transformBuffer.MRow[1] = { transform[0][1], transform[1][1], transform[2][1], transform[3][1] };
+		transformBuffer.MRow[2] = { transform[0][2], transform[1][2], transform[2][2], transform[3][2] };
+
 		auto& dc = m_MeshDrawList[meshKey];
 		dc.MeshInstance = mesh;
+		dc.TransformBuffer = mesh->GetTransformBuffer(meshKey);
 		dc.InstanceCount++;
-
-		auto& transformBuffer = m_MeshTransformMap[meshKey].emplace_back();
-		transformBuffer.TransformMatrix = transform;
-		transformBuffer.NormalMatrix = normalMatrix;
 	}
 
 	void SceneRenderer::CompositePass()
@@ -384,11 +405,27 @@ namespace VulkanCore {
 
 	void SceneRenderer::GeometryPass()
 	{
+		m_Scene->OnUpdateGeometry(this);
+
 		Renderer::BeginRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
 
 		// Rendering Geometry
 		Renderer::BeginGPUPerfMarker();
-		m_Scene->OnUpdateGeometry(m_SceneCommandBuffers, m_GeometryPipeline, m_GeometryDescriptorSets);
+		
+		auto drawCmd = m_SceneCommandBuffers[Renderer::GetCurrentFrameIndex()];
+		auto dstSet = m_GeometryDescriptorSets[Renderer::GetCurrentFrameIndex()];
+
+		m_GeometryPipeline->Bind(drawCmd);
+
+		vkCmdBindDescriptorSets(drawCmd,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			m_GeometryPipeline->GetVulkanPipelineLayout(),
+			0, 1, &dstSet,
+			0, nullptr);
+
+		for (auto& [mk, dc] : m_MeshDrawList)
+			VulkanRenderer::RenderMesh(m_SceneCommandBuffers, dc.MeshInstance, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
+
 		Renderer::EndGPUPerfMarker();
 
 		Renderer::BeginGPUPerfMarker();
@@ -435,6 +472,15 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_SceneCommandBuffers.data()), "Failed to Allocate Scene Command Buffers!");
 
 		Renderer::SetCommandBuffers(m_SceneCommandBuffers);
+	}
+
+	void SceneRenderer::ResetDrawCommands()
+	{
+		for (auto& [mk, dc] : m_MeshDrawList)
+		{
+			m_MeshTransformMap[mk].clear();
+			dc.InstanceCount = 0;
+		}
 	}
 
 }

@@ -223,15 +223,15 @@ namespace VulkanCore {
 		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
 		auto& vaseTransform = CeramicVase.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.2f, 2.5f }, glm::vec3{ 3.5f });
 		vaseTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
-		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/models/CeramicVase2K/antique_ceramic_vase_01_2k.fbx"));
+		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/models/CeramicVase2K/antique_ceramic_vase_01_2k.fbx", 0));
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
 		FlatPlane.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.3f, 0.0f }, glm::vec3{ 10.0f, 0.1f, 10.0f });
-		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/models/FlatPlane.fbx"));
+		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/models/FlatPlane.fbx", 2));
 
 		Entity SphereMesh = m_Scene->CreateEntity("Basic Sphere");
 		SphereMesh.AddComponent<TransformComponent>();
-		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/models/Sphere.fbx"));
+		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/models/Sphere.fbx", 2));
 
 		// TODO: Texture mapping not working correctly for GLTF mesh formats, fix this in future
 #if 0
@@ -244,7 +244,7 @@ namespace VulkanCore {
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
 		auto& brassTransform = BrassVase.AddComponent<TransformComponent>(glm::vec3{ 1.5f, -1.2f, 1.5f }, glm::vec3{ 6.0f });
 		brassTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
-		BrassVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/models/BrassVase2K/BrassVase.fbx"));
+		BrassVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/models/BrassVase2K/BrassVase.fbx", 1));
 
 		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");
 		auto& blueLightTransform = BluePointLight.AddComponent<TransformComponent>(glm::vec3{ -1.0f, 0.0f, 4.5f }, glm::vec3{ 0.1f });
