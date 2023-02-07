@@ -345,7 +345,19 @@ namespace VulkanCore {
 			ImGui::TreePop();
 		}
 
+		if (ImGui::TreeNode("Scene Draw Stats"))
+		{
+			auto renderStats = VulkanRenderer::GetRendererStats();
+
+			ImGui::Text("Draw Calls: %u", renderStats.DrawCalls);
+			ImGui::Text("Instance Count: %u", renderStats.InstanceCount);
+			ImGui::Text("Draw Calls Saved: %u", renderStats.InstanceCount - renderStats.DrawCalls);
+			ImGui::TreePop();
+		}
+
 		ImGui::End();
+
+		VulkanRenderer::ResetStats();
 	}
 
 	void SceneRenderer::RenderScene(EditorCamera& camera)
