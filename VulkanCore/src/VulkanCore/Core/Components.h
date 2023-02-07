@@ -1,5 +1,6 @@
 #pragma once
 #include "VulkanCore/Renderer/Camera.h"
+#include "VulkanCore/Mesh/Mesh.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
@@ -72,7 +73,9 @@ namespace VulkanCore {
 	{
 		std::shared_ptr<Mesh> MeshInstance;
 
-		MeshComponent() = default;
+		MeshComponent()
+			: MeshInstance(std::make_shared<Mesh>()) {}
+
 		MeshComponent(const MeshComponent&) = default;
 		MeshComponent(std::shared_ptr<Mesh> mesh)
 			: MeshInstance(mesh) {}

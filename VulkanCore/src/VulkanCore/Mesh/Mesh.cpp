@@ -71,6 +71,11 @@ namespace VulkanCore {
 		}
 	}
 
+	Mesh::Mesh()
+		: m_MeshSource(std::make_shared<MeshSource>())
+	{
+	}
+
 	std::shared_ptr<Mesh> Mesh::LoadMesh(const char* filepath, int materialIndex)
 	{
 		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(filepath, materialIndex);
@@ -92,8 +97,8 @@ namespace VulkanCore {
 		aiProcess_CalcTangentSpace |
 		aiProcess_JoinIdenticalVertices | // For Index Buffer
 		aiProcess_GenUVCoords |           // Generate UV Coords
-		aiProcess_FlipUVs |
 		aiProcess_GenNormals |            // Generate Normals for Mesh
+		aiProcess_OptimizeMeshes |
 		aiProcess_SortByPType |
 		aiProcess_ValidateDataStructure
 	};

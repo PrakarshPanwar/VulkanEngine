@@ -383,6 +383,9 @@ namespace VulkanCore {
 	{
 		auto meshSource = mesh->GetMeshSource();
 		uint64_t meshKey = meshSource->GetMeshKey();
+
+		if (meshSource->GetVertexCount() == 0)
+			return;
 		
 		auto& transformBuffer = m_MeshTransformMap[meshKey].emplace_back();
 		transformBuffer.MRow[0] = { transform[0][0], transform[1][0], transform[2][0], transform[3][0] };
