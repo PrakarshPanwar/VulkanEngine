@@ -13,6 +13,7 @@
 namespace VulkanCore {
 
 	VulkanRenderer* VulkanRenderer::s_Instance;
+	RendererStats VulkanRenderer::s_Data;
 
 	VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowsWindow> window)
 		: m_Window(window)
@@ -338,6 +339,15 @@ namespace VulkanCore {
 		vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdDrawIndexed(drawCmd, meshSource->GetIndexCount(), instanceCount, 0, 0, 0);
+
+		s_Data.DrawCalls++;
+		s_Data.InstanceCount += instanceCount;
+	}
+
+	void VulkanRenderer::ResetStats()
+	{
+		s_Data.DrawCalls = 0;
+		s_Data.InstanceCount = 0;
 	}
 
 	void VulkanRenderer::CreateCommandBuffers()
