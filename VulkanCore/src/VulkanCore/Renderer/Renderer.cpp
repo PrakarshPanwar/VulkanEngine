@@ -79,7 +79,7 @@ namespace VulkanCore {
 		m_Shaders.clear();
 	}
 
-	void Renderer::RenderSkybox(const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<Mesh>& mesh, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData)
+	void Renderer::RenderSkybox(std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData /*= nullptr*/)
 	{
 		auto drawCmd = m_CommandBuffers[GetCurrentFrameIndex()];
 		auto dstSet = descriptorSet[GetCurrentFrameIndex()];
@@ -95,7 +95,10 @@ namespace VulkanCore {
 			0, 1, &dstSet,
 			0, nullptr);
 
-		//vkCmdDrawIndexed()
+		VkBuffer skyboxBuffer[] = { skyboxVB->GetVulkanBuffer() };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(drawCmd, 0, 1, skyboxBuffer, offsets);
+		vkCmdDraw(drawCmd, 36, 1, 0, 0);
 	}	
 	
 	void Renderer::BeginGPUPerfMarker()
