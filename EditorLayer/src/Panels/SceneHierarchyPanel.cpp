@@ -152,7 +152,20 @@ namespace VulkanCore {
 			ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 			bool opened = ImGui::TreeNodeEx((void*)9817239, flags, tag.c_str());
 			if (opened)
+			{
+				if (entity.HasComponent<MeshComponent>())
+				{
+					MeshComponent meshComponent = entity.GetComponent<MeshComponent>();
+					
+					for (const MeshNode& submeshes : meshComponent.MeshInstance->GetMeshSource()->GetMeshNodes())
+					{
+						if (ImGui::TreeNode(submeshes.Name.c_str()))
+							ImGui::TreePop();
+					}
+				}
+
 				ImGui::TreePop();
+			}
 			ImGui::TreePop();
 		}
 

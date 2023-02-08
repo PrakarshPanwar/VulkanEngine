@@ -124,7 +124,7 @@ namespace VulkanCore {
 #else
 		std::shared_ptr<VulkanImage> m_BRDFTexture;
 #endif
-		std::shared_ptr<Mesh> m_SkyboxMesh;
+		std::shared_ptr<VulkanVertexBuffer> m_SkyboxVBData;
 		SkyboxSettings m_SkyboxSettings;
 
 		std::map<uint64_t, DrawCommand> m_MeshDrawList;

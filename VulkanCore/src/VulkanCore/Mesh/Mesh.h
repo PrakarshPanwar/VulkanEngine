@@ -54,6 +54,7 @@ namespace VulkanCore {
 		~MeshSource();
 
 		const aiScene* GetAssimpScene() const { return m_Scene; }
+		inline const std::vector<MeshNode> GetMeshNodes() const { return m_Nodes; }
 
 		inline std::shared_ptr<VulkanVertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
 		inline std::shared_ptr<VulkanIndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
