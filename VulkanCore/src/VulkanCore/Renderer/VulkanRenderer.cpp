@@ -387,4 +387,23 @@ namespace VulkanCore {
 		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;
 	}
 
+	void VulkanRenderer::FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers)
+	{
+
+		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
+		{
+			m_Window->ResetWindowResizeFlag();
+			RecreateSwapChain();
+			SceneRenderer::GetSceneRenderer()->RecreateScene();
+		}
+
+		else if (result != VK_SUCCESS)
+			VK_CORE_ERROR("Failed to Present Swap Chain Image!");
+
+		IsFrameStarted = false;
+		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;
+	}
+
 }

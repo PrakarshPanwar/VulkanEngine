@@ -42,6 +42,7 @@ namespace VulkanCore {
 
 		void RecreateSwapChain();
 		void FinalQueueSubmit();
+		void FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers);
 		static VulkanRenderer* Get() { return s_Instance; }
 	private:
 		void CreateCommandBuffers();
