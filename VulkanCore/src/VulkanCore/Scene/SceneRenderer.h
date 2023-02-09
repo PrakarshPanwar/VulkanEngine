@@ -6,6 +6,7 @@
 #include "Platform/Vulkan/VulkanComputePipeline.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanBuffer.h"
+#include "Platform/Vulkan/VulkanVertexBuffer.h"
 #include "Platform/Vulkan/VulkanUniformBuffer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
 
@@ -29,6 +30,7 @@ namespace VulkanCore {
 
 		void SetViewportSize(uint32_t width, uint32_t height) { m_ViewportSize.x = width; m_ViewportSize.y = height; }
 		void RenderScene(EditorCamera& camera);
+		void SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform);
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
@@ -47,6 +49,14 @@ namespace VulkanCore {
 		void GeometryPass();
 		void BloomBlurPass();
 		void CompositePass();
+		void ResetDrawCommands();
+
+		struct DrawCommand
+		{
+			std::shared_ptr<Mesh> MeshInstance;
+			std::shared_ptr<VulkanVertexBuffer> TransformBuffer;
+			uint32_t InstanceCount;
+		};
 	private:
 		struct LodAndMode
 		{
@@ -63,6 +73,12 @@ namespace VulkanCore {
 		{
 			float Threshold;
 			float Knee;
+		};
+
+		struct SkyboxSettings
+		{
+			float Intensity = 1.0f;
+			float LOD = 0.0f;
 		};
 	private:
 		std::shared_ptr<Scene> m_Scene;
@@ -96,14 +112,23 @@ namespace VulkanCore {
 		std::vector<VulkanUniformBuffer> m_LodUBs;
 
 		std::shared_ptr<VulkanImage> m_BloomTexture;
-		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_SpecularMap,
-			m_DiffuseMap2, m_NormalMap2, m_SpecularMap2,
-			m_DiffuseMap3, m_NormalMap3, m_SpecularMap3;
+		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_ARMMap,
+			m_DiffuseMap2, m_NormalMap2, m_ARMMap2,
+			m_DiffuseMap3, m_NormalMap3, m_ARMMap3;
 
 		// Skybox Resources
-		std::shared_ptr<VulkanTextureCube> m_CubemapTexture;
-		std::shared_ptr<Mesh> m_SkyboxMesh;
-		float m_SkyboxLOD = 0.0f;
+		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture;
+#define USE_PRELOADED_BRDF 0
+#if USE_PRELOADED_BRDF
+		std::shared_ptr<VulkanTexture> m_BRDFTexture;
+#else
+		std::shared_ptr<VulkanImage> m_BRDFTexture;
+#endif
+		std::shared_ptr<VulkanVertexBuffer> m_SkyboxVBData;
+		SkyboxSettings m_SkyboxSettings;
+
+		std::map<uint64_t, DrawCommand> m_MeshDrawList;
+		std::map<uint64_t, std::vector<TransformData>> m_MeshTransformMap;
 
 		glm::ivec2 m_ViewportSize;
 

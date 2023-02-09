@@ -13,6 +13,7 @@
 namespace VulkanCore {
 
 	VulkanRenderer* VulkanRenderer::s_Instance;
+	RendererStats VulkanRenderer::s_Data;
 
 	VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowsWindow> window)
 		: m_Window(window)
@@ -190,7 +191,7 @@ namespace VulkanCore {
 
 			equirectSetWriter.Build(equirectSet);
 
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer();
+			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
 
 			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 				equirectangularConversionPipeline->GetVulkanPipelineLayout(), 0, 1,
@@ -199,7 +200,7 @@ namespace VulkanCore {
 			equirectangularConversionPipeline->Bind(dispatchCmd);
 			equirectangularConversionPipeline->Dispatch(dispatchCmd, cubemapSize / 16, cubemapSize / 16, 6);
 
-			device->FlushCommandBuffer(dispatchCmd);
+			device->RT_FlushCommandBuffer(dispatchCmd);
 			
 			envUnfiltered->GenerateMipMaps(true);
 		});
@@ -232,7 +233,7 @@ namespace VulkanCore {
 			}
 
 			// Dispatch Pipeline
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer();
+			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
 			environmentMipFilterPipeline->Bind(dispatchCmd);
 
 			const float deltaRoughness = 1.0f / glm::max((float)mipCount - 1.0f, 1.0f);
@@ -244,7 +245,7 @@ namespace VulkanCore {
 				environmentMipFilterPipeline->Execute(dispatchCmd, descriptorSets[i], numGroups, numGroups, 6);
 			}
 
-			device->FlushCommandBuffer(dispatchCmd);
+			device->RT_FlushCommandBuffer(dispatchCmd);
 		});
 
 		auto environmentIrradianceShader = Renderer::GetShader("EnvironmentIrradiance");
@@ -281,6 +282,72 @@ namespace VulkanCore {
 		});
 
 		return { envFiltered, irradianceMap };
+	}
+
+	std::shared_ptr<VulkanImage> VulkanRenderer::CreateBRDFTexture()
+	{
+		constexpr uint32_t textureSize = 512;
+
+		ImageSpecification brdfTextureSpec;
+		brdfTextureSpec.Width = textureSize;
+		brdfTextureSpec.Height = textureSize;
+		brdfTextureSpec.Usage = ImageUsage::Storage;
+		brdfTextureSpec.Format = ImageFormat::RGBA32F;
+
+		auto generateBRDFShader = Renderer::GetShader("GenerateBRDF");
+		std::shared_ptr<VulkanComputePipeline> generateBRDFPipeline = std::make_shared<VulkanComputePipeline>(generateBRDFShader);
+		std::shared_ptr<VulkanImage> brdfTexture = std::make_shared<VulkanImage>(brdfTextureSpec);
+		brdfTexture->Invalidate();
+
+		Renderer::Submit([generateBRDFPipeline, brdfTexture, textureSize]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			auto vulkanDescriptorPool = Application::Get()->GetVulkanDescriptorPool();
+
+			// Building Descriptor Set
+			VkDescriptorSet descriptorSet;
+			VulkanDescriptorWriter descriptorWriter(*generateBRDFPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool);
+
+			VkDescriptorImageInfo brdfOutputInfo = brdfTexture->GetDescriptorInfo();
+			descriptorWriter.WriteImage(0, &brdfOutputInfo);
+
+			descriptorWriter.Build(descriptorSet);
+
+			// Dispatch Pipeline
+			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
+
+			generateBRDFPipeline->Bind(dispatchCmd);
+			generateBRDFPipeline->Execute(dispatchCmd, descriptorSet, textureSize / 16, textureSize / 16, 1);
+
+			device->RT_FlushCommandBuffer(dispatchCmd);
+		});
+
+		return brdfTexture;
+	}
+
+	void VulkanRenderer::RenderMesh(const std::vector<VkCommandBuffer>& drawCmds, std::shared_ptr<Mesh> mesh, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	{
+		auto drawCmd = drawCmds[Renderer::GetCurrentFrameIndex()];
+
+		auto meshSource = mesh->GetMeshSource();
+		transformBuffer->WriteData((void*)transformData.data(), 0);
+
+		// Bind Vertex Buffer
+		VkBuffer buffers[] = { meshSource->GetVertexBuffer()->GetVulkanBuffer(), transformBuffer->GetVulkanBuffer() };
+		VkDeviceSize offsets[] = { 0, 0 };
+		vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
+		vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+		vkCmdDrawIndexed(drawCmd, meshSource->GetIndexCount(), instanceCount, 0, 0, 0);
+
+		s_Data.DrawCalls++;
+		s_Data.InstanceCount += instanceCount;
+	}
+
+	void VulkanRenderer::ResetStats()
+	{
+		s_Data.DrawCalls = 0;
+		s_Data.InstanceCount = 0;
 	}
 
 	void VulkanRenderer::CreateCommandBuffers()
