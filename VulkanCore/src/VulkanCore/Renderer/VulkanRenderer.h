@@ -43,6 +43,8 @@ namespace VulkanCore {
 
 		static std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> CreateEnviromentMap(const std::string& filepath);
 		static std::shared_ptr<VulkanImage> CreateBRDFTexture();
+		static void CopyVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& sourceImage, const VulkanImage& destImage);
+		static void BlitVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& image);
 		static void RenderMesh(const std::vector<VkCommandBuffer>& drawCmds, std::shared_ptr<Mesh> mesh, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount);
 		static RendererStats GetRendererStats() { return s_Data; }
 		static void ResetStats();

@@ -17,6 +17,7 @@ namespace VulkanCore {
 			case ImageFormat::RGBA8_UNORM:	   return VK_FORMAT_R8G8B8A8_UNORM;
 			case ImageFormat::RGBA16F:		   return VK_FORMAT_R16G16B16A16_SFLOAT;
 			case ImageFormat::RGBA32F:		   return VK_FORMAT_R32G32B32A32_SFLOAT;
+			case ImageFormat::R11G11B10F:	   return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
 			case ImageFormat::DEPTH24STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
 			case ImageFormat::DEPTH16F:		   return VK_FORMAT_D16_UNORM;
 			case ImageFormat::DEPTH32F:		   return VK_FORMAT_D32_SFLOAT;
@@ -134,7 +135,7 @@ namespace VulkanCore {
 			if (Utils::IsDepthFormat(m_Specification.Format))
 				usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 			else
-				usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+				usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		}
 
 		if (m_Specification.Usage == ImageUsage::Texture)
@@ -171,7 +172,7 @@ namespace VulkanCore {
 		viewCreateInfo.format = vulkanFormat;
 		viewCreateInfo.subresourceRange.aspectMask = aspectMask;
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
-		viewCreateInfo.subresourceRange.levelCount = 1;
+		viewCreateInfo.subresourceRange.levelCount = m_Specification.MipLevels;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		viewCreateInfo.subresourceRange.layerCount = 1;
 
@@ -245,6 +246,43 @@ namespace VulkanCore {
 		UpdateImageDescriptor();
 	}
 
+	VkImageView VulkanImage::CreateImageViewSingleMip(uint32_t mip)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
+
+		VkImageViewCreateInfo viewCreateInfo{};
+		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewCreateInfo.image = m_Info.Image;
+		viewCreateInfo.format = vulkanFormat;
+		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewCreateInfo.subresourceRange.baseMipLevel = mip;
+		viewCreateInfo.subresourceRange.levelCount = 1;
+		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		viewCreateInfo.subresourceRange.layerCount = 1;
+
+		VkImageView result;
+		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &result), "Failed to Create Image View!");
+		m_MipReferences.push_back(result);
+
+		return result;
+	}
+
+	glm::uvec2 VulkanImage::GetMipSize(uint32_t mipLevel)
+	{
+		uint32_t width = m_Specification.Width, height = m_Specification.Height;
+		while (mipLevel != 0)
+		{
+			width /= 2;
+			height /= 2;
+			--mipLevel;
+		}
+
+		return { width, height };
+	}
+
 	void VulkanImage::UpdateImageDescriptor()
 	{
 		if (Utils::IsDepthFormat(m_Specification.Format))
@@ -266,6 +304,9 @@ namespace VulkanCore {
 		vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
 		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
 		allocator.DestroyImage(m_Info.Image, m_Info.MemoryAlloc);
+
+		for (auto& MipReference : m_MipReferences)
+			vkDestroyImageView(device->GetVulkanDevice(), MipReference, nullptr);
 	}
 
 }
