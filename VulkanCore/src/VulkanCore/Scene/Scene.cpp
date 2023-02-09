@@ -4,6 +4,7 @@
 #include "VulkanCore/Mesh/Mesh.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "VulkanCore/Renderer/Renderer.h"
+#include "SceneRenderer.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 
 namespace VulkanCore {
@@ -20,43 +21,9 @@ namespace VulkanCore {
 	{
 		Entity entity = { m_Registry.create(), this };
 		entity.AddComponent<TagComponent>(name);
+		entity.AddComponent<TransformComponent>();
 
 		return entity;
-	}
-
-	void Scene::OnUpdate(SceneInfo& sceneInfo)
-	{
-		sceneInfo.ScenePipeline->Bind(sceneInfo.CommandBuffer);
-
-		vkCmdBindDescriptorSets(sceneInfo.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sceneInfo.PipelineLayout,
-			0, 1, &sceneInfo.DescriptorSet, 0, nullptr);
-
-		auto view = m_Registry.view<TransformComponent>();
-
-		vkCmdWriteTimestamp(sceneInfo.CommandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VulkanRenderer::Get()->GetPerfQueryPool(), 0);
-
-		for (auto ent : view)
-		{
-			Entity entity = { ent, this };
-
-			PCModelData pushConstants{};
-			pushConstants.ModelMatrix = entity.GetComponent<TransformComponent>().GetTransform();
-			pushConstants.NormalMatrix = entity.GetComponent<TransformComponent>().GetNormalMatrix();
-
-			vkCmdPushConstants(sceneInfo.CommandBuffer, sceneInfo.PipelineLayout,
-				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				0, sizeof(PCModelData), &pushConstants);
-
-			if (entity.HasComponent<MeshComponent>())
-			{
-				entity.GetComponent<MeshComponent>().MeshInstance->Bind(sceneInfo.CommandBuffer);
-				entity.GetComponent<MeshComponent>().MeshInstance->Draw(sceneInfo.CommandBuffer);
-			}
-		}
-
-		vkCmdWriteTimestamp(sceneInfo.CommandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-			VulkanRenderer::Get()->GetPerfQueryPool(), 1);
 	}
 
 	void Scene::OnUpdateGeometry(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
@@ -90,42 +57,23 @@ namespace VulkanCore {
 		}
 	}
 
-	void Scene::OnUpdateLights(SceneInfo& sceneInfo)
+	void Scene::OnUpdateGeometry(SceneRenderer* renderer)
 	{
-		sceneInfo.ScenePipeline->Bind(sceneInfo.CommandBuffer);
-
-		vkCmdBindDescriptorSets(sceneInfo.CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sceneInfo.PipelineLayout,
-			0, 1, &sceneInfo.DescriptorSet, 0, nullptr);
-
 		auto view = m_Registry.view<TransformComponent>();
 
 		for (auto ent : view)
 		{
-			Entity lightEntity = { ent, this };
+			Entity entity = { ent, this };
 
-			PCPointLight push{};
-			auto& lightTransform = lightEntity.GetComponent<TransformComponent>();
-
-			if (lightEntity.HasComponent<PointLightComponent>())
+			if (entity.HasComponent<MeshComponent>())
 			{
-				auto& pointLightComp = lightEntity.GetComponent<PointLightComponent>();
-
-				push.Position = glm::vec4(lightTransform.Translation, 1.0f);
-				push.Color = pointLightComp.PointLightInstance->Color;
-				push.Radius = lightTransform.Scale.x;
-
-				vkCmdPushConstants(sceneInfo.CommandBuffer,
-					sceneInfo.PipelineLayout,
-					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-					0,
-					sizeof(PCPointLight),
-					&push);
-
-				vkCmdDraw(sceneInfo.CommandBuffer, 6, 1, 0, 0);
+				auto& transformComponent = entity.GetComponent<TransformComponent>();
+				renderer->SubmitMesh(entity.GetComponent<MeshComponent>().MeshInstance, transformComponent.GetTransform());
 			}
 		}
 	}
 
+	// TODO: This should be managed by SceneRenderer
 	void Scene::OnUpdateLights(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
 	{
 		auto drawCmd = cmdBuffers[Renderer::GetCurrentFrameIndex()];

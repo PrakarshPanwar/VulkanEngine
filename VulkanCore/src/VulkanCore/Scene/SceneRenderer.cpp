@@ -15,106 +15,55 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		static std::shared_ptr<Mesh> CreateCubeModel()
+		std::shared_ptr<VulkanVertexBuffer> CreateCubeModel()
 		{
-			MeshBuilder modelBuilder{};
+			float skyboxVertices[] = {       
+				-1.0f,  1.0f, -1.0f,
+				-1.0f, -1.0f, -1.0f,
+				 1.0f, -1.0f, -1.0f,
+				 1.0f, -1.0f, -1.0f,
+				 1.0f,  1.0f, -1.0f,
+				-1.0f,  1.0f, -1.0f,
 
-			modelBuilder.Vertices = {
+				-1.0f, -1.0f,  1.0f,
+				-1.0f, -1.0f, -1.0f,
+				-1.0f,  1.0f, -1.0f,
+				-1.0f,  1.0f, -1.0f,
+				-1.0f,  1.0f,  1.0f,
+				-1.0f, -1.0f,  1.0f,
 
-				{ { -1.0f,  1.0f, -1.0f } },
-				{ { -1.0f, -1.0f, -1.0f } },
-				{ {  1.0f, -1.0f, -1.0f } },
-				{ {  1.0f, -1.0f, -1.0f } },
-				{ {  1.0f,  1.0f, -1.0f } },
-				{ { -1.0f,  1.0f, -1.0f } },
+				 1.0f, -1.0f, -1.0f,
+				 1.0f, -1.0f,  1.0f,
+				 1.0f,  1.0f,  1.0f,
+				 1.0f,  1.0f,  1.0f,
+				 1.0f,  1.0f, -1.0f,
+				 1.0f, -1.0f, -1.0f,
 
-				{ { -1.0f, -1.0f,  1.0f } },
-				{ { -1.0f, -1.0f, -1.0f } },
-				{ { -1.0f,  1.0f, -1.0f } },
-				{ { -1.0f,  1.0f, -1.0f } },
-				{ { -1.0f,  1.0f,  1.0f } },
-				{ { -1.0f, -1.0f,  1.0f } },
+				-1.0f, -1.0f,  1.0f,
+				-1.0f,  1.0f,  1.0f,
+				 1.0f,  1.0f,  1.0f,
+				 1.0f,  1.0f,  1.0f,
+				 1.0f, -1.0f,  1.0f,
+				-1.0f, -1.0f,  1.0f,
 
-				{ {  1.0f, -1.0f, -1.0f } },
-				{ {  1.0f, -1.0f,  1.0f } },
-				{ {  1.0f,  1.0f,  1.0f } },
-				{ {  1.0f,  1.0f,  1.0f } },
-				{ {  1.0f,  1.0f, -1.0f } },
-				{ {  1.0f, -1.0f, -1.0f } },
+				-1.0f,  1.0f, -1.0f,
+				 1.0f,  1.0f, -1.0f,
+				 1.0f,  1.0f,  1.0f,
+				 1.0f,  1.0f,  1.0f,
+				-1.0f,  1.0f,  1.0f,
+				-1.0f,  1.0f, -1.0f,
 
-				{ { -1.0f, -1.0f,  1.0f } },
-				{ { -1.0f,  1.0f,  1.0f } },
-				{ {  1.0f,  1.0f,  1.0f } },
-				{ {  1.0f,  1.0f,  1.0f } },
-				{ {  1.0f, -1.0f,  1.0f } },
-				{ { -1.0f, -1.0f,  1.0f } },
-
-				{ { -1.0f,  1.0f, -1.0f } },
-				{ {  1.0f,  1.0f, -1.0f } },
-				{ {  1.0f,  1.0f,  1.0f } },
-				{ {  1.0f,  1.0f,  1.0f } },
-				{ { -1.0f,  1.0f,  1.0f } },
-				{ { -1.0f,  1.0f, -1.0f } },
-
-				{ { -1.0f, -1.0f, -1.0f } },
-				{ { -1.0f, -1.0f,  1.0f } },
-				{ {  1.0f, -1.0f, -1.0f } },
-				{ {  1.0f, -1.0f, -1.0f } },
-				{ { -1.0f, -1.0f,  1.0f } },
-				{ {  1.0f, -1.0f,  1.0f } }
+				-1.0f, -1.0f, -1.0f,
+				-1.0f, -1.0f,  1.0f,
+				 1.0f, -1.0f, -1.0f,
+				 1.0f, -1.0f, -1.0f,
+				-1.0f, -1.0f,  1.0f,
+				 1.0f, -1.0f,  1.0f
 			};
 
-			return std::make_shared<Mesh>(modelBuilder);
+			return std::make_shared<VulkanVertexBuffer>(skyboxVertices, sizeof(skyboxVertices));
 		}
 
-		static std::shared_ptr<Mesh> CreateCubeModel(glm::vec3 color)
-		{
-			MeshBuilder modelBuilder{};
-
-			modelBuilder.Vertices = {
-
-				// Left Face
-				{ { -1.0f, -1.0f, -1.0f }, color },
-				{ { -1.0f,  1.0f,  1.0f }, color },
-				{ { -1.0f, -1.0f,  1.0f }, color },
-				{ { -1.0f,  1.0f, -1.0f }, color },
-
-				// Right Face
-				{ {  1.0f, -1.0f, -1.0f }, color },
-				{ {  1.0f,  1.0f,  1.0f }, color },
-				{ {  1.0f, -1.0f,  1.0f }, color },
-				{ {  1.0f,  1.0f, -1.0f }, color },
-
-				// Top Face 
-				{ { -1.0f, -1.0f, -1.0f }, color },
-				{ {  1.0f, -1.0f,  1.0f }, color },
-				{ { -1.0f, -1.0f,  1.0f }, color },
-				{ {  1.0f, -1.0f, -1.0f }, color },
-
-				// Bottom Face
-				{ { -1.0f,  1.0f, -1.0f }, color },
-				{ {  1.0f,  1.0f,  1.0f }, color },
-				{ { -1.0f,  1.0f,  1.0f }, color },
-				{ {  1.0f,  1.0f, -1.0f }, color },
-
-				// Front Face
-				{ { -1.0f, -1.0f,  1.0f }, color },
-				{ {  1.0f,  1.0f,  1.0f }, color },
-				{ { -1.0f,  1.0f,  1.0f }, color },
-				{ {  1.0f, -1.0f,  1.0f }, color },
-
-				// Back Face
-				{ { -1.0f, -1.0f, -1.0f }, color },
-				{ {  1.0f,  1.0f, -1.0f }, color },
-				{ { -1.0f,  1.0f, -1.0f }, color },
-				{ {  1.0f, -1.0f, -1.0f }, color }
-			};
-
-			modelBuilder.Indices = { 0,  1,  2,  0,  3,  1,  4,  5,  6,  4,  7,  5,  8,  9,  10, 8,  11, 9,
-							  12, 13, 14, 12, 15, 13, 16, 17, 18, 16, 19, 17, 20, 21, 22, 20, 23, 21 };
-
-			return std::make_shared<Mesh>(modelBuilder);
-		}
 	}
 
 	SceneRenderer* SceneRenderer::s_Instance = nullptr;
@@ -140,6 +89,22 @@ namespace VulkanCore {
 
 	void SceneRenderer::CreatePipelines()
 	{
+		VertexBufferLayout vertexLayout = {
+			{ ShaderDataType::Float3, "a_Position" },
+			{ ShaderDataType::Float3, "a_Normal" },
+			{ ShaderDataType::Float3, "a_Tangent" },
+			{ ShaderDataType::Float3, "a_Binormal" },
+			{ ShaderDataType::Float3, "a_FragColor" },
+			{ ShaderDataType::Float2, "a_TexCoord" },
+			{ ShaderDataType::Int,    "a_TexIndex" }
+		};
+
+		VertexBufferLayout instanceLayout = {
+			{ ShaderDataType::Float4, "a_MRow1" },
+			{ ShaderDataType::Float4, "a_MRow2" },
+			{ ShaderDataType::Float4, "a_MRow3" }
+		};
+
 		// Geometry and Point Light Pipeline
 		{
 			FramebufferSpecification geomFramebufferSpec;
@@ -152,9 +117,10 @@ namespace VulkanCore {
 			geomRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(geomFramebufferSpec);
 
 			PipelineSpecification geomPipelineSpec;
-			geomPipelineSpec.pShader = Renderer::GetShader("CoreShader");
+			geomPipelineSpec.pShader = Renderer::GetShader("CorePBR");
 			geomPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(geomRenderPassSpec);
-			geomPipelineSpec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
+			geomPipelineSpec.Layout = vertexLayout;
+			geomPipelineSpec.InstanceLayout = instanceLayout;
 
 			PipelineSpecification pointLightPipelineSpec;
 			pointLightPipelineSpec.pShader = Renderer::GetShader("PointLight");
@@ -190,7 +156,10 @@ namespace VulkanCore {
 		{
 			PipelineSpecification skyboxPipelineSpec;
 			skyboxPipelineSpec.pShader = Renderer::GetShader("Skybox");
-			skyboxPipelineSpec.Layout = { Vertex::GetBindingDescriptions(), Vertex::GetAttributeDescriptions() };
+			skyboxPipelineSpec.Layout = {
+				{ ShaderDataType::Float3, "a_Position" }
+			};
+
 			skyboxPipelineSpec.RenderPass = m_GeometryPipeline->GetSpecification().RenderPass;
 
 			m_SkyboxPipeline = std::make_shared<VulkanPipeline>(skyboxPipelineSpec);
@@ -243,34 +212,40 @@ namespace VulkanCore {
 
 		device->FlushCommandBuffer(barrierCmd);
 #endif
-
 		// Textures
 		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg");
-		m_NormalMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_nor_gl_2k.jpg");
-		m_SpecularMap = std::make_shared<VulkanTexture>("assets/textures/PlainSnow/SnowSpecular.jpg");
+		m_NormalMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_arm_2k.png", ImageFormat::RGBA8_UNORM);
 
-		m_DiffuseMap2 = std::make_shared<VulkanTexture>("assets/textures/DeformedSnow/SnowDiffuse.jpg");
-		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/textures/DeformedSnow/SnowNormalGL.png");
-		m_SpecularMap2 = std::make_shared<VulkanTexture>("assets/textures/DeformedSnow/SnowSpecular.jpg");
+		m_DiffuseMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_diff_2k.jpg");
+		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_arm_2k.png", ImageFormat::RGBA8_UNORM);
 
-		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleDiff.png");
-		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleNormalGL.png");
-		m_SpecularMap3 = std::make_shared<VulkanTexture>("assets/textures/Marble/MarbleSpec.jpg");
+		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesDiff.png");
+		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesNorGL.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesARM.png", ImageFormat::RGBA8_UNORM);
 
-		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/LagoMountains4K.hdr");
+		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
 		m_CubemapTexture = filteredMap;
-		m_SkyboxMesh = Utils::CreateCubeModel();
+		m_IrradianceTexture = irradianceMap;
 
-		std::vector<VkDescriptorImageInfo> DiffuseMaps, SpecularMaps, NormalMaps;
+#if USE_PRELOADED_BRDF
+		m_BRDFTexture = std::make_shared<VulkanTexture>("assets/textures/BRDF_LUTMap.png", ImageFormat::RGBA8_UNORM);
+#else
+		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
+#endif
+		m_SkyboxVBData = Utils::CreateCubeModel();
+
+		std::vector<VkDescriptorImageInfo> DiffuseMaps, ARMMaps, NormalMaps;
 		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
 		DiffuseMaps.push_back(m_DiffuseMap2->GetDescriptorImageInfo());
 		DiffuseMaps.push_back(m_DiffuseMap3->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_NormalMap->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_NormalMap2->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_NormalMap3->GetDescriptorImageInfo());
-		SpecularMaps.push_back(m_SpecularMap->GetDescriptorImageInfo());
-		SpecularMaps.push_back(m_SpecularMap2->GetDescriptorImageInfo());
-		SpecularMaps.push_back(m_SpecularMap3->GetDescriptorImageInfo());
+		ARMMaps.push_back(m_ARMMap->GetDescriptorImageInfo());
+		ARMMaps.push_back(m_ARMMap2->GetDescriptorImageInfo());
+		ARMMaps.push_back(m_ARMMap3->GetDescriptorImageInfo());
 
 		// Writing in Descriptors
 		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
@@ -296,7 +271,23 @@ namespace VulkanCore {
 
 			geomDescriptorWriter[i].WriteImage(2, DiffuseMaps);
 			geomDescriptorWriter[i].WriteImage(3, NormalMaps);
-			geomDescriptorWriter[i].WriteImage(4, SpecularMaps);
+			geomDescriptorWriter[i].WriteImage(4, ARMMaps);
+			
+			// Irradiance Map
+			VkDescriptorImageInfo irradianceMapInfo = m_IrradianceTexture->GetDescriptorImageInfo();
+			geomDescriptorWriter[i].WriteImage(5, &irradianceMapInfo);
+
+			// BRDF LUT Texture
+#if USE_PRELOADED_BRDF
+			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorImageInfo();
+#else
+			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorInfo();
+#endif
+			geomDescriptorWriter[i].WriteImage(6, &brdfTextureInfo);
+
+			// Prefiltered Map
+			VkDescriptorImageInfo prefilteredMapInfo = filteredMap->GetDescriptorImageInfo();
+			geomDescriptorWriter[i].WriteImage(7, &prefilteredMapInfo);
 
 			geomDescriptorWriter[i].Build(m_GeometryDescriptorSets[i]);
 		}
@@ -380,6 +371,9 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
+		// Deleting all Transforms
+		Mesh::ClearAllMeshes();
+
 		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(), 
 			static_cast<uint32_t>(m_SceneCommandBuffers.size()), m_SceneCommandBuffers.data());
 	}
@@ -394,19 +388,32 @@ namespace VulkanCore {
 	{
 		ImGui::Begin("Scene Renderer");
 		ImGui::DragFloat("Exposure Intensity", &m_SceneSettings.Exposure, 0.01f, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-		ImGui::DragFloat("Skybox LOD", &m_SkyboxLOD, 0.01f, 0.0f, 11.0f);
+		ImGui::DragFloat("Skybox LOD", &m_SkyboxSettings.LOD, 0.01f, 0.0f, 11.0f);
+		ImGui::DragFloat("Skybox Intensity", &m_SkyboxSettings.Intensity, 0.01f, 0.0f, 20.0f);
 
 		if (ImGui::TreeNode("Scene Renderer Stats##GPUPerf"))
 		{
 			Renderer::RetrieveQueryPoolResults();
 
 			ImGui::Text("Geometry Pass: %lluns", Renderer::GetQueryTime(0));
-			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(2));
+			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(1));
 			ImGui::Text("Composite Pass: %lluns", Renderer::GetQueryTime(3));
 			ImGui::TreePop();
 		}
 
+		if (ImGui::TreeNode("Scene Draw Stats"))
+		{
+			auto renderStats = VulkanRenderer::GetRendererStats();
+
+			ImGui::Text("Draw Calls: %u", renderStats.DrawCalls);
+			ImGui::Text("Instance Count: %u", renderStats.InstanceCount);
+			ImGui::Text("Draw Calls Saved: %u", renderStats.InstanceCount - renderStats.DrawCalls);
+			ImGui::TreePop();
+		}
+
 		ImGui::End();
+
+		VulkanRenderer::ResetStats();
 	}
 
 	void SceneRenderer::RenderScene(EditorCamera& camera)
@@ -436,6 +443,27 @@ namespace VulkanCore {
 		BloomBlurPass();
 #endif
 		CompositePass();
+
+		ResetDrawCommands();
+	}
+
+	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform)
+	{
+		auto meshSource = mesh->GetMeshSource();
+		uint64_t meshKey = meshSource->GetMeshKey();
+
+		if (meshSource->GetVertexCount() == 0)
+			return;
+		
+		auto& transformBuffer = m_MeshTransformMap[meshKey].emplace_back();
+		transformBuffer.MRow[0] = { transform[0][0], transform[1][0], transform[2][0], transform[3][0] };
+		transformBuffer.MRow[1] = { transform[0][1], transform[1][1], transform[2][1], transform[3][1] };
+		transformBuffer.MRow[2] = { transform[0][2], transform[1][2], transform[2][2], transform[3][2] };
+
+		auto& dc = m_MeshDrawList[meshKey];
+		dc.MeshInstance = mesh;
+		dc.TransformBuffer = mesh->GetTransformBuffer(meshKey);
+		dc.InstanceCount++;
 	}
 
 	void SceneRenderer::CompositePass()
@@ -451,17 +479,33 @@ namespace VulkanCore {
 
 	void SceneRenderer::GeometryPass()
 	{
+		m_Scene->OnUpdateGeometry(this);
+
 		Renderer::BeginRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
 
 		// Rendering Geometry
 		Renderer::BeginGPUPerfMarker();
-		m_Scene->OnUpdateGeometry(m_SceneCommandBuffers, m_GeometryPipeline, m_GeometryDescriptorSets);
+		
+		auto drawCmd = m_SceneCommandBuffers[Renderer::GetCurrentFrameIndex()];
+		auto dstSet = m_GeometryDescriptorSets[Renderer::GetCurrentFrameIndex()];
+
+		m_GeometryPipeline->Bind(drawCmd);
+
+		vkCmdBindDescriptorSets(drawCmd,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			m_GeometryPipeline->GetVulkanPipelineLayout(),
+			0, 1, &dstSet,
+			0, nullptr);
+
+		for (auto& [mk, dc] : m_MeshDrawList)
+			VulkanRenderer::RenderMesh(m_SceneCommandBuffers, dc.MeshInstance, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
+
 		Renderer::EndGPUPerfMarker();
 
 		Renderer::BeginGPUPerfMarker();
 
 		// Rendering Skybox
-		Renderer::RenderSkybox(m_SkyboxPipeline, m_SkyboxMesh, m_SkyboxDescriptorSets, &m_SkyboxLOD);
+		Renderer::RenderSkybox(m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxDescriptorSets, &m_SkyboxSettings);
 		Renderer::EndGPUPerfMarker();
 
 		// Rendering Point Lights
@@ -502,6 +546,15 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_SceneCommandBuffers.data()), "Failed to Allocate Scene Command Buffers!");
 
 		Renderer::SetCommandBuffers(m_SceneCommandBuffers);
+	}
+
+	void SceneRenderer::ResetDrawCommands()
+	{
+		for (auto& [mk, dc] : m_MeshDrawList)
+		{
+			m_MeshTransformMap[mk].clear();
+			dc.InstanceCount = 0;
+		}
 	}
 
 }

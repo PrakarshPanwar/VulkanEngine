@@ -22,12 +22,13 @@ namespace VulkanCore {
 		static void BuildShaders();
 		static void DestroyShaders();
 
-		static void RenderSkybox(const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<Mesh>& mesh, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData = nullptr);
+		static void RenderSkybox(std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData = nullptr);
 		static void BeginGPUPerfMarker();
 		static void EndGPUPerfMarker();
 		static void RetrieveQueryPoolResults();
 		static uint64_t GetQueryTime(uint32_t index);
 
+		static std::shared_ptr<VulkanTexture> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
 		static void SubmitFullscreenQuad(const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
 		static void RenderMesh(std::shared_ptr<Mesh> mesh);
 
