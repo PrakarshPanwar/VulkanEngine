@@ -11,3 +11,6 @@
 [submodule "VulkanCore/vendor/ImGuizmo"]
 	path = VulkanCore/vendor/ImGuizmo
 	url = https://github.com/PrakarshPanwar/ImGuizmo.git
+[submodule "VulkanCore/vendor/Assimp"]
+	path = VulkanCore/vendor/Assimp
+	url = https://github.com/assimp/assimp.git
