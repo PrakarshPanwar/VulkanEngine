@@ -35,9 +35,9 @@ layout(set = 0, binding = 1) uniform PointLightData
 } u_PointLight;
 
 // Material Data
-layout(binding = 2) uniform sampler2D u_DiffuseTextures[3];
-layout(binding = 3) uniform sampler2D u_NormalTextures[3];
-layout(binding = 4) uniform sampler2D u_AORoughMetalTextures[3];
+layout(binding = 2) uniform sampler2D u_DiffuseTextures[4];
+layout(binding = 3) uniform sampler2D u_NormalTextures[4];
+layout(binding = 4) uniform sampler2D u_AORoughMetalTextures[4];
 
 // IBL
 layout(binding = 5) uniform samplerCube u_IrradianceMap;

@@ -284,6 +284,132 @@ namespace VulkanCore {
 		return { envFiltered, irradianceMap };
 	}
 
+	void VulkanRenderer::CopyVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& sourceImage, const VulkanImage& destImage)
+	{
+		VkImage srcImage = sourceImage.GetVulkanImageInfo().Image;
+		VkImage dstImage = destImage.GetVulkanImageInfo().Image;
+
+		// TODO: We cannot determine layout like this for image but we are doing this for now to get Bloom
+		// Changing Source Image Layout
+		Utils::InsertImageMemoryBarrier(cmdBuf, srcImage,
+			VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+		// Changing Destination Image Layout
+		Utils::InsertImageMemoryBarrier(cmdBuf, dstImage,
+			VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+		VkImageCopy region{};
+		region.srcOffset = { 0, 0, 0 };
+		region.dstOffset = { 0, 0, 0 };
+		region.extent = { sourceImage.GetSpecification().Width, sourceImage.GetSpecification().Height, 1 };
+		region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.srcSubresource.baseArrayLayer = 0;
+		region.srcSubresource.mipLevel = 0;
+		region.srcSubresource.layerCount = 1;
+		region.dstSubresource = region.srcSubresource;
+
+		vkCmdCopyImage(cmdBuf,
+			srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&region);
+
+		// Changing source image back to its previous layout
+		Utils::InsertImageMemoryBarrier(cmdBuf, srcImage,
+			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+	}
+
+	void VulkanRenderer::BlitVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& image)
+	{
+		VkImage vulkanImage = image.GetVulkanImageInfo().Image;
+
+		const uint32_t mipLevels = image.GetSpecification().MipLevels;
+		const glm::uvec2 imgSize = { image.GetSpecification().Width, image.GetSpecification().Height };
+
+		// Setting Base Mip(Oth) to Source
+		VkImageSubresourceRange baseMipSubRange{};
+		baseMipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		baseMipSubRange.baseMipLevel = 0;
+		baseMipSubRange.baseArrayLayer = 0;
+		baseMipSubRange.levelCount = 1;
+		baseMipSubRange.layerCount = 1;
+
+		Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
+			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			baseMipSubRange);
+
+		// Starting at 1st Mip Level
+		for (uint32_t i = 1; i < mipLevels; ++i)
+		{
+			VkImageBlit imageBlit{};
+
+			// Source
+			imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageBlit.srcSubresource.layerCount = 1;
+			imageBlit.srcSubresource.mipLevel = i - 1;
+			imageBlit.srcSubresource.baseArrayLayer = 0;
+			imageBlit.srcOffsets[1].x = int32_t(imgSize.x >> (i - 1));
+			imageBlit.srcOffsets[1].y = int32_t(imgSize.y >> (i - 1));
+			imageBlit.srcOffsets[1].z = 1;
+
+			// Destination
+			imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageBlit.dstSubresource.layerCount = 1;
+			imageBlit.dstSubresource.mipLevel = i;
+			imageBlit.dstSubresource.baseArrayLayer = 0;
+			imageBlit.dstOffsets[1].x = int32_t(imgSize.x >> i);
+			imageBlit.dstOffsets[1].y = int32_t(imgSize.y >> i);
+			imageBlit.dstOffsets[1].z = 1;
+
+			VkImageSubresourceRange mipSubRange{};
+			mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			mipSubRange.baseMipLevel = i;
+			mipSubRange.baseArrayLayer = 0;
+			mipSubRange.levelCount = 1;
+			mipSubRange.layerCount = 1;
+
+			Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
+				VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				mipSubRange);
+
+			vkCmdBlitImage(cmdBuf,
+				vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1, &imageBlit,
+				VK_FILTER_LINEAR);
+
+			Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				mipSubRange);
+		}
+
+		VkImageSubresourceRange subresourceRange{};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.layerCount = 1;
+		subresourceRange.levelCount = mipLevels;
+
+		Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
+			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			subresourceRange);
+	}		
+	
 	std::shared_ptr<VulkanImage> VulkanRenderer::CreateBRDFTexture()
 	{
 		constexpr uint32_t textureSize = 512;
@@ -456,7 +582,6 @@ namespace VulkanCore {
 
 	void VulkanRenderer::FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers)
 	{
-
 		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())

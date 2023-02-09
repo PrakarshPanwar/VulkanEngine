@@ -273,6 +273,8 @@ namespace VulkanCore {
 		std::vector<VkDescriptorSet> descriptorSets(3);
 		for (uint32_t i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
 			vulkanDescriptorPool->AllocateDescriptorSet(setLayout, descriptorSets[i]);
+
+		return descriptorSets;
 	}
 
 	std::vector<VkDescriptorSet> Shader::AllocateAllDescriptorSets()

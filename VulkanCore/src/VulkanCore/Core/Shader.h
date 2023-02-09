@@ -3,7 +3,7 @@
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "../Source/SPIRV-Reflect/spirv_reflect.h"
 
-#define USE_VULKAN_DESCRIPTOR 0
+#define USE_VULKAN_DESCRIPTOR 1
 
 namespace VulkanCore {
 

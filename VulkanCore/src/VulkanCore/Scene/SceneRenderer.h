@@ -13,8 +13,6 @@
 #include <glm/glm.hpp>
 #include "Scene.h"
 
-#define BLOOM_COMPUTE_SHADER 0
-
 namespace VulkanCore {
 
 	class SceneRenderer
@@ -47,8 +45,8 @@ namespace VulkanCore {
 		void CreateDescriptorSets();
 
 		void GeometryPass();
-		void BloomBlurPass();
 		void CompositePass();
+		void BloomCompute();
 		void ResetDrawCommands();
 
 		struct DrawCommand
@@ -71,13 +69,13 @@ namespace VulkanCore {
 
 		struct BloomParams
 		{
-			float Threshold;
-			float Knee;
+			float Threshold = 1.0f;
+			float Knee = 0.5f;
 		};
 
 		struct SkyboxSettings
 		{
-			float Intensity = 1.0f;
+			float Intensity = 0.05f;
 			float LOD = 0.0f;
 		};
 	private:
@@ -99,22 +97,32 @@ namespace VulkanCore {
 		std::vector<VkDescriptorSet> m_GeometryDescriptorSets;
 		std::vector<VkDescriptorSet> m_PointLightDescriptorSets;
 		std::vector<VkDescriptorSet> m_CompositeDescriptorSets;
-		std::vector<VkDescriptorSet> m_BloomDescriptorSets;
 		std::vector<VkDescriptorSet> m_SkyboxDescriptorSets;
+
+		std::vector<VkDescriptorSet> m_BloomPrefilterSets;
+		std::vector<std::vector<VkDescriptorSet>> m_BloomPingSets;
+		std::vector<std::vector<VkDescriptorSet>> m_BloomPongSets;
+		std::vector<VkDescriptorSet> m_BloomUpsampleFirstSets;
+		std::vector<std::vector<VkDescriptorSet>> m_BloomUpsampleSets;
+
+		VkDescriptorSet m_BloomDebugImage;
 
 		// TODO: In future we have to setup Material Table and Instanced Rendering
 		// Material Resources
 		std::vector<VulkanUniformBuffer> m_UBCamera;
-		std::vector<VulkanUniformBuffer> m_UBPointLight;
+		std::vector<VulkanUniformBuffer> m_UBPointLight; 
 		std::vector<VulkanUniformBuffer> m_UBSceneData;
 
-		std::vector<VulkanUniformBuffer> m_BloomParamsUBs;
-		std::vector<VulkanUniformBuffer> m_LodUBs;
+		std::vector<VulkanImage> m_BloomTextures;
+		std::vector<VulkanImage> m_SceneRenderTextures;
 
-		std::shared_ptr<VulkanImage> m_BloomTexture;
+		std::shared_ptr<VulkanTexture> m_BloomDirtTexture;
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_ARMMap,
 			m_DiffuseMap2, m_NormalMap2, m_ARMMap2,
 			m_DiffuseMap3, m_NormalMap3, m_ARMMap3;
+
+		// White Textures
+		std::shared_ptr<VulkanTexture> m_SRGBWhiteTexture, m_UNORMWhiteTexture;
 
 		// Skybox Resources
 		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture;
@@ -131,6 +139,7 @@ namespace VulkanCore {
 		std::map<uint64_t, std::vector<TransformData>> m_MeshTransformMap;
 
 		glm::ivec2 m_ViewportSize;
+		glm::uvec2 m_BloomMipSize;
 
 		SceneSettings m_SceneSettings;
 		LodAndMode m_LodAndMode;

@@ -134,7 +134,7 @@ namespace VulkanCore {
 		return timeStamp;
 	}
 
-	std::shared_ptr<VulkanTexture> Renderer::GetWhiteTexture(ImageFormat format /*= ImageFormat::RGBA8_SRGB*/)
+	std::shared_ptr<VulkanTexture> Renderer::GetWhiteTexture(ImageFormat format)
 	{
 		TextureSpecification whiteTexSpec;
 		whiteTexSpec.Width = 1;
