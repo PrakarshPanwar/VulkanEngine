@@ -182,14 +182,12 @@ namespace VulkanCore {
 
 		m_UBCamera.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_UBPointLight.reserve(VulkanSwapChain::MaxFramesInFlight);
-		m_UBSceneData.reserve(VulkanSwapChain::MaxFramesInFlight);
 
 		// Uniform Buffers
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
 		{
 			m_UBCamera.emplace_back(sizeof(Camera));
 			m_UBPointLight.emplace_back(sizeof(UBPointLights));
-			m_UBSceneData.emplace_back(sizeof(SceneSettings));
 		}
 
 		m_BloomMipSize = (glm::uvec2(1920, 1080) + 1u) / 2u;
@@ -241,13 +239,13 @@ namespace VulkanCore {
 		device->FlushCommandBuffer(barrierCmd);
 
 		// Textures
-		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg");
-		m_NormalMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap = std::make_shared<VulkanTexture>("assets/models/CeramicVase2K/textures/antique_ceramic_vase_01_arm_2k.png", ImageFormat::RGBA8_UNORM);
+		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/meshes/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg");
+		m_NormalMap = std::make_shared<VulkanTexture>("assets/meshes/CeramicVase2K/textures/antique_ceramic_vase_01_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap = std::make_shared<VulkanTexture>("assets/meshes/CeramicVase2K/textures/antique_ceramic_vase_01_arm_2k.png", ImageFormat::RGBA8_UNORM);
 
-		m_DiffuseMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_diff_2k.jpg");
-		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap2 = std::make_shared<VulkanTexture>("assets/models/BrassVase2K/textures/brass_vase_03_arm_2k.png", ImageFormat::RGBA8_UNORM);
+		m_DiffuseMap2 = std::make_shared<VulkanTexture>("assets/meshes/BrassVase2K/textures/brass_vase_03_diff_2k.jpg");
+		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/meshes/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap2 = std::make_shared<VulkanTexture>("assets/meshes/BrassVase2K/textures/brass_vase_03_arm_2k.png", ImageFormat::RGBA8_UNORM);
 
 #define USE_GOLD_MATERIAL 1
 #if USE_GOLD_MATERIAL
@@ -453,16 +451,13 @@ namespace VulkanCore {
 
 		for (int i = 0; i < m_CompositeDescriptorSets.size(); ++i)
 		{
-			auto sceneUBInfo = m_UBSceneData[i].GetDescriptorBufferInfo();
-			compDescriptorWriter[i].WriteBuffer(1, &sceneUBInfo);
-
 			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
 			VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2].GetDescriptorInfo();
 			VkDescriptorImageInfo bloomDirtTexInfo = m_BloomDirtTexture->GetDescriptorImageInfo();
 
 			compDescriptorWriter[i].WriteImage(0, &imagesInfo);
-			compDescriptorWriter[i].WriteImage(2, &bloomTexInfo);
-			compDescriptorWriter[i].WriteImage(3, &bloomDirtTexInfo);
+			compDescriptorWriter[i].WriteImage(1, &bloomTexInfo);
+			compDescriptorWriter[i].WriteImage(2, &bloomDirtTexInfo);
 
 			bool success = compDescriptorWriter[i].Build(m_CompositeDescriptorSets[i]);
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
@@ -508,11 +503,19 @@ namespace VulkanCore {
 	void SceneRenderer::OnImGuiRender()
 	{
 		ImGui::Begin("Scene Renderer");
-		ImGui::DragFloat("Exposure Intensity", &m_SceneSettings.Exposure, 0.01f, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-		ImGui::DragFloat("Skybox LOD", &m_SkyboxSettings.LOD, 0.01f, 0.0f, 11.0f);
-		ImGui::DragFloat("Skybox Intensity", &m_SkyboxSettings.Intensity, 0.01f, 0.0f, 20.0f);
 
-		if (ImGui::TreeNode("Scene Renderer Stats##GPUPerf"))
+		ImGuiTreeNodeFlags treeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
+		if (ImGui::TreeNodeEx("Scene Settings", treeFlags))
+		{
+			ImGui::DragFloat("Exposure Intensity", &m_SceneSettings.Exposure, 0.01f, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::DragFloat("Dirt Intensity", &m_SceneSettings.DirtIntensity, 0.01f, 0.0f, 100.0f);
+			ImGui::DragFloat("Skybox LOD", &m_SkyboxSettings.LOD, 0.01f, 0.0f, 11.0f);
+			ImGui::DragFloat("Skybox Intensity", &m_SkyboxSettings.Intensity, 0.01f, 0.0f, 20.0f);
+
+			ImGui::TreePop();
+		}
+
+		if (ImGui::TreeNodeEx("Scene Renderer Stats##GPUPerf", treeFlags))
 		{
 			Renderer::RetrieveQueryPoolResults();
 
@@ -523,14 +526,14 @@ namespace VulkanCore {
 			ImGui::TreePop();
 		}
 
-		if (ImGui::TreeNode("Bloom Settings"))
+		if (ImGui::TreeNodeEx("Bloom Settings", treeFlags))
 		{
 			ImGui::DragFloat("Threshold", &m_BloomParams.Threshold, 0.01f, 0.0f, 1000.0f);
 			ImGui::DragFloat("Knee", &m_BloomParams.Knee, 0.01f, 0.001f, 1.0f);
 			ImGui::TreePop();
 		}
 
-		if (ImGui::TreeNode("Scene Draw Stats"))
+		if (ImGui::TreeNodeEx("Scene Draw Stats", treeFlags))
 		{
 			auto renderStats = VulkanRenderer::GetRendererStats();
 
@@ -560,9 +563,6 @@ namespace VulkanCore {
 		UBPointLights pointLightUB{};
 		m_Scene->UpdatePointLightUB(pointLightUB);
 		m_UBPointLight[frameIndex].WriteandFlushBuffer(&pointLightUB);
-
-		// Scene Data
-		m_UBSceneData[frameIndex].WriteandFlushBuffer(&m_SceneSettings);
 
 		GeometryPass();
 		BloomCompute();
@@ -595,7 +595,10 @@ namespace VulkanCore {
 		Renderer::BeginGPUPerfMarker();
 
 		Renderer::BeginRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
+
+		m_CompositePipeline->SetPushConstants(m_SceneCommandBuffers[Renderer::GetCurrentFrameIndex()], &m_SceneSettings, sizeof(SceneSettings));
 		Renderer::SubmitFullscreenQuad(m_CompositePipeline, m_CompositeDescriptorSets);
+
 		Renderer::EndRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
 
 		Renderer::EndGPUPerfMarker();

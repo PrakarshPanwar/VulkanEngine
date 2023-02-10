@@ -65,6 +65,7 @@ namespace VulkanCore {
 		struct SceneSettings
 		{
 			float Exposure = 1.0f;
+			float DirtIntensity = 5.0f;
 		};
 
 		struct BloomParams
@@ -110,8 +111,7 @@ namespace VulkanCore {
 		// TODO: In future we have to setup Material Table and Instanced Rendering
 		// Material Resources
 		std::vector<VulkanUniformBuffer> m_UBCamera;
-		std::vector<VulkanUniformBuffer> m_UBPointLight; 
-		std::vector<VulkanUniformBuffer> m_UBSceneData;
+		std::vector<VulkanUniformBuffer> m_UBPointLight;
 
 		std::vector<VulkanImage> m_BloomTextures;
 		std::vector<VulkanImage> m_SceneRenderTextures;

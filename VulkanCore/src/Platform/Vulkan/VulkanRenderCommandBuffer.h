@@ -12,7 +12,7 @@ namespace VulkanCore {
 	class VulkanRenderCommandBuffer
 	{
 	public:
-		VulkanRenderCommandBuffer(VkCommandPool cmdPool, CommandBufferLevel cmdBufLevel = CommandBufferLevel::Primary);
+		VulkanRenderCommandBuffer(VkCommandPool cmdPool, uint32_t queryCount, CommandBufferLevel cmdBufLevel = CommandBufferLevel::Primary);
 		~VulkanRenderCommandBuffer();
 
 		void Begin();
@@ -25,6 +25,8 @@ namespace VulkanCore {
 		static void SubmitCommandBuffersToQueue();
 	private:
 		VkCommandPool m_CommandPool = nullptr;
+		VkQueryPool m_QueryPool = nullptr;
+		uint32_t m_QueryBufferSize = 0;
 		CommandBufferLevel m_CommandBufferLevel;
 		std::vector<VkCommandBuffer> m_CommandBuffers;
 

@@ -221,31 +221,31 @@ namespace VulkanCore {
 		m_Scene = std::make_shared<Scene>();
 
 		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
-		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/models/CeramicVase2K/antique_ceramic_vase_01_2k.fbx", 1));
+		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx", 1));
 		auto& vaseTransform = CeramicVase.GetComponent<TransformComponent>();
 		vaseTransform.Translation = glm::vec3{ 0.0f, -1.2f, 2.5f };
 		vaseTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
 		vaseTransform.Scale = glm::vec3{ 3.5f };
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
-		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/models/FlatPlane.fbx", 3));
+		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Cube.fbx", 3));
 		auto& planeTransform = FlatPlane.GetComponent<TransformComponent>();
 		planeTransform.Translation = glm::vec3{ 0.0f, -1.3f, 0.0f };
 		planeTransform.Scale = glm::vec3{ 10.0f, 0.1f, 10.0f };
 
 		Entity SphereMesh = m_Scene->CreateEntity("Basic Sphere");
-		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/models/Sphere.fbx", 3));
+		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx", 3));
 
 		// TODO: Texture mapping not working correctly for GLTF mesh formats, fix this in future
 #if 0
 		Entity CrateModel = m_Scene->CreateEntity("Wooden Crate");
 		auto& crateTransform = CrateModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 1.5f });
 		crateTransform.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-		CrateModel.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/models/WoodenCrate/WoodenCrate.gltf"));
+		CrateModel.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/WoodenCrate/WoodenCrate.gltf"));
 #endif
 
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
-		BrassVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/models/BrassVase2K/BrassVase.fbx", 2));
+		BrassVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/BrassVase2K/BrassVase.fbx", 2));
 		auto& brassTransform = BrassVase.GetComponent<TransformComponent>();
 		brassTransform.Translation = glm::vec3{ 1.5f, -1.2f, 1.5f };
 		brassTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
