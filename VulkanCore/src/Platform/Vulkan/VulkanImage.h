@@ -45,7 +45,7 @@ namespace VulkanCore {
 		uint32_t MipLevels = 1;
 		ImageFormat Format;
 		ImageUsage Usage;
-		TextureWrap SamplerWrap = TextureWrap::Repeat;
+		TextureWrap SamplerWrap = TextureWrap::Clamp;
 	};
 
 	struct VulkanImageInfo
