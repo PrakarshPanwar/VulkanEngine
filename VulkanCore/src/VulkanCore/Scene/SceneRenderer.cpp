@@ -636,11 +636,6 @@ namespace VulkanCore {
 		m_Scene->OnUpdateLights(m_SceneCommandBuffers, m_PointLightPipeline, m_PointLightDescriptorSets);
 		Renderer::EndGPUPerfMarker();
 
-		// Rendering Point Lights
-		Renderer::BeginGPUPerfMarker();
-		m_Scene->OnUpdateLights(m_SceneCommandBuffers, m_PointLightPipeline, m_PointLightDescriptorSets);
-		Renderer::EndGPUPerfMarker();
-
 		Renderer::EndRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
 
 		// Copying Image for Bloom

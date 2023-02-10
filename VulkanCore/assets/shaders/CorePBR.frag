@@ -117,7 +117,7 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(max(1.0 - cosTheta, 0.0), 5.0);
 }
 
-vec3 LightingContribution(vec3 F0)
+vec3 Lighting(vec3 F0)
 {
     // Reflectance Equation
     vec3 Lo = vec3(0.0);
@@ -202,7 +202,7 @@ void main()
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, m_Params.Albedo, m_Params.Metallic);
 
-    vec3 lightContribution = LightingContribution(F0);
+    vec3 lightContribution = Lighting(F0);
     vec3 iblContribution = IBL(F0, Lr);
 
     vec3 color = iblContribution + lightContribution;
