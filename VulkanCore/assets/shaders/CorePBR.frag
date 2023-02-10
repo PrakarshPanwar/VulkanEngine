@@ -160,7 +160,7 @@ vec3 Lighting(vec3 F0)
 
 vec3 IBL(vec3 F0, vec3 Lr)
 {
-// Ambient Lighting (We now use IBL as the Ambient Term)
+    // Ambient Lighting (We now use IBL as the Ambient Term)
     vec3 F = FresnelSchlickRoughness(m_Params.NdotV, F0, m_Params.Roughness);
     
     vec3 kS = F;
