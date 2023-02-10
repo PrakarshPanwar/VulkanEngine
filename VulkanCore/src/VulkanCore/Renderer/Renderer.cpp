@@ -113,7 +113,7 @@ namespace VulkanCore {
 		vkCmdWriteTimestamp(writeTimestampCmd, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, s_Renderer->GetPerfQueryPool(), m_QueryIndex + 1);
 
 		m_QueryIndex += 2;
-		m_QueryIndex = m_QueryIndex % 8;
+		m_QueryIndex = m_QueryIndex % 10;
 	}
 
 	void Renderer::RetrieveQueryPoolResults()

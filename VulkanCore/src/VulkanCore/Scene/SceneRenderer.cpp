@@ -518,7 +518,8 @@ namespace VulkanCore {
 
 			ImGui::Text("Geometry Pass: %lluns", Renderer::GetQueryTime(0));
 			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(1));
-			ImGui::Text("Composite Pass: %lluns", Renderer::GetQueryTime(3));
+			ImGui::Text("Composite Pass: %lluns", Renderer::GetQueryTime(4));
+			ImGui::Text("Bloom Compute Pass: %lluns", Renderer::GetQueryTime(3));
 			ImGui::TreePop();
 		}
 
@@ -652,6 +653,8 @@ namespace VulkanCore {
 	{
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
+		Renderer::BeginGPUPerfMarker();
+
 		VkCommandBuffer dispatchCmd = m_SceneCommandBuffers[frameIndex];
 		m_BloomPipeline->Bind(dispatchCmd);
 
@@ -728,6 +731,7 @@ namespace VulkanCore {
 			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 		}
 
+		Renderer::EndGPUPerfMarker();
 	}
 
 	void SceneRenderer::CreateCommandBuffers()
