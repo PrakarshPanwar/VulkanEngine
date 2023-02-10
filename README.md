@@ -11,15 +11,17 @@ Start by cloning the repository with `git clone --recursive https://github.com/P
 
 <ins>2. Setting up Project</ins>
 1. Run the [VkGenProjects.bat](VkGenProjects.bat) file found in main repository to generate Project Files.
-2. One prerequisite is the Vulkan SDK. If it is not installed, then install [VulkanSDK here](https://vulkan.lunarg.com/).
-3. After installation, create a folder **VulkanSDK** in vendor and copy all the folders of VulkanSDK in [VulkanCore/vendor/VulkanSDK](VulkanCore/vendor).
-4. Again run [VkGenProjects.bat](VkGenProjects.bat) to link debug libraries in shaderc.
+2. Build Assimp submodule by typing below text in Command Prompt
+```
+cd Assimp 
+cmake -DASSIMP_BUILD_ZLIB=ON CMakeLists.txt
+```
+3. One prerequisite is the Vulkan SDK. If it is not installed, then install [VulkanSDK here](https://vulkan.lunarg.com/).
+4. After installation, create a folder **VulkanSDK** in vendor and copy all the folders of VulkanSDK in [VulkanCore/vendor/VulkanSDK](VulkanCore/vendor).
+5. Again run [VkGenProjects.bat](VkGenProjects.bat) to link debug libraries in shaderc.
 
 ### Big Features to Come
 
-- Post Processing Effects like Bloom, HDR etc.
 - Advanced UI Features
 - Cascaded Shadow Maps
-- HDR Cubemaps and Irradiance Maps
-- Physically Based 3D Rendering
 - Integrated 3D Physics Engine like [NVIDIA-PhysX](https://github.com/NVIDIAGameWorks/PhysX), [box2d](https://github.com/erincatto/box2d)
