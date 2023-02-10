@@ -15,6 +15,8 @@ namespace VulkanCore {
 			case ImageFormat::RGBA8_SRGB:	   return VK_FORMAT_R8G8B8A8_SRGB;
 			case ImageFormat::RGBA8_NORM:	   return VK_FORMAT_R8G8B8A8_SNORM;
 			case ImageFormat::RGBA8_UNORM:	   return VK_FORMAT_R8G8B8A8_UNORM;
+			case ImageFormat::RGBA16_NORM:	   return VK_FORMAT_R16G16B16A16_SNORM;
+			case ImageFormat::RGBA16_UNORM:	   return VK_FORMAT_R16G16B16A16_UNORM;
 			case ImageFormat::RGBA16F:		   return VK_FORMAT_R16G16B16A16_SFLOAT;
 			case ImageFormat::RGBA32F:		   return VK_FORMAT_R32G32B32A32_SFLOAT;
 			case ImageFormat::R11G11B10F:	   return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
