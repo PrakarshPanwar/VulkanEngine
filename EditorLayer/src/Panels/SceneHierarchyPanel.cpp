@@ -97,6 +97,18 @@ namespace VulkanCore {
 				Entity entity{ entityID, m_Context.get() };
 				DrawEntityNode(entity);
 			});
+
+			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+				m_SelectionContext = {};
+
+			// Right-click on blank space
+			if (ImGui::BeginPopupContextWindow("##CreateEntity", 1))
+			{
+				if (ImGui::MenuItem("Create Empty Entity"))
+					m_Context->CreateEntity("Empty Entity");
+
+				ImGui::EndPopup();
+			}
 		}
 
 		ImGui::End();
@@ -140,7 +152,20 @@ namespace VulkanCore {
 			ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 			bool opened = ImGui::TreeNodeEx((void*)9817239, flags, tag.c_str());
 			if (opened)
+			{
+				if (entity.HasComponent<MeshComponent>())
+				{
+					MeshComponent meshComponent = entity.GetComponent<MeshComponent>();
+					
+					for (const MeshNode& submeshes : meshComponent.MeshInstance->GetMeshSource()->GetMeshNodes())
+					{
+						if (ImGui::TreeNode(submeshes.Name.c_str()))
+							ImGui::TreePop();
+					}
+				}
+
 				ImGui::TreePop();
+			}
 			ImGui::TreePop();
 		}
 
@@ -241,7 +266,7 @@ namespace VulkanCore {
 
 		DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)
 		{
-			auto& meshFilePath = component.MeshInstance->GetFilePath();
+			auto& meshFilePath = component.MeshInstance->GetMeshSource()->GetFilePath();
 
 			char buffer[512];
 			memset(buffer, 0, sizeof(buffer));
@@ -261,8 +286,7 @@ namespace VulkanCore {
 
 				else
 				{
-					std::shared_ptr<Mesh> mesh = Mesh::CreateMeshFromAssimp(meshFilePath, component.MeshInstance->GetMaterialID());
-					mesh->SetFilePath(meshFilePath);
+					std::shared_ptr<Mesh> mesh = Mesh::LoadMesh(meshFilePath.c_str(), 0);
 					component.MeshInstance = mesh;
 
 					s_ShowMessage = false;
@@ -274,8 +298,8 @@ namespace VulkanCore {
 				ImGui::TextColored(ImVec4{ 0.8f, 0.1f, 0.2f, 1.0f }, "File does not exist!");
 			}
 
-			ImGui::Text("Vertex Count: %d", component.MeshInstance->GetVertexCount());
-			ImGui::Text("Index Count: %d", component.MeshInstance->GetIndexCount());
+			ImGui::Text("Vertex Count: %d", component.MeshInstance->GetMeshSource()->GetVertexCount());
+			ImGui::Text("Index Count: %d", component.MeshInstance->GetMeshSource()->GetIndexCount());
 		});
 	}
 

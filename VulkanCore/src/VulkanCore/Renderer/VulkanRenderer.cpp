@@ -13,6 +13,7 @@
 namespace VulkanCore {
 
 	VulkanRenderer* VulkanRenderer::s_Instance;
+	RendererStats VulkanRenderer::s_Data;
 
 	VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowsWindow> window)
 		: m_Window(window)
@@ -190,7 +191,7 @@ namespace VulkanCore {
 
 			equirectSetWriter.Build(equirectSet);
 
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer();
+			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
 
 			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 				equirectangularConversionPipeline->GetVulkanPipelineLayout(), 0, 1,
@@ -199,7 +200,7 @@ namespace VulkanCore {
 			equirectangularConversionPipeline->Bind(dispatchCmd);
 			equirectangularConversionPipeline->Dispatch(dispatchCmd, cubemapSize / 16, cubemapSize / 16, 6);
 
-			device->FlushCommandBuffer(dispatchCmd);
+			device->RT_FlushCommandBuffer(dispatchCmd);
 			
 			envUnfiltered->GenerateMipMaps(true);
 		});
@@ -232,7 +233,7 @@ namespace VulkanCore {
 			}
 
 			// Dispatch Pipeline
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer();
+			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
 			environmentMipFilterPipeline->Bind(dispatchCmd);
 
 			const float deltaRoughness = 1.0f / glm::max((float)mipCount - 1.0f, 1.0f);
@@ -244,7 +245,7 @@ namespace VulkanCore {
 				environmentMipFilterPipeline->Execute(dispatchCmd, descriptorSets[i], numGroups, numGroups, 6);
 			}
 
-			device->FlushCommandBuffer(dispatchCmd);
+			device->RT_FlushCommandBuffer(dispatchCmd);
 		});
 
 		auto environmentIrradianceShader = Renderer::GetShader("EnvironmentIrradiance");
@@ -281,6 +282,199 @@ namespace VulkanCore {
 		});
 
 		return { envFiltered, irradianceMap };
+	}
+
+	void VulkanRenderer::CopyVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& sourceImage, const VulkanImage& destImage)
+	{
+		VkImage srcImage = sourceImage.GetVulkanImageInfo().Image;
+		VkImage dstImage = destImage.GetVulkanImageInfo().Image;
+
+		// TODO: We cannot determine layout like this for image but we are doing this for now to get Bloom
+		// Changing Source Image Layout
+		Utils::InsertImageMemoryBarrier(cmdBuf, srcImage,
+			VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+		// Changing Destination Image Layout
+		Utils::InsertImageMemoryBarrier(cmdBuf, dstImage,
+			VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+		VkImageCopy region{};
+		region.srcOffset = { 0, 0, 0 };
+		region.dstOffset = { 0, 0, 0 };
+		region.extent = { sourceImage.GetSpecification().Width, sourceImage.GetSpecification().Height, 1 };
+		region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.srcSubresource.baseArrayLayer = 0;
+		region.srcSubresource.mipLevel = 0;
+		region.srcSubresource.layerCount = 1;
+		region.dstSubresource = region.srcSubresource;
+
+		vkCmdCopyImage(cmdBuf,
+			srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&region);
+
+		// Changing source image back to its previous layout
+		Utils::InsertImageMemoryBarrier(cmdBuf, srcImage,
+			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+	}
+
+	void VulkanRenderer::BlitVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& image)
+	{
+		VkImage vulkanImage = image.GetVulkanImageInfo().Image;
+
+		const uint32_t mipLevels = image.GetSpecification().MipLevels;
+		const glm::uvec2 imgSize = { image.GetSpecification().Width, image.GetSpecification().Height };
+
+		// Setting Base Mip(Oth) to Source
+		VkImageSubresourceRange baseMipSubRange{};
+		baseMipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		baseMipSubRange.baseMipLevel = 0;
+		baseMipSubRange.baseArrayLayer = 0;
+		baseMipSubRange.levelCount = 1;
+		baseMipSubRange.layerCount = 1;
+
+		Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
+			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			baseMipSubRange);
+
+		// Starting at 1st Mip Level
+		for (uint32_t i = 1; i < mipLevels; ++i)
+		{
+			VkImageBlit imageBlit{};
+
+			// Source
+			imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageBlit.srcSubresource.layerCount = 1;
+			imageBlit.srcSubresource.mipLevel = i - 1;
+			imageBlit.srcSubresource.baseArrayLayer = 0;
+			imageBlit.srcOffsets[1].x = int32_t(imgSize.x >> (i - 1));
+			imageBlit.srcOffsets[1].y = int32_t(imgSize.y >> (i - 1));
+			imageBlit.srcOffsets[1].z = 1;
+
+			// Destination
+			imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageBlit.dstSubresource.layerCount = 1;
+			imageBlit.dstSubresource.mipLevel = i;
+			imageBlit.dstSubresource.baseArrayLayer = 0;
+			imageBlit.dstOffsets[1].x = int32_t(imgSize.x >> i);
+			imageBlit.dstOffsets[1].y = int32_t(imgSize.y >> i);
+			imageBlit.dstOffsets[1].z = 1;
+
+			VkImageSubresourceRange mipSubRange{};
+			mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			mipSubRange.baseMipLevel = i;
+			mipSubRange.baseArrayLayer = 0;
+			mipSubRange.levelCount = 1;
+			mipSubRange.layerCount = 1;
+
+			Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
+				VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				mipSubRange);
+
+			vkCmdBlitImage(cmdBuf,
+				vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1, &imageBlit,
+				VK_FILTER_LINEAR);
+
+			Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				mipSubRange);
+		}
+
+		VkImageSubresourceRange subresourceRange{};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.layerCount = 1;
+		subresourceRange.levelCount = mipLevels;
+
+		Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
+			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			subresourceRange);
+	}		
+	
+	std::shared_ptr<VulkanImage> VulkanRenderer::CreateBRDFTexture()
+	{
+		constexpr uint32_t textureSize = 512;
+
+		ImageSpecification brdfTextureSpec;
+		brdfTextureSpec.Width = textureSize;
+		brdfTextureSpec.Height = textureSize;
+		brdfTextureSpec.Usage = ImageUsage::Storage;
+		brdfTextureSpec.Format = ImageFormat::RGBA16_UNORM;
+		brdfTextureSpec.SamplerWrap = TextureWrap::Clamp;
+
+		auto generateBRDFShader = Renderer::GetShader("GenerateBRDF");
+		std::shared_ptr<VulkanComputePipeline> generateBRDFPipeline = std::make_shared<VulkanComputePipeline>(generateBRDFShader);
+		std::shared_ptr<VulkanImage> brdfTexture = std::make_shared<VulkanImage>(brdfTextureSpec);
+		brdfTexture->Invalidate();
+
+		Renderer::Submit([generateBRDFPipeline, brdfTexture, textureSize]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			auto vulkanDescriptorPool = Application::Get()->GetVulkanDescriptorPool();
+
+			// Building Descriptor Set
+			VkDescriptorSet descriptorSet;
+			VulkanDescriptorWriter descriptorWriter(*generateBRDFPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool);
+
+			VkDescriptorImageInfo brdfOutputInfo = brdfTexture->GetDescriptorInfo();
+			descriptorWriter.WriteImage(0, &brdfOutputInfo);
+
+			descriptorWriter.Build(descriptorSet);
+
+			// Dispatch Pipeline
+			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
+
+			generateBRDFPipeline->Bind(dispatchCmd);
+			generateBRDFPipeline->Execute(dispatchCmd, descriptorSet, textureSize / 16, textureSize / 16, 1);
+
+			device->RT_FlushCommandBuffer(dispatchCmd);
+		});
+
+		return brdfTexture;
+	}
+
+	void VulkanRenderer::RenderMesh(const std::vector<VkCommandBuffer>& drawCmds, std::shared_ptr<Mesh> mesh, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	{
+		auto drawCmd = drawCmds[Renderer::GetCurrentFrameIndex()];
+
+		auto meshSource = mesh->GetMeshSource();
+		transformBuffer->WriteData((void*)transformData.data(), 0);
+
+		// Bind Vertex Buffer
+		VkBuffer buffers[] = { meshSource->GetVertexBuffer()->GetVulkanBuffer(), transformBuffer->GetVulkanBuffer() };
+		VkDeviceSize offsets[] = { 0, 0 };
+		vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
+		vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+		vkCmdDrawIndexed(drawCmd, meshSource->GetIndexCount(), instanceCount, 0, 0, 0);
+
+		s_Data.DrawCalls++;
+		s_Data.InstanceCount += instanceCount;
+	}
+
+	void VulkanRenderer::ResetStats()
+	{
+		s_Data.DrawCalls = 0;
+		s_Data.InstanceCount = 0;
 	}
 
 	void VulkanRenderer::CreateCommandBuffers()
@@ -378,6 +572,24 @@ namespace VulkanCore {
 			m_Window->ResetWindowResizeFlag();
 			RecreateSwapChain();
 			sceneRenderer->RecreateScene();
+		}
+
+		else if (result != VK_SUCCESS)
+			VK_CORE_ERROR("Failed to Present Swap Chain Image!");
+
+		IsFrameStarted = false;
+		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;
+	}
+
+	void VulkanRenderer::FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers)
+	{
+		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
+		{
+			m_Window->ResetWindowResizeFlag();
+			RecreateSwapChain();
+			SceneRenderer::GetSceneRenderer()->RecreateScene();
 		}
 
 		else if (result != VK_SUCCESS)

@@ -62,6 +62,7 @@ namespace VulkanCore {
 
 	void Renderer::BuildShaders()
 	{
+		m_Shaders["CorePBR"] = Utils::MakeShader("CorePBR");
 		m_Shaders["CoreShader"] = Utils::MakeShader("CoreShader");
 		m_Shaders["PointLight"] = Utils::MakeShader("PointLight");
 		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
@@ -70,6 +71,7 @@ namespace VulkanCore {
 		m_Shaders["EquirectangularToCubeMap"] = Utils::MakeShader("EquirectangularToCubeMap");
 		m_Shaders["EnvironmentMipFilter"] = Utils::MakeShader("EnvironmentMipFilter");
 		m_Shaders["EnvironmentIrradiance"] = Utils::MakeShader("EnvironmentIrradiance");
+		m_Shaders["GenerateBRDF"] = Utils::MakeShader("GenerateBRDF");
 	}
 
 	void Renderer::DestroyShaders()
@@ -77,7 +79,7 @@ namespace VulkanCore {
 		m_Shaders.clear();
 	}
 
-	void Renderer::RenderSkybox(const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<Mesh>& mesh, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData)
+	void Renderer::RenderSkybox(std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData /*= nullptr*/)
 	{
 		auto drawCmd = m_CommandBuffers[GetCurrentFrameIndex()];
 		auto dstSet = descriptorSet[GetCurrentFrameIndex()];
@@ -85,7 +87,7 @@ namespace VulkanCore {
 		pipeline->Bind(drawCmd);
 
 		if (pcData)
-			pipeline->SetPushConstants(drawCmd, pcData, sizeof(float));
+			pipeline->SetPushConstants(drawCmd, pcData, sizeof(glm::vec2));
 
 		vkCmdBindDescriptorSets(drawCmd,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -93,9 +95,10 @@ namespace VulkanCore {
 			0, 1, &dstSet,
 			0, nullptr);
 
-		// Cube/Spherical Mesh
-		mesh->Bind(drawCmd);
-		mesh->Draw(drawCmd);
+		VkBuffer skyboxBuffer[] = { skyboxVB->GetVulkanBuffer() };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(drawCmd, 0, 1, skyboxBuffer, offsets);
+		vkCmdDraw(drawCmd, 36, 1, 0, 0);
 	}	
 	
 	void Renderer::BeginGPUPerfMarker()
@@ -110,7 +113,7 @@ namespace VulkanCore {
 		vkCmdWriteTimestamp(writeTimestampCmd, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, s_Renderer->GetPerfQueryPool(), m_QueryIndex + 1);
 
 		m_QueryIndex += 2;
-		m_QueryIndex = m_QueryIndex % 8;
+		m_QueryIndex = m_QueryIndex % 10;
 	}
 
 	void Renderer::RetrieveQueryPoolResults()
@@ -131,6 +134,20 @@ namespace VulkanCore {
 		return timeStamp;
 	}
 
+	std::shared_ptr<VulkanTexture> Renderer::GetWhiteTexture(ImageFormat format)
+	{
+		TextureSpecification whiteTexSpec;
+		whiteTexSpec.Width = 1;
+		whiteTexSpec.Height = 1;
+		whiteTexSpec.Format = format;
+		whiteTexSpec.GenerateMips = false;
+
+		uint32_t* textureData = new uint32_t;
+		*textureData = 0xffffffff;
+		auto whiteTexture = std::make_shared<VulkanTexture>(textureData, whiteTexSpec);
+		return whiteTexture;
+	}
+
 	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
 	{
 		auto drawCmd = m_CommandBuffers[GetCurrentFrameIndex()];
@@ -149,8 +166,6 @@ namespace VulkanCore {
 
 	void Renderer::RenderMesh(std::shared_ptr<Mesh> mesh)
 	{
-		mesh->Bind(m_CommandBuffers[GetCurrentFrameIndex()]);
-		mesh->Draw(m_CommandBuffers[GetCurrentFrameIndex()]);
 	}
 
 	void Renderer::WaitandRender()

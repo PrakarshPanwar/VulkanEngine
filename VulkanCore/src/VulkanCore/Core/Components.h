@@ -1,5 +1,6 @@
 #pragma once
 #include "VulkanCore/Renderer/Camera.h"
+#include "VulkanCore/Mesh/Mesh.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
@@ -72,10 +73,17 @@ namespace VulkanCore {
 	{
 		std::shared_ptr<Mesh> MeshInstance;
 
-		MeshComponent() = default;
+		MeshComponent()
+			: MeshInstance(std::make_shared<Mesh>()) {}
+
 		MeshComponent(const MeshComponent&) = default;
 		MeshComponent(std::shared_ptr<Mesh> mesh)
 			: MeshInstance(mesh) {}
+	};
+
+	struct TransformData
+	{
+		glm::vec4 MRow[3];
 	};
 
 	struct PointLight
@@ -108,7 +116,6 @@ namespace VulkanCore {
 
 	struct UBPointLights
 	{
-		glm::vec4 AmbientLightColor{ 1.0f, 1.0f, 1.0f, 0.02f };
 		PointLight PointLights[10];
 		int NumLights;
 	};
