@@ -102,7 +102,7 @@ void main()
 	vec4 focusPoint = texture(u_ViewNormalsTexture, vec2(u_DOF.FocusPoint));
 	vec3 dofColor = DepthOfField(v_TexCoord, u_DOF.FocusPoint, u_DOF.FocusScale, 1.0 / fTexSize);
 
-	float blur = smoothstep(u_DOF.Near, u_DOF.Far, length(position.y - focusPoint.y));
+	float blur = smoothstep(u_DOF.Near, u_DOF.Far, length(position - focusPoint));
 	color = mix(color, dofColor, blur);
 	color *= v_Exposure;
     color = ACESTonemap(color);
