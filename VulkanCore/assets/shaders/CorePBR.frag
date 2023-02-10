@@ -151,10 +151,6 @@ vec3 LightingContribution(vec3 F0)
         // have Diffuse Lighting, or a linear blend if partly metal (pure metals
         // have no diffuse light).
         kD *= 1.0 - m_Params.Metallic;
-
-
-
-
         // Add to Outgoing Radiance Lo
         Lo += (kD * m_Params.Albedo / PI + specular) * radiance * NdotL;
 	}
@@ -192,8 +188,7 @@ void main()
     // R->Ambient Occlusion, G->Roughness, B->Metallic
     vec3 aorm = texture(u_AORoughMetalTextures[v_MaterialIndex], Input.TexCoord).rgb;
 
-    float ao = aorm.r;
-    m_Params.Roughness = max(aorm.g, 0.05);
+    m_Params.Roughness = aorm.g;
     m_Params.Metallic = aorm.b;
 
 	vec3 cameraPosWorld = u_Camera.InvView[3].xyz;

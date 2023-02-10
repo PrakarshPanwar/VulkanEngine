@@ -46,7 +46,13 @@ void main()
 	gl_Position = u_Camera.Projection * u_Camera.View * positionWorld;
 	Output.Normal = mat3(transform) * a_Normal;
 	Output.WorldPosition = positionWorld.xyz;
-	Output.WorldNormals = mat3(transform) * mat3(a_Tangent, a_Binormal, a_Normal);
+
+	vec3 T = normalize(mat3(transform) * a_Tangent);
+    vec3 N = normalize(mat3(transform) * a_Normal);
+    T = normalize(T - dot(T, N) * N);
+    vec3 B = cross(N, T);
+
+	Output.WorldNormals = mat3(T, B, N);
 	Output.VertexColor = a_FragColor;
 	Output.TexCoord = vec2(a_TexCoord.x, 1.0 - a_TexCoord.y);
 	v_MaterialIndex = a_TexID;

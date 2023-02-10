@@ -418,7 +418,8 @@ namespace VulkanCore {
 		brdfTextureSpec.Width = textureSize;
 		brdfTextureSpec.Height = textureSize;
 		brdfTextureSpec.Usage = ImageUsage::Storage;
-		brdfTextureSpec.Format = ImageFormat::RGBA32F;
+		brdfTextureSpec.Format = ImageFormat::RGBA16_UNORM;
+		brdfTextureSpec.SamplerWrap = TextureWrap::Clamp;
 
 		auto generateBRDFShader = Renderer::GetShader("GenerateBRDF");
 		std::shared_ptr<VulkanComputePipeline> generateBRDFPipeline = std::make_shared<VulkanComputePipeline>(generateBRDFShader);

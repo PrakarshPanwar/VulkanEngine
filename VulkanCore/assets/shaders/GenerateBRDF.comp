@@ -1,6 +1,6 @@
 #version 460 core
 
-layout(binding = 0, rgba32f) writeonly uniform image2D o_BRDFTexture;
+layout(binding = 0, rgba16) writeonly uniform image2D o_BRDFTexture;
 
 const float PI = 3.14159265359;
 vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness)
@@ -91,7 +91,7 @@ void main()
 
     vec3 N = vec3(0.0, 0.0, 1.0);
     
-    const uint SAMPLE_COUNT = 4096;
+    const uint SAMPLE_COUNT = 1024u;
     for (uint i = 0u; i < SAMPLE_COUNT; ++i)
     {
         // Generates a Sample vector that's biased towards the
