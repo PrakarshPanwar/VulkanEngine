@@ -105,6 +105,7 @@ namespace VulkanCore {
 		}
 
 		ReflectShaderData();
+		InvalidateDescriptors();
 	}
 
 	Shader::Shader(const std::string& cmpfilepath)
@@ -121,6 +122,7 @@ namespace VulkanCore {
 		CompileOrGetVulkanBinaries(Sources);
 
 		ReflectShaderData();
+		InvalidateDescriptors();
 	}
 
 	Shader::~Shader()
@@ -128,12 +130,80 @@ namespace VulkanCore {
 
 	}
 
-	std::shared_ptr<VulkanDescriptorSetLayout> Shader::CreateDescriptorSetLayout()
+#if USE_VULKAN_DESCRIPTOR
+	std::shared_ptr<VulkanDescriptorSetLayout> Shader::CreateDescriptorSetLayout(int index)
 	{
 		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
 
 		for (auto&& [stage, source] : m_VulkanSPIRV)
 		{
+			SpvReflectShaderModule shaderModule = {};
+
+			SpvReflectResult result = spvReflectCreateShaderModule(
+				source.size() * sizeof(uint32_t),
+				source.data(),
+				&shaderModule);
+
+			VK_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS, "Failed to Generate Reflection Result!");
+
+			uint32_t count = 0;
+			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, nullptr);
+			VK_CORE_ASSERT(count <= 1, "More than one Descriptor Sets are not supported yet!");
+
+			std::vector<SpvReflectDescriptorSet*> DescriptorSets(count);
+			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, DescriptorSets.data());
+
+			for (int i = 0; i < count; ++i)
+			{
+				const SpvReflectDescriptorSet& reflectionSet = *(DescriptorSets.at(i));
+				if (index == reflectionSet.set)
+				{
+					for (uint32_t j = 0; j < reflectionSet.binding_count; ++j)
+					{
+						const SpvReflectDescriptorBinding& reflectionBinding = *(reflectionSet.bindings[j]);
+
+						uint32_t arrayCount = 1;
+						for (uint32_t k = 0; k < reflectionBinding.array.dims_count; ++k)
+							arrayCount *= reflectionBinding.array.dims[k];
+
+						VkShaderStageFlags shaderStageFlags = 0;
+
+						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+							shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+
+						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+							shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+
+						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
+
+						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+							shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+
+						descriptorSetLayoutBuilder.AddBinding(
+							reflectionBinding.binding,
+							(VkDescriptorType)reflectionBinding.descriptor_type,
+							shaderStageFlags,
+							arrayCount);
+					}
+
+					break;
+				}
+			}
+
+			spvReflectDestroyShaderModule(&shaderModule);
+		}
+
+		return descriptorSetLayoutBuilder.Build();
+	}
+
+	std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> Shader::CreateAllDescriptorSetsLayout()
+	{
+		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> descriptorSetsLayout;
+
+		for (auto&& [stage, source] : m_VulkanSPIRV)
+		{
+			DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
 			SpvReflectShaderModule shaderModule = {};
 
 			SpvReflectResult result = spvReflectCreateShaderModule(
@@ -172,18 +242,44 @@ namespace VulkanCore {
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
 
+					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+
 					descriptorSetLayoutBuilder.AddBinding(
 						reflectionBinding.binding,
 						(VkDescriptorType)reflectionBinding.descriptor_type,
 						shaderStageFlags,
 						arrayCount);
+
 				}
+
+				auto descriptorSetLayout = descriptorSetLayoutBuilder.Build();
+				descriptorSetsLayout.push_back(descriptorSetLayout);
 			}
 
 			spvReflectDestroyShaderModule(&shaderModule);
 		}
 
-		return descriptorSetLayoutBuilder.Build();
+		return descriptorSetsLayout;
+	}
+#else
+#endif
+
+	std::vector<VkDescriptorSet> Shader::AllocateDescriptorSets(uint32_t index)
+	{
+		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
+		VkDescriptorSetLayout setLayout = CreateDescriptorSetLayout(index)->GetDescriptorSetLayout();
+
+		std::vector<VkDescriptorSet> descriptorSets(3);
+		for (uint32_t i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
+			vulkanDescriptorPool->AllocateDescriptorSet(setLayout, descriptorSets[i]);
+
+		return descriptorSets;
+	}
+
+	std::vector<VkDescriptorSet> Shader::AllocateAllDescriptorSets()
+	{
+		return {};
 	}
 
 	std::tuple<std::string, std::string> Shader::ParseShader(const std::string& vsfilepath, const std::string& fsfilepath)
@@ -383,6 +479,11 @@ namespace VulkanCore {
 				VK_CORE_TRACE("\t  Members = {0}", memberCount);
 			}
 		}
+	}
+
+	void Shader::InvalidateDescriptors()
+	{
+		
 	}
 
 }

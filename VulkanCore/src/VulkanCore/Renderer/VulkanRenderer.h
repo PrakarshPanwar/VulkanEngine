@@ -6,8 +6,15 @@
 #include "VulkanCore/Mesh/Mesh.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Core/Components.h"
 
 namespace VulkanCore {
+
+	struct RendererStats
+	{
+		uint32_t DrawCalls;
+		uint32_t InstanceCount;
+	};
 
 	class VulkanRenderer
 	{
@@ -35,6 +42,12 @@ namespace VulkanCore {
 		}
 
 		static std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> CreateEnviromentMap(const std::string& filepath);
+		static std::shared_ptr<VulkanImage> CreateBRDFTexture();
+		static void CopyVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& sourceImage, const VulkanImage& destImage);
+		static void BlitVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& image);
+		static void RenderMesh(const std::vector<VkCommandBuffer>& drawCmds, std::shared_ptr<Mesh> mesh, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount);
+		static RendererStats GetRendererStats() { return s_Data; }
+		static void ResetStats();
 
 		inline VkRenderPass GetSwapChainRenderPass() const { return m_SwapChain->GetRenderPass(); }
 		inline int GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
@@ -42,6 +55,7 @@ namespace VulkanCore {
 
 		void RecreateSwapChain();
 		void FinalQueueSubmit();
+		void FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers);
 		static VulkanRenderer* Get() { return s_Instance; }
 	private:
 		void CreateCommandBuffers();
@@ -63,6 +77,7 @@ namespace VulkanCore {
 		VkQueryPool m_QueryPool;
 		const uint32_t m_QueryCount = 10; // TODO: This number could change in future
 
+		static RendererStats s_Data;
 		static VulkanRenderer* s_Instance;
 	};
 
