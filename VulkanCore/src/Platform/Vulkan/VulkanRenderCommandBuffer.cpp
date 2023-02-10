@@ -26,14 +26,15 @@ namespace VulkanCore {
 
 	std::vector<std::vector<VkCommandBuffer>> VulkanRenderCommandBuffer::m_AllCommandBuffers;
 
-	VulkanRenderCommandBuffer::VulkanRenderCommandBuffer(VkCommandPool cmdPool, CommandBufferLevel cmdBufLevel)
-		: m_CommandPool(cmdPool), m_CommandBufferLevel(cmdBufLevel)
+	VulkanRenderCommandBuffer::VulkanRenderCommandBuffer(VkCommandPool cmdPool, uint32_t queryCount, CommandBufferLevel cmdBufLevel)
+		: m_CommandPool(cmdPool), m_QueryBufferSize(queryCount << 1), m_CommandBufferLevel(cmdBufLevel)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
 		uint32_t framesInFlight = VulkanSwapChain::MaxFramesInFlight;
 		m_CommandBuffers.resize(framesInFlight);
 
+		// Allocating Command Buffers
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = Utils::VulkanCommandBufferLevel(cmdBufLevel);
@@ -44,6 +45,14 @@ namespace VulkanCore {
 
 		if (cmdBufLevel == CommandBufferLevel::Primary)
 			m_AllCommandBuffers.push_back(m_CommandBuffers);
+
+		// Creating Query Pool
+		VkQueryPoolCreateInfo queryPoolCreateInfo{};
+		queryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+		queryPoolCreateInfo.queryCount = m_QueryBufferSize;
+		queryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+
+		vkCreateQueryPool(device->GetVulkanDevice(), &queryPoolCreateInfo, nullptr, &m_QueryPool);
 	}
 
 	VulkanRenderCommandBuffer::~VulkanRenderCommandBuffer()
