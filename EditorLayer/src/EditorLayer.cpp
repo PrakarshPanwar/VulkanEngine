@@ -56,7 +56,9 @@ namespace VulkanCore {
 
 	void EditorLayer::OnUpdate()
 	{
-		m_EditorCamera.OnUpdate();
+		if (m_ViewportFocused && m_ViewportHovered)
+			m_EditorCamera.OnUpdate();
+
 		m_SceneRenderer->RenderScene(m_EditorCamera);
 	}
 
