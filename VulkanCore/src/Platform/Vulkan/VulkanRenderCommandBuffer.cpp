@@ -88,6 +88,9 @@ namespace VulkanCore {
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 
 		vkBeginCommandBuffer(GetActiveCommandBuffer(), &beginInfo);
+
+		if (m_TimestampQueryPool)
+			vkCmdResetQueryPool(GetActiveCommandBuffer(), m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
 	}
 
 	void VulkanRenderCommandBuffer::Begin(VkRenderPass renderPass, VkFramebuffer framebuffer)
