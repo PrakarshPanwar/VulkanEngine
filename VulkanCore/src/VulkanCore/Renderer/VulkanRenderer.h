@@ -3,6 +3,7 @@
 #include "Platform/Vulkan/VulkanPipeline.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
+#include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 #include "VulkanCore/Mesh/Mesh.h"
 
 #include "VulkanCore/Core/Core.h"
@@ -30,8 +31,6 @@ namespace VulkanCore {
 		void EndScene();
 		void BeginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 		void EndSwapChainRenderPass(VkCommandBuffer commandBuffer);
-		void BeginSceneRenderPass(VkCommandBuffer commandBuffer);
-		void EndSceneRenderPass(VkCommandBuffer commandBuffer);
 		inline float GetAspectRatio() const { return m_SwapChain->ExtentAspectRatio(); }
 
 		inline bool IsFrameInProgress() const { return IsFrameStarted; }
@@ -45,7 +44,7 @@ namespace VulkanCore {
 		static std::shared_ptr<VulkanImage> CreateBRDFTexture();
 		static void CopyVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& sourceImage, const VulkanImage& destImage);
 		static void BlitVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& image);
-		static void RenderMesh(const std::vector<VkCommandBuffer>& drawCmds, std::shared_ptr<Mesh> mesh, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount);
+		static void RenderMesh(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<Mesh> mesh, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount);
 		static RendererStats GetRendererStats() { return s_Data; }
 		static void ResetStats();
 

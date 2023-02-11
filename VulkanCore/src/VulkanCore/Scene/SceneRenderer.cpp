@@ -485,13 +485,8 @@ namespace VulkanCore {
 
 	void SceneRenderer::Release()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-
 		// Deleting all Transforms
 		Mesh::ClearAllMeshes();
-
-		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(), 
-			static_cast<uint32_t>(m_SceneCommandBuffers.size()), m_SceneCommandBuffers.data());
 	}
 
 	void SceneRenderer::RecreateScene()
@@ -517,12 +512,12 @@ namespace VulkanCore {
 
 		if (ImGui::TreeNodeEx("Scene Renderer Stats##GPUPerf", treeFlags))
 		{
-			Renderer::RetrieveQueryPoolResults();
+			m_SceneCommandBuffer->RetrieveQueryPoolResults();
 
-			ImGui::Text("Geometry Pass: %lluns", Renderer::GetQueryTime(0));
-			ImGui::Text("Skybox Pass: %lluns", Renderer::GetQueryTime(1));
-			ImGui::Text("Composite Pass: %lluns", Renderer::GetQueryTime(4));
-			ImGui::Text("Bloom Compute Pass: %lluns", Renderer::GetQueryTime(3));
+			ImGui::Text("Geometry Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(0));
+			ImGui::Text("Skybox Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(1));
+			ImGui::Text("Composite Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(4));
+			ImGui::Text("Bloom Compute Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(3));
 			ImGui::TreePop();
 		}
 
@@ -592,28 +587,27 @@ namespace VulkanCore {
 
 	void SceneRenderer::CompositePass()
 	{
-		Renderer::BeginGPUPerfMarker();
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer);
 
-		Renderer::BeginRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
+		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
+		m_CompositePipeline->SetPushConstants(m_SceneCommandBuffer->GetActiveCommandBuffer(), &m_SceneSettings, sizeof(SceneSettings));
+		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_CompositePipeline, m_CompositeDescriptorSets);
 
-		m_CompositePipeline->SetPushConstants(m_SceneCommandBuffers[Renderer::GetCurrentFrameIndex()], &m_SceneSettings, sizeof(SceneSettings));
-		Renderer::SubmitFullscreenQuad(m_CompositePipeline, m_CompositeDescriptorSets);
+		Renderer::EndRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
-		Renderer::EndRenderPass(m_CompositePipeline->GetSpecification().RenderPass);
-
-		Renderer::EndGPUPerfMarker();
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 	}
 
 	void SceneRenderer::GeometryPass()
 	{
 		m_Scene->OnUpdateGeometry(this);
 
-		Renderer::BeginRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
+		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().RenderPass);
 
 		// Rendering Geometry
-		Renderer::BeginGPUPerfMarker();
-		
-		auto drawCmd = m_SceneCommandBuffers[Renderer::GetCurrentFrameIndex()];
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer);
+
+		auto drawCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
 		auto dstSet = m_GeometryDescriptorSets[Renderer::GetCurrentFrameIndex()];
 
 		m_GeometryPipeline->Bind(drawCmd);
@@ -625,40 +619,40 @@ namespace VulkanCore {
 			0, nullptr);
 
 		for (auto& [mk, dc] : m_MeshDrawList)
-			VulkanRenderer::RenderMesh(m_SceneCommandBuffers, dc.MeshInstance, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
+			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
 
-		Renderer::EndGPUPerfMarker();
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 
-		Renderer::BeginGPUPerfMarker();
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer);
 
 		// Rendering Skybox
-		Renderer::RenderSkybox(m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxDescriptorSets, &m_SkyboxSettings);
-		Renderer::EndGPUPerfMarker();
+		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxDescriptorSets, &m_SkyboxSettings);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 
 		// Rendering Point Lights
-		Renderer::BeginGPUPerfMarker();
-		m_Scene->OnUpdateLights(m_SceneCommandBuffers, m_PointLightPipeline, m_PointLightDescriptorSets);
-		Renderer::EndGPUPerfMarker();
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer);
+		m_Scene->OnUpdateLights(m_SceneCommandBuffer, m_PointLightPipeline, m_PointLightDescriptorSets);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 
-		Renderer::EndRenderPass(m_GeometryPipeline->GetSpecification().RenderPass);
+		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().RenderPass);
 
 		// Copying Image for Bloom
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
-		VulkanRenderer::CopyVulkanImage(m_SceneCommandBuffers[frameIndex],
+		VulkanRenderer::CopyVulkanImage(m_SceneCommandBuffer->GetActiveCommandBuffer(),
 			m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[frameIndex],
 			m_SceneRenderTextures[frameIndex]);
 
-		VulkanRenderer::BlitVulkanImage(m_SceneCommandBuffers[frameIndex], m_SceneRenderTextures[frameIndex]);
+		VulkanRenderer::BlitVulkanImage(m_SceneCommandBuffer->GetActiveCommandBuffer(), m_SceneRenderTextures[frameIndex]);
 	}
 
 	void SceneRenderer::BloomCompute()
 	{
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
-		Renderer::BeginGPUPerfMarker();
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer);
 
-		VkCommandBuffer dispatchCmd = m_SceneCommandBuffers[frameIndex];
+		VkCommandBuffer dispatchCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
 		m_BloomPipeline->Bind(dispatchCmd);
 
 		// Prefilter
@@ -734,25 +728,13 @@ namespace VulkanCore {
 			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 		}
 
-		Renderer::EndGPUPerfMarker();
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 	}
 
 	void SceneRenderer::CreateCommandBuffers()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-		auto swapChain = VulkanSwapChain::GetSwapChain();
-
-		m_SceneCommandBuffers.resize(swapChain->GetImageCount());
-
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = device->GetCommandPool();
-		allocInfo.commandBufferCount = static_cast<uint32_t>(m_SceneCommandBuffers.size());
-
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_SceneCommandBuffers.data()), "Failed to Allocate Scene Command Buffers!");
-
-		Renderer::SetCommandBuffers(m_SceneCommandBuffers);
+		m_SceneCommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary, 5);
 	}
 
 	void SceneRenderer::ResetDrawCommands()
