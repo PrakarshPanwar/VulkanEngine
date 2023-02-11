@@ -56,7 +56,7 @@ namespace VulkanCore {
 
 	void EditorLayer::OnUpdate()
 	{
-		if (m_ViewportFocused && m_ViewportHovered)
+		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
 			m_EditorCamera.OnUpdate();
 
 		m_SceneRenderer->RenderScene(m_EditorCamera);
