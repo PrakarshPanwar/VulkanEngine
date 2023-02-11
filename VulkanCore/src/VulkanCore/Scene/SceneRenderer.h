@@ -8,6 +8,7 @@
 #include "Platform/Vulkan/VulkanBuffer.h"
 #include "Platform/Vulkan/VulkanVertexBuffer.h"
 #include "Platform/Vulkan/VulkanUniformBuffer.h"
+#include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
 
 #include <glm/glm.hpp>
@@ -33,7 +34,7 @@ namespace VulkanCore {
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
-		inline VkCommandBuffer GetCommandBuffer(uint32_t index) { return m_SceneCommandBuffers[index]; }
+		inline std::shared_ptr<VulkanRenderCommandBuffer> GetCommandBuffer() { return m_SceneCommandBuffer; }
 		inline std::shared_ptr<VulkanFramebuffer> GetFramebuffer() { return m_SceneFramebuffer; }
 		inline std::shared_ptr<VulkanRenderPass> GetRenderPass() { return m_SceneRenderPass; }
 		inline VkFramebuffer GetFinalVulkanFramebuffer(uint32_t index) { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
@@ -82,7 +83,7 @@ namespace VulkanCore {
 	private:
 		std::shared_ptr<Scene> m_Scene;
 
-		std::vector<VkCommandBuffer> m_SceneCommandBuffers;
+		std::shared_ptr<VulkanRenderCommandBuffer> m_SceneCommandBuffer;
 		std::shared_ptr<VulkanFramebuffer> m_SceneFramebuffer;
 		std::shared_ptr<VulkanRenderPass> m_SceneRenderPass;
 

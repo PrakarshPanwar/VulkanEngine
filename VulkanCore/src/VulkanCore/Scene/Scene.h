@@ -4,6 +4,7 @@
 #include "Platform/Vulkan/VulkanPipeline.h"
 #include "VulkanCore/Core/Components.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
+#include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 
 namespace VulkanCore {
 
@@ -19,7 +20,7 @@ namespace VulkanCore {
 		Entity CreateEntity(const std::string& name);
 		void OnUpdateGeometry(SceneRenderer* renderer);
 		void OnUpdateGeometry(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
-		void OnUpdateLights(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
+		void OnUpdateLights(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
 		void UpdatePointLightUB(UBPointLights& ubo);
 		void DestroyEntity(Entity entity);
 	private:

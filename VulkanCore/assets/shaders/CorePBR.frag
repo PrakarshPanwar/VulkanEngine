@@ -109,12 +109,12 @@ float GeometrySchlickSmithGGX(float dotNL, float dotNV, float roughness)
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
-    return F0 + (1.0 - F0) * pow(max(1.0 - cosTheta, 0.0), 5.0);
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 {
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(max(1.0 - cosTheta, 0.0), 5.0);
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 vec3 Lighting(vec3 F0)
@@ -160,7 +160,7 @@ vec3 Lighting(vec3 F0)
 
 vec3 IBL(vec3 F0, vec3 Lr)
 {
-// Ambient Lighting (We now use IBL as the Ambient Term)
+    // Ambient Lighting (We now use IBL as the Ambient Term)
     vec3 F = FresnelSchlickRoughness(m_Params.NdotV, F0, m_Params.Roughness);
     
     vec3 kS = F;
@@ -171,7 +171,7 @@ vec3 IBL(vec3 F0, vec3 Lr)
     vec3 diffuse = irradiance * m_Params.Albedo;
 
     // Sample both the Pre-Filter map and the BRDF LUT and combine them together as per the Split-Sum approximation to get the IBL Specular part
-    const float MAX_REFLECTION_LOD = 4.0; // todo: param/const
+    const float MAX_REFLECTION_LOD = 4.0;
     vec3 prefilteredColor = textureLod(u_PrefilteredMap, Lr, m_Params.Roughness * MAX_REFLECTION_LOD).rgb;
 
     vec2 brdf = texture(u_BRDFTexture, vec2(m_Params.NdotV, m_Params.Roughness)).rg;
