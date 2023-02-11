@@ -50,15 +50,7 @@ namespace VulkanCore {
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000);
 
 		m_ImGuiGlobalPool = descriptorPoolBuilder.Build();
-
-		m_ImGuiCmdBuffers.resize(VulkanSwapChain::MaxFramesInFlight);
-
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		allocInfo.commandPool = device->GetRenderThreadCommandPool();
-		allocInfo.commandBufferCount = (uint32_t)m_ImGuiCmdBuffers.size();
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_ImGuiCmdBuffers.data()), "Failed to Allocate ImGui Secondary Command Buffers!");
+		m_ImGuiCmdBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetRenderThreadCommandPool(), CommandBufferLevel::Secondary);
 
 		ImGui::CreateContext();
 
@@ -131,7 +123,7 @@ namespace VulkanCore {
 	{
 		int currentFrameIndex = Renderer::GetCurrentFrameIndex();
 		auto swapChain = VulkanSwapChain::GetSwapChain();
-		auto commandBuffer = m_ImGuiCmdBuffers[currentFrameIndex];
+		auto commandBuffer = m_ImGuiCmdBuffer->GetActiveCommandBuffer();
 
 #if IMGUI_VIEWPORTS
 		ImGuiIO& io = ImGui::GetIO();
@@ -173,9 +165,6 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 		ImGui_ImplVulkan_Shutdown();
-
-		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetRenderThreadCommandPool(),
-			static_cast<uint32_t>(m_ImGuiCmdBuffers.size()), m_ImGuiCmdBuffers.data());
 	}
 
 	VkDescriptorSet ImGuiLayer::AddTexture(const VulkanImage& Image)

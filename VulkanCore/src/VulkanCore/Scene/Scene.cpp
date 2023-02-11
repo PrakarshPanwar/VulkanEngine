@@ -74,9 +74,9 @@ namespace VulkanCore {
 	}
 
 	// TODO: This should be managed by SceneRenderer
-	void Scene::OnUpdateLights(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
+	void Scene::OnUpdateLights(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
 	{
-		auto drawCmd = cmdBuffers[Renderer::GetCurrentFrameIndex()];
+		auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
 		auto dstSet = descriptorSet[Renderer::GetCurrentFrameIndex()];
 
 		pipeline->Bind(drawCmd);

@@ -2,14 +2,12 @@
 #include "Renderer.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 
 namespace VulkanCore {
 
 	std::unordered_map<std::string, std::shared_ptr<Shader>> Renderer::m_Shaders;
-	std::vector<VkCommandBuffer> Renderer::m_CommandBuffers;
 	VulkanRenderer* Renderer::s_Renderer = nullptr;
-	uint32_t Renderer::m_QueryIndex = 0;
-	std::array<uint64_t, 10> Renderer::m_QueryResultBuffer;
 
 	namespace Utils {
 
@@ -32,11 +30,6 @@ namespace VulkanCore {
 		}
 
 	}
-	
-	void Renderer::SetCommandBuffers(const std::vector<VkCommandBuffer>& cmdBuffers)
-	{
-		m_CommandBuffers = cmdBuffers;
-	}
 
 	void Renderer::SetRendererAPI(VulkanRenderer* vkRenderer)
 	{
@@ -48,15 +41,15 @@ namespace VulkanCore {
 		return VulkanRenderer::Get()->GetCurrentFrameIndex();
 	}
 
-	void Renderer::BeginRenderPass(std::shared_ptr<VulkanRenderPass> renderPass)
+	void Renderer::BeginRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)
 	{
-		auto beginPassCmd = m_CommandBuffers[GetCurrentFrameIndex()];
+		auto beginPassCmd = cmdBuffer->GetActiveCommandBuffer();
 		renderPass->Begin(beginPassCmd);
 	}
 
-	void Renderer::EndRenderPass(std::shared_ptr<VulkanRenderPass> renderPass)
+	void Renderer::EndRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)
 	{
-		auto endPassCmd = m_CommandBuffers[GetCurrentFrameIndex()];
+		auto endPassCmd = cmdBuffer->GetActiveCommandBuffer();
 		renderPass->End(endPassCmd);
 	}
 
@@ -79,9 +72,9 @@ namespace VulkanCore {
 		m_Shaders.clear();
 	}
 
-	void Renderer::RenderSkybox(std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData /*= nullptr*/)
+	void Renderer::RenderSkybox(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData /*= nullptr*/)
 	{
-		auto drawCmd = m_CommandBuffers[GetCurrentFrameIndex()];
+		auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
 		auto dstSet = descriptorSet[GetCurrentFrameIndex()];
 
 		pipeline->Bind(drawCmd);
@@ -101,37 +94,19 @@ namespace VulkanCore {
 		vkCmdDraw(drawCmd, 36, 1, 0, 0);
 	}	
 	
-	void Renderer::BeginGPUPerfMarker()
+	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
 	{
-		auto writeTimestampCmd = m_CommandBuffers[GetCurrentFrameIndex()];
-		vkCmdWriteTimestamp(writeTimestampCmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, s_Renderer->GetPerfQueryPool(), m_QueryIndex);
+		vkCmdWriteTimestamp(cmdBuffer->GetActiveCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex);
 	}
 
-	void Renderer::EndGPUPerfMarker()
+	void Renderer::EndGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
 	{
-		auto writeTimestampCmd = m_CommandBuffers[GetCurrentFrameIndex()];
-		vkCmdWriteTimestamp(writeTimestampCmd, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, s_Renderer->GetPerfQueryPool(), m_QueryIndex + 1);
+		vkCmdWriteTimestamp(cmdBuffer->GetActiveCommandBuffer(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+			cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex + 1);
 
-		m_QueryIndex += 2;
-		m_QueryIndex = m_QueryIndex % 10;
-	}
-
-	void Renderer::RetrieveQueryPoolResults()
-	{
-		uint32_t queryBufferSize = (uint32_t)m_QueryResultBuffer.size();
-
-		vkGetQueryPoolResults(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
-			s_Renderer->GetPerfQueryPool(),
-			0,
-			queryBufferSize, sizeof(uint64_t) * queryBufferSize,
-			(void*)m_QueryResultBuffer.data(), sizeof(uint64_t),
-			VK_QUERY_RESULT_64_BIT);
-	}
-
-	uint64_t Renderer::GetQueryTime(uint32_t index)
-	{
-		uint64_t timeStamp = m_QueryResultBuffer[(index << 1) + 1] - m_QueryResultBuffer[index << 1];
-		return timeStamp;
+		cmdBuffer->m_TimestampsQueryIndex += 2;
+		cmdBuffer->m_TimestampsQueryIndex = cmdBuffer->m_TimestampsQueryIndex % cmdBuffer->m_TimestampQueryBufferSize;
 	}
 
 	std::shared_ptr<VulkanTexture> Renderer::GetWhiteTexture(ImageFormat format)
@@ -148,9 +123,9 @@ namespace VulkanCore {
 		return whiteTexture;
 	}
 
-	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
+	void Renderer::SubmitFullscreenQuad(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
 	{
-		auto drawCmd = m_CommandBuffers[GetCurrentFrameIndex()];
+		auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
 		auto dstSet = descriptorSet[GetCurrentFrameIndex()];
 
 		pipeline->Bind(drawCmd);
