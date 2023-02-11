@@ -37,7 +37,7 @@ namespace VulkanCore {
 		inline VkCommandBuffer GetCurrentCommandBuffer() const
 		{
 			VK_CORE_ASSERT(IsFrameStarted, "Cannot get Command Buffer when frame is not in progress!");
-			return m_CommandBuffers[m_CurrentFrameIndex];
+			return m_CommandBuffer->GetActiveCommandBuffer();
 		}
 
 		static std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> CreateEnviromentMap(const std::string& filepath);
@@ -50,7 +50,6 @@ namespace VulkanCore {
 
 		inline VkRenderPass GetSwapChainRenderPass() const { return m_SwapChain->GetRenderPass(); }
 		inline int GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
-		inline VkQueryPool GetPerfQueryPool() const { return m_QueryPool; }
 
 		void RecreateSwapChain();
 		void FinalQueueSubmit();
@@ -58,23 +57,17 @@ namespace VulkanCore {
 		static VulkanRenderer* Get() { return s_Instance; }
 	private:
 		void CreateCommandBuffers();
-		void FreeCommandBuffers();
-		void CreateQueryPool();
-		void FreeQueryPool();
 	private:
 		std::shared_ptr<WindowsWindow> m_Window;
 		std::unique_ptr<VulkanSwapChain> m_SwapChain;
 
-		std::vector<VkCommandBuffer> m_CommandBuffers;
-		std::vector<VkCommandBuffer> m_SecondaryCommandBuffers;
+		std::shared_ptr<VulkanRenderCommandBuffer> m_CommandBuffer;
+		std::shared_ptr<VulkanRenderCommandBuffer> m_SecondaryCommandBuffer;
 		std::array<VkCommandBuffer, 2> m_ExecuteCommandBuffers;
 
 		uint32_t m_CurrentImageIndex;
 		int m_CurrentFrameIndex = 0;
 		bool IsFrameStarted = false;
-
-		VkQueryPool m_QueryPool;
-		const uint32_t m_QueryCount = 10; // TODO: This number could change in future
 
 		static RendererStats s_Data;
 		static VulkanRenderer* s_Instance;

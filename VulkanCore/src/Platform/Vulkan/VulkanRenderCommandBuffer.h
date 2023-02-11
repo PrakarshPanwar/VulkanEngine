@@ -18,7 +18,7 @@ namespace VulkanCore {
 		void Begin();
 		void Begin(VkRenderPass renderPass, VkFramebuffer framebuffer);
 		void End();
-		void End(VkCommandBuffer secondaryCmdBuffers[], uint32_t count);
+		void Execute(VkCommandBuffer secondaryCmdBuffers[], uint32_t count);
 
 		inline VkCommandBuffer GetActiveCommandBuffer() const;
 

@@ -116,12 +116,9 @@ namespace VulkanCore {
 		vkEndCommandBuffer(GetActiveCommandBuffer());
 	}
 
-	void VulkanRenderCommandBuffer::End(VkCommandBuffer secondaryCmdBuffers[], uint32_t count)
+	void VulkanRenderCommandBuffer::Execute(VkCommandBuffer secondaryCmdBuffers[], uint32_t count)
 	{
-		VkCommandBuffer commandBuffer = GetActiveCommandBuffer();
-
-		vkCmdExecuteCommands(commandBuffer, count, secondaryCmdBuffers);
-		vkEndCommandBuffer(commandBuffer);
+		vkCmdExecuteCommands(GetActiveCommandBuffer(), count, secondaryCmdBuffers);
 	}
 
 	VkCommandBuffer VulkanRenderCommandBuffer::GetActiveCommandBuffer() const
