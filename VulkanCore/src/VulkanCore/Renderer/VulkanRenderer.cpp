@@ -72,19 +72,16 @@ namespace VulkanCore {
 
 	VkCommandBuffer VulkanRenderer::BeginScene()
 	{
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer();
+		commandBuffer->Begin();
 
-		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer(m_CurrentFrameIndex);
-
-		VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo), "Failed to Begin Recording Command Buffer!");
-		return commandBuffer;
+		return commandBuffer->GetActiveCommandBuffer();
 	}
 
 	void VulkanRenderer::EndScene()
 	{
-		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer(m_CurrentFrameIndex);
-		VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer), "Failed to Record Command Buffer!");
+		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer();
+		commandBuffer->End();
 	}
 
 	void VulkanRenderer::BeginSwapChainRenderPass(VkCommandBuffer commandBuffer)
@@ -145,18 +142,6 @@ namespace VulkanCore {
 		m_ExecuteCommandBuffers[1] = ImGuiLayer::Get()->m_ImGuiCmdBuffers[Renderer::GetCurrentFrameIndex()];
 		vkCmdExecuteCommands(commandBuffer, (uint32_t)m_ExecuteCommandBuffers.size(), m_ExecuteCommandBuffers.data());
 		vkCmdEndRenderPass(commandBuffer);
-	}
-
-	void VulkanRenderer::BeginSceneRenderPass(VkCommandBuffer commandBuffer)
-	{
-		auto renderPass = SceneRenderer::GetSceneRenderer()->GetRenderPass();
-		Renderer::BeginRenderPass(renderPass);
-	}
-
-	void VulkanRenderer::EndSceneRenderPass(VkCommandBuffer commandBuffer)
-	{
-		auto renderPass = SceneRenderer::GetSceneRenderer()->GetRenderPass();
-		Renderer::EndRenderPass(renderPass);
 	}
 
 	std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
@@ -452,9 +437,9 @@ namespace VulkanCore {
 		return brdfTexture;
 	}
 
-	void VulkanRenderer::RenderMesh(const std::vector<VkCommandBuffer>& drawCmds, std::shared_ptr<Mesh> mesh, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	void VulkanRenderer::RenderMesh(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<Mesh> mesh, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
-		auto drawCmd = drawCmds[Renderer::GetCurrentFrameIndex()];
+		auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
 
 		auto meshSource = mesh->GetMeshSource();
 		transformBuffer->WriteData((void*)transformData.data(), 0);
@@ -564,7 +549,7 @@ namespace VulkanCore {
 	{
 		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
-		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), sceneRenderer->GetCommandBuffer(m_CurrentFrameIndex)};
+		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), sceneRenderer->GetCommandBuffer()->GetActiveCommandBuffer() };
 		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())

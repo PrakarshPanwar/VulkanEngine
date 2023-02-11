@@ -171,7 +171,7 @@ vec3 IBL(vec3 F0, vec3 Lr)
     vec3 diffuse = irradiance * m_Params.Albedo;
 
     // Sample both the Pre-Filter map and the BRDF LUT and combine them together as per the Split-Sum approximation to get the IBL Specular part
-    const float MAX_REFLECTION_LOD = 4.0; // todo: param/const
+    const float MAX_REFLECTION_LOD = 4.0;
     vec3 prefilteredColor = textureLod(u_PrefilteredMap, Lr, m_Params.Roughness * MAX_REFLECTION_LOD).rgb;
 
     vec2 brdf = texture(u_BRDFTexture, vec2(m_Params.NdotV, m_Params.Roughness)).rg;
