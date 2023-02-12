@@ -286,6 +286,7 @@ namespace VulkanCore {
 		m_Specification.Width = width;
 		m_Specification.Height = height;
 		m_Specification.Format = format;
+		m_Specification.SamplerWrap = TextureWrap::Clamp;
 		m_Specification.GenerateMips = true;
 	}
 

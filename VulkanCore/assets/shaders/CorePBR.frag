@@ -25,7 +25,7 @@ layout(set = 0, binding = 0) uniform Camera
 {
 	mat4 Projection;
 	mat4 View;
-	mat4 InvView;
+	mat4 InverseView;
 } u_Camera;
 
 layout(set = 0, binding = 1) uniform PointLightData
@@ -35,9 +35,9 @@ layout(set = 0, binding = 1) uniform PointLightData
 } u_PointLight;
 
 // Material Data
-layout(binding = 2) uniform sampler2D u_DiffuseTextures[4];
-layout(binding = 3) uniform sampler2D u_NormalTextures[4];
-layout(binding = 4) uniform sampler2D u_AORoughMetalTextures[4];
+layout(binding = 2) uniform sampler2D u_DiffuseTextures[6];
+layout(binding = 3) uniform sampler2D u_NormalTextures[6];
+layout(binding = 4) uniform sampler2D u_AORoughMetalTextures[6];
 
 // IBL
 layout(binding = 5) uniform samplerCube u_IrradianceMap;
@@ -46,6 +46,9 @@ layout(binding = 7) uniform samplerCube u_PrefilteredMap;
 
 const float PI = 3.14159265359;
 
+// Fresnel factor for all incidence
+const vec3 Fdielectric = vec3(0.04);
+
 struct PBRParams
 {
     vec3 View;
@@ -53,6 +56,7 @@ struct PBRParams
     float NdotV;
 
     vec3 Albedo;
+    float Occlusion;
     float Metallic;
     float Roughness;
 } m_Params;
@@ -109,12 +113,12 @@ float GeometrySchlickSmithGGX(float dotNL, float dotNV, float roughness)
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 {
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 vec3 Lighting(vec3 F0)
@@ -177,7 +181,7 @@ vec3 IBL(vec3 F0, vec3 Lr)
     vec2 brdf = texture(u_BRDFTexture, vec2(m_Params.NdotV, m_Params.Roughness)).rg;
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
-    vec3 ambient = (kD * diffuse + specular);
+    vec3 ambient = (kD * diffuse + specular) * m_Params.Occlusion;
 
     return ambient;
 }
@@ -188,19 +192,19 @@ void main()
     // R->Ambient Occlusion, G->Roughness, B->Metallic
     vec3 aorm = texture(u_AORoughMetalTextures[v_MaterialIndex], Input.TexCoord).rgb;
 
+    m_Params.Occlusion = aorm.r;
     m_Params.Roughness = aorm.g;
     m_Params.Metallic = aorm.b;
 
-	vec3 cameraPosWorld = u_Camera.InvView[3].xyz;
+	vec3 cameraPosWorld = u_Camera.InverseView[3].xyz;
 	m_Params.View = normalize(cameraPosWorld - Input.WorldPosition);
     m_Params.Normal = GetNormalsFromMap();
     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);
     vec3 Lr = 2.0 * m_Params.NdotV * m_Params.Normal - m_Params.View;
 
     // Calculate Reflectance at Normal Incidence; if Di-Electric (like Plastic) use F0 
-    // of 0.04 and if it's a Metal, use the Albedo color as F0 (Metallic Workflow)    
-    vec3 F0 = vec3(0.04);
-    F0 = mix(F0, m_Params.Albedo, m_Params.Metallic);
+    // of 0.04 and if it's a Metal, use the Albedo color as F0 (Metallic Workflow)
+    vec3 F0 = mix(Fdielectric, m_Params.Albedo, m_Params.Metallic);
 
     vec3 lightContribution = Lighting(F0);
     vec3 iblContribution = IBL(F0, Lr);
