@@ -247,7 +247,7 @@ namespace VulkanCore {
 		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/meshes/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
 		m_ARMMap2 = std::make_shared<VulkanTexture>("assets/meshes/BrassVase2K/textures/brass_vase_03_arm_2k.png", ImageFormat::RGBA8_UNORM);
 
-#define USE_GOLD_MATERIAL 1
+#define USE_GOLD_MATERIAL 0
 #if USE_GOLD_MATERIAL
 		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldDiffuse2.png");
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldNormalGL.png", ImageFormat::RGBA8_UNORM);
@@ -257,6 +257,13 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesNorGL.png", ImageFormat::RGBA8_UNORM);
 		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesARM.png", ImageFormat::RGBA8_UNORM);
 #endif
+		m_DiffuseMap4 = std::make_shared<VulkanTexture>("assets/textures/ConcreteWall/concrete_wall_006_diff_2k.png");
+		m_NormalMap4 = std::make_shared<VulkanTexture>("assets/textures/ConcreteWall/concrete_wall_006_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap4 = std::make_shared<VulkanTexture>("assets/textures/ConcreteWall/concrete_wall_006_arm_2k.png", ImageFormat::RGBA8_UNORM);
+
+		m_DiffuseMap5 = std::make_shared<VulkanTexture>("assets/textures/PlankFlooring/plank_flooring_diff_2k.png");
+		m_NormalMap5 = std::make_shared<VulkanTexture>("assets/textures/PlankFlooring/plank_flooring_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap5 = std::make_shared<VulkanTexture>("assets/textures/PlankFlooring/plank_flooring_arm_2k.png", ImageFormat::RGBA8_UNORM);
 
 		m_SRGBWhiteTexture = Renderer::GetWhiteTexture();
 		m_UNORMWhiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
@@ -264,6 +271,7 @@ namespace VulkanCore {
 
 		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
 		m_CubemapTexture = filteredMap;
+		m_PrefilteredTexture = filteredMap;
 		m_IrradianceTexture = irradianceMap;
 
 #if USE_PRELOADED_BRDF
@@ -278,14 +286,20 @@ namespace VulkanCore {
 		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
 		DiffuseMaps.push_back(m_DiffuseMap2->GetDescriptorImageInfo());
 		DiffuseMaps.push_back(m_DiffuseMap3->GetDescriptorImageInfo());
+		DiffuseMaps.push_back(m_DiffuseMap4->GetDescriptorImageInfo());
+		DiffuseMaps.push_back(m_DiffuseMap5->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_UNORMWhiteTexture->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_NormalMap->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_NormalMap2->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_NormalMap3->GetDescriptorImageInfo());
+		NormalMaps.push_back(m_NormalMap4->GetDescriptorImageInfo());
+		NormalMaps.push_back(m_NormalMap5->GetDescriptorImageInfo());
 		ARMMaps.push_back(m_UNORMWhiteTexture->GetDescriptorImageInfo());
 		ARMMaps.push_back(m_ARMMap->GetDescriptorImageInfo());
 		ARMMaps.push_back(m_ARMMap2->GetDescriptorImageInfo());
 		ARMMaps.push_back(m_ARMMap3->GetDescriptorImageInfo());
+		ARMMaps.push_back(m_ARMMap4->GetDescriptorImageInfo());
+		ARMMaps.push_back(m_ARMMap5->GetDescriptorImageInfo());
 
 		// Writing in Descriptors
 		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
@@ -325,7 +339,7 @@ namespace VulkanCore {
 			geomDescriptorWriter[i].WriteImage(6, &brdfTextureInfo);
 
 			// Prefiltered Map
-			VkDescriptorImageInfo prefilteredMapInfo = filteredMap->GetDescriptorImageInfo();
+			VkDescriptorImageInfo prefilteredMapInfo = m_PrefilteredTexture->GetDescriptorImageInfo();
 			geomDescriptorWriter[i].WriteImage(7, &prefilteredMapInfo);
 
 			geomDescriptorWriter[i].Build(m_GeometryDescriptorSets[i]);
