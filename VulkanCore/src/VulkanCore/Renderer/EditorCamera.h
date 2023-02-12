@@ -49,12 +49,14 @@ namespace VulkanCore {
 
 		void MousePan(const glm::vec2& delta);
 		void MouseRotate(const glm::vec2& delta);
+		void MouseDrag(const glm::vec2& delta);
 		void MouseZoom(float delta);
 
 		glm::vec3 CalculatePosition() const;
 
 		std::pair<float, float> PanSpeed() const;
 		float RotationSpeed() const;
+		float DragSpeed() const;
 		float ZoomSpeed() const;
 	private:
 		float m_FOV = 45.0f, m_AspectRatio = 1.778f, m_NearClip = 0.1f, m_FarClip = 1000.0f;

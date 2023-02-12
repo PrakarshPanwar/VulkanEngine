@@ -5,18 +5,13 @@
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/Timer.h"
+#include "VulkanCore/Core/Components.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tinyobjloader.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
-
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
-#include <format>
 
 namespace std {
 
@@ -35,298 +30,214 @@ namespace std {
 
 namespace VulkanCore {
 
-	Mesh::Mesh(const MeshBuilder& builder)
+	namespace Utils {
+
+		static glm::mat4 Mat4FromAIMatrix4(const aiMatrix4x4& matrix)
+		{
+			glm::mat4 result;
+
+			result[0][0] = matrix.a1; result[1][0] = matrix.a2; result[2][0] = matrix.a3; result[3][0] = matrix.a4;
+			result[0][1] = matrix.b1; result[1][1] = matrix.b2; result[2][1] = matrix.b3; result[3][1] = matrix.b4;
+			result[0][2] = matrix.c1; result[1][2] = matrix.c2; result[2][2] = matrix.c3; result[3][2] = matrix.c4;
+			result[0][3] = matrix.d1; result[1][3] = matrix.d2; result[2][3] = matrix.d3; result[3][3] = matrix.d4;
+
+			return result;
+		}
+
+	}
+
+	std::map<uint64_t, std::shared_ptr<MeshSource>> Mesh::s_MeshSourcesMap;
+	std::map<uint64_t, std::shared_ptr<VulkanVertexBuffer>> Mesh::s_MeshTransformBuffer;
+
+	Mesh::Mesh(const std::string& filepath, int materialIndex)
+		: m_MaterialID(materialIndex)
 	{
-		CreateVertexBuffers(builder.Vertices);
-		CreateIndexBuffers(builder.Indices);
+		uint64_t meshKey = std::filesystem::hash_value(filepath);
+
+		if (s_MeshSourcesMap.contains(meshKey))
+			m_MeshSource = s_MeshSourcesMap[meshKey];
+		else
+		{
+			m_MeshSource = std::make_shared<MeshSource>(filepath);
+			s_MeshSourcesMap[meshKey] = m_MeshSource;
+
+			// Allocating Vertex Buffer Set for Unique Mesh Sources
+			auto& transformBuffer = s_MeshTransformBuffer[meshKey];
+			// TODO: In future this size will be increased
+			transformBuffer = std::make_shared<VulkanVertexBuffer>(10 * sizeof(TransformData));
+
+			AssimpMeshImporter::TraverseNodes(m_MeshSource, m_MeshSource->m_Scene->mRootNode, 0);
+			AssimpMeshImporter::InvalidateMesh(m_MeshSource, m_MaterialID);
+		}
+	}
+
+	Mesh::Mesh()
+		: m_MeshSource(std::make_shared<MeshSource>())
+	{
+	}
+
+	std::shared_ptr<Mesh> Mesh::LoadMesh(const char* filepath, int materialIndex)
+	{
+		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(filepath, materialIndex);
+		return mesh;
+	}
+
+	void Mesh::ClearAllMeshes()
+	{
+		s_MeshTransformBuffer.clear();
+		s_MeshSourcesMap.clear();
 	}
 
 	Mesh::~Mesh()
 	{
 	}
 
-	void Mesh::Bind(VkCommandBuffer commandBuffer)
+	static const uint32_t s_MeshImportFlags = {
+		aiProcess_Triangulate |	          // Use triangles
+		aiProcess_CalcTangentSpace |
+		aiProcess_JoinIdenticalVertices | // For Index Buffer
+		aiProcess_GenUVCoords |           // Generate UV Coords
+		aiProcess_GenNormals |            // Generate Normals for Mesh
+		aiProcess_OptimizeMeshes |
+		aiProcess_SortByPType |
+		aiProcess_ValidateDataStructure
+	};
+
+	MeshSource::MeshSource(const std::string& filepath)
+		: m_FilePath(filepath)
 	{
-		VkBuffer buffers[] = { m_VertexBuffer->GetVulkanBuffer() };
-		VkDeviceSize offsets[] = { 0 };
+		VK_CORE_INFO("Loading Mesh: {0}", filepath);
 
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+		m_Importer = std::make_unique<Assimp::Importer>();
 
-		if (m_HasIndexBuffer)
-			vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
-	}
-
-	void Mesh::Draw(VkCommandBuffer commandBuffer)
-	{
-		if (m_HasIndexBuffer)
-			vkCmdDrawIndexed(commandBuffer, m_IndexCount, 1, 0, 0, 0);
-
-		else
-			vkCmdDraw(commandBuffer, m_VertexCount, 1, 0, 0);
-	}
-
-	std::shared_ptr<Mesh> Mesh::CreateMeshFromFile(const std::string& filepath)
-	{
-		MeshBuilder builder{};
-		builder.LoadMesh(filepath);
-
-		std::filesystem::path modelFilepath = filepath;
-		//std::filesystem::path materialFilePath = modelFilepath.replace_extension(".mtl");
-
-		VK_CORE_TRACE("Loading Model: {0}", modelFilepath.filename());
-		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
-		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
-		return std::make_shared<Mesh>(builder);
-	}
-
-	std::shared_ptr<Mesh> Mesh::CreateMeshFromFile(const std::string& filepath, const glm::vec3& modelColor)
-	{
-		return nullptr;
-	}
-
-	std::shared_ptr<Mesh> Mesh::CreateMeshFromFile(const std::string& filepath, int texID)
-	{
-		MeshBuilder builder{};
-		builder.LoadMesh(filepath, texID);
-
-		std::filesystem::path modelFilepath = filepath;
-		//std::filesystem::path materialFilePath = modelFilepath.replace_extension(".mtl");
-
-		VK_CORE_TRACE("Loading Model: {0}", modelFilepath.filename());
-		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
-		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
-
-		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(builder);
-		mesh->m_FilePath = filepath;
-		return mesh;
-	}
-
-	std::shared_ptr<Mesh> Mesh::CreateMeshFromAssimp(const std::string& filepath, int texID)
-	{
-		MeshBuilder builder{};
-		std::filesystem::path modelFilepath = filepath;
-		Timer timer(std::format("\tProcessing Mesh {0}", modelFilepath.filename().string()));
-
-		builder.LoadMeshFromAssimp(filepath, texID);
-
-		VK_CORE_TRACE("Loading Model: {0}", filepath);
-		VK_CORE_TRACE("\tVertex Count: {0}", builder.Vertices.size());
-		VK_CORE_TRACE("\tIndex Count: {0}", builder.Indices.size());
-
-		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(builder);
-		mesh->m_FilePath = filepath;
-		mesh->m_MaterialID = texID;
-
-		return mesh;
-	}
-
-	void Mesh::CreateVertexBuffers(const std::vector<Vertex>& vertices)
-	{
-		m_VertexCount = (uint32_t)vertices.size();
-		VK_CORE_ASSERT(m_VertexCount >= 3, "Vertex Count should be at least greater than or equal to 3!");
-
-		uint32_t bufferSize = static_cast<uint32_t>(sizeof(vertices[0]) * m_VertexCount);
-		m_VertexBuffer = std::make_unique<VulkanVertexBuffer>((void*)vertices.data(), bufferSize);
-	}
-
-	void Mesh::CreateIndexBuffers(const std::vector<uint32_t>& indices)
-	{
-		m_IndexCount = (uint32_t)indices.size();
-		m_HasIndexBuffer = m_IndexCount > 0;
-
-		if (!m_HasIndexBuffer)
+		const aiScene* scene = m_Importer->ReadFile(filepath, s_MeshImportFlags);
+		if (!scene || !scene->HasMeshes())
+		{
+			VK_CORE_ERROR("Failed to load Mesh file: {0}", m_FilePath);
 			return;
+		}
 
-		uint32_t bufferSize = static_cast<uint32_t>(sizeof(indices[0]) * m_IndexCount);
-		m_IndexBuffer = std::make_unique<VulkanIndexBuffer>((void*)indices.data(), bufferSize);
-	}
+		m_Scene = (aiScene*)scene;
 
-	std::vector<VkVertexInputBindingDescription> Vertex::GetBindingDescriptions()
-	{
-		std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
-		bindingDescriptions[0].binding = 0;
-		bindingDescriptions[0].stride = sizeof(Vertex);
-		bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		return bindingDescriptions;
-	}
-
-	std::vector<VkVertexInputAttributeDescription> Vertex::GetAttributeDescriptions()
-	{
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-
-		attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Position) });
-		attributeDescriptions.push_back({ 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Color) });
-		attributeDescriptions.push_back({ 2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Normal) });
-		attributeDescriptions.push_back({ 3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, TexCoord) });
-		attributeDescriptions.push_back({ 4, 0, VK_FORMAT_R32_SINT, offsetof(Vertex, TexID) });
-
-		return attributeDescriptions;
-	}
-
-	void MeshBuilder::LoadMesh(const std::string& filepath)
-	{
-		tinyobj::attrib_t attrib;
-		std::vector<tinyobj::shape_t> shapes;
-		std::vector<tinyobj::material_t> materials;
-		std::string warn, err;
-
-		VK_CORE_ASSERT(tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str()), warn + err);
-
-		Vertices.clear();
-		Indices.clear();
-
-		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-		for (const auto& shape : shapes)
+		uint32_t vertexCount = 0, indexCount = 0;
+		for (uint32_t m = 0; m < scene->mNumMeshes; ++m)
 		{
-			for (const auto& index : shape.mesh.indices)
+			aiMesh* mesh = scene->mMeshes[m];
+
+			Submesh& submesh = m_Submeshes.emplace_back();
+			submesh.BaseVertex = vertexCount;
+			submesh.BaseIndex = indexCount;
+			submesh.VertexCount = mesh->mNumVertices;
+			submesh.IndexCount = mesh->mNumFaces * 3;
+			submesh.MeshName = mesh->mName.C_Str();
+
+			vertexCount += mesh->mNumVertices;
+			indexCount += submesh.IndexCount;
+		}
+
+		m_MeshKey = std::filesystem::hash_value(filepath);
+
+		// Allocating Root Node
+		m_Nodes.emplace_back();
+	}
+
+	MeshSource::~MeshSource()
+	{
+	}
+
+	void AssimpMeshImporter::InvalidateMesh(std::shared_ptr<MeshSource> meshSource, int materialIndex)
+	{
+		for (uint32_t m = 0; m < (uint32_t)meshSource->m_Submeshes.size(); ++m)
+		{
+			aiMesh* mesh = meshSource->m_Scene->mMeshes[m];
+
+			for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
 			{
-				Vertex vertex{};
+				Vertex vertex;
+				glm::vec3 mVector;
+				mVector.x = mesh->mVertices[i].x;
+				mVector.y = mesh->mVertices[i].y;
+				mVector.z = mesh->mVertices[i].z;
+				vertex.Position = mVector;
 
-				if (index.vertex_index >= 0)
+				if (mesh->HasNormals())
 				{
-					vertex.Position = {
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2] };
-
-					vertex.Color = {
-					attrib.colors[3 * index.vertex_index + 0],
-					attrib.colors[3 * index.vertex_index + 1],
-					attrib.colors[3 * index.vertex_index + 2] };
+					mVector.x = mesh->mNormals[i].x;
+					mVector.y = mesh->mNormals[i].y;
+					mVector.z = mesh->mNormals[i].z;
+					vertex.Normal = mVector;
 				}
 
-				if (index.normal_index >= 0)
+				if (mesh->HasTangentsAndBitangents())
 				{
-					vertex.Normal = { 
-					attrib.normals[3 * index.normal_index + 0],
-					attrib.normals[3 * index.normal_index + 1],
-					attrib.normals[3 * index.normal_index + 2] };
+					mVector.x = mesh->mTangents[i].x;
+					mVector.y = mesh->mTangents[i].y;
+					mVector.z = mesh->mTangents[i].z;
+					vertex.Tangent = mVector;
+
+					mVector.x = mesh->mBitangents[i].x;
+					mVector.y = mesh->mBitangents[i].y;
+					mVector.z = mesh->mBitangents[i].z;
+					vertex.Binormal = mVector;
 				}
 
-				if (index.texcoord_index >= 0)
+				vertex.Color = glm::vec3{ 1.0f };
+
+				if (mesh->HasTextureCoords(0))
 				{
-					vertex.TexCoord = {
-					attrib.texcoords[2 * index.texcoord_index + 0],
-					attrib.texcoords[2 * index.texcoord_index + 1] };
+					glm::vec2 mTexCoords = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
+					vertex.TexCoord = mTexCoords;
 				}
 
-				vertex.TexID = 0;
+				vertex.TexID = materialIndex;
+				meshSource->m_Vertices.push_back(vertex);
+			}
 
-				if (uniqueVertices.count(vertex) == 0)
-				{
-					uniqueVertices[vertex] = static_cast<uint32_t>(Vertices.size());
-					Vertices.push_back(vertex);
-				}
+			for (uint32_t i = 0; i < mesh->mNumFaces; ++i)
+			{
+				aiFace face = mesh->mFaces[i];
 
-				Indices.push_back(uniqueVertices[vertex]);
+				for (uint32_t j = 0; j < face.mNumIndices; ++j)
+					meshSource->m_Indices.push_back(face.mIndices[j]);
 			}
 		}
+
+		meshSource->m_VertexBuffer = std::make_shared<VulkanVertexBuffer>(meshSource->m_Vertices.data(), (uint32_t)(meshSource->m_Vertices.size() * sizeof(Vertex)));
+		meshSource->m_IndexBuffer = std::make_shared<VulkanIndexBuffer>(meshSource->m_Indices.data(), (uint32_t)(meshSource->m_Indices.size() * 4));
 	}
 
-	void MeshBuilder::LoadMesh(const std::string& filepath, int texID)
+	void AssimpMeshImporter::TraverseNodes(std::shared_ptr<MeshSource> meshSource, aiNode* aNode, uint32_t nodeIndex)
 	{
-		tinyobj::attrib_t attrib;
-		std::vector<tinyobj::shape_t> shapes;
-		std::vector<tinyobj::material_t> materials;
-		std::string warn, err;
+		MeshNode& node = meshSource->m_Nodes[nodeIndex];
+		node.Name = aNode->mName.C_Str();
+		node.LocalTransform = Utils::Mat4FromAIMatrix4(aNode->mTransformation);
 
-		VK_CORE_ASSERT(tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str()), warn + err);
-
-		Vertices.clear();
-		Indices.clear();
-
-		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-		for (const auto& shape : shapes)
+		for (uint32_t i = 0; i < aNode->mNumMeshes; ++i)
 		{
-			for (const auto& index : shape.mesh.indices)
-			{
-				Vertex vertex{};
+			uint32_t submeshIndex = aNode->mMeshes[i];
+			auto& submesh = meshSource->m_Submeshes[submeshIndex];
+			submesh.NodeName = aNode->mName.C_Str();
+			submesh.LocalTransform = node.LocalTransform;
 
-				if (index.vertex_index >= 0)
-				{
-					vertex.Position = {
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2] };
+			node.Submeshes.push_back(submeshIndex);
+		}
 
-					vertex.Color = {
-					attrib.colors[3 * index.vertex_index + 0],
-					attrib.colors[3 * index.vertex_index + 1],
-					attrib.colors[3 * index.vertex_index + 2] };
-				}
-
-				if (index.normal_index >= 0)
-				{
-					vertex.Normal = {
-					attrib.normals[3 * index.normal_index + 0],
-					attrib.normals[3 * index.normal_index + 1],
-					attrib.normals[3 * index.normal_index + 2] };
-				}
-
-				if (index.texcoord_index >= 0)
-				{
-					vertex.TexCoord = {
-					attrib.texcoords[2 * index.texcoord_index + 0],
-					attrib.texcoords[2 * index.texcoord_index + 1] };
-				}
-
-				vertex.TexID = texID;
-
-				if (uniqueVertices.count(vertex) == 0)
-				{
-					uniqueVertices[vertex] = static_cast<uint32_t>(Vertices.size());
-					Vertices.push_back(vertex);
-				}
-
-				Indices.push_back(uniqueVertices[vertex]);
-			}
+		uint32_t parentNodeIndex = meshSource->m_Nodes.size() - 1;
+		node.Children.resize(aNode->mNumChildren);
+		for (uint32_t i = 0; i < aNode->mNumChildren; ++i)
+		{
+			MeshNode& child = meshSource->m_Nodes.emplace_back();
+			uint32_t childIndex = meshSource->m_Nodes.size() - 1;
+			child.Parent = parentNodeIndex;
+			meshSource->m_Nodes[nodeIndex].Children[i] = childIndex;
+			TraverseNodes(meshSource, aNode->mChildren[i], childIndex);
 		}
 	}
 
-	void MeshBuilder::LoadMeshFromAssimp(const std::string& filepath, int texID)
+#if 0
+	void AssimpMeshImporter::ProcessMesh(std::shared_ptr<MeshSource> meshSource, aiMesh* mesh, const aiScene* scene)
 	{
-		const uint32_t s_MeshImportFlags = {
-			aiProcess_Triangulate |           // Use triangles
-			aiProcess_CalcTangentSpace |
-			aiProcess_JoinIdenticalVertices | // For Index Buffer
-			aiProcess_GenUVCoords |           // Generate UV Coords
-			aiProcess_GenNormals |            // Generate Normals for Mesh
-			aiProcess_SortByPType |
-			aiProcess_ValidateDataStructure
-		};
-
-		Assimp::Importer mImporter{};
-		const aiScene* mScene = mImporter.ReadFile(filepath, s_MeshImportFlags);
-
-		VK_CORE_ASSERT(mScene && !(mScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) && mScene->mRootNode, mImporter.GetErrorString());
-
-		Vertices.clear();
-		Indices.clear();
-		TextureID = texID;
-
-		ProcessNode(mScene->mRootNode, mScene);
-	}
-
-	void MeshBuilder::ProcessNode(aiNode* node, const aiScene* scene)
-	{
-		for (uint32_t i = 0; i < node->mNumMeshes; i++)
-		{
-			aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-			ProcessMesh(mesh, scene);
-		}
-
-		for (uint32_t i = 0; i < node->mNumChildren; i++)
-		{
-			ProcessNode(node->mChildren[i], scene);
-		}
-	}
-
-	void MeshBuilder::ProcessMesh(aiMesh* mesh, const aiScene* scene)
-	{
-		for (uint32_t i = 0; i < mesh->mNumVertices; i++)
+		for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
 		{
 			Vertex vertex;
 			glm::vec3 mVector;
@@ -351,38 +262,18 @@ namespace VulkanCore {
 				vertex.TexCoord = mTexCoords;
 			}
 
-			vertex.TexID = TextureID;
-
-			Vertices.push_back(vertex);
+			vertex.TexID = 0;
+			meshSource->m_Vertices.push_back(vertex);
 		}
 
-		for (uint32_t i = 0; i < mesh->mNumFaces; i++)
+		for (uint32_t i = 0; i < mesh->mNumFaces; ++i)
 		{
 			aiFace face = mesh->mFaces[i];
 
-			for (uint32_t j = 0; j < face.mNumIndices; j++)
-				Indices.push_back(face.mIndices[j]);
+			for (uint32_t j = 0; j < face.mNumIndices; ++j)
+				meshSource->m_Indices.push_back(face.mIndices[j]);
 		}
 	}
-
-	std::vector<VkVertexInputBindingDescription> QuadVertex::GetBindingDescriptions()
-	{
-		std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
-		bindingDescriptions[0].binding = 0;
-		bindingDescriptions[0].stride = sizeof(QuadVertex);
-		bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		return bindingDescriptions;
-	}
-
-	std::vector<VkVertexInputAttributeDescription> QuadVertex::GetAttributeDescriptions()
-	{
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-
-		attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(QuadVertex, Position) });
-		attributeDescriptions.push_back({ 1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(QuadVertex, TexCoord) });
-
-		return attributeDescriptions;
-	}
+#endif
 
 }

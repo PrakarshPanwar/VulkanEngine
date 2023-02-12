@@ -27,15 +27,16 @@ namespace VulkanCore {
 	struct QueueFamilyIndices
 	{
 		uint32_t GraphicsFamily;
+		uint32_t ComputeFamily;
 		uint32_t PresentFamily;
 
 		bool GraphicsFamilyHasValue = false;
+		bool ComputeFamilyHasValue = false;
 		bool PresentFamilyHasValue = false;
 
-		bool IsComplete() { return GraphicsFamilyHasValue && PresentFamilyHasValue; }
+		bool IsComplete() { return GraphicsFamilyHasValue && ComputeFamilyHasValue && PresentFamilyHasValue; }
 	};
 
-	// TODO: In future we could transfer all of this in class `VulkanContext`
 	class VulkanDevice
 	{
 	public:
@@ -43,7 +44,7 @@ namespace VulkanCore {
 		~VulkanDevice();
 
 		inline VkCommandPool GetCommandPool() { return m_CommandPool; }
-		inline VkCommandPool GetRenderThreadCommandPool() { return m_RenderThreadCommandPool; }
+		inline VkCommandPool GetRenderThreadCommandPool() { return m_RTCommandPool; }
 		inline VkDevice GetVulkanDevice() { return m_LogicalDevice; }
 		inline VkPhysicalDevice GetPhysicalDevice() { return m_PhysicalDevice; }
 		inline VkQueue GetGraphicsQueue() { return m_GraphicsQueue; }
@@ -57,12 +58,8 @@ namespace VulkanCore {
 		QueueFamilyIndices FindPhysicalQueueFamilies() { return FindQueueFamilies(m_PhysicalDevice); }
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
-		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-		VmaAllocation CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer);
-		VkCommandBuffer GetCommandBuffer();
-		void FlushCommandBuffer(VkCommandBuffer commandBuffer);
-		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
+		VkCommandBuffer GetCommandBuffer(bool compute = false);
+		void FlushCommandBuffer(VkCommandBuffer commandBuffer, bool compute = false);
 
 		void CreateImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 		VmaAllocation CreateImage(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image);
@@ -76,10 +73,11 @@ namespace VulkanCore {
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 		VkPhysicalDeviceProperties m_DeviceProperties;
 		VkSampleCountFlagBits m_MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-		VkCommandPool m_CommandPool, m_RenderThreadCommandPool;
+		VkCommandPool m_CommandPool, m_RTCommandPool, m_ComputeCommandPool;
 
 		VkDevice m_LogicalDevice;
 		VkQueue m_GraphicsQueue;
+		VkQueue m_ComputeQueue;
 		VkQueue m_PresentQueue;
 	};
 

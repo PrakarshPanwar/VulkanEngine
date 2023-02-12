@@ -56,7 +56,9 @@ namespace VulkanCore {
 
 	void EditorLayer::OnUpdate()
 	{
-		m_EditorCamera.OnUpdate();
+		if (m_ViewportFocused && m_ViewportHovered)
+			m_EditorCamera.OnUpdate();
+
 		m_SceneRenderer->RenderScene(m_EditorCamera);
 	}
 
@@ -122,29 +124,17 @@ namespace VulkanCore {
 
 		style.WindowMinSize.x = minWinSizeX;
 
-		// TODO: Shift these operations in Renderer
-		constexpr std::array<uint64_t, 2> queryPoolBuffer = { 0, 0 };
-		vkGetQueryPoolResults(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
-			VulkanRenderer::Get()->GetPerfQueryPool(),
-			0, 2, sizeof(uint64_t) * 2,
-			(void*)queryPoolBuffer.data(), sizeof(uint64_t),
-			VK_QUERY_RESULT_64_BIT);
-
-		uint64_t timeStamp = queryPoolBuffer[1] - queryPoolBuffer[0];
-
-		std::chrono::duration rasterTime = 
-			std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::nanoseconds(timeStamp));
-
 		//ImGui::ShowDemoWindow(&m_ImGuiShowWindow);
 		ImGui::Begin("Application Stats");
 		SHOW_FRAMERATES;
 		ImGui::Checkbox("Show ImGui Demo Window", &m_ImGuiShowWindow);
-		ImGui::Text("Scene Rasterization Time: %llums", rasterTime.count());
 		ImGui::Text("Camera Aspect Ratio: %.6f", m_EditorCamera.GetAspectRatio());
 		ImGui::End();
 
 		ImGui::Begin("Viewport");
 		auto region = ImGui::GetContentRegionAvail();
+		m_ViewportSize = { region.x, region.y };
+
 		auto windowSize = ImGui::GetWindowSize();
 		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
 		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
@@ -152,12 +142,11 @@ namespace VulkanCore {
 		m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
 		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
 
-		if ((m_ViewportSize.x != region.x) && (m_ViewportSize.y != region.y))
+		if (glm::ivec2 sceneViewportSize = m_SceneRenderer->GetViewportSize();
+			m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
+			(sceneViewportSize.x != m_ViewportSize.x || sceneViewportSize.y != m_ViewportSize.y))
 		{
-			VK_TRACE("Viewport has been Resized!");
-			m_ViewportSize = region;
-			m_SceneRenderer->SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-			RecreateSceneDescriptors();
+			m_SceneRenderer->SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
 			m_EditorCamera.SetViewportSize(region.x, region.y);
 		}
 
@@ -234,35 +223,54 @@ namespace VulkanCore {
 		m_Scene = std::make_shared<Scene>();
 
 		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
-		CeramicVase.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.2f, 2.5f }, glm::vec3{ 3.5f });
-		CeramicVase.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/CeramicVase2K/antique_ceramic_vase_01_2k.obj", 0));
+		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx", 1));
+		auto& vaseTransform = CeramicVase.GetComponent<TransformComponent>();
+		vaseTransform.Translation = glm::vec3{ 0.0f, -1.2f, 2.5f };
+		vaseTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
+		vaseTransform.Scale = glm::vec3{ 3.5f };
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
-		FlatPlane.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.3f, 0.0f }, glm::vec3{ 0.5f });
-		FlatPlane.AddComponent<MeshComponent>(Mesh::CreateMeshFromFile("assets/models/FlatPlane.obj", 2));
+		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Cube.fbx", 3));
+		auto& planeTransform = FlatPlane.GetComponent<TransformComponent>();
+		planeTransform.Translation = glm::vec3{ 0.0f, -1.3f, 0.0f };
+		planeTransform.Scale = glm::vec3{ 10.0f, 0.1f, 10.0f };
 
+		Entity SphereMesh = m_Scene->CreateEntity("Basic Sphere");
+		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx", 3));
+
+		// TODO: Texture mapping not working correctly for GLTF mesh formats, fix this in future
+#if 0
 		Entity CrateModel = m_Scene->CreateEntity("Wooden Crate");
 		auto& crateTransform = CrateModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 1.5f });
 		crateTransform.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-		CrateModel.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/WoodenCrate/WoodenCrate.gltf", 1));
+		CrateModel.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/WoodenCrate/WoodenCrate.gltf"));
+#endif
 
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
-		auto& brassTransform = BrassVase.AddComponent<TransformComponent>(glm::vec3{ 1.5f, 0.0f, 1.5f }, glm::vec3{ 6.0f });
-		brassTransform.Rotation = glm::vec3(glm::radians(90.0f), 0.0f, 0.0f);
-		BrassVase.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/BrassVase2K/BrassVase.fbx", 1));
+		BrassVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/BrassVase2K/BrassVase.fbx", 2));
+		auto& brassTransform = BrassVase.GetComponent<TransformComponent>();
+		brassTransform.Translation = glm::vec3{ 1.5f, -1.2f, 1.5f };
+		brassTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
+		brassTransform.Scale = glm::vec3{ 6.0f };
 
 		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");
-		auto& blueLightTransform = BluePointLight.AddComponent<TransformComponent>(glm::vec3{ -1.0f, 0.0f, 4.5f }, glm::vec3{ 0.1f });
+		auto& blueLightTransform = BluePointLight.GetComponent<TransformComponent>();
+		blueLightTransform.Translation = glm::vec3{ -1.0f, 0.0f, 4.5f };
+		blueLightTransform.Scale = glm::vec3{ 0.1f };
 		std::shared_ptr<PointLight> blueLight = std::make_shared<PointLight>(glm::vec4(blueLightTransform.Translation, 1.0f), glm::vec4{ 0.2f, 0.3f, 0.8f, 1.0f });
 		BluePointLight.AddComponent<PointLightComponent>(blueLight);
 
 		Entity RedPointLight = m_Scene->CreateEntity("Red Light");
-		auto& redLightTransform = RedPointLight.AddComponent<TransformComponent>(glm::vec3{ 1.5f, 0.0f, 5.0f }, glm::vec3{ 0.1f });
+		auto& redLightTransform = RedPointLight.GetComponent<TransformComponent>();
+		redLightTransform.Translation = glm::vec3{ 1.5f, 0.0f, 5.0f };
+		redLightTransform.Scale = glm::vec3{ 0.1f };
 		std::shared_ptr<PointLight> redLight = std::make_shared<PointLight>(glm::vec4(redLightTransform.Translation, 1.0f), glm::vec4{ 1.0f, 0.5f, 0.1f, 1.0f });
 		RedPointLight.AddComponent<PointLightComponent>(redLight);
 
 		Entity GreenPointLight = m_Scene->CreateEntity("Green Light");
-		auto& greenLightTransform = GreenPointLight.AddComponent<TransformComponent>(glm::vec3{ 2.0f, 0.0f, -0.5f }, glm::vec3{ 0.1f });
+		auto& greenLightTransform = GreenPointLight.GetComponent<TransformComponent>();
+		greenLightTransform.Translation = glm::vec3{ 2.0f, 0.0f, -0.5f };
+		greenLightTransform.Scale = glm::vec3{ 0.1f };
 		std::shared_ptr<PointLight> greenLight = std::make_shared<PointLight>(glm::vec4(greenLightTransform.Translation, 1.0f), glm::vec4{ 0.1f, 0.8f, 0.2f, 1.0f });
 		GreenPointLight.AddComponent<PointLightComponent>(greenLight);
 	}
