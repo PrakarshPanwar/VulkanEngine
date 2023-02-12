@@ -46,11 +46,10 @@ namespace VulkanCore {
 		const std::vector<const char*> m_ValidationLayers = { "VK_LAYER_KHRONOS_validation" };
 		const std::vector<const char*> m_DeviceExtensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+			VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME,
 			VK_KHR_MAINTENANCE1_EXTENSION_NAME
 		};
 
-		// TODO: If we are going to return raw pointer,
-		// then this could be a unique_ptr, otherwise a it is going to be a shared_ptr
 		std::unique_ptr<VulkanDevice> m_Device; 
 		std::shared_ptr<WindowsWindow> m_Window;
 
