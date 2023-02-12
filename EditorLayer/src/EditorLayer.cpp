@@ -56,7 +56,9 @@ namespace VulkanCore {
 
 	void EditorLayer::OnUpdate()
 	{
-		m_EditorCamera.OnUpdate();
+		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
+			m_EditorCamera.OnUpdate();
+
 		m_SceneRenderer->RenderScene(m_EditorCamera);
 	}
 
@@ -221,35 +223,54 @@ namespace VulkanCore {
 		m_Scene = std::make_shared<Scene>();
 
 		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
-		CeramicVase.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.2f, 2.5f }, glm::vec3{ 3.5f });
-		CeramicVase.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/CeramicVase2K/antique_ceramic_vase_01_2k.obj", 0));
+		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx", 1));
+		auto& vaseTransform = CeramicVase.GetComponent<TransformComponent>();
+		vaseTransform.Translation = glm::vec3{ 0.0f, -1.2f, 2.5f };
+		vaseTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
+		vaseTransform.Scale = glm::vec3{ 3.5f };
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
-		FlatPlane.AddComponent<TransformComponent>(glm::vec3{ 0.0f, -1.3f, 0.0f }, glm::vec3{ 0.5f });
-		FlatPlane.AddComponent<MeshComponent>(Mesh::CreateMeshFromFile("assets/models/FlatPlane.obj", 2));
+		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Cube.fbx", 3));
+		auto& planeTransform = FlatPlane.GetComponent<TransformComponent>();
+		planeTransform.Translation = glm::vec3{ 0.0f, -1.3f, 0.0f };
+		planeTransform.Scale = glm::vec3{ 10.0f, 0.1f, 10.0f };
 
+		Entity SphereMesh = m_Scene->CreateEntity("Basic Sphere");
+		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx", 3));
+
+		// TODO: Texture mapping not working correctly for GLTF mesh formats, fix this in future
+#if 0
 		Entity CrateModel = m_Scene->CreateEntity("Wooden Crate");
 		auto& crateTransform = CrateModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 1.5f });
 		crateTransform.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-		CrateModel.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/WoodenCrate/WoodenCrate.gltf", 1));
+		CrateModel.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/WoodenCrate/WoodenCrate.gltf"));
+#endif
 
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
-		auto& brassTransform = BrassVase.AddComponent<TransformComponent>(glm::vec3{ 1.5f, 0.0f, 1.5f }, glm::vec3{ 6.0f });
-		brassTransform.Rotation = glm::vec3(glm::radians(90.0f), 0.0f, 0.0f);
-		BrassVase.AddComponent<MeshComponent>(Mesh::CreateMeshFromAssimp("assets/models/BrassVase2K/BrassVase.fbx", 1));
+		BrassVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/BrassVase2K/BrassVase.fbx", 2));
+		auto& brassTransform = BrassVase.GetComponent<TransformComponent>();
+		brassTransform.Translation = glm::vec3{ 1.5f, -1.2f, 1.5f };
+		brassTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
+		brassTransform.Scale = glm::vec3{ 6.0f };
 
 		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");
-		auto& blueLightTransform = BluePointLight.AddComponent<TransformComponent>(glm::vec3{ -1.0f, 0.0f, 4.5f }, glm::vec3{ 0.1f });
+		auto& blueLightTransform = BluePointLight.GetComponent<TransformComponent>();
+		blueLightTransform.Translation = glm::vec3{ -1.0f, 0.0f, 4.5f };
+		blueLightTransform.Scale = glm::vec3{ 0.1f };
 		std::shared_ptr<PointLight> blueLight = std::make_shared<PointLight>(glm::vec4(blueLightTransform.Translation, 1.0f), glm::vec4{ 0.2f, 0.3f, 0.8f, 1.0f });
 		BluePointLight.AddComponent<PointLightComponent>(blueLight);
 
 		Entity RedPointLight = m_Scene->CreateEntity("Red Light");
-		auto& redLightTransform = RedPointLight.AddComponent<TransformComponent>(glm::vec3{ 1.5f, 0.0f, 5.0f }, glm::vec3{ 0.1f });
+		auto& redLightTransform = RedPointLight.GetComponent<TransformComponent>();
+		redLightTransform.Translation = glm::vec3{ 1.5f, 0.0f, 5.0f };
+		redLightTransform.Scale = glm::vec3{ 0.1f };
 		std::shared_ptr<PointLight> redLight = std::make_shared<PointLight>(glm::vec4(redLightTransform.Translation, 1.0f), glm::vec4{ 1.0f, 0.5f, 0.1f, 1.0f });
 		RedPointLight.AddComponent<PointLightComponent>(redLight);
 
 		Entity GreenPointLight = m_Scene->CreateEntity("Green Light");
-		auto& greenLightTransform = GreenPointLight.AddComponent<TransformComponent>(glm::vec3{ 2.0f, 0.0f, -0.5f }, glm::vec3{ 0.1f });
+		auto& greenLightTransform = GreenPointLight.GetComponent<TransformComponent>();
+		greenLightTransform.Translation = glm::vec3{ 2.0f, 0.0f, -0.5f };
+		greenLightTransform.Scale = glm::vec3{ 0.1f };
 		std::shared_ptr<PointLight> greenLight = std::make_shared<PointLight>(glm::vec4(greenLightTransform.Translation, 1.0f), glm::vec4{ 0.1f, 0.8f, 0.2f, 1.0f });
 		GreenPointLight.AddComponent<PointLightComponent>(greenLight);
 	}

@@ -2,19 +2,22 @@
 #include "VulkanDevice.h"
 #include "VulkanCore/Core/Shader.h"
 #include "VulkanRenderPass.h"
+#include "VulkanCore/Renderer/Buffer.h"
 
 namespace VulkanCore {
 
 	struct PipelineSpecification
 	{
+		PipelineSpecification() = default;
+
 		std::shared_ptr<Shader> pShader;
 		std::shared_ptr<VulkanRenderPass> RenderPass;
 		bool BackfaceCulling = false;
 		bool DepthTest = true;
 		bool DepthWrite = true;
 		bool Blend = false;
-		std::pair<std::vector<VkVertexInputBindingDescription>,
-			std::vector<VkVertexInputAttributeDescription>> Layout;
+		VertexBufferLayout Layout{};
+		VertexBufferLayout InstanceLayout{};
 	};
 
 	struct PipelineConfigInfo
