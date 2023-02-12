@@ -463,7 +463,6 @@ namespace VulkanCore {
 			compDescriptorWriter[i].WriteImage(2, &bloomDirtTexInfo);
 
 			VkDescriptorImageInfo depthTextureInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetDepthResolveAttachment()[i].GetDescriptorInfo();
-			depthTextureInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 			compDescriptorWriter[i].WriteImage(3, &depthTextureInfo);
 
 			VkDescriptorImageInfo positionTextureInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment(1)[i].GetDescriptorInfo();
