@@ -50,12 +50,40 @@ namespace VulkanCore {
 		allocator.DestroyBuffer(stagingBuffer, stagingBufferAlloc);
 	}
 
+	VulkanVertexBuffer::VulkanVertexBuffer(uint32_t size)
+		: m_Size(size)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+		VulkanAllocator allocator("VertexBuffer");
+
+		// Vertex Buffer
+		VkBufferCreateInfo bufferCreateInfo{};
+		bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferCreateInfo.size = m_Size;
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		m_MemoryAllocation = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_VulkanBuffer);
+
+		// Map Data to Vertex Buffer
+		m_MappedPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
+	}
+
 	VulkanVertexBuffer::~VulkanVertexBuffer()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("VertexBuffer");
 		
+		if (m_MappedPtr)
+			allocator.UnmapMemory(m_MemoryAllocation);
+
 		allocator.DestroyBuffer(m_VulkanBuffer, m_MemoryAllocation);
+	}
+
+	void VulkanVertexBuffer::WriteData(void* data, VkDeviceSize offset)
+	{
+		memcpy(m_MappedPtr, data, m_Size);
+		vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, offset, (VkDeviceSize)m_Size);
 	}
 
 }

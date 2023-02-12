@@ -4,6 +4,7 @@
 
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "Platform/Vulkan/VulkanImage.h"
+#include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 
 namespace VulkanCore {
 
@@ -30,7 +31,7 @@ namespace VulkanCore {
 		void SetDarkThemeColor();
 	private:
 		std::shared_ptr<VulkanDescriptorPool> m_ImGuiGlobalPool;
-		std::vector<VkCommandBuffer> m_ImGuiCmdBuffers;
+		std::shared_ptr<VulkanRenderCommandBuffer> m_ImGuiCmdBuffer;
 
 		bool m_BlockEvents = false;
 

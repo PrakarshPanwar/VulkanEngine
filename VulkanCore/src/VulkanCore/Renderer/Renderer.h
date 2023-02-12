@@ -1,11 +1,10 @@
 #pragma once
 #include "VulkanRenderer.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
+#include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Core/Shader.h"
 #include "VulkanCore/Renderer/RenderThread.h"
-
-#define USE_RENDER_THREAD 1
 
 namespace VulkanCore {
 
@@ -14,21 +13,19 @@ namespace VulkanCore {
 	class Renderer
 	{
 	public:
-		static void SetCommandBuffers(const std::vector<VkCommandBuffer>& cmdBuffers);
 		static void SetRendererAPI(VulkanRenderer* vkRenderer);
 		static int GetCurrentFrameIndex();
-		static void BeginRenderPass(std::shared_ptr<VulkanRenderPass> renderPass);
-		static void EndRenderPass(std::shared_ptr<VulkanRenderPass> renderPass);
+		static void BeginRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
+		static void EndRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
 		static void BuildShaders();
 		static void DestroyShaders();
 
-		static void RenderSkybox(const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<Mesh>& mesh, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData = nullptr);
-		static void BeginGPUPerfMarker();
-		static void EndGPUPerfMarker();
-		static void RetrieveQueryPoolResults();
-		static uint64_t GetQueryTime(uint32_t index);
+		static void RenderSkybox(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData = nullptr);
+		static void BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
+		static void EndGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
 
-		static void SubmitFullscreenQuad(const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
+		static std::shared_ptr<VulkanTexture> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
+		static void SubmitFullscreenQuad(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
 		static void RenderMesh(std::shared_ptr<Mesh> mesh);
 
 		static std::shared_ptr<Shader> GetShader(const std::string& name)
@@ -47,11 +44,8 @@ namespace VulkanCore {
 
 		static void WaitandRender();
 	private:
-		static std::vector<VkCommandBuffer> m_CommandBuffers;
 		static std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
 		static VulkanRenderer* s_Renderer;
-		static uint32_t m_QueryIndex;
-		static std::array<uint64_t, 10> m_QueryResultBuffer;
 	};
 
 }

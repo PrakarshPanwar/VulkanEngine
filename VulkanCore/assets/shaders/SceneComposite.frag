@@ -3,13 +3,21 @@
 layout(location = 0) out vec4 o_Color;
 
 layout(location = 0) in vec2 v_TexCoord;
-layout(location = 1) in float v_Exposure;
 
 layout(binding = 0) uniform sampler2D u_InputTexture;
-layout(binding = 2) uniform sampler2D u_DepthTexture;
-layout(binding = 3) uniform sampler2D u_ViewNormalsTexture;
+layout(binding = 1) uniform sampler2D u_BloomTexture;
+layout(binding = 2) uniform sampler2D u_BloomDirtTexture;
 
-layout(push_constant) uniform DOFData
+layout(push_constant) uniform SceneData
+{
+	float Exposure;
+	float DirtIntensity;
+} u_SceneParams;
+
+layout(binding = 3) uniform sampler2D u_DepthTexture;
+layout(binding = 4) uniform sampler2D u_ViewNormalsTexture;
+
+layout(binding = 5) uniform DOFData
 {
 	float FocusPoint;
 	float FocusScale;
@@ -20,9 +28,6 @@ layout(push_constant) uniform DOFData
 const float GOLDEN_ANGLE = 2.39996323; 
 const float MAX_BLUR_SIZE = 20.0; 
 const float RAD_SCALE = 0.5; // Smaller = nicer blur, larger = faster
-
-//const float FAR = 12.0;
-//const float NEAR = 8.0;
 
 float LinearizeDepth(const float screenDepth)
 {
@@ -104,7 +109,13 @@ void main()
 
 	float blur = smoothstep(u_DOF.Near, u_DOF.Far, length(position - focusPoint));
 	color = mix(color, dofColor, blur);
-	color *= v_Exposure;
+	
+	vec3 bloom = UpsampleTent9(u_BloomTexture, 0, v_TexCoord, 1.0 / fTexSize, 0.5);
+	vec3 bloomDirt = texture(u_BloomDirtTexture, v_TexCoord).rgb * u_SceneParams.DirtIntensity;
+	color += bloom;
+	color += bloom * bloomDirt;
+
+	color *= u_SceneParams.Exposure;
     color = ACESTonemap(color);
 
 	o_Color = vec4(color, 1.0);
