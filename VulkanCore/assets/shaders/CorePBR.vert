@@ -18,6 +18,7 @@ struct VertexOutput
 {
 	vec3 WorldPosition;
 	vec3 Normal;
+	vec3 ViewPosition;
 	mat3 WorldNormals;
 	vec2 TexCoord;
 	vec3 VertexColor;
@@ -43,6 +44,7 @@ void main()
 	);
 
 	vec4 positionWorld = transform * vec4(a_Position, 1.0);
+
 	gl_Position = u_Camera.Projection * u_Camera.View * positionWorld;
 	Output.Normal = mat3(transform) * a_Normal;
 	Output.WorldPosition = positionWorld.xyz;
@@ -55,5 +57,8 @@ void main()
 	Output.WorldNormals = mat3(T, B, N);
 	Output.VertexColor = a_FragColor;
 	Output.TexCoord = vec2(a_TexCoord.x, 1.0 - a_TexCoord.y);
+
+	Output.ViewPosition = vec3(u_Camera.View * positionWorld);
+
 	v_MaterialIndex = a_TexID;
 }

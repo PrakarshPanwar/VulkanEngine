@@ -1,11 +1,13 @@
 #version 460 core
 
 layout(location = 0) out vec4 o_Color;
+layout(location = 1) out vec4 o_ViewNormalsLuminance;
 
 struct VertexOutput
 {
 	vec3 WorldPosition;
 	vec3 Normal;
+    vec3 ViewPosition;
     mat3 WorldNormals;
 	vec2 TexCoord;
 	vec3 VertexColor;
@@ -196,6 +198,8 @@ void main()
     m_Params.Normal = GetNormalsFromMap();
     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);
     vec3 Lr = 2.0 * m_Params.NdotV * m_Params.Normal - m_Params.View;
+
+    o_ViewNormalsLuminance = vec4(Input.ViewPosition, 1.0);
 
     // Calculate Reflectance at Normal Incidence; if Di-Electric (like Plastic) use F0 
     // of 0.04 and if it's a Metal, use the Albedo color as F0 (Metallic Workflow)    
