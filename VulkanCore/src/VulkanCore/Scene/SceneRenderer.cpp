@@ -105,9 +105,9 @@ namespace VulkanCore {
 		};
 
 		VertexBufferLayout instanceLayout = {
+			{ ShaderDataType::Float4, "a_MRow0" },
 			{ ShaderDataType::Float4, "a_MRow1" },
-			{ ShaderDataType::Float4, "a_MRow2" },
-			{ ShaderDataType::Float4, "a_MRow3" }
+			{ ShaderDataType::Float4, "a_MRow2" }
 		};
 
 		// Geometry and Point Light Pipeline

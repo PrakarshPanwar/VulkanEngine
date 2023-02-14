@@ -10,9 +10,9 @@ layout(location = 5) in vec2 a_TexCoord;
 layout(location = 6) in int a_TexID;
 
 // Instance Bindings
-layout(location = 7) in vec4 a_MRow1;
-layout(location = 8) in vec4 a_MRow2;
-layout(location = 9) in vec4 a_MRow3;
+layout(location = 7) in vec4 a_MRow0;
+layout(location = 8) in vec4 a_MRow1;
+layout(location = 9) in vec4 a_MRow2;
 
 struct VertexOutput
 {
@@ -39,10 +39,10 @@ layout(set = 0, binding = 0) uniform Camera
 void main()
 {
 	mat4 transform = mat4(
-		vec4(a_MRow1.x, a_MRow2.x, a_MRow3.x, 0.0),
-		vec4(a_MRow1.y, a_MRow2.y, a_MRow3.y, 0.0),
-		vec4(a_MRow1.z, a_MRow2.z, a_MRow3.z, 0.0),
-		vec4(a_MRow1.w, a_MRow2.w, a_MRow3.w, 1.0)
+		vec4(a_MRow0.x, a_MRow1.x, a_MRow2.x, 0.0),
+		vec4(a_MRow0.y, a_MRow1.y, a_MRow2.y, 0.0),
+		vec4(a_MRow0.z, a_MRow1.z, a_MRow2.z, 0.0),
+		vec4(a_MRow0.w, a_MRow1.w, a_MRow2.w, 1.0)
 	);
 
 	vec4 positionWorld = transform * vec4(a_Position, 1.0);
