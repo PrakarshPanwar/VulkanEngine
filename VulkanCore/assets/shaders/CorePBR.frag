@@ -1,7 +1,6 @@
 #version 460 core
 
 layout(location = 0) out vec4 o_Color;
-layout(location = 1) out vec4 o_ViewNormalsLuminance;
 
 struct VertexOutput
 {
@@ -27,7 +26,8 @@ layout(set = 0, binding = 0) uniform Camera
 {
 	mat4 Projection;
 	mat4 View;
-	mat4 InvView;
+	mat4 InverseView;
+    vec2 CameraTanHalfFOV;
 } u_Camera;
 
 layout(set = 0, binding = 1) uniform PointLightData
@@ -193,13 +193,11 @@ void main()
     m_Params.Roughness = aorm.g;
     m_Params.Metallic = aorm.b;
 
-	vec3 cameraPosWorld = u_Camera.InvView[3].xyz;
+	vec3 cameraPosWorld = u_Camera.InverseView[3].xyz;
 	m_Params.View = normalize(cameraPosWorld - Input.WorldPosition);
     m_Params.Normal = GetNormalsFromMap();
     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);
     vec3 Lr = 2.0 * m_Params.NdotV * m_Params.Normal - m_Params.View;
-
-    o_ViewNormalsLuminance = vec4(Input.ViewPosition, 1.0);
 
     // Calculate Reflectance at Normal Incidence; if Di-Electric (like Plastic) use F0 
     // of 0.04 and if it's a Metal, use the Albedo color as F0 (Metallic Workflow)    

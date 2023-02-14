@@ -25,6 +25,7 @@ namespace VulkanCore {
 			UpdateProjection();
 		}
 
+		inline float GetFieldOfViewY() const { return m_FOV; }
 		inline float GetAspectRatio() { return m_AspectRatio; }
 		inline void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; UpdateProjection(); }
 

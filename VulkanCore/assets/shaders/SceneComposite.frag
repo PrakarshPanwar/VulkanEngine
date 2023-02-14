@@ -4,9 +4,17 @@ layout(location = 0) out vec4 o_Color;
 
 layout(location = 0) in vec2 v_TexCoord;
 
-layout(binding = 0) uniform sampler2D u_InputTexture;
-layout(binding = 1) uniform sampler2D u_BloomTexture;
-layout(binding = 2) uniform sampler2D u_BloomDirtTexture;
+layout(binding = 0) uniform Camera
+{
+	mat4 Projection;
+	mat4 View;
+	mat4 InverseView;
+	vec2 CameraTanHalfFOV;
+} u_Camera;
+
+layout(binding = 1) uniform sampler2D u_InputTexture;
+layout(binding = 2) uniform sampler2D u_BloomTexture;
+layout(binding = 3) uniform sampler2D u_BloomDirtTexture;
 
 layout(push_constant) uniform SceneData
 {
@@ -14,8 +22,7 @@ layout(push_constant) uniform SceneData
 	float DirtIntensity;
 } u_SceneParams;
 
-layout(binding = 3) uniform sampler2D u_DepthTexture;
-layout(binding = 4) uniform sampler2D u_ViewNormalsTexture;
+layout(binding = 4) uniform sampler2D u_DepthTexture;
 
 layout(binding = 5) uniform DOFData
 {
@@ -25,7 +32,14 @@ layout(binding = 5) uniform DOFData
 	float Far;
 } u_DOF;
 
-const float GOLDEN_ANGLE = 2.39996323; 
+vec3 CalculateViewPosition(vec2 texCoord, float depth, vec2 fovScale)
+{
+	vec2 halfNDCPosition = vec2(0.5) - texCoord;
+    vec3 viewPosition = vec3(halfNDCPosition * fovScale * -depth, -depth);
+    return viewPosition;
+}
+
+const float GOLDEN_ANGLE = 2.39996323;
 const float MAX_BLUR_SIZE = 20.0; 
 const float RAD_SCALE = 0.5; // Smaller = nicer blur, larger = faster
 
@@ -103,19 +117,20 @@ void main()
 	ivec2 texSize = textureSize(u_InputTexture, 0);
 	vec2 fTexSize = vec2(float(texSize.x), float(texSize.y));
 
-	// Depth of Field
-	vec4 position = texture(u_ViewNormalsTexture, v_TexCoord);
-	vec4 focusPoint = texture(u_ViewNormalsTexture, vec2(u_DOF.FocusPoint));
-	vec3 dofColor = DepthOfField(v_TexCoord, u_DOF.FocusPoint, u_DOF.FocusScale, 1.0 / fTexSize);
-
-	float blur = smoothstep(u_DOF.Near, u_DOF.Far, length(position - focusPoint));
-	color = mix(color, dofColor, blur);
-
 	// Bloom
-	vec3 bloom = UpsampleTent9(u_BloomTexture, 0, v_TexCoord, 1.0 / fTexSize, 0.5);
-	vec3 bloomDirt = texture(u_BloomDirtTexture, v_TexCoord).rgb * u_SceneParams.DirtIntensity;
-	color += bloom;
-	color += bloom * bloomDirt;
+//	vec3 bloom = UpsampleTent9(u_BloomTexture, 0, v_TexCoord, 1.0 / fTexSize, 0.5);
+//	vec3 bloomDirt = texture(u_BloomDirtTexture, v_TexCoord).rgb * u_SceneParams.DirtIntensity;
+//	color += bloom;
+//	color += bloom * bloomDirt;
+//
+//	// Depth of Field
+	vec2 uv = v_TexCoord;
+	vec3 dofColor = DepthOfField(uv, u_DOF.FocusPoint, u_DOF.FocusScale, 1.0 / fTexSize);
+	vec2 vuv = uv - vec2(0.5);
+
+	vuv.x *= float(texSize.x) / float(texSize.y);
+    float vignette = pow(1.0 - length(vuv * vec2(1.0, 1.3)), 1.0);
+    color = mix(vec4(dofColor, 1.0), vec4(dofColor, 1.0) * vignette, 0.75).rgb;
 
 	color *= u_SceneParams.Exposure;
     color = ACESTonemap(color);
