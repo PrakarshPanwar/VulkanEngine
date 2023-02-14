@@ -46,7 +46,7 @@ namespace VulkanCore {
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 
-		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 100.0f);
+		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
 	}
 
 	void EditorLayer::OnDetach()
@@ -237,6 +237,12 @@ namespace VulkanCore {
 
 		Entity SphereMesh = m_Scene->CreateEntity("Basic Sphere");
 		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx", 5));
+
+		Entity SponzaMesh = m_Scene->CreateEntity("Sponza");
+		SponzaMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Sponza/Sponza.obj", 4));
+		auto& sponzaTransform = SponzaMesh.GetComponent<TransformComponent>();
+		sponzaTransform.Translation = glm::vec3{ -4.0f, -10.0f, 23.0f };
+		sponzaTransform.Scale = glm::vec3{ 0.25f };
 
 		// TODO: Texture mapping not working correctly for GLTF mesh formats, fix this in future
 #if 0

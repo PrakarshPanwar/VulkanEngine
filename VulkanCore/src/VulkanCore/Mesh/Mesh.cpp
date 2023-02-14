@@ -52,22 +52,28 @@ namespace VulkanCore {
 	Mesh::Mesh(const std::string& filepath, int materialIndex)
 		: m_MaterialID(materialIndex)
 	{
-		uint64_t meshKey = std::filesystem::hash_value(filepath);
+		uint64_t meshHandle = std::filesystem::hash_value(filepath);
 
-		if (s_MeshSourcesMap.contains(meshKey))
-			m_MeshSource = s_MeshSourcesMap[meshKey];
+		if (s_MeshSourcesMap.contains(meshHandle))
+			m_MeshSource = s_MeshSourcesMap[meshHandle];
 		else
 		{
 			m_MeshSource = std::make_shared<MeshSource>(filepath);
-			s_MeshSourcesMap[meshKey] = m_MeshSource;
+			s_MeshSourcesMap[meshHandle] = m_MeshSource;
 
 			// Allocating Vertex Buffer Set for Unique Mesh Sources
-			auto& transformBuffer = s_MeshTransformBuffer[meshKey];
+			auto& transformBuffer = s_MeshTransformBuffer[meshHandle];
 			// TODO: In future this size will be increased
 			transformBuffer = std::make_shared<VulkanVertexBuffer>(10 * sizeof(TransformData));
 
 			AssimpMeshImporter::TraverseNodes(m_MeshSource, m_MeshSource->m_Scene->mRootNode, 0);
 			AssimpMeshImporter::InvalidateMesh(m_MeshSource, m_MaterialID);
+
+			for (const auto& meshNode : m_MeshSource->GetMeshNodes())
+			{
+				for (uint32_t submeshIndex : meshNode.Submeshes)
+					m_Submeshes.emplace_back(submeshIndex);
+			}
 		}
 	}
 
@@ -135,7 +141,7 @@ namespace VulkanCore {
 			indexCount += submesh.IndexCount;
 		}
 
-		m_MeshKey = std::filesystem::hash_value(filepath);
+		m_MeshHandle = std::filesystem::hash_value(filepath);
 
 		// Allocating Root Node
 		m_Nodes.emplace_back();
