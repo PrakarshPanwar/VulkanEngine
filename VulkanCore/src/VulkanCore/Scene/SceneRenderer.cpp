@@ -274,11 +274,8 @@ namespace VulkanCore {
 		m_PrefilteredTexture = filteredMap;
 		m_IrradianceTexture = irradianceMap;
 
-#if USE_PRELOADED_BRDF
-		m_BRDFTexture = std::make_shared<VulkanTexture>("assets/textures/BRDF_LUTMap.png", ImageFormat::RGBA8_UNORM);
-#else
 		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
-#endif
+
 		m_SkyboxVBData = Utils::CreateCubeModel();
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, ARMMaps, NormalMaps;
