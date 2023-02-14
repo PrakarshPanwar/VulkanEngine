@@ -65,10 +65,8 @@ namespace VulkanCore {
 
 		struct DOFSettings
 		{
-			float FocusPoint = 0.5f;
-			float FocusScale = 1.0f;
-			float Near = 8.0f;
-			float Far = 12.0f;
+			float FocusPoint = 3.6f;
+			float FocusScale = 10.0f;
 		};
 
 		struct SceneSettings
