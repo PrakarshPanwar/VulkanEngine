@@ -186,7 +186,7 @@ namespace VulkanCore {
 		// Uniform Buffers
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
 		{
-			m_UBCamera.emplace_back(sizeof(Camera));
+			m_UBCamera.emplace_back(sizeof(UBCamera));
 			m_UBPointLight.emplace_back(sizeof(UBPointLights));
 		}
 
