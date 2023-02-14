@@ -414,7 +414,7 @@ namespace VulkanCore {
 		return brdfTexture;
 	}
 
-	void VulkanRenderer::RenderMesh(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<Mesh> mesh, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	void VulkanRenderer::RenderMesh(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<Mesh> mesh, uint32_t submeshIndex, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 		auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
 
@@ -427,7 +427,9 @@ namespace VulkanCore {
 		vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
 		vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdDrawIndexed(drawCmd, meshSource->GetIndexCount(), instanceCount, 0, 0, 0);
+		const auto& submeshes = mesh->GetMeshSource()->GetSubmeshes();
+		const Submesh& submesh = submeshes[submeshIndex];
+		vkCmdDrawIndexed(drawCmd, submesh.IndexCount, instanceCount, submesh.BaseIndex, submesh.BaseVertex, 0);
 
 		s_Data.DrawCalls++;
 		s_Data.InstanceCount += instanceCount;

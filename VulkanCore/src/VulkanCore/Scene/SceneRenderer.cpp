@@ -580,20 +580,25 @@ namespace VulkanCore {
 	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform)
 	{
 		auto meshSource = mesh->GetMeshSource();
-		uint64_t meshKey = meshSource->GetMeshKey();
+		uint64_t meshHandle = meshSource->GetMeshHandle();
 
 		if (meshSource->GetVertexCount() == 0)
 			return;
-		
-		auto& transformBuffer = m_MeshTransformMap[meshKey].emplace_back();
-		transformBuffer.MRow[0] = { transform[0][0], transform[1][0], transform[2][0], transform[3][0] };
-		transformBuffer.MRow[1] = { transform[0][1], transform[1][1], transform[2][1], transform[3][1] };
-		transformBuffer.MRow[2] = { transform[0][2], transform[1][2], transform[2][2], transform[3][2] };
 
-		auto& dc = m_MeshDrawList[meshKey];
-		dc.MeshInstance = mesh;
-		dc.TransformBuffer = mesh->GetTransformBuffer(meshKey);
-		dc.InstanceCount++;
+		for (uint32_t submeshIndex : mesh->GetSubmeshes())
+		{
+			MeshKey meshKey = { meshHandle, submeshIndex };
+			auto& transformBuffer = m_MeshTransformMap[meshKey].emplace_back();
+			transformBuffer.MRow[0] = { transform[0][0], transform[1][0], transform[2][0], transform[3][0] };
+			transformBuffer.MRow[1] = { transform[0][1], transform[1][1], transform[2][1], transform[3][1] };
+			transformBuffer.MRow[2] = { transform[0][2], transform[1][2], transform[2][2], transform[3][2] };
+
+			auto& dc = m_MeshDrawList[meshKey];
+			dc.MeshInstance = mesh;
+			dc.SubmeshIndex = submeshIndex;
+			dc.TransformBuffer = mesh->GetTransformBuffer(meshHandle);
+			dc.InstanceCount++;
+		}
 	}
 
 	void SceneRenderer::CompositePass()
@@ -630,7 +635,7 @@ namespace VulkanCore {
 			0, nullptr);
 
 		for (auto& [mk, dc] : m_MeshDrawList)
-			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
+			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.SubmeshIndex, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 

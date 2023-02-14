@@ -40,6 +40,34 @@ namespace VulkanCore {
 		inline VkFramebuffer GetFinalVulkanFramebuffer(uint32_t index) { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
 		inline VkRenderPass GetVulkanRenderPass() { return m_SceneRenderPass->GetRenderPass(); }
 		inline const VulkanImage& GetFinalPassImage(uint32_t index) { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
+
+		struct MeshKey
+		{
+			uint64_t MeshHandleKey;
+			uint32_t SubmeshIndex;
+
+			bool operator==(const MeshKey& other)
+			{
+				return MeshHandleKey == other.MeshHandleKey && SubmeshIndex == other.SubmeshIndex;
+			}
+
+			bool operator<(const MeshKey& other) const
+			{
+				if (MeshHandleKey < other.MeshHandleKey)
+					return true;
+
+				if (MeshHandleKey > other.MeshHandleKey)
+					return false;
+
+				if (SubmeshIndex < other.SubmeshIndex)
+					return true;
+
+				if (SubmeshIndex > other.SubmeshIndex)
+					return false;
+				
+				return false;
+			}
+		};
 	private:
 		void CreateCommandBuffers();
 		void CreatePipelines();
@@ -54,6 +82,7 @@ namespace VulkanCore {
 		{
 			std::shared_ptr<Mesh> MeshInstance;
 			std::shared_ptr<VulkanVertexBuffer> TransformBuffer;
+			uint32_t SubmeshIndex;
 			uint32_t InstanceCount;
 		};
 	private:
@@ -133,8 +162,8 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanVertexBuffer> m_SkyboxVBData;
 		SkyboxSettings m_SkyboxSettings;
 
-		std::map<uint64_t, DrawCommand> m_MeshDrawList;
-		std::map<uint64_t, std::vector<TransformData>> m_MeshTransformMap;
+		std::map<MeshKey, DrawCommand> m_MeshDrawList;
+		std::map<MeshKey, std::vector<TransformData>> m_MeshTransformMap;
 
 		glm::ivec2 m_ViewportSize;
 		glm::uvec2 m_BloomMipSize;
@@ -145,6 +174,24 @@ namespace VulkanCore {
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;
+	};
+
+}
+
+namespace std {
+
+	template<>
+	struct hash<VulkanCore::SceneRenderer::MeshKey>
+	{
+		size_t operator()(const VulkanCore::SceneRenderer::MeshKey& other)
+		{
+			std::hash<uint64_t> h{};
+			size_t hashVal = 0;
+			hashVal ^= h(other.MeshHandleKey) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
+			hashVal ^= h(other.SubmeshIndex) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
+
+			return hashVal;
+		}
 	};
 
 }
