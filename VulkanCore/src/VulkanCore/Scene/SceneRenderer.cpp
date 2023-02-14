@@ -188,7 +188,7 @@ namespace VulkanCore {
 		// Uniform Buffers
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
 		{
-			m_UBCamera.emplace_back(sizeof(Camera));
+			m_UBCamera.emplace_back(sizeof(UBCamera));
 			m_UBPointLight.emplace_back(sizeof(UBPointLights));
 			m_UBDOFData.emplace_back(sizeof(DOFSettings));
 		}
@@ -454,19 +454,19 @@ namespace VulkanCore {
 
 		for (int i = 0; i < m_CompositeDescriptorSets.size(); ++i)
 		{
+			VkDescriptorBufferInfo cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
+			//compDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+
 			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
 			VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2].GetDescriptorInfo();
 			VkDescriptorImageInfo bloomDirtTexInfo = m_BloomDirtTexture->GetDescriptorImageInfo();
 
-			compDescriptorWriter[i].WriteImage(0, &imagesInfo);
-			compDescriptorWriter[i].WriteImage(1, &bloomTexInfo);
-			compDescriptorWriter[i].WriteImage(2, &bloomDirtTexInfo);
+			compDescriptorWriter[i].WriteImage(1, &imagesInfo);
+			//compDescriptorWriter[i].WriteImage(2, &bloomTexInfo);
+			//compDescriptorWriter[i].WriteImage(3, &bloomDirtTexInfo);
 
 			VkDescriptorImageInfo depthTextureInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetDepthResolveAttachment()[i].GetDescriptorInfo();
-			compDescriptorWriter[i].WriteImage(3, &depthTextureInfo);
-
-			VkDescriptorImageInfo positionTextureInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment(1)[i].GetDescriptorInfo();
-			compDescriptorWriter[i].WriteImage(4, &positionTextureInfo);
+			compDescriptorWriter[i].WriteImage(4, &depthTextureInfo);
 
 			VkDescriptorBufferInfo dofUBInfo = m_UBDOFData[i].GetDescriptorBufferInfo();
 			compDescriptorWriter[i].WriteBuffer(5, &dofUBInfo);
@@ -572,7 +572,16 @@ namespace VulkanCore {
 		cameraUB.Projection = camera.GetProjectionMatrix();
 		cameraUB.View = camera.GetViewMatrix();
 		cameraUB.InverseView = glm::inverse(camera.GetViewMatrix());
+
+		float fovy = camera.GetFieldOfViewY();
+		float aspectRatio = camera.GetAspectRatio();
+		float tanHalfFOVy = glm::tan(fovy / 2.0f);
+		float tanHalfFOVx = tanHalfFOVy * aspectRatio;
+
+		cameraUB.CameraTanHalfFOV = { tanHalfFOVx, tanHalfFOVy };
 		m_UBCamera[frameIndex].WriteandFlushBuffer(&cameraUB);
+
+		VK_CORE_WARN("Size of Camera: {}, Byte Offset of CameraTanHalfFOV: {}", sizeof(UBCamera), offsetof(UBCamera, CameraTanHalfFOV));
 
 		// Point Light
 		UBPointLights pointLightUB{};

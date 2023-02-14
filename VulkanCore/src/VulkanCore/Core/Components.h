@@ -112,6 +112,7 @@ namespace VulkanCore {
 		glm::mat4 Projection{ 1.0f };
 		glm::mat4 View{ 1.0f };
 		glm::mat4 InverseView{ 1.0f };
+		glm::vec2 CameraTanHalfFOV{ 0.0f };
 	};
 
 	struct UBPointLights
