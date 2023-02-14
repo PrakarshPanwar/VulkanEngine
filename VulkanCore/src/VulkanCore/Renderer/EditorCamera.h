@@ -25,6 +25,8 @@ namespace VulkanCore {
 			UpdateProjection();
 		}
 
+		inline float GetNearClip() const { return m_NearClip; }
+		inline float GetFarClip() const { return m_FarClip; }
 		inline float GetFieldOfViewY() const { return m_FOV; }
 		inline float GetAspectRatio() { return m_AspectRatio; }
 		inline void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; UpdateProjection(); }

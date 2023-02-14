@@ -9,6 +9,7 @@ layout(binding = 0) uniform Camera
 	mat4 Projection;
 	mat4 View;
 	mat4 InverseView;
+	vec2 DepthUnpackConsts;
 	vec2 CameraTanHalfFOV;
 } u_Camera;
 
@@ -28,16 +29,7 @@ layout(binding = 5) uniform DOFData
 {
 	float FocusPoint;
 	float FocusScale;
-	float Near;
-	float Far;
 } u_DOF;
-
-vec3 CalculateViewPosition(vec2 texCoord, float depth, vec2 fovScale)
-{
-	vec2 halfNDCPosition = vec2(0.5) - texCoord;
-    vec3 viewPosition = vec3(halfNDCPosition * fovScale * -depth, -depth);
-    return viewPosition;
-}
 
 const float GOLDEN_ANGLE = 2.39996323;
 const float MAX_BLUR_SIZE = 20.0; 
@@ -45,7 +37,9 @@ const float RAD_SCALE = 0.5; // Smaller = nicer blur, larger = faster
 
 float LinearizeDepth(const float screenDepth)
 {
-	return u_DOF.Far * u_DOF.Near / (u_DOF.Far - screenDepth * (u_DOF.Far - u_DOF.Near));
+	float depthLinearizeMul = u_Camera.DepthUnpackConsts.x;
+	float depthLinearizeAdd = u_Camera.DepthUnpackConsts.y;
+	return depthLinearizeMul / (depthLinearizeAdd - screenDepth);
 }
 
 float GetBlurSize(float depth, float focusPoint, float focusScale)
@@ -117,18 +111,12 @@ void main()
 	ivec2 texSize = textureSize(u_InputTexture, 0);
 	vec2 fTexSize = vec2(float(texSize.x), float(texSize.y));
 
-	// Bloom
-//	vec3 bloom = UpsampleTent9(u_BloomTexture, 0, v_TexCoord, 1.0 / fTexSize, 0.5);
-//	vec3 bloomDirt = texture(u_BloomDirtTexture, v_TexCoord).rgb * u_SceneParams.DirtIntensity;
-//	color += bloom;
-//	color += bloom * bloomDirt;
-//
-//	// Depth of Field
+	// Depth of Field
 	vec2 uv = v_TexCoord;
 	vec3 dofColor = DepthOfField(uv, u_DOF.FocusPoint, u_DOF.FocusScale, 1.0 / fTexSize);
 	vec2 vuv = uv - vec2(0.5);
 
-	vuv.x *= float(texSize.x) / float(texSize.y);
+	vuv.x *= fTexSize.x / fTexSize.y;
     float vignette = pow(1.0 - length(vuv * vec2(1.0, 1.3)), 1.0);
     color = mix(vec4(dofColor, 1.0), vec4(dofColor, 1.0) * vignette, 0.75).rgb;
 

@@ -116,7 +116,7 @@ namespace VulkanCore {
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
 			geomFramebufferSpec.ReadDepthTexture = true;
-			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::RGBA32F, ImageFormat::DEPTH32F };
+			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::DEPTH32F };
 			geomFramebufferSpec.Samples = 8;
 
 			RenderPassSpecification geomRenderPassSpec;
@@ -455,7 +455,7 @@ namespace VulkanCore {
 		for (int i = 0; i < m_CompositeDescriptorSets.size(); ++i)
 		{
 			VkDescriptorBufferInfo cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
-			//compDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+			compDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
 			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
 			VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2].GetDescriptorInfo();
@@ -525,8 +525,6 @@ namespace VulkanCore {
 		{
 			ImGui::DragFloat("Focus Point", &m_DOFSettings.FocusPoint, 0.01f, 0.0f, 50.0f);
 			ImGui::DragFloat("Focus Scale", &m_DOFSettings.FocusScale, 0.01f, 0.0f, 50.0f);
-			ImGui::DragFloat("Near Distance", &m_DOFSettings.Near, 0.01f, 0.1f, 100.0f);
-			ImGui::DragFloat("Far Distance", &m_DOFSettings.Far, 0.01f, 1.0f, 1000.0f);
 			ImGui::TreePop();
 		}
 
@@ -573,6 +571,11 @@ namespace VulkanCore {
 		cameraUB.View = camera.GetViewMatrix();
 		cameraUB.InverseView = glm::inverse(camera.GetViewMatrix());
 
+		float nearClip = camera.GetNearClip();
+		float farClip = camera.GetFarClip();
+		cameraUB.DepthUnpackConsts.x = (farClip * nearClip) / (farClip - nearClip);
+		cameraUB.DepthUnpackConsts.y = (farClip + nearClip) / (farClip - nearClip);
+
 		float fovy = camera.GetFieldOfViewY();
 		float aspectRatio = camera.GetAspectRatio();
 		float tanHalfFOVy = glm::tan(fovy / 2.0f);
@@ -581,7 +584,7 @@ namespace VulkanCore {
 		cameraUB.CameraTanHalfFOV = { tanHalfFOVx, tanHalfFOVy };
 		m_UBCamera[frameIndex].WriteandFlushBuffer(&cameraUB);
 
-		VK_CORE_WARN("Size of Camera: {}, Byte Offset of CameraTanHalfFOV: {}", sizeof(UBCamera), offsetof(UBCamera, CameraTanHalfFOV));
+		//VK_CORE_WARN("Size of Camera: {}, Byte Offset of CameraTanHalfFOV: {}", sizeof(UBCamera), offsetof(UBCamera, CameraTanHalfFOV));
 
 		// Point Light
 		UBPointLights pointLightUB{};
