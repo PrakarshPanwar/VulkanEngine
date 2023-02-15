@@ -43,20 +43,20 @@ namespace VulkanCore {
 
 		struct MeshKey
 		{
-			uint64_t MeshHandleKey;
+			uint64_t MeshHandle;
 			uint32_t SubmeshIndex;
 
 			bool operator==(const MeshKey& other)
 			{
-				return MeshHandleKey == other.MeshHandleKey && SubmeshIndex == other.SubmeshIndex;
+				return MeshHandle == other.MeshHandle && SubmeshIndex == other.SubmeshIndex;
 			}
 
 			bool operator<(const MeshKey& other) const
 			{
-				if (MeshHandleKey < other.MeshHandleKey)
+				if (MeshHandle < other.MeshHandle)
 					return true;
 
-				if (MeshHandleKey > other.MeshHandleKey)
+				if (MeshHandle > other.MeshHandle)
 					return false;
 
 				if (SubmeshIndex < other.SubmeshIndex)
@@ -187,7 +187,7 @@ namespace std {
 		{
 			std::hash<uint64_t> h{};
 			size_t hashVal = 0;
-			hashVal ^= h(other.MeshHandleKey) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
+			hashVal ^= h(other.MeshHandle) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
 			hashVal ^= h(other.SubmeshIndex) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
 
 			return hashVal;

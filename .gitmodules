@@ -11,3 +11,6 @@
 [submodule "VulkanCore/vendor/ImGuizmo"]
 	path = VulkanCore/vendor/ImGuizmo
 	url = https://github.com/PrakarshPanwar/ImGuizmo.git
+[submodule "VulkanCore/vendor/yaml-cpp"]
+	path = VulkanCore/vendor/yaml-cpp
+	url = https://github.com/PrakarshPanwar/yaml-cpp.git

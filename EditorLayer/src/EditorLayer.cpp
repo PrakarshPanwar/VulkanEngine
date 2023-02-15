@@ -5,9 +5,10 @@
 #include "VulkanCore/Core/ImGuiLayer.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Events/Input.h"
-#include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
+#include "VulkanCore/Scene/Entity.h"
+#include "VulkanCore/Scene/SceneSerializer.h"
 
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanContext.h"
@@ -36,7 +37,7 @@ namespace VulkanCore {
 
 		std::unique_ptr<Timer> editorInit = std::make_unique<Timer>("Editor Initialization");
 
-		LoadEntities();
+		m_Scene = std::make_shared<Scene>();
 		m_SceneRenderer = std::make_shared<SceneRenderer>(m_Scene);
 
 		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
@@ -45,6 +46,8 @@ namespace VulkanCore {
 			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
+		SceneSerializer serializer(m_Scene);
+		serializer.Deserialize("assets/scenes/FirstScene.vkscene");
 
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
 	}
@@ -146,7 +149,7 @@ namespace VulkanCore {
 			m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
 			(sceneViewportSize.x != m_ViewportSize.x || sceneViewportSize.y != m_ViewportSize.y))
 		{
-			m_SceneRenderer->SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+			m_SceneRenderer->SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 			m_EditorCamera.SetViewportSize(region.x, region.y);
 		}
 
@@ -220,8 +223,6 @@ namespace VulkanCore {
 
 	void EditorLayer::LoadEntities()
 	{
-		m_Scene = std::make_shared<Scene>();
-
 		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
 		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx", 1));
 		auto& vaseTransform = CeramicVase.GetComponent<TransformComponent>();
@@ -238,11 +239,14 @@ namespace VulkanCore {
 		Entity SphereMesh = m_Scene->CreateEntity("Basic Sphere");
 		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx", 5));
 
+#define LOAD_SPONZA 0
+#if LOAD_SPONZA
 		Entity SponzaMesh = m_Scene->CreateEntity("Sponza");
 		SponzaMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Sponza/Sponza.obj", 4));
 		auto& sponzaTransform = SponzaMesh.GetComponent<TransformComponent>();
 		sponzaTransform.Translation = glm::vec3{ -4.0f, -10.0f, 23.0f };
 		sponzaTransform.Scale = glm::vec3{ 0.25f };
+#endif
 
 		// TODO: Texture mapping not working correctly for GLTF mesh formats, fix this in future
 #if 0
