@@ -1,0 +1,72 @@
+Scene: FirstScene
+Entities:
+  - Entity: 64321564316
+    TagComponent:
+      Tag: Green Light
+    TransformComponent:
+      Translation: [2, 0, -0.5]
+      Rotation: [0, 0, 0]
+      Scale: [0.100000001, 0.100000001, 0.100000001]
+    PointLightComponent:
+      Position: [2, 0, -0.5, 1]
+      Color: [0.100000001, 0.800000012, 0.200000003, 10]
+  - Entity: 64321564316
+    TagComponent:
+      Tag: Red Light
+    TransformComponent:
+      Translation: [1.5, 0, 5]
+      Rotation: [0, 0, 0]
+      Scale: [0.100000001, 0.100000001, 0.100000001]
+    PointLightComponent:
+      Position: [1.5, 0, 5, 1]
+      Color: [1, 0.5, 0.100000001, 15]
+  - Entity: 64321564316
+    TagComponent:
+      Tag: Blue Light
+    TransformComponent:
+      Translation: [-1, 0, 4.5]
+      Rotation: [0, 0, 0]
+      Scale: [0.100000001, 0.100000001, 0.100000001]
+    PointLightComponent:
+      Position: [-1, 0, 4.5, 1]
+      Color: [0.200000003, 0.300000012, 0.800000012, 20]
+  - Entity: 64321564316
+    TagComponent:
+      Tag: Brass Vase
+    TransformComponent:
+      Translation: [1.5, -1.20000005, 1.5]
+      Rotation: [-1.57079637, 0, 0]
+      Scale: [6, 6, 6]
+    MeshComponent:
+      Filepath: assets/meshes/BrassVase2K/BrassVase.fbx
+      MaterialIndex: 2
+  - Entity: 64321564316
+    TagComponent:
+      Tag: Basic Sphere
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshComponent:
+      Filepath: assets/meshes/Standard/Sphere.fbx
+      MaterialIndex: 5
+  - Entity: 64321564316
+    TagComponent:
+      Tag: Flat Plane
+    TransformComponent:
+      Translation: [0, -1.29999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [10, 0.100000001, 10]
+    MeshComponent:
+      Filepath: assets/meshes/Standard/Cube.fbx
+      MaterialIndex: 4
+  - Entity: 64321564316
+    TagComponent:
+      Tag: Ceramic Vase
+    TransformComponent:
+      Translation: [0, -1.20000005, 2.5]
+      Rotation: [-1.57079637, 0, 0]
+      Scale: [3.5, 3.5, 3.5]
+    MeshComponent:
+      Filepath: assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx
+      MaterialIndex: 1

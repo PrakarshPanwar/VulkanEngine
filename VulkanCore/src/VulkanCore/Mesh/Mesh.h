@@ -100,6 +100,7 @@ namespace VulkanCore {
 		~Mesh();
 
 		inline std::shared_ptr<MeshSource> GetMeshSource() const { return m_MeshSource; }
+		inline int GetMaterialIndex() const { return m_MaterialID; }
 		inline const std::vector<uint32_t>& GetSubmeshes() const { return m_Submeshes; }
 
 		static std::shared_ptr<Mesh> LoadMesh(const char* filepath, int materialIndex);
