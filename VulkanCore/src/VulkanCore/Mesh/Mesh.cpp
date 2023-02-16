@@ -55,7 +55,11 @@ namespace VulkanCore {
 		uint64_t meshHandle = std::filesystem::hash_value(filepath);
 
 		if (s_MeshSourcesMap.contains(meshHandle))
+		{
 			m_MeshSource = s_MeshSourcesMap[meshHandle];
+			InvalidateSubmeshes();
+		}
+
 		else
 		{
 			m_MeshSource = std::make_shared<MeshSource>(filepath);
@@ -68,18 +72,22 @@ namespace VulkanCore {
 
 			AssimpMeshImporter::TraverseNodes(m_MeshSource, m_MeshSource->m_Scene->mRootNode, 0);
 			AssimpMeshImporter::InvalidateMesh(m_MeshSource, m_MaterialID);
-
-			for (const auto& meshNode : m_MeshSource->GetMeshNodes())
-			{
-				for (uint32_t submeshIndex : meshNode.Submeshes)
-					m_Submeshes.emplace_back(submeshIndex);
-			}
+			InvalidateSubmeshes();
 		}
 	}
 
 	Mesh::Mesh()
 		: m_MeshSource(std::make_shared<MeshSource>())
 	{
+	}
+
+	void Mesh::InvalidateSubmeshes()
+	{
+		for (const auto& meshNode : m_MeshSource->GetMeshNodes())
+		{
+			for (uint32_t submeshIndex : meshNode.Submeshes)
+				m_Submeshes.emplace_back(submeshIndex);
+		}
 	}
 
 	std::shared_ptr<Mesh> Mesh::LoadMesh(const char* filepath, int materialIndex)
