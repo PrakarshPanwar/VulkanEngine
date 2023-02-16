@@ -182,12 +182,14 @@ namespace VulkanCore {
 
 		m_UBCamera.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_UBPointLight.reserve(VulkanSwapChain::MaxFramesInFlight);
+		m_UBSpotLight.reserve(VulkanSwapChain::MaxFramesInFlight);
 
 		// Uniform Buffers
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
 		{
 			m_UBCamera.emplace_back(sizeof(UBCamera));
 			m_UBPointLight.emplace_back(sizeof(UBPointLights));
+			m_UBSpotLight.emplace_back(sizeof(UBSpotLights));
 		}
 
 		m_BloomMipSize = (glm::uvec2(1920, 1080) + 1u) / 2u;
@@ -319,25 +321,24 @@ namespace VulkanCore {
 			auto pointLightUBInfo = m_UBPointLight[i].GetDescriptorBufferInfo();
 			geomDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
 
-			geomDescriptorWriter[i].WriteImage(2, DiffuseMaps);
-			geomDescriptorWriter[i].WriteImage(3, NormalMaps);
-			geomDescriptorWriter[i].WriteImage(4, ARMMaps);
+			auto spotLightUBInfo = m_UBSpotLight[i].GetDescriptorBufferInfo();
+			geomDescriptorWriter[i].WriteBuffer(2, &spotLightUBInfo);
+
+			geomDescriptorWriter[i].WriteImage(3, DiffuseMaps);
+			geomDescriptorWriter[i].WriteImage(4, NormalMaps);
+			geomDescriptorWriter[i].WriteImage(5, ARMMaps);
 			
 			// Irradiance Map
 			VkDescriptorImageInfo irradianceMapInfo = m_IrradianceTexture->GetDescriptorImageInfo();
-			geomDescriptorWriter[i].WriteImage(5, &irradianceMapInfo);
+			geomDescriptorWriter[i].WriteImage(6, &irradianceMapInfo);
 
 			// BRDF LUT Texture
-#if USE_PRELOADED_BRDF
-			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorImageInfo();
-#else
 			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorInfo();
-#endif
-			geomDescriptorWriter[i].WriteImage(6, &brdfTextureInfo);
+			geomDescriptorWriter[i].WriteImage(7, &brdfTextureInfo);
 
 			// Prefiltered Map
 			VkDescriptorImageInfo prefilteredMapInfo = m_PrefilteredTexture->GetDescriptorImageInfo();
-			geomDescriptorWriter[i].WriteImage(7, &prefilteredMapInfo);
+			geomDescriptorWriter[i].WriteImage(8, &prefilteredMapInfo);
 
 			geomDescriptorWriter[i].Build(m_GeometryDescriptorSets[i]);
 		}
@@ -574,6 +575,10 @@ namespace VulkanCore {
 		UBPointLights pointLightUB{};
 		m_Scene->UpdatePointLightUB(pointLightUB);
 		m_UBPointLight[frameIndex].WriteandFlushBuffer(&pointLightUB);
+
+		UBSpotLights spotLightUB{};
+		m_Scene->UpdateSpotLightUB(spotLightUB);
+		m_UBSpotLight[frameIndex].WriteandFlushBuffer(&spotLightUB);
 
 		GeometryPass();
 		BloomCompute();

@@ -96,8 +96,33 @@ namespace VulkanCore {
 		PointLightComponent() = default;
 		PointLightComponent(const glm::vec4& color)
 			: Color(color) {}
+
+		PointLightComponent(const glm::vec4& position, const glm::vec4& color, float radius, float falloff)
+			: Position(position), Color(color), Radius(radius), Falloff(falloff) {}
 	private:
 		glm::vec2 Padding{};
+	};
+
+	struct SpotLightComponent
+	{
+		glm::vec4 Position{ 0.0f };
+		glm::vec4 Color{ 0.0f };
+		glm::vec3 Direction{ 0.0f };
+		float InnerCutoff = 0.174f;
+		float OuterCutoff = 0.261f;
+		float Radius = 0.1f;
+		float Falloff = 1.0f;
+
+		SpotLightComponent() = default;
+		SpotLightComponent(const glm::vec4& color)
+			: Color(color) {}
+
+		SpotLightComponent(const glm::vec4& position, const glm::vec4& color, const glm::vec3& direction, float innerCutoff, float outerCutoff, float radius, float falloff)
+			: Position(position), Color(color), Direction(direction),
+			InnerCutoff(innerCutoff), OuterCutoff(outerCutoff),
+			Radius(radius), Falloff(falloff) {}
+	private:
+		float Padding;
 	};
 
 	struct UBCamera
@@ -109,9 +134,16 @@ namespace VulkanCore {
 
 	struct UBPointLights
 	{
-		int NumLights;
+		int LightCount;
 		glm::vec3 Padding{};
 		PointLightComponent PointLights[10];
+	};
+
+	struct UBSpotLights
+	{
+		int LightCount;
+		glm::vec3 Padding{};
+		SpotLightComponent SpotLights[10];
 	};
 
 	struct PCModelData
