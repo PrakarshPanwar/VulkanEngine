@@ -101,9 +101,8 @@ namespace VulkanCore {
 				auto& lightTransform = lightEntity.GetComponent<TransformComponent>();
 				auto& pointLightComp = lightEntity.GetComponent<PointLightComponent>();
 
-				push.Position = glm::vec4(lightTransform.Translation, 1.0f);
-				push.Color = pointLightComp.PointLightInstance->Color;
-				push.Radius = lightTransform.Scale.x;
+				push.Position = glm::vec4(lightTransform.Translation, pointLightComp.Radius);
+				push.Color = pointLightComp.Color;
 
 				pipeline->SetPushConstants(drawCmd, &push, sizeof(PCPointLight));
 				vkCmdDraw(drawCmd, 6, 1, 0, 0);
@@ -127,7 +126,9 @@ namespace VulkanCore {
 				auto& pointLightComp = lightEntity.GetComponent<PointLightComponent>();
 
 				ubo.PointLights[lightIndex].Position = glm::vec4(lightTransform.Translation, 1.0f);
-				ubo.PointLights[lightIndex].Color = pointLightComp.PointLightInstance->Color;
+				ubo.PointLights[lightIndex].Color = pointLightComp.Color;
+				ubo.PointLights[lightIndex].Falloff = pointLightComp.Falloff;
+				ubo.PointLights[lightIndex].Radius = pointLightComp.Radius;
 
 				lightIndex++;
 			}

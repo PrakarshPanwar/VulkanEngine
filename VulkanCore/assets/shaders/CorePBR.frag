@@ -16,8 +16,10 @@ layout(location = 9) in flat int v_MaterialIndex;
 
 struct PointLight
 {
-	vec4 Position;
+    vec4 Position;
 	vec4 Color;
+    float Radius;
+    float Falloff;
 };
 
 // Buffer Data
@@ -30,8 +32,8 @@ layout(set = 0, binding = 0) uniform Camera
 
 layout(set = 0, binding = 1) uniform PointLightData
 {
-	PointLight PointLights[10];
 	int Count;
+	PointLight PointLights[10];
 } u_PointLight;
 
 // Material Data
@@ -132,7 +134,10 @@ vec3 Lighting(vec3 F0)
         vec3 L = normalize(pointLight.Position.xyz - Input.WorldPosition);
         vec3 H = normalize(m_Params.View + L);
         float dist = length(pointLight.Position.xyz - Input.WorldPosition);
-        float attenuation = 1.0 / (dist * dist);
+
+        // Calculating Attentuation
+        float attenuation = (1.0) / (dist * (pointLight.Falloff + dist));
+
         vec3 radiance = pointLight.Color.xyz * pointLight.Color.w * attenuation;
 
         // Cook-Torrance BRDF

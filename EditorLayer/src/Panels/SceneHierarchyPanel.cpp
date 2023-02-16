@@ -266,8 +266,10 @@ namespace VulkanCore {
 
 		DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
 		{
-			ImGui::ColorEdit3("Color", glm::value_ptr(component.PointLightInstance->Color));
-			ImGui::DragFloat("Intensity", (float*)&component.PointLightInstance->Color.w, 0.01f, 0.0f, 10000.0f);
+			ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
+			ImGui::DragFloat("Intensity", (float*)&component.Color.w, 0.01f, 0.0f, 10000.0f);
+			ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 10000.0f);
+			ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.001f, 1000.0f);
 		});
 
 		DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)

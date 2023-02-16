@@ -140,8 +140,9 @@ namespace VulkanCore {
 			out << YAML::BeginMap;
 
 			auto& plc = entity.GetComponent<PointLightComponent>();
-			out << YAML::Key << "Position" << YAML::Value << plc.PointLightInstance->Position;
-			out << YAML::Key << "Color" << YAML::Value << plc.PointLightInstance->Color;
+			out << YAML::Key << "Color" << YAML::Value << plc.Color;
+			out << YAML::Key << "Falloff" << YAML::Value << plc.Falloff;
+			out << YAML::Key << "Radius" << YAML::Value << plc.Radius;
 
 			out << YAML::EndMap;
 		}
@@ -238,8 +239,9 @@ namespace VulkanCore {
 				{
 					auto& plc = deserializedEntity.AddComponent<PointLightComponent>();
 
-					plc.PointLightInstance->Position = pointLightComponent["Position"].as<glm::vec4>();
-					plc.PointLightInstance->Color = pointLightComponent["Color"].as<glm::vec4>();
+					plc.Color = pointLightComponent["Color"].as<glm::vec4>();
+					plc.Falloff = pointLightComponent["Falloff"].as<float>();
+					plc.Radius = pointLightComponent["Radius"].as<float>();
 				}
 
 				auto meshComponent = entity["MeshComponent"];
