@@ -248,6 +248,7 @@ namespace VulkanCore {
 		if (ImGui::BeginPopup("AddComponent"))
 		{
 			DisplayAddComponentEntry<PointLightComponent>("Point Light");
+			DisplayAddComponentEntry<SpotLightComponent>("Spot Light");
 			DisplayAddComponentEntry<MeshComponent>("Mesh");
 
 			ImGui::EndPopup();
@@ -268,6 +269,21 @@ namespace VulkanCore {
 		{
 			ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
 			ImGui::DragFloat("Intensity", (float*)&component.Color.w, 0.01f, 0.0f, 10000.0f);
+			ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 10000.0f);
+			ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.001f, 1000.0f);
+		});
+
+		DrawComponent<SpotLightComponent>("Spot Light", entity, [](auto& component)
+		{
+			ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
+			ImGui::DragFloat("Intensity", (float*)&component.Color.w, 0.01f, 0.0f, 10000.0f);
+			float innerCutoff = glm::degrees(component.InnerCutoff);
+			float outerCutoff = glm::degrees(component.OuterCutoff);
+			ImGui::DragFloat("Inner Cutoff", &innerCutoff, 0.01f, 0.01f, outerCutoff);
+			ImGui::DragFloat("Outer Cutoff", &outerCutoff, 0.01f, innerCutoff, 80.0f);
+			component.InnerCutoff = glm::radians(innerCutoff);
+			component.OuterCutoff = glm::radians(outerCutoff);
+
 			ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 10000.0f);
 			ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.001f, 1000.0f);
 		});

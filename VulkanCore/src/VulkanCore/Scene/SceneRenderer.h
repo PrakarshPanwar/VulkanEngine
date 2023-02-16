@@ -143,6 +143,7 @@ namespace VulkanCore {
 		// Material Resources
 		std::vector<VulkanUniformBuffer> m_UBCamera;
 		std::vector<VulkanUniformBuffer> m_UBPointLight;
+		std::vector<VulkanUniformBuffer> m_UBSpotLight;
 
 		std::vector<VulkanImage> m_BloomTextures;
 		std::vector<VulkanImage> m_SceneRenderTextures;

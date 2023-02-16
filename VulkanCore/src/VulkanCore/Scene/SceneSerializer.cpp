@@ -147,6 +147,22 @@ namespace VulkanCore {
 			out << YAML::EndMap;
 		}
 
+		if (entity.HasComponent<SpotLightComponent>())
+		{
+			out << YAML::Key << "SpotLightComponent";
+			out << YAML::BeginMap;
+
+			auto& slc = entity.GetComponent<SpotLightComponent>();
+			out << YAML::Key << "Color" << YAML::Value << slc.Color;
+			out << YAML::Key << "Direction" << YAML::Value << slc.Direction;
+			out << YAML::Key << "InnerCutoff" << YAML::Value << slc.InnerCutoff;
+			out << YAML::Key << "OuterCutoff" << YAML::Value << slc.OuterCutoff;
+			out << YAML::Key << "Falloff" << YAML::Value << slc.Falloff;
+			out << YAML::Key << "Radius" << YAML::Value << slc.Radius;
+
+			out << YAML::EndMap;
+		}
+
 		// TODO: Probably will create a separate mesh serializer when we will implement Asset system
 		if (entity.HasComponent<MeshComponent>())
 		{
@@ -242,6 +258,19 @@ namespace VulkanCore {
 					plc.Color = pointLightComponent["Color"].as<glm::vec4>();
 					plc.Falloff = pointLightComponent["Falloff"].as<float>();
 					plc.Radius = pointLightComponent["Radius"].as<float>();
+				}
+
+				auto spotLightComponent = entity["SpotLightComponent"];
+				if (spotLightComponent)
+				{
+					auto& slc = deserializedEntity.AddComponent<SpotLightComponent>();
+
+					slc.Color = spotLightComponent["Color"].as<glm::vec4>();
+					slc.Direction = spotLightComponent["Direction"].as<glm::vec3>();
+					slc.InnerCutoff = spotLightComponent["InnerCutoff"].as<float>();
+					slc.OuterCutoff = spotLightComponent["OuterCutoff"].as<float>();
+					slc.Falloff = spotLightComponent["Falloff"].as<float>();
+					slc.Radius = spotLightComponent["Radius"].as<float>();
 				}
 
 				auto meshComponent = entity["MeshComponent"];
