@@ -294,22 +294,19 @@ namespace VulkanCore {
 		auto& blueLightTransform = BluePointLight.GetComponent<TransformComponent>();
 		blueLightTransform.Translation = glm::vec3{ -1.0f, 0.0f, 4.5f };
 		blueLightTransform.Scale = glm::vec3{ 0.1f };
-		std::shared_ptr<PointLight> blueLight = std::make_shared<PointLight>(glm::vec4(blueLightTransform.Translation, 1.0f), glm::vec4{ 0.2f, 0.3f, 0.8f, 20.0f });
-		BluePointLight.AddComponent<PointLightComponent>(blueLight);
+		auto& bluePLC = BluePointLight.AddComponent<PointLightComponent>(glm::vec4{ 0.2f, 0.3f, 0.8f, 20.0f });
 
 		Entity RedPointLight = m_Scene->CreateEntity("Red Light");
 		auto& redLightTransform = RedPointLight.GetComponent<TransformComponent>();
 		redLightTransform.Translation = glm::vec3{ 1.5f, 0.0f, 5.0f };
 		redLightTransform.Scale = glm::vec3{ 0.1f };
-		std::shared_ptr<PointLight> redLight = std::make_shared<PointLight>(glm::vec4(redLightTransform.Translation, 1.0f), glm::vec4{ 1.0f, 0.5f, 0.1f, 15.0f });
-		RedPointLight.AddComponent<PointLightComponent>(redLight);
+		auto& redPLC = RedPointLight.AddComponent<PointLightComponent>(glm::vec4{ 1.0f, 0.5f, 0.1f, 15.0f });
 
 		Entity GreenPointLight = m_Scene->CreateEntity("Green Light");
 		auto& greenLightTransform = GreenPointLight.GetComponent<TransformComponent>();
 		greenLightTransform.Translation = glm::vec3{ 2.0f, 0.0f, -0.5f };
 		greenLightTransform.Scale = glm::vec3{ 0.1f };
-		std::shared_ptr<PointLight> greenLight = std::make_shared<PointLight>(glm::vec4(greenLightTransform.Translation, 1.0f), glm::vec4{ 0.1f, 0.8f, 0.2f, 10.0f });
-		GreenPointLight.AddComponent<PointLightComponent>(greenLight);
+		auto& greenPLC = GreenPointLight.AddComponent<PointLightComponent>(glm::vec4{ 0.1f, 0.8f, 0.2f, 10.0f });
 	}
 
 	void EditorLayer::RenderGizmo()

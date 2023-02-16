@@ -86,25 +86,18 @@ namespace VulkanCore {
 		glm::vec4 MRow[3];
 	};
 
-	struct PointLight
-	{
-		glm::vec4 Position{};
-		glm::vec4 Color{};
-
-		PointLight() = default;
-		PointLight(const glm::vec4& position, const glm::vec4& color)
-			: Position(position), Color(color) {}
-	};
-
 	struct PointLightComponent
 	{
-		std::shared_ptr<PointLight> PointLightInstance;
+		glm::vec4 Position{ 0.0f };
+		glm::vec4 Color{ 0.0f };
+		float Radius = 0.1f;
+		float Falloff = 1.0f;
 
-		PointLightComponent()
-			: PointLightInstance(std::make_shared<PointLight>(glm::vec4{ 0.0f, 0.0f, 0.0f, 1.0f }, glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f })) {}
-
-		PointLightComponent(std::shared_ptr<PointLight> pointLight)
-			: PointLightInstance(pointLight) {}
+		PointLightComponent() = default;
+		PointLightComponent(const glm::vec4& color)
+			: Color(color) {}
+	private:
+		glm::vec2 Padding{};
 	};
 
 	struct UBCamera
@@ -116,8 +109,9 @@ namespace VulkanCore {
 
 	struct UBPointLights
 	{
-		PointLight PointLights[10];
 		int NumLights;
+		glm::vec3 Padding{};
+		PointLightComponent PointLights[10];
 	};
 
 	struct PCModelData
@@ -130,7 +124,6 @@ namespace VulkanCore {
 	{
 		glm::vec4 Position{};
 		glm::vec4 Color{};
-		float Radius;
 	};
 
 }

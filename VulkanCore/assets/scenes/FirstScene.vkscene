@@ -18,8 +18,9 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [0.100000001, 0.100000001, 0.100000001]
     PointLightComponent:
-      Position: [2, 0, -0.5, 1]
       Color: [0.100000001, 0.800000012, 0.200000003, 10]
+      Falloff: 1
+      Radius: 0.100000001
   - Entity: 64321564316
     TagComponent:
       Tag: Red Light
@@ -28,8 +29,9 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [0.100000001, 0.100000001, 0.100000001]
     PointLightComponent:
-      Position: [1.5, 0, 5, 1]
       Color: [1, 0.5, 0.100000001, 15]
+      Falloff: 1
+      Radius: 0.100000001
   - Entity: 64321564316
     TagComponent:
       Tag: Blue Light
@@ -38,8 +40,9 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [0.100000001, 0.100000001, 0.100000001]
     PointLightComponent:
-      Position: [-1, 0, 4.5, 1]
       Color: [0.200000003, 0.300000012, 0.800000012, 20]
+      Falloff: 1
+      Radius: 0.100000001
   - Entity: 64321564316
     TagComponent:
       Tag: Brass Vase
@@ -54,8 +57,8 @@ Entities:
     TagComponent:
       Tag: Basic Sphere
     TransformComponent:
-      Translation: [-0.0882806778, 0, -0.133220673]
-      Rotation: [0, -0, 0]
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     MeshComponent:
       Filepath: assets/meshes/Standard/Sphere.fbx
