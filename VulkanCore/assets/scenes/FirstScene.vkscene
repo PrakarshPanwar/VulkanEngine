@@ -2,6 +2,16 @@ Scene: FirstScene
 Entities:
   - Entity: 64321564316
     TagComponent:
+      Tag: Empty Entity
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshComponent:
+      Filepath: assets/meshes/Standard/Cube.fbx
+      MaterialIndex: 0
+  - Entity: 64321564316
+    TagComponent:
       Tag: Green Light
     TransformComponent:
       Translation: [2, 0, -0.5]
@@ -44,8 +54,8 @@ Entities:
     TagComponent:
       Tag: Basic Sphere
     TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
+      Translation: [-4.99940395, 0, -6.52885246]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     MeshComponent:
       Filepath: assets/meshes/Standard/Sphere.fbx

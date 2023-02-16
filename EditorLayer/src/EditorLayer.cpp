@@ -9,6 +9,7 @@
 #include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Scene/SceneSerializer.h"
+#include "VulkanCore/Utils/PlatformUtils.h"
 
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanContext.h"
@@ -46,8 +47,6 @@ namespace VulkanCore {
 			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
-		SceneSerializer serializer(m_Scene);
-		serializer.Deserialize("assets/scenes/FirstScene.vkscene");
 
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
 	}
@@ -123,6 +122,34 @@ namespace VulkanCore {
 		{
 			ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
 			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+		}
+
+		if (ImGui::BeginMenuBar())
+		{
+			if (ImGui::BeginMenu("File"))
+			{
+				// Disabling fullscreen would allow the window to be moved to the front of other windows, 
+				// which we can't undo at the moment without finer window depth/z control.
+				//ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen_persistant);1
+				if (ImGui::MenuItem("New", "Ctrl+N"))
+					NewScene();
+
+				if (ImGui::MenuItem("Open...", "Ctrl+O"))
+					OpenScene();
+
+				if (ImGui::MenuItem("Save", "Ctrl+S"))
+					SaveScene();
+
+				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
+					SaveSceneAs();
+
+// 				if (ImGui::MenuItem("Exit"))
+// 					Application::Get()->Close();
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMenuBar();
 		}
 
 		style.WindowMinSize.x = minWinSizeX;
@@ -330,6 +357,67 @@ namespace VulkanCore {
 				tc.Scale = scale;
 			}
 		}
+	}
+
+	void EditorLayer::NewScene()
+	{
+		m_Scene = std::make_shared<Scene>();
+		m_SceneRenderer->SetActiveScene(m_Scene);
+		m_SceneHierarchyPanel.SetContext(m_Scene);
+
+		m_EditorScenePath = std::filesystem::path();
+	}
+
+	void EditorLayer::OpenScene()
+	{
+		std::string filepath = FileDialogs::OpenFile("VulkanEngine Scene (*.vkscene)\0*.vkscene\0");
+		if (!filepath.empty())
+			OpenScene(filepath);
+	}
+
+	void EditorLayer::OpenScene(const std::string& path)
+	{
+		std::filesystem::path filepath(path);
+
+		if (filepath.extension().string() != ".vkscene")
+		{
+			VK_WARN("Could not load {0} - not a scene file", filepath.filename().string());
+			return;
+		}
+
+		std::shared_ptr<Scene> newScene = std::make_shared<Scene>();
+		SceneSerializer serializer(newScene);
+		if (serializer.Deserialize(filepath.string()))
+		{
+			m_Scene = newScene;
+			m_SceneRenderer->SetActiveScene(m_Scene);
+			m_SceneHierarchyPanel.SetContext(m_Scene);
+			m_EditorScenePath = path;
+		}
+	}
+
+	void EditorLayer::SaveScene()
+	{
+		if (!m_EditorScenePath.empty())
+			SerializeScene(m_Scene, m_EditorScenePath);
+		else
+			SaveSceneAs();
+	}
+
+	void EditorLayer::SaveSceneAs()
+	{
+		std::string filepath = FileDialogs::SaveFile("VulkanEngine Scene (*.vkscene)\0*.vkscene\0");
+		if (!filepath.empty())
+		{
+			SerializeScene(m_Scene, filepath);
+			m_EditorScenePath = filepath;
+		}
+	}
+
+	void EditorLayer::SerializeScene(std::shared_ptr<Scene> scene, const std::filesystem::path& scenePath)
+	{
+		SceneSerializer serializer(scene);
+		serializer.Serialize(scenePath.string());
 	}
 
 }
