@@ -111,19 +111,25 @@ namespace VulkanCore {
 			}
 		}
 
-		ImGui::End();
+		ImGui::End(); // End of Scene Hierarchy Panel
 
 		ImGui::Begin("Properties");
 		if (m_SelectionContext)
 		{
 			DrawComponents(m_SelectionContext);
 		}
-		ImGui::End();
+
+		ImGui::End(); // End of Properties Panel
 	}
 
 	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
 	{
 
+	}
+
+	void SceneHierarchyPanel::SetContext(std::shared_ptr<Scene> context)
+	{
+		m_Context = context;
 	}
 
 	void SceneHierarchyPanel::DrawEntityNode(Entity entity)

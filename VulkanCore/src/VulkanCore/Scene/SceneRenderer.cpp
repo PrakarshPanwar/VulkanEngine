@@ -554,6 +554,11 @@ namespace VulkanCore {
 		VulkanRenderer::ResetStats();
 	}
 
+	void SceneRenderer::SetActiveScene(std::shared_ptr<Scene> scene)
+	{
+		m_Scene = scene;
+	}
+
 	void SceneRenderer::RenderScene(EditorCamera& camera)
 	{
 		int frameIndex = Renderer::GetCurrentFrameIndex();
