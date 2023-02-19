@@ -13,10 +13,29 @@
 
 namespace VulkanCore {
 
+	struct ApplicationCommandLineArgs
+	{
+		int Count = 0;
+		char** Args = nullptr;
+
+		const char* operator[](int index) const
+		{
+			VK_CORE_ASSERT(index < Count, "Index is greater than Count!");
+			return Args[index];
+		}
+	};
+
+	struct ApplicationSpecification
+	{
+		std::string Name = "VulkanCore Application";
+		std::string WorkingDirectory;
+		ApplicationCommandLineArgs CommandLineArgs;
+	};
+
 	class Application
 	{
 	public:
-		Application();
+		Application(const ApplicationSpecification& spec);
 		virtual ~Application();
 
 		void Init();
@@ -39,6 +58,7 @@ namespace VulkanCore {
 		bool OnWindowClose(WindowCloseEvent& window);
 		bool OnWindowResize(WindowResizeEvent& window);
 	private:
+		ApplicationSpecification m_Specification;
 		std::shared_ptr<Window> m_Window;
 		std::unique_ptr<VulkanContext> m_Context;
 		std::unique_ptr<VulkanRenderer> m_Renderer;

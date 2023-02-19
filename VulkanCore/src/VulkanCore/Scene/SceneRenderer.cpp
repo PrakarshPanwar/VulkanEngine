@@ -116,6 +116,7 @@ namespace VulkanCore {
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
 			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::DEPTH24STENCIL8 };
+			geomFramebufferSpec.Transfer = true;
 			geomFramebufferSpec.Samples = 8;
 
 			RenderPassSpecification geomRenderPassSpec;
@@ -388,7 +389,7 @@ namespace VulkanCore {
 
 			m_BloomPingSets[i].resize(mipCount - 1);
 			m_BloomPongSets[i].resize(mipCount - 1);
-			for (int j = 1; j < mipCount; ++j)
+			for (uint32_t j = 1; j < mipCount; ++j)
 			{
 				// Set B: Downsampling(Ping)
 				// Binding 0(o_Image): BloomTex[1]
@@ -696,7 +697,7 @@ namespace VulkanCore {
 		m_BloomPipeline->SetPushConstants(dispatchCmd, &m_BloomParams, sizeof(glm::vec2), sizeof(glm::vec2));
 		m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
-		for (int i = 1; i < mips; i++)
+		for (uint32_t i = 1; i < mips; i++)
 		{
 			m_LodAndMode.LOD = float(i - 1);
 			m_LodAndMode.Mode = 1.0f;

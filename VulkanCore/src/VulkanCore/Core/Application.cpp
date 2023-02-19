@@ -9,7 +9,8 @@ namespace VulkanCore {
 
 	Application* Application::s_Instance;
 
-	Application::Application()
+	Application::Application(const ApplicationSpecification& spec)
+		: m_Specification(spec)
 	{
 		s_Instance = this;
 
@@ -17,8 +18,8 @@ namespace VulkanCore {
 		Log::Init();
 		RenderThread::Init();
 
-		std::filesystem::current_path("../VulkanCore");
-		m_Window = std::make_shared<WindowsWindow>(WindowSpecs(1920, 1080, "Vulkan Application"));
+		std::filesystem::current_path(m_Specification.WorkingDirectory);
+		m_Window = std::make_shared<WindowsWindow>(WindowSpecs(1920, 1080, m_Specification.Name));
 		m_Window->SetEventCallback(VK_CORE_BIND_EVENT_FN(Application::OnEvent));
 
 		Init();
