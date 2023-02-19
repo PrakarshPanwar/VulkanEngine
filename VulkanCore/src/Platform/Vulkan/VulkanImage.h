@@ -50,6 +50,7 @@ namespace VulkanCore {
 		uint32_t MipLevels = 1;
 		ImageFormat Format;
 		ImageUsage Usage;
+		bool Transfer = false;
 		TextureWrap SamplerWrap = TextureWrap::Clamp;
 	};
 

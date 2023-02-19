@@ -137,10 +137,10 @@ namespace VulkanCore {
 			if (Utils::IsDepthFormat(m_Specification.Format))
 				usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 			else
-				usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+				usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		}
 
-		if (m_Specification.Usage == ImageUsage::Texture)
+		if (m_Specification.Transfer || m_Specification.Usage == ImageUsage::Texture)
 			usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 		if (m_Specification.Usage == ImageUsage::Storage)

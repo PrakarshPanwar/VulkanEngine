@@ -153,7 +153,7 @@ namespace VulkanCore {
 			std::vector<SpvReflectDescriptorSet*> DescriptorSets(count);
 			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, DescriptorSets.data());
 
-			for (int i = 0; i < count; ++i)
+			for (uint32_t i = 0; i < count; ++i)
 			{
 				const SpvReflectDescriptorSet& reflectionSet = *(DescriptorSets.at(i));
 				if (index == reflectionSet.set)

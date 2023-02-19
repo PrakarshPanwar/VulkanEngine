@@ -236,12 +236,12 @@ namespace VulkanCore {
 			node.Submeshes.push_back(submeshIndex);
 		}
 
-		uint32_t parentNodeIndex = meshSource->m_Nodes.size() - 1;
+		uint32_t parentNodeIndex = (uint32_t)meshSource->m_Nodes.size() - 1;
 		node.Children.resize(aNode->mNumChildren);
 		for (uint32_t i = 0; i < aNode->mNumChildren; ++i)
 		{
 			MeshNode& child = meshSource->m_Nodes.emplace_back();
-			uint32_t childIndex = meshSource->m_Nodes.size() - 1;
+			uint32_t childIndex = (uint32_t)meshSource->m_Nodes.size() - 1;
 			child.Parent = parentNodeIndex;
 			meshSource->m_Nodes[nodeIndex].Children[i] = childIndex;
 			TraverseNodes(meshSource, aNode->mChildren[i], childIndex);

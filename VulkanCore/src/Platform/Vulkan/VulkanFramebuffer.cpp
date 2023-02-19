@@ -133,6 +133,7 @@ namespace VulkanCore {
 					spec.Width = m_Specification.Width;
 					spec.Height = m_Specification.Height;
 					spec.Samples = 1;
+					spec.Transfer = m_Specification.Transfer;
 					spec.Format = attachment.ImgFormat;
 					spec.Usage = ImageUsage::Attachment;
 
