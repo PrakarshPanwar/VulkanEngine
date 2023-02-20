@@ -52,6 +52,7 @@ namespace VulkanCore {
 		std::shared_ptr<ImGuiLayer> GetImGuiLayer() { return m_ImGuiLayer; }
 		static Application* Get() { return s_Instance; }
 
+		inline const ApplicationSpecification& GetSpecification() const { return m_Specification; }
 		inline VulkanDescriptorPool* GetVulkanDescriptorPool() { return m_GlobalPool.get(); }
 		inline std::shared_ptr<VulkanDescriptorPool> GetDescriptorPool() { return m_GlobalPool; }
 	private:
