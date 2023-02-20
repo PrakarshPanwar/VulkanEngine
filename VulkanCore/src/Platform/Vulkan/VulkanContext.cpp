@@ -34,6 +34,9 @@ namespace VulkanCore {
 
 		void SetDebugUtilsObjectName(VkDevice device, VkObjectType objectType, const std::string& debugName, void* object)
 		{
+			if (vkSetDebugUtilsObjectNameEXT == nullptr)
+				return;
+
 			VkDebugUtilsObjectNameInfoEXT debugUtilsNameInfo{};
 			debugUtilsNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
 			debugUtilsNameInfo.objectType = objectType;
