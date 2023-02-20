@@ -2,6 +2,7 @@
 #include "VulkanDevice.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Core/Application.h"
 #include "VulkanContext.h"
 
 namespace VulkanCore {
@@ -89,6 +90,7 @@ namespace VulkanCore {
 		PickPhysicalDevice();
 		CreateLogicalDevice();
 		CreateCommandPools();
+		SetupDebugMarkers();
 	}
 
 	void VulkanDevice::Destroy()
@@ -131,6 +133,22 @@ namespace VulkanCore {
 		}
 
 		VK_CORE_ASSERT(false, "Failed to find Supported Format!");
+	}
+
+	bool VulkanDevice::IsExtensionSupported(const char* extensionName)
+	{
+		uint32_t extensionCount;
+		vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, &extensionCount, nullptr);
+
+		std::vector<VkExtensionProperties> extensions(extensionCount);
+		vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, &extensionCount, extensions.data());
+
+		for (auto extension : extensions) {
+			if (strcmp(extension.extensionName, extensionName) == 0)
+				return true;
+		}
+
+		return false;
 	}
 
 	VkCommandBuffer VulkanDevice::GetCommandBuffer(bool compute)
@@ -272,8 +290,14 @@ namespace VulkanCore {
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-		const auto& deviceExtensions = VulkanContext::GetCurrentContext()->m_DeviceExtensions;
+		auto& deviceExtensions = VulkanContext::GetCurrentContext()->m_DeviceExtensions;
 		const auto& validationLayers = VulkanContext::GetCurrentContext()->m_ValidationLayers;
+
+		if (IsExtensionSupported(VK_EXT_DEBUG_MARKER_EXTENSION_NAME))
+		{
+			deviceExtensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+			m_EnableDebugMarkers = true;
+		}
 
 		createInfo.pEnabledFeatures = &deviceFeatures;
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
@@ -311,6 +335,16 @@ namespace VulkanCore {
 
 		poolInfo.queueFamilyIndex = queueFamilyIndices.ComputeFamily;
 		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_ComputeCommandPool), "Failed to Create Compute Command Pool!");
+
+		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_COMMAND_POOL, "Default Command Pool", m_CommandPool);
+		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_COMMAND_POOL, "Render Thread Command Pool", m_RTCommandPool);
+		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_COMMAND_POOL, "Compute Command Pool", m_ComputeCommandPool);
+	}
+
+	void VulkanDevice::SetupDebugMarkers()
+	{
+		if (m_EnableDebugMarkers)
+			VK_CHECK_RESULT(CreateDebugMarkerEXT(m_LogicalDevice), "Failed to Set Debug Markers");
 	}
 
 	QueueFamilyIndices VulkanDevice::FindQueueFamilies(VkPhysicalDevice device)

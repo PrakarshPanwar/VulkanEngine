@@ -1,7 +1,6 @@
 #pragma once
 #include <vma/vk_mem_alloc.h>
 
-#define USE_VMA 1
 #define VIEWPORT_SUPPORT 1
 
 namespace VulkanCore {
@@ -58,6 +57,7 @@ namespace VulkanCore {
 		QueueFamilyIndices FindPhysicalQueueFamilies() { return FindQueueFamilies(m_PhysicalDevice); }
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
+		bool IsExtensionSupported(const char* extensionName);
 		VkCommandBuffer GetCommandBuffer(bool compute = false);
 		void FlushCommandBuffer(VkCommandBuffer commandBuffer, bool compute = false);
 
@@ -68,6 +68,7 @@ namespace VulkanCore {
 		void CreateLogicalDevice();
 		void PickPhysicalDevice();
 		void CreateCommandPools();
+		void SetupDebugMarkers();
 	private:
 		VkAllocationCallbacks m_AllocationCallbacks;
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
@@ -79,6 +80,8 @@ namespace VulkanCore {
 		VkQueue m_GraphicsQueue;
 		VkQueue m_ComputeQueue;
 		VkQueue m_PresentQueue;
+
+		bool m_EnableDebugMarkers = false;
 	};
 
 }

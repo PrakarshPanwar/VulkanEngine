@@ -456,6 +456,7 @@ namespace VulkanCore {
 				&m_GraphicsPipeline),
 				"Failed to Create Graphics Pipeline!");
 
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_Specification.DebugName, m_GraphicsPipeline);
 			delete[] shaderStages;
 		});
 	}
