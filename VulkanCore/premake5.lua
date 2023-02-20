@@ -39,11 +39,12 @@ project "VulkanCore"
 		"%{IncludeDir.entt}",
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.ImGuizmo}",
+		"%{IncludeDir.yaml_cpp}",
 		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.Assimp}"
 	}
 
-	links { "GLFW", "%{Library.Vulkan}", "ImGui" }
+	links { "GLFW", "%{Library.Vulkan}", "ImGui", "yaml-cpp" }
 
 	filter "system:windows"
 		systemversion "latest"

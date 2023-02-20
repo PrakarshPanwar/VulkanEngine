@@ -11,7 +11,7 @@ namespace VulkanCore {
 		uint32_t Width = 0;
 		uint32_t Height = 0;
 		ImageFormat Format = ImageFormat::RGBA8_SRGB;
-		TextureWrap SamplerWrap = TextureWrap::Clamp;
+		TextureWrap SamplerWrap = TextureWrap::Repeat;
 		bool GenerateMips = true;
 	};
 

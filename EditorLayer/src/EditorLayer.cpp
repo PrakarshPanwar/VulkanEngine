@@ -5,9 +5,11 @@
 #include "VulkanCore/Core/ImGuiLayer.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Events/Input.h"
-#include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
+#include "VulkanCore/Scene/Entity.h"
+#include "VulkanCore/Scene/SceneSerializer.h"
+#include "VulkanCore/Utils/PlatformUtils.h"
 
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanContext.h"
@@ -36,7 +38,7 @@ namespace VulkanCore {
 
 		std::unique_ptr<Timer> editorInit = std::make_unique<Timer>("Editor Initialization");
 
-		LoadEntities();
+		m_Scene = std::make_shared<Scene>();
 		m_SceneRenderer = std::make_shared<SceneRenderer>(m_Scene);
 
 		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
@@ -46,7 +48,7 @@ namespace VulkanCore {
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 
-		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 100.0f);
+		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
 	}
 
 	void EditorLayer::OnDetach()
@@ -122,6 +124,34 @@ namespace VulkanCore {
 			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 		}
 
+		if (ImGui::BeginMenuBar())
+		{
+			if (ImGui::BeginMenu("File"))
+			{
+				// Disabling fullscreen would allow the window to be moved to the front of other windows, 
+				// which we can't undo at the moment without finer window depth/z control.
+				//ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen_persistant);1
+				if (ImGui::MenuItem("New", "Ctrl+N"))
+					NewScene();
+
+				if (ImGui::MenuItem("Open...", "Ctrl+O"))
+					OpenScene();
+
+				if (ImGui::MenuItem("Save", "Ctrl+S"))
+					SaveScene();
+
+				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
+					SaveSceneAs();
+
+// 				if (ImGui::MenuItem("Exit"))
+// 					Application::Get()->Close();
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMenuBar();
+		}
+
 		style.WindowMinSize.x = minWinSizeX;
 
 		//ImGui::ShowDemoWindow(&m_ImGuiShowWindow);
@@ -146,7 +176,7 @@ namespace VulkanCore {
 			m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
 			(sceneViewportSize.x != m_ViewportSize.x || sceneViewportSize.y != m_ViewportSize.y))
 		{
-			m_SceneRenderer->SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+			m_SceneRenderer->SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 			m_EditorCamera.SetViewportSize(region.x, region.y);
 		}
 
@@ -220,8 +250,6 @@ namespace VulkanCore {
 
 	void EditorLayer::LoadEntities()
 	{
-		m_Scene = std::make_shared<Scene>();
-
 		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
 		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx", 1));
 		auto& vaseTransform = CeramicVase.GetComponent<TransformComponent>();
@@ -230,13 +258,22 @@ namespace VulkanCore {
 		vaseTransform.Scale = glm::vec3{ 3.5f };
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
-		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Cube.fbx", 3));
+		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Cube.fbx", 4));
 		auto& planeTransform = FlatPlane.GetComponent<TransformComponent>();
 		planeTransform.Translation = glm::vec3{ 0.0f, -1.3f, 0.0f };
 		planeTransform.Scale = glm::vec3{ 10.0f, 0.1f, 10.0f };
 
 		Entity SphereMesh = m_Scene->CreateEntity("Basic Sphere");
-		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx", 3));
+		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx", 5));
+
+#define LOAD_SPONZA 0
+#if LOAD_SPONZA
+		Entity SponzaMesh = m_Scene->CreateEntity("Sponza");
+		SponzaMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Sponza/Sponza.obj", 4));
+		auto& sponzaTransform = SponzaMesh.GetComponent<TransformComponent>();
+		sponzaTransform.Translation = glm::vec3{ -4.0f, -10.0f, 23.0f };
+		sponzaTransform.Scale = glm::vec3{ 0.25f };
+#endif
 
 		// TODO: Texture mapping not working correctly for GLTF mesh formats, fix this in future
 #if 0
@@ -257,22 +294,19 @@ namespace VulkanCore {
 		auto& blueLightTransform = BluePointLight.GetComponent<TransformComponent>();
 		blueLightTransform.Translation = glm::vec3{ -1.0f, 0.0f, 4.5f };
 		blueLightTransform.Scale = glm::vec3{ 0.1f };
-		std::shared_ptr<PointLight> blueLight = std::make_shared<PointLight>(glm::vec4(blueLightTransform.Translation, 1.0f), glm::vec4{ 0.2f, 0.3f, 0.8f, 1.0f });
-		BluePointLight.AddComponent<PointLightComponent>(blueLight);
+		auto& bluePLC = BluePointLight.AddComponent<PointLightComponent>(glm::vec4{ 0.2f, 0.3f, 0.8f, 20.0f });
 
 		Entity RedPointLight = m_Scene->CreateEntity("Red Light");
 		auto& redLightTransform = RedPointLight.GetComponent<TransformComponent>();
 		redLightTransform.Translation = glm::vec3{ 1.5f, 0.0f, 5.0f };
 		redLightTransform.Scale = glm::vec3{ 0.1f };
-		std::shared_ptr<PointLight> redLight = std::make_shared<PointLight>(glm::vec4(redLightTransform.Translation, 1.0f), glm::vec4{ 1.0f, 0.5f, 0.1f, 1.0f });
-		RedPointLight.AddComponent<PointLightComponent>(redLight);
+		auto& redPLC = RedPointLight.AddComponent<PointLightComponent>(glm::vec4{ 1.0f, 0.5f, 0.1f, 15.0f });
 
 		Entity GreenPointLight = m_Scene->CreateEntity("Green Light");
 		auto& greenLightTransform = GreenPointLight.GetComponent<TransformComponent>();
 		greenLightTransform.Translation = glm::vec3{ 2.0f, 0.0f, -0.5f };
 		greenLightTransform.Scale = glm::vec3{ 0.1f };
-		std::shared_ptr<PointLight> greenLight = std::make_shared<PointLight>(glm::vec4(greenLightTransform.Translation, 1.0f), glm::vec4{ 0.1f, 0.8f, 0.2f, 1.0f });
-		GreenPointLight.AddComponent<PointLightComponent>(greenLight);
+		auto& greenPLC = GreenPointLight.AddComponent<PointLightComponent>(glm::vec4{ 0.1f, 0.8f, 0.2f, 10.0f });
 	}
 
 	void EditorLayer::RenderGizmo()
@@ -304,7 +338,7 @@ namespace VulkanCore {
 			float snapValues[3] = { snapValue, snapValue, snapValue };
 
 			ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
-				(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::LOCAL, glm::value_ptr(transform),
+				(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::WORLD, glm::value_ptr(transform),
 				nullptr, snap ? snapValues : nullptr);
 
 			if (ImGuizmo::IsUsing())
@@ -320,6 +354,67 @@ namespace VulkanCore {
 				tc.Scale = scale;
 			}
 		}
+	}
+
+	void EditorLayer::NewScene()
+	{
+		m_Scene = std::make_shared<Scene>();
+		m_SceneRenderer->SetActiveScene(m_Scene);
+		m_SceneHierarchyPanel.SetContext(m_Scene);
+
+		m_EditorScenePath = std::filesystem::path();
+	}
+
+	void EditorLayer::OpenScene()
+	{
+		std::string filepath = FileDialogs::OpenFile("VulkanEngine Scene (*.vkscene)\0*.vkscene\0");
+		if (!filepath.empty())
+			OpenScene(filepath);
+	}
+
+	void EditorLayer::OpenScene(const std::string& path)
+	{
+		std::filesystem::path filepath(path);
+
+		if (filepath.extension().string() != ".vkscene")
+		{
+			VK_WARN("Could not load {0} - not a scene file", filepath.filename().string());
+			return;
+		}
+
+		std::shared_ptr<Scene> newScene = std::make_shared<Scene>();
+		SceneSerializer serializer(newScene);
+		if (serializer.Deserialize(filepath.string()))
+		{
+			m_Scene = newScene;
+			m_SceneRenderer->SetActiveScene(m_Scene);
+			m_SceneHierarchyPanel.SetContext(m_Scene);
+			m_EditorScenePath = path;
+		}
+	}
+
+	void EditorLayer::SaveScene()
+	{
+		if (!m_EditorScenePath.empty())
+			SerializeScene(m_Scene, m_EditorScenePath);
+		else
+			SaveSceneAs();
+	}
+
+	void EditorLayer::SaveSceneAs()
+	{
+		std::string filepath = FileDialogs::SaveFile("VulkanEngine Scene (*.vkscene)\0*.vkscene\0");
+		if (!filepath.empty())
+		{
+			SerializeScene(m_Scene, filepath);
+			m_EditorScenePath = filepath;
+		}
+	}
+
+	void EditorLayer::SerializeScene(std::shared_ptr<Scene> scene, const std::filesystem::path& scenePath)
+	{
+		SceneSerializer serializer(scene);
+		serializer.Serialize(scenePath.string());
 	}
 
 }

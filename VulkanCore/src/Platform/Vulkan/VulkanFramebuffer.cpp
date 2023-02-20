@@ -90,6 +90,7 @@ namespace VulkanCore {
 			for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
 			{
 				ImageSpecification spec;
+				spec.DebugName = "Framebuffer Color Attachment";
 				spec.Width = m_Specification.Width;
 				spec.Height = m_Specification.Height;
 				spec.Samples = m_Specification.Samples;
@@ -128,9 +129,11 @@ namespace VulkanCore {
 				for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
 				{
 					ImageSpecification spec;
+					spec.DebugName = "Framebuffer Color Resolve";
 					spec.Width = m_Specification.Width;
 					spec.Height = m_Specification.Height;
 					spec.Samples = 1;
+					spec.Transfer = m_Specification.Transfer;
 					spec.Format = attachment.ImgFormat;
 					spec.Usage = ImageUsage::Attachment;
 
@@ -161,6 +164,7 @@ namespace VulkanCore {
 			for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
 			{
 				ImageSpecification spec;
+				spec.DebugName = "Framebuffer Depth Attachment";
 				spec.Width = m_Specification.Width;
 				spec.Height = m_Specification.Height;
 				spec.Samples = m_Specification.Samples;

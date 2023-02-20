@@ -45,11 +45,14 @@ namespace VulkanCore {
 
 	struct ImageSpecification
 	{
+		std::string DebugName;
+
 		uint32_t Width, Height;
 		uint32_t Samples = 1;
 		uint32_t MipLevels = 1;
 		ImageFormat Format;
 		ImageUsage Usage;
+		bool Transfer = false;
 		TextureWrap SamplerWrap = TextureWrap::Clamp;
 	};
 

@@ -10,6 +10,7 @@ namespace VulkanCore {
 	{
 		PipelineSpecification() = default;
 
+		std::string DebugName;
 		std::shared_ptr<Shader> pShader;
 		std::shared_ptr<VulkanRenderPass> RenderPass;
 		bool BackfaceCulling = false;
