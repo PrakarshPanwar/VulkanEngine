@@ -7,7 +7,6 @@ layout(push_constant) uniform PointLight
 {
 	vec4 Position;
 	vec4 Color;
-	float Radius;
 } u_PointLight;
 
 const float M_PI = 3.1415926538;

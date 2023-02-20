@@ -59,17 +59,12 @@ namespace VulkanCore {
 
 	void Scene::OnUpdateGeometry(SceneRenderer* renderer)
 	{
-		auto view = m_Registry.view<TransformComponent>();
+		auto view = m_Registry.view<TransformComponent, MeshComponent>();
 
 		for (auto ent : view)
 		{
-			Entity entity = { ent, this };
-
-			if (entity.HasComponent<MeshComponent>())
-			{
-				auto& transformComponent = entity.GetComponent<TransformComponent>();
-				renderer->SubmitMesh(entity.GetComponent<MeshComponent>().MeshInstance, transformComponent.GetTransform());
-			}
+			auto [transform, meshComponent] = view.get<TransformComponent, MeshComponent>(ent);
+			renderer->SubmitMesh(meshComponent.MeshInstance, transform.GetTransform());
 		}
 	}
 
@@ -101,9 +96,8 @@ namespace VulkanCore {
 				auto& lightTransform = lightEntity.GetComponent<TransformComponent>();
 				auto& pointLightComp = lightEntity.GetComponent<PointLightComponent>();
 
-				push.Position = glm::vec4(lightTransform.Translation, 1.0f);
-				push.Color = pointLightComp.PointLightInstance->Color;
-				push.Radius = lightTransform.Scale.x;
+				push.Position = glm::vec4(lightTransform.Translation, pointLightComp.Radius);
+				push.Color = pointLightComp.Color;
 
 				pipeline->SetPushConstants(drawCmd, &push, sizeof(PCPointLight));
 				vkCmdDraw(drawCmd, 6, 1, 0, 0);
@@ -113,27 +107,46 @@ namespace VulkanCore {
 
 	void Scene::UpdatePointLightUB(UBPointLights& ubo)
 	{
-		auto view = m_Registry.view<TransformComponent>();
+		auto view = m_Registry.view<TransformComponent, PointLightComponent>();
+
+		int lightIndex = 0;
+		for (auto ent : view)
+		{
+			auto [transform, lightComponent] = view.get<TransformComponent, PointLightComponent>(ent);
+			ubo.PointLights[lightIndex++] =
+			{
+				glm::vec4(transform.Translation, 1.0f),
+				lightComponent.Color,
+				lightComponent.Radius,
+				lightComponent.Falloff
+			};
+		}
+
+		ubo.LightCount = lightIndex;
+	}
+
+	void Scene::UpdateSpotLightUB(UBSpotLights& ubo)
+	{
+		auto view = m_Registry.view<TransformComponent, SpotLightComponent>();
 		int lightIndex = 0;
 
 		for (auto ent : view)
 		{
-			Entity lightEntity = { ent, this };
-
-			auto& lightTransform = lightEntity.GetComponent<TransformComponent>();
-
-			if (lightEntity.HasComponent<PointLightComponent>())
+			auto [transform, lightComponent] = view.get<TransformComponent, SpotLightComponent>(ent);
+			glm::vec3 direction = -glm::normalize(glm::mat3(transform.GetTransform()) * glm::vec3(1.0f));
+			ubo.SpotLights[lightIndex++] =
 			{
-				auto& pointLightComp = lightEntity.GetComponent<PointLightComponent>();
-
-				ubo.PointLights[lightIndex].Position = glm::vec4(lightTransform.Translation, 1.0f);
-				ubo.PointLights[lightIndex].Color = pointLightComp.PointLightInstance->Color;
-
-				lightIndex++;
-			}
+				glm::vec4(transform.Translation, 1.0f),
+				lightComponent.Color,
+				direction,
+				lightComponent.InnerCutoff,
+				lightComponent.OuterCutoff,
+				lightComponent.Radius,
+				lightComponent.Falloff
+			};
 		}
 
-		ubo.NumLights = lightIndex;
+		ubo.LightCount = lightIndex;
 	}
 
 	void Scene::DestroyEntity(Entity entity)

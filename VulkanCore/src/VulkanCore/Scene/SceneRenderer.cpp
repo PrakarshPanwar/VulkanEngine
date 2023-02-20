@@ -115,20 +115,23 @@ namespace VulkanCore {
 			FramebufferSpecification geomFramebufferSpec;
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
-			geomFramebufferSpec.ReadDepthTexture = true;
 			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::DEPTH32F };
+			geomFramebufferSpec.ReadDepthTexture = true;
+			geomFramebufferSpec.Transfer = true;
 			geomFramebufferSpec.Samples = 8;
 
 			RenderPassSpecification geomRenderPassSpec;
 			geomRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(geomFramebufferSpec);
 
 			PipelineSpecification geomPipelineSpec;
+			geomPipelineSpec.DebugName = "Geometry Pipeline";
 			geomPipelineSpec.pShader = Renderer::GetShader("CorePBR");
 			geomPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(geomRenderPassSpec);
 			geomPipelineSpec.Layout = vertexLayout;
 			geomPipelineSpec.InstanceLayout = instanceLayout;
 
 			PipelineSpecification pointLightPipelineSpec;
+			pointLightPipelineSpec.DebugName = "Point Light Pipeline";
 			pointLightPipelineSpec.pShader = Renderer::GetShader("PointLight");
 			pointLightPipelineSpec.Blend = true;
 			pointLightPipelineSpec.RenderPass = geomPipelineSpec.RenderPass;
@@ -150,6 +153,7 @@ namespace VulkanCore {
 			m_SceneFramebuffer = compRenderPassSpec.TargetFramebuffer;
 
 			PipelineSpecification compPipelineSpec;
+			compPipelineSpec.DebugName = "Composite Pipeline";
 			compPipelineSpec.pShader = Renderer::GetShader("SceneComposite");
 			compPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(compRenderPassSpec);
 			compPipelineSpec.DepthTest = false;
@@ -161,6 +165,7 @@ namespace VulkanCore {
 		// Skybox Pipeline
 		{
 			PipelineSpecification skyboxPipelineSpec;
+			skyboxPipelineSpec.DebugName = "Skybox Pipeline";
 			skyboxPipelineSpec.pShader = Renderer::GetShader("Skybox");
 			skyboxPipelineSpec.Layout = {
 				{ ShaderDataType::Float3, "a_Position" }
@@ -183,6 +188,7 @@ namespace VulkanCore {
 
 		m_UBCamera.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_UBPointLight.reserve(VulkanSwapChain::MaxFramesInFlight);
+		m_UBSpotLight.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_UBDOFData.reserve(VulkanSwapChain::MaxFramesInFlight);
 
 		// Uniform Buffers
@@ -190,6 +196,7 @@ namespace VulkanCore {
 		{
 			m_UBCamera.emplace_back(sizeof(UBCamera));
 			m_UBPointLight.emplace_back(sizeof(UBPointLights));
+			m_UBSpotLight.emplace_back(sizeof(UBSpotLights));
 			m_UBDOFData.emplace_back(sizeof(DOFSettings));
 		}
 
@@ -197,6 +204,7 @@ namespace VulkanCore {
 		m_BloomMipSize += 16u - m_BloomMipSize % 16u;
 
 		ImageSpecification bloomRTSpec = {};
+		bloomRTSpec.DebugName = "Bloom Compute Texture";
 		bloomRTSpec.Width = m_BloomMipSize.x;
 		bloomRTSpec.Height = m_BloomMipSize.y;
 		bloomRTSpec.Format = ImageFormat::RGBA32F;
@@ -221,6 +229,7 @@ namespace VulkanCore {
 		}
 
 		ImageSpecification sceneRTSpec = {};
+		sceneRTSpec.DebugName = "Scene Render Texture";
 		sceneRTSpec.Width = 1920;
 		sceneRTSpec.Height = 1080;
 		sceneRTSpec.Format = ImageFormat::RGBA32F;
@@ -250,7 +259,7 @@ namespace VulkanCore {
 		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/meshes/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
 		m_ARMMap2 = std::make_shared<VulkanTexture>("assets/meshes/BrassVase2K/textures/brass_vase_03_arm_2k.png", ImageFormat::RGBA8_UNORM);
 
-#define USE_GOLD_MATERIAL 1
+#define USE_GOLD_MATERIAL 0
 #if USE_GOLD_MATERIAL
 		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldDiffuse2.png");
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldNormalGL.png", ImageFormat::RGBA8_UNORM);
@@ -260,6 +269,13 @@ namespace VulkanCore {
 		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesNorGL.png", ImageFormat::RGBA8_UNORM);
 		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesARM.png", ImageFormat::RGBA8_UNORM);
 #endif
+		m_DiffuseMap4 = std::make_shared<VulkanTexture>("assets/textures/ConcreteWall/concrete_wall_006_diff_2k.png");
+		m_NormalMap4 = std::make_shared<VulkanTexture>("assets/textures/ConcreteWall/concrete_wall_006_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap4 = std::make_shared<VulkanTexture>("assets/textures/ConcreteWall/concrete_wall_006_arm_2k.png", ImageFormat::RGBA8_UNORM);
+
+		m_DiffuseMap5 = std::make_shared<VulkanTexture>("assets/textures/PlankFlooring/plank_flooring_diff_2k.png");
+		m_NormalMap5 = std::make_shared<VulkanTexture>("assets/textures/PlankFlooring/plank_flooring_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
+		m_ARMMap5 = std::make_shared<VulkanTexture>("assets/textures/PlankFlooring/plank_flooring_arm_2k.png", ImageFormat::RGBA8_UNORM);
 
 		m_SRGBWhiteTexture = Renderer::GetWhiteTexture();
 		m_UNORMWhiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
@@ -267,13 +283,11 @@ namespace VulkanCore {
 
 		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
 		m_CubemapTexture = filteredMap;
+		m_PrefilteredTexture = filteredMap;
 		m_IrradianceTexture = irradianceMap;
 
-#if USE_PRELOADED_BRDF
-		m_BRDFTexture = std::make_shared<VulkanTexture>("assets/textures/BRDF_LUTMap.png", ImageFormat::RGBA8_UNORM);
-#else
 		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
-#endif
+
 		m_SkyboxVBData = Utils::CreateCubeModel();
 
 		std::vector<VkDescriptorImageInfo> DiffuseMaps, ARMMaps, NormalMaps;
@@ -281,14 +295,20 @@ namespace VulkanCore {
 		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
 		DiffuseMaps.push_back(m_DiffuseMap2->GetDescriptorImageInfo());
 		DiffuseMaps.push_back(m_DiffuseMap3->GetDescriptorImageInfo());
+		DiffuseMaps.push_back(m_DiffuseMap4->GetDescriptorImageInfo());
+		DiffuseMaps.push_back(m_DiffuseMap5->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_UNORMWhiteTexture->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_NormalMap->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_NormalMap2->GetDescriptorImageInfo());
 		NormalMaps.push_back(m_NormalMap3->GetDescriptorImageInfo());
+		NormalMaps.push_back(m_NormalMap4->GetDescriptorImageInfo());
+		NormalMaps.push_back(m_NormalMap5->GetDescriptorImageInfo());
 		ARMMaps.push_back(m_UNORMWhiteTexture->GetDescriptorImageInfo());
 		ARMMaps.push_back(m_ARMMap->GetDescriptorImageInfo());
 		ARMMaps.push_back(m_ARMMap2->GetDescriptorImageInfo());
 		ARMMaps.push_back(m_ARMMap3->GetDescriptorImageInfo());
+		ARMMaps.push_back(m_ARMMap4->GetDescriptorImageInfo());
+		ARMMaps.push_back(m_ARMMap5->GetDescriptorImageInfo());
 
 		// Writing in Descriptors
 		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
@@ -311,25 +331,24 @@ namespace VulkanCore {
 			auto pointLightUBInfo = m_UBPointLight[i].GetDescriptorBufferInfo();
 			geomDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
 
-			geomDescriptorWriter[i].WriteImage(2, DiffuseMaps);
-			geomDescriptorWriter[i].WriteImage(3, NormalMaps);
-			geomDescriptorWriter[i].WriteImage(4, ARMMaps);
+			auto spotLightUBInfo = m_UBSpotLight[i].GetDescriptorBufferInfo();
+			geomDescriptorWriter[i].WriteBuffer(2, &spotLightUBInfo);
+
+			geomDescriptorWriter[i].WriteImage(3, DiffuseMaps);
+			geomDescriptorWriter[i].WriteImage(4, NormalMaps);
+			geomDescriptorWriter[i].WriteImage(5, ARMMaps);
 			
 			// Irradiance Map
 			VkDescriptorImageInfo irradianceMapInfo = m_IrradianceTexture->GetDescriptorImageInfo();
-			geomDescriptorWriter[i].WriteImage(5, &irradianceMapInfo);
+			geomDescriptorWriter[i].WriteImage(6, &irradianceMapInfo);
 
 			// BRDF LUT Texture
-#if USE_PRELOADED_BRDF
-			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorImageInfo();
-#else
 			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorInfo();
-#endif
-			geomDescriptorWriter[i].WriteImage(6, &brdfTextureInfo);
+			geomDescriptorWriter[i].WriteImage(7, &brdfTextureInfo);
 
 			// Prefiltered Map
-			VkDescriptorImageInfo prefilteredMapInfo = filteredMap->GetDescriptorImageInfo();
-			geomDescriptorWriter[i].WriteImage(7, &prefilteredMapInfo);
+			VkDescriptorImageInfo prefilteredMapInfo = m_PrefilteredTexture->GetDescriptorImageInfo();
+			geomDescriptorWriter[i].WriteImage(8, &prefilteredMapInfo);
 
 			geomDescriptorWriter[i].Build(m_GeometryDescriptorSets[i]);
 		}
@@ -379,7 +398,7 @@ namespace VulkanCore {
 
 			m_BloomPingSets[i].resize(mipCount - 1);
 			m_BloomPongSets[i].resize(mipCount - 1);
-			for (int j = 1; j < mipCount; ++j)
+			for (uint32_t j = 1; j < mipCount; ++j)
 			{
 				// Set B: Downsampling(Ping)
 				// Binding 0(o_Image): BloomTex[1]
@@ -561,6 +580,11 @@ namespace VulkanCore {
 		VulkanRenderer::ResetStats();
 	}
 
+	void SceneRenderer::SetActiveScene(std::shared_ptr<Scene> scene)
+	{
+		m_Scene = scene;
+	}
+
 	void SceneRenderer::RenderScene(EditorCamera& camera)
 	{
 		int frameIndex = Renderer::GetCurrentFrameIndex();
@@ -591,6 +615,10 @@ namespace VulkanCore {
 		m_Scene->UpdatePointLightUB(pointLightUB);
 		m_UBPointLight[frameIndex].WriteandFlushBuffer(&pointLightUB);
 
+		UBSpotLights spotLightUB{};
+		m_Scene->UpdateSpotLightUB(spotLightUB);
+		m_UBSpotLight[frameIndex].WriteandFlushBuffer(&spotLightUB);
+		
 		// DOF Settings
 		m_UBDOFData[frameIndex].WriteandFlushBuffer(&m_DOFSettings);
 
@@ -604,20 +632,25 @@ namespace VulkanCore {
 	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform)
 	{
 		auto meshSource = mesh->GetMeshSource();
-		uint64_t meshKey = meshSource->GetMeshKey();
+		uint64_t meshHandle = meshSource->GetMeshHandle();
 
 		if (meshSource->GetVertexCount() == 0)
 			return;
-		
-		auto& transformBuffer = m_MeshTransformMap[meshKey].emplace_back();
-		transformBuffer.MRow[0] = { transform[0][0], transform[1][0], transform[2][0], transform[3][0] };
-		transformBuffer.MRow[1] = { transform[0][1], transform[1][1], transform[2][1], transform[3][1] };
-		transformBuffer.MRow[2] = { transform[0][2], transform[1][2], transform[2][2], transform[3][2] };
 
-		auto& dc = m_MeshDrawList[meshKey];
-		dc.MeshInstance = mesh;
-		dc.TransformBuffer = mesh->GetTransformBuffer(meshKey);
-		dc.InstanceCount++;
+		for (uint32_t submeshIndex : mesh->GetSubmeshes())
+		{
+			MeshKey meshKey = { meshHandle, submeshIndex };
+			auto& transformBuffer = m_MeshTransformMap[meshKey].emplace_back();
+			transformBuffer.MRow[0] = { transform[0][0], transform[1][0], transform[2][0], transform[3][0] };
+			transformBuffer.MRow[1] = { transform[0][1], transform[1][1], transform[2][1], transform[3][1] };
+			transformBuffer.MRow[2] = { transform[0][2], transform[1][2], transform[2][2], transform[3][2] };
+
+			auto& dc = m_MeshDrawList[meshKey];
+			dc.MeshInstance = mesh;
+			dc.SubmeshIndex = submeshIndex;
+			dc.TransformBuffer = mesh->GetTransformBuffer(meshHandle);
+			dc.InstanceCount++;
+		}
 	}
 
 	void SceneRenderer::CompositePass()
@@ -654,7 +687,7 @@ namespace VulkanCore {
 			0, nullptr);
 
 		for (auto& [mk, dc] : m_MeshDrawList)
-			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
+			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.SubmeshIndex, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 
@@ -705,7 +738,7 @@ namespace VulkanCore {
 		m_BloomPipeline->SetPushConstants(dispatchCmd, &m_BloomParams, sizeof(glm::vec2), sizeof(glm::vec2));
 		m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
-		for (int i = 1; i < mips; i++)
+		for (uint32_t i = 1; i < mips; i++)
 		{
 			m_LodAndMode.LOD = float(i - 1);
 			m_LodAndMode.Mode = 1.0f;

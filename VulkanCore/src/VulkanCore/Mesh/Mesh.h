@@ -54,18 +54,19 @@ namespace VulkanCore {
 		~MeshSource();
 
 		const aiScene* GetAssimpScene() const { return m_Scene; }
-		inline const std::vector<MeshNode> GetMeshNodes() const { return m_Nodes; }
+		inline const std::vector<MeshNode>& GetMeshNodes() const { return m_Nodes; }
+		inline const std::vector<Submesh>& GetSubmeshes() const { return m_Submeshes; }
 
 		inline std::shared_ptr<VulkanVertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
 		inline std::shared_ptr<VulkanIndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
 		inline uint32_t GetVertexCount() const { return (uint32_t)m_Vertices.size(); }
 		inline uint32_t GetIndexCount() const { return (uint32_t)m_Indices.size(); }
 
-		uint64_t GetMeshKey() const { return m_MeshKey; }
+		uint64_t GetMeshHandle() const { return m_MeshHandle; }
 		std::string& GetFilePath() { return m_FilePath; }
 	private:
 		std::string m_FilePath;
-		uint64_t m_MeshKey;
+		uint64_t m_MeshHandle;
 
 		aiScene* m_Scene;
 		std::unique_ptr<Assimp::Importer> m_Importer;
@@ -98,13 +99,18 @@ namespace VulkanCore {
 		Mesh(const std::string& filepath, int materialIndex);
 		~Mesh();
 
+		void InvalidateSubmeshes();
 		inline std::shared_ptr<MeshSource> GetMeshSource() const { return m_MeshSource; }
+		inline int GetMaterialIndex() const { return m_MaterialID; }
+		inline const std::vector<uint32_t>& GetSubmeshes() const { return m_Submeshes; }
+
 		static std::shared_ptr<Mesh> LoadMesh(const char* filepath, int materialIndex);
 		static std::shared_ptr<VulkanVertexBuffer> GetTransformBuffer(uint64_t meshKey) { return s_MeshTransformBuffer[meshKey]; }
 
 		static void ClearAllMeshes();
 	private:
 		std::shared_ptr<MeshSource> m_MeshSource;
+		std::vector<uint32_t> m_Submeshes;
 		// TODO: In we will not need this once we have VulkanMaterial and MaterialTable
 		int m_MaterialID;
 
