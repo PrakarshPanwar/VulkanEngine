@@ -123,12 +123,14 @@ namespace VulkanCore {
 			geomRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(geomFramebufferSpec);
 
 			PipelineSpecification geomPipelineSpec;
+			geomPipelineSpec.DebugName = "Geometry Pipeline";
 			geomPipelineSpec.pShader = Renderer::GetShader("CorePBR");
 			geomPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(geomRenderPassSpec);
 			geomPipelineSpec.Layout = vertexLayout;
 			geomPipelineSpec.InstanceLayout = instanceLayout;
 
 			PipelineSpecification pointLightPipelineSpec;
+			pointLightPipelineSpec.DebugName = "Point Light Pipeline";
 			pointLightPipelineSpec.pShader = Renderer::GetShader("PointLight");
 			pointLightPipelineSpec.Blend = true;
 			pointLightPipelineSpec.RenderPass = geomPipelineSpec.RenderPass;
@@ -150,6 +152,7 @@ namespace VulkanCore {
 			m_SceneFramebuffer = compRenderPassSpec.TargetFramebuffer;
 
 			PipelineSpecification compPipelineSpec;
+			compPipelineSpec.DebugName = "Composite Pipeline";
 			compPipelineSpec.pShader = Renderer::GetShader("SceneComposite");
 			compPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(compRenderPassSpec);
 			compPipelineSpec.DepthTest = false;
@@ -161,6 +164,7 @@ namespace VulkanCore {
 		// Skybox Pipeline
 		{
 			PipelineSpecification skyboxPipelineSpec;
+			skyboxPipelineSpec.DebugName = "Skybox Pipeline";
 			skyboxPipelineSpec.pShader = Renderer::GetShader("Skybox");
 			skyboxPipelineSpec.Layout = {
 				{ ShaderDataType::Float3, "a_Position" }
@@ -197,6 +201,7 @@ namespace VulkanCore {
 		m_BloomMipSize += 16u - m_BloomMipSize % 16u;
 
 		ImageSpecification bloomRTSpec = {};
+		bloomRTSpec.DebugName = "Bloom Compute Texture";
 		bloomRTSpec.Width = m_BloomMipSize.x;
 		bloomRTSpec.Height = m_BloomMipSize.y;
 		bloomRTSpec.Format = ImageFormat::RGBA32F;
@@ -221,6 +226,7 @@ namespace VulkanCore {
 		}
 
 		ImageSpecification sceneRTSpec = {};
+		sceneRTSpec.DebugName = "Scene Render Texture";
 		sceneRTSpec.Width = 1920;
 		sceneRTSpec.Height = 1080;
 		sceneRTSpec.Format = ImageFormat::RGBA32F;
