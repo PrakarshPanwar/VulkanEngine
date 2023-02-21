@@ -49,10 +49,10 @@ namespace VulkanCore {
 	std::map<uint64_t, std::shared_ptr<MeshSource>> Mesh::s_MeshSourcesMap;
 	std::map<uint64_t, std::shared_ptr<VulkanVertexBuffer>> Mesh::s_MeshTransformBuffer;
 
-	Mesh::Mesh(const std::string& filepath, int materialIndex)
+	Mesh::Mesh(std::shared_ptr<MeshSource> meshSource, int materialIndex)
 		: m_MaterialID(materialIndex)
 	{
-		uint64_t meshHandle = std::filesystem::hash_value(filepath);
+		uint64_t meshHandle = meshSource->GetMeshHandle();
 
 		if (s_MeshSourcesMap.contains(meshHandle))
 		{
@@ -62,7 +62,7 @@ namespace VulkanCore {
 
 		else
 		{
-			m_MeshSource = std::make_shared<MeshSource>(filepath);
+			m_MeshSource = meshSource;
 			s_MeshSourcesMap[meshHandle] = m_MeshSource;
 
 			// Allocating Vertex Buffer Set for Unique Mesh Sources
@@ -92,7 +92,8 @@ namespace VulkanCore {
 
 	std::shared_ptr<Mesh> Mesh::LoadMesh(const char* filepath, int materialIndex)
 	{
-		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(filepath, materialIndex);
+		std::shared_ptr<MeshSource> meshSource = std::make_shared<MeshSource>(filepath);
+		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(meshSource, materialIndex);
 		return mesh;
 	}
 
