@@ -12,7 +12,7 @@ namespace VulkanCore {
 		{
 			std::unique_lock<std::mutex> submitLock(m_RTMutex);
 
-			m_RTQueue.emplace_back(std::move(func));
+			m_RenderCommandQueue.emplace_back(std::move(func));
 			m_RTCondVar.notify_one();
 		}
 
@@ -21,13 +21,13 @@ namespace VulkanCore {
 		static void WaitandDestroy();
 		static void NotifyMainThread();
 
-		bool CommandQueueEmpty() { return m_RTQueue.empty(); }
+		bool CommandQueueEmpty() { return m_RenderCommandQueue.empty(); }
 	private:
 		static void ThreadEntryPoint();
 	private:
 		static std::mutex m_RTMutex;
 		static std::condition_variable m_RTCondVar;
-		static std::vector<std::function<void()>> m_RTQueue;
+		static std::vector<std::function<void()>> m_RenderCommandQueue;
 		static std::jthread m_RenderThread;
 		static bool m_RTShutDown;
 	};

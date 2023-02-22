@@ -1,6 +1,6 @@
 #include "vulkanpch.h"
 #include "RenderThread.h"
-#include "../Core/Log.h"
+#include "VulkanCore/Core/Core.h"
 
 #include <Windows.h>
 
@@ -8,7 +8,7 @@ namespace VulkanCore {
 
 	std::mutex RenderThread::m_RTMutex;
 	std::condition_variable RenderThread::m_RTCondVar;
-	std::vector<std::function<void()>> RenderThread::m_RTQueue;
+	std::vector<std::function<void()>> RenderThread::m_RenderCommandQueue;
 	std::jthread RenderThread::m_RenderThread;
 	bool RenderThread::m_RTShutDown;
 
@@ -28,24 +28,26 @@ namespace VulkanCore {
 
 		while (true)
 		{
+			VK_CORE_PROFILE_THREAD("Render Thread");
+
 			{
 				std::unique_lock<std::mutex> entryLock(m_RTMutex);
-				m_RTCondVar.wait(entryLock, [] { return m_RTShutDown || !m_RTQueue.empty(); });
+				m_RTCondVar.wait(entryLock, [] { return m_RTShutDown || !m_RenderCommandQueue.empty(); });
 
-				if (m_RTQueue.empty())
+				if (m_RenderCommandQueue.empty())
 				{
 					VK_CORE_WARN("Render Thread(ID: {}) Terminates", m_RenderThread.get_id());
 					return;
 				}
 
-				JobWork = std::move(m_RTQueue.front());
-				m_RTQueue.erase(m_RTQueue.begin());
+				JobWork = std::move(m_RenderCommandQueue.front());
+				m_RenderCommandQueue.erase(m_RenderCommandQueue.begin());
 			}
 
 			// Do the job without holding any locks
 			JobWork();
 
-			if (m_RTQueue.empty()) { m_RTCondVar.notify_one(); }
+			if (m_RenderCommandQueue.empty()) { m_RTCondVar.notify_one(); }
 		}
 	}
 
@@ -53,7 +55,7 @@ namespace VulkanCore {
 	{
 		{
 			std::unique_lock<std::mutex> waitLock(m_RTMutex);
-			m_RTCondVar.wait(waitLock, [] { return m_RTQueue.empty(); });
+			m_RTCondVar.wait(waitLock, [] { return m_RenderCommandQueue.empty(); });
 		}
 	}
 

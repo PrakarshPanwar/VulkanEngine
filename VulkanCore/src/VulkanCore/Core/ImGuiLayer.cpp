@@ -16,6 +16,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/color_space.hpp>
+#include "optick.h"
 
 #define IMGUI_VIEWPORTS 1
 
@@ -121,6 +122,8 @@ namespace VulkanCore {
 
 	void ImGuiLayer::ImGuiEnd()
 	{
+		VK_CORE_PROFILE("ImGuiLayer::ImGuiEnd");
+
 		int currentFrameIndex = Renderer::GetCurrentFrameIndex();
 		auto swapChain = VulkanSwapChain::GetSwapChain();
 		auto commandBuffer = m_ImGuiCmdBuffer->GetActiveCommandBuffer();
