@@ -141,6 +141,7 @@ namespace VulkanCore {
 		VK_CORE_ASSERT(m_LocalStorage, "Failed to Load Image {0}", m_FilePath);
 
 		ImageSpecification spec;
+		spec.DebugName = std::filesystem::path(m_FilePath).stem().string();
 		spec.Width = m_Specification.Width;
 		spec.Height = m_Specification.Height;
 		spec.Usage = ImageUsage::Texture;
@@ -286,6 +287,7 @@ namespace VulkanCore {
 		m_Specification.Width = width;
 		m_Specification.Height = height;
 		m_Specification.Format = format;
+		m_Specification.SamplerWrap = TextureWrap::Clamp;
 		m_Specification.GenerateMips = true;
 	}
 

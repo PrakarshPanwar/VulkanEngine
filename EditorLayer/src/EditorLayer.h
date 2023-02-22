@@ -14,6 +14,8 @@
 
 #include <imgui.h>
 
+#include <filesystem>
+
 namespace VulkanCore {
 
 	class EditorLayer : public Layer
@@ -34,9 +36,17 @@ namespace VulkanCore {
 		void RecreateSceneDescriptors();
 		void LoadEntities();
 		void RenderGizmo();
+
+		void NewScene();
+		void OpenScene();
+		void OpenScene(const std::string& path);
+		void SaveScene();
+		void SaveSceneAs();
+		void SerializeScene(std::shared_ptr<Scene> scene, const std::filesystem::path& scenePath);
 	private:
 		std::shared_ptr<Scene> m_Scene;
 		std::shared_ptr<SceneRenderer> m_SceneRenderer;
+		std::filesystem::path m_EditorScenePath;
 		EditorCamera m_EditorCamera;
 
 		std::vector<VkDescriptorSet> m_SceneImages;

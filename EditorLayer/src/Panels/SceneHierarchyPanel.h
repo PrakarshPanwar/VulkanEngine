@@ -17,6 +17,7 @@ namespace VulkanCore {
 
 		Entity GetSelectedEntity() const { return m_SelectionContext; }
 		void SetSelectedEntity(Entity entity);
+		void SetContext(std::shared_ptr<Scene> context);
 	private:
 		template<typename T>
 		void DisplayAddComponentEntry(const std::string& entryName);

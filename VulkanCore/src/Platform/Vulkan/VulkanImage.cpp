@@ -137,10 +137,10 @@ namespace VulkanCore {
 			if (Utils::IsDepthFormat(m_Specification.Format))
 				usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 			else
-				usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+				usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		}
 
-		if (m_Specification.Usage == ImageUsage::Texture)
+		if (m_Specification.Transfer || m_Specification.Usage == ImageUsage::Texture)
 			usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 		if (m_Specification.Usage == ImageUsage::Storage)
@@ -165,6 +165,7 @@ namespace VulkanCore {
 		imageCreateInfo.mipLevels = Utils::IsMultisampled(m_Specification) ? 1 : m_Specification.MipLevels;
 
 		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE, m_Specification.DebugName, m_Info.Image);
 
 		// Create a view for Image
 		VkImageViewCreateInfo viewCreateInfo{};
@@ -179,6 +180,7 @@ namespace VulkanCore {
 		viewCreateInfo.subresourceRange.layerCount = 1;
 
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &m_Info.ImageView), "Failed to Create Image View!");
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE_VIEW, fmt::format("{} default image view", m_Specification.DebugName), m_Info.ImageView);
 
 		VkSamplerAddressMode addressMode = Utils::VulkanSamplerWrap(m_Specification.SamplerWrap);
 
@@ -205,7 +207,8 @@ namespace VulkanCore {
 		sampler.maxLod = (float)m_Specification.MipLevels;
 
 		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &sampler, nullptr, &m_Info.Sampler), "Failed to Create Image Sampler!");
-	
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_SAMPLER, fmt::format("{} default image sampler", m_Specification.DebugName), m_Info.Sampler);
+
 		if (m_Specification.Usage == ImageUsage::Storage)
 		{
 			auto barrierCmd = device->GetCommandBuffer();

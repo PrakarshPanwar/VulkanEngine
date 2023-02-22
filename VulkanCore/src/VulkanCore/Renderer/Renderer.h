@@ -1,16 +1,14 @@
 #pragma once
 #include "VulkanRenderer.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
+#include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Core/Shader.h"
 #include "VulkanCore/Renderer/RenderThread.h"
 
-#define USE_RENDER_THREAD 1
-
 namespace VulkanCore {
 
 	class VulkanRenderer;
-	class VulkanRenderCommandBuffer;
 
 	class Renderer
 	{

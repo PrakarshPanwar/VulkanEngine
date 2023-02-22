@@ -31,7 +31,7 @@ namespace VulkanCore {
 			VkPushConstantRange pushConstantRange{};
 			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 			pushConstantRange.offset = 0;
-			pushConstantRange.size = pushConstantSize;
+			pushConstantRange.size = (uint32_t)pushConstantSize;
 
 			std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ descriptorLayout.GetDescriptorSetLayout() };
 
@@ -456,6 +456,7 @@ namespace VulkanCore {
 				&m_GraphicsPipeline),
 				"Failed to Create Graphics Pipeline!");
 
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_Specification.DebugName, m_GraphicsPipeline);
 			delete[] shaderStages;
 		});
 	}
