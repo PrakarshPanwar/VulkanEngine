@@ -14,6 +14,8 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanDescriptorSetLayout> Build() const;
 	private:
 		std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> m_Bindings;
+
+		friend class VulkanMaterial;
 	};
 
 	class VulkanDescriptorPool;
@@ -31,6 +33,8 @@ namespace VulkanCore {
 		std::vector<VkDescriptorPoolSize> m_PoolSizes;
 		uint32_t m_MaxSets = 1000;
 		VkDescriptorPoolCreateFlags m_PoolFlags = 0;
+
+		friend class VulkanMaterial;
 	};
 
 	class VulkanDescriptorSetLayout
@@ -47,6 +51,7 @@ namespace VulkanCore {
 		std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> m_Bindings;
 
 		friend class VulkanDescriptorWriter;
+		friend class VulkanMaterial;
 	};
 
 	class VulkanDescriptorPool
@@ -75,7 +80,7 @@ namespace VulkanCore {
 		VulkanDescriptorWriter(VulkanDescriptorSetLayout& setLayout, VulkanDescriptorPool& pool);
 
 		VulkanDescriptorWriter& WriteBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
-		VulkanDescriptorWriter& WriteImage(uint32_t binding, VkDescriptorImageInfo* imageInfo);
+		VulkanDescriptorWriter& WriteImage(uint32_t binding, const VkDescriptorImageInfo* imageInfo);
 		VulkanDescriptorWriter& WriteImage(uint32_t binding, const std::vector<VkDescriptorImageInfo>& imagesInfo);
 
 		bool Build(VkDescriptorSet& set);
@@ -84,6 +89,8 @@ namespace VulkanCore {
 		VulkanDescriptorSetLayout& m_SetLayout;
 		VulkanDescriptorPool& m_Pool;
 		std::vector<VkWriteDescriptorSet> m_Writes;
+
+		friend class VulkanMaterial;
 	};
 
 }
