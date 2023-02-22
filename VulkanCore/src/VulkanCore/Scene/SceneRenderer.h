@@ -27,6 +27,7 @@ namespace VulkanCore {
 		void RecreateScene();
 		void OnImGuiRender();
 
+		void SetActiveScene(std::shared_ptr<Scene> scene);
 		void SetViewportSize(uint32_t width, uint32_t height) { m_ViewportSize.x = width; m_ViewportSize.y = height; }
 		void RenderScene(EditorCamera& camera);
 		void SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform);
@@ -40,6 +41,34 @@ namespace VulkanCore {
 		inline VkFramebuffer GetFinalVulkanFramebuffer(uint32_t index) { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
 		inline VkRenderPass GetVulkanRenderPass() { return m_SceneRenderPass->GetRenderPass(); }
 		inline const VulkanImage& GetFinalPassImage(uint32_t index) { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
+
+		struct MeshKey
+		{
+			uint64_t MeshHandle;
+			uint32_t SubmeshIndex;
+
+			bool operator==(const MeshKey& other)
+			{
+				return MeshHandle == other.MeshHandle && SubmeshIndex == other.SubmeshIndex;
+			}
+
+			bool operator<(const MeshKey& other) const
+			{
+				if (MeshHandle < other.MeshHandle)
+					return true;
+
+				if (MeshHandle > other.MeshHandle)
+					return false;
+
+				if (SubmeshIndex < other.SubmeshIndex)
+					return true;
+
+				if (SubmeshIndex > other.SubmeshIndex)
+					return false;
+				
+				return false;
+			}
+		};
 	private:
 		void CreateCommandBuffers();
 		void CreatePipelines();
@@ -54,6 +83,7 @@ namespace VulkanCore {
 		{
 			std::shared_ptr<Mesh> MeshInstance;
 			std::shared_ptr<VulkanVertexBuffer> TransformBuffer;
+			uint32_t SubmeshIndex;
 			uint32_t InstanceCount;
 		};
 	private:
@@ -113,6 +143,7 @@ namespace VulkanCore {
 		// Material Resources
 		std::vector<VulkanUniformBuffer> m_UBCamera;
 		std::vector<VulkanUniformBuffer> m_UBPointLight;
+		std::vector<VulkanUniformBuffer> m_UBSpotLight;
 
 		std::vector<VulkanImage> m_BloomTextures;
 		std::vector<VulkanImage> m_SceneRenderTextures;
@@ -120,24 +151,21 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanTexture> m_BloomDirtTexture;
 		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_ARMMap,
 			m_DiffuseMap2, m_NormalMap2, m_ARMMap2,
-			m_DiffuseMap3, m_NormalMap3, m_ARMMap3;
+			m_DiffuseMap3, m_NormalMap3, m_ARMMap3,
+			m_DiffuseMap4, m_NormalMap4, m_ARMMap4,
+			m_DiffuseMap5, m_NormalMap5, m_ARMMap5;
 
 		// White Textures
 		std::shared_ptr<VulkanTexture> m_SRGBWhiteTexture, m_UNORMWhiteTexture;
 
 		// Skybox Resources
-		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture;
-#define USE_PRELOADED_BRDF 0
-#if USE_PRELOADED_BRDF
-		std::shared_ptr<VulkanTexture> m_BRDFTexture;
-#else
+		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;
 		std::shared_ptr<VulkanImage> m_BRDFTexture;
-#endif
 		std::shared_ptr<VulkanVertexBuffer> m_SkyboxVBData;
 		SkyboxSettings m_SkyboxSettings;
 
-		std::map<uint64_t, DrawCommand> m_MeshDrawList;
-		std::map<uint64_t, std::vector<TransformData>> m_MeshTransformMap;
+		std::map<MeshKey, DrawCommand> m_MeshDrawList;
+		std::map<MeshKey, std::vector<TransformData>> m_MeshTransformMap;
 
 		glm::ivec2 m_ViewportSize;
 		glm::uvec2 m_BloomMipSize;
@@ -148,6 +176,24 @@ namespace VulkanCore {
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;
+	};
+
+}
+
+namespace std {
+
+	template<>
+	struct hash<VulkanCore::SceneRenderer::MeshKey>
+	{
+		size_t operator()(const VulkanCore::SceneRenderer::MeshKey& other)
+		{
+			std::hash<uint64_t> h{};
+			size_t hashVal = 0;
+			hashVal ^= h(other.MeshHandle) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
+			hashVal ^= h(other.SubmeshIndex) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
+
+			return hashVal;
+		}
 	};
 
 }

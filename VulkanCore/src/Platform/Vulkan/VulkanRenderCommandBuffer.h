@@ -20,7 +20,7 @@ namespace VulkanCore {
 		void End();
 		void Execute(VkCommandBuffer secondaryCmdBuffers[], uint32_t count);
 
-		inline VkCommandBuffer GetActiveCommandBuffer() const;
+		VkCommandBuffer GetActiveCommandBuffer() const;
 
 		void RetrieveQueryPoolResults();
 		uint64_t GetQueryTime(uint32_t index);

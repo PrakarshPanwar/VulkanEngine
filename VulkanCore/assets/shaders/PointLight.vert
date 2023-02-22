@@ -15,14 +15,13 @@ layout(set = 0, binding = 0) uniform Camera
 {
 	mat4 Projection;
 	mat4 View;
-	mat4 InvView;
+	mat4 InverseView;
 } u_Camera;
 
 layout(push_constant) uniform PointLight
 {
 	vec4 Position;
 	vec4 Color;
-	float Radius;
 } u_PointLight;
 
 void main()
@@ -32,8 +31,8 @@ void main()
 	vec3 cameraUpWorld = { u_Camera.View[0][1], u_Camera.View[1][1], u_Camera.View[2][1] };
 
 	vec3 positionWorld = u_PointLight.Position.xyz 
-		+ u_PointLight.Radius * v_FragOffset.x * cameraRightWorld
-		+ u_PointLight.Radius * v_FragOffset.y * cameraUpWorld;
+		+ u_PointLight.Position.w * v_FragOffset.x * cameraRightWorld
+		+ u_PointLight.Position.w * v_FragOffset.y * cameraUpWorld;
 
 	gl_Position = u_Camera.Projection * u_Camera.View * vec4(positionWorld, 1.0);
 }

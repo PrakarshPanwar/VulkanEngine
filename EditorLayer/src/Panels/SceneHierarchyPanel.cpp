@@ -111,19 +111,25 @@ namespace VulkanCore {
 			}
 		}
 
-		ImGui::End();
+		ImGui::End(); // End of Scene Hierarchy Panel
 
 		ImGui::Begin("Properties");
 		if (m_SelectionContext)
 		{
 			DrawComponents(m_SelectionContext);
 		}
-		ImGui::End();
+
+		ImGui::End(); // End of Properties Panel
 	}
 
 	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
 	{
 
+	}
+
+	void SceneHierarchyPanel::SetContext(std::shared_ptr<Scene> context)
+	{
+		m_Context = context;
 	}
 
 	void SceneHierarchyPanel::DrawEntityNode(Entity entity)
@@ -242,6 +248,7 @@ namespace VulkanCore {
 		if (ImGui::BeginPopup("AddComponent"))
 		{
 			DisplayAddComponentEntry<PointLightComponent>("Point Light");
+			DisplayAddComponentEntry<SpotLightComponent>("Spot Light");
 			DisplayAddComponentEntry<MeshComponent>("Mesh");
 
 			ImGui::EndPopup();
@@ -260,8 +267,25 @@ namespace VulkanCore {
 
 		DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
 		{
-			ImGui::ColorEdit3("Color", glm::value_ptr(component.PointLightInstance->Color));
-			ImGui::DragFloat("Intensity", (float*)&component.PointLightInstance->Color.w, 0.01f, 0.0f, 10000.0f);
+			ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
+			ImGui::DragFloat("Intensity", (float*)&component.Color.w, 0.01f, 0.0f, 10000.0f);
+			ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 10000.0f);
+			ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.001f, 1000.0f);
+		});
+
+		DrawComponent<SpotLightComponent>("Spot Light", entity, [](auto& component)
+		{
+			ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
+			ImGui::DragFloat("Intensity", (float*)&component.Color.w, 0.01f, 0.0f, 10000.0f);
+			float innerCutoff = glm::degrees(component.InnerCutoff);
+			float outerCutoff = glm::degrees(component.OuterCutoff);
+			ImGui::DragFloat("Inner Cutoff", &innerCutoff, 0.01f, 0.01f, outerCutoff);
+			ImGui::DragFloat("Outer Cutoff", &outerCutoff, 0.01f, innerCutoff, 80.0f);
+			component.InnerCutoff = glm::radians(innerCutoff);
+			component.OuterCutoff = glm::radians(outerCutoff);
+
+			ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 10000.0f);
+			ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.001f, 1000.0f);
 		});
 
 		DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)
