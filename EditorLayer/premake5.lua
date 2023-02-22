@@ -17,6 +17,7 @@ project "EditorLayer"
 		"%{wks.location}/VulkanCore/src",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.entt}",
+		"%{IncludeDir.optick}",
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.GLAD}",
 		"%{IncludeDir.stb_image}",
@@ -38,6 +39,7 @@ project "EditorLayer"
 		symbols "on"
 
 		postbuildcommands { "{COPY} %{Library.AssimpDLLDebug} ../bin/" .. outputdir .. "/%{prj.name}" }
+		postbuildcommands { "{COPY} %{Library.optick_DLL_Release} ../bin/" .. outputdir .. "/%{prj.name}" }
 
 	filter "configurations:Release"
 		defines "VK_RELEASE"
@@ -45,3 +47,4 @@ project "EditorLayer"
 		optimize "on"
 
 		postbuildcommands { "{COPY} %{Library.AssimpDLLRelease} ../bin/" .. outputdir .. "/%{prj.name}" }
+		postbuildcommands { "{COPY} %{Library.optick_DLL_Release} ../bin/" .. outputdir .. "/%{prj.name}" }

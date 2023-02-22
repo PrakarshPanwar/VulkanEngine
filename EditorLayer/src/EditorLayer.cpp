@@ -15,6 +15,7 @@
 #include "Platform/Vulkan/VulkanContext.h"
 
 #include <ImGuizmo.h>
+#include <optick.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
@@ -58,6 +59,8 @@ namespace VulkanCore {
 
 	void EditorLayer::OnUpdate()
 	{
+		VK_CORE_PROFILE("EditorLayer::OnUpdate");
+
 		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
 			m_EditorCamera.OnUpdate();
 

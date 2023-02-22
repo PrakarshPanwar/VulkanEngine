@@ -9,6 +9,7 @@
 #include "Platform/Vulkan/VulkanDescriptor.h"
 
 #include <glm/gtx/integer.hpp>
+#include "optick.h"
 
 namespace VulkanCore {
 
@@ -55,7 +56,7 @@ namespace VulkanCore {
 	void VulkanRenderer::EndFrame()
 	{
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndFrame() while frame is not in progress!");
-		m_CommandBuffer->End();
+		Renderer::Submit([this] { m_CommandBuffer->End(); });
 	}
 
 	VkCommandBuffer VulkanRenderer::BeginScene()
@@ -115,10 +116,13 @@ namespace VulkanCore {
 	{
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndSwapChainRenderPass() if frame is not in progress!");
 		VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot end Render Pass on Command Buffer from a different frame!");
-	
-		m_ExecuteCommandBuffers[1] = ImGuiLayer::Get()->m_ImGuiCmdBuffer->GetActiveCommandBuffer();
-		m_CommandBuffer->Execute(m_ExecuteCommandBuffers.data(), (uint32_t)m_ExecuteCommandBuffers.size());
-		vkCmdEndRenderPass(commandBuffer);
+
+		Renderer::Submit([this, commandBuffer]
+		{
+			m_ExecuteCommandBuffers[1] = ImGuiLayer::Get()->m_ImGuiCmdBuffer->GetActiveCommandBuffer();
+			m_CommandBuffer->Execute(m_ExecuteCommandBuffers.data(), (uint32_t)m_ExecuteCommandBuffers.size());
+			vkCmdEndRenderPass(commandBuffer);
+		});
 	}
 
 	std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
@@ -445,7 +449,7 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		m_CommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool());
+		m_CommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetRenderThreadCommandPool());
 		m_SecondaryCommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetRenderThreadCommandPool(), CommandBufferLevel::Secondary);
 	}
 
@@ -483,6 +487,8 @@ namespace VulkanCore {
 
 	void VulkanRenderer::FinalQueueSubmit()
 	{
+		VK_CORE_PROFILE("VulkanRenderer::FinalQueueSubmit");
+
 		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
 		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), sceneRenderer->GetCommandBuffer()->GetActiveCommandBuffer() };
