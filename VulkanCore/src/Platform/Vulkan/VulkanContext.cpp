@@ -66,6 +66,7 @@ namespace VulkanCore {
 			switch (objectType)
 			{
 			case VK_OBJECT_TYPE_UNKNOWN:	     return "Unknown";
+			case VK_OBJECT_TYPE_INSTANCE:		 return "Instance";
 			case VK_OBJECT_TYPE_BUFFER:		     return "Buffer";
 			case VK_OBJECT_TYPE_COMMAND_BUFFER:  return "Command Buffer";
 			case VK_OBJECT_TYPE_COMMAND_POOL:    return "Command Pool";
@@ -74,6 +75,7 @@ namespace VulkanCore {
 			case VK_OBJECT_TYPE_IMAGE:		     return "Image";
 			case VK_OBJECT_TYPE_IMAGE_VIEW:		 return "Image View";
 			case VK_OBJECT_TYPE_PIPELINE:		 return "Pipeline";
+			case VK_OBJECT_TYPE_PIPELINE_LAYOUT: return "Pipeline Layout";
 			case VK_OBJECT_TYPE_RENDER_PASS:	 return "Render Pass";
 			case VK_OBJECT_TYPE_SAMPLER:		 return "Image Sampler";
 			case VK_OBJECT_TYPE_FRAMEBUFFER:     return "Framebuffer";
