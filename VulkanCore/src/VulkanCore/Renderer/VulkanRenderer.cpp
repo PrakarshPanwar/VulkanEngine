@@ -56,7 +56,7 @@ namespace VulkanCore {
 	void VulkanRenderer::EndFrame()
 	{
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndFrame() while frame is not in progress!");
-		Renderer::Submit([this] { m_CommandBuffer->End(); });
+		m_CommandBuffer->End();
 	}
 
 	VkCommandBuffer VulkanRenderer::BeginScene()
@@ -78,37 +78,39 @@ namespace VulkanCore {
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call BeginSwapChainRenderPass() if frame is not in progress!");
 		VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot begin Render Pass on Command Buffer from a different frame!");
 	
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = m_SwapChain->GetRenderPass();
-		renderPassInfo.framebuffer = m_SwapChain->GetFramebuffer(m_CurrentImageIndex);
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = m_SwapChain->GetSwapChainExtent();
+		Renderer::Submit([this, commandBuffer]
+		{
+			VkRenderPassBeginInfo renderPassInfo{};
+			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			renderPassInfo.renderPass = m_SwapChain->GetRenderPass();
+			renderPassInfo.framebuffer = m_SwapChain->GetFramebuffer(m_CurrentImageIndex);
+			renderPassInfo.renderArea.offset = { 0, 0 };
+			renderPassInfo.renderArea.extent = m_SwapChain->GetSwapChainExtent();
 
-		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };
-		clearValues[1].depthStencil = { 1.0f, 0 };
+			std::array<VkClearValue, 2> clearValues{};
+			clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };
+			clearValues[1].depthStencil = { 1.0f, 0 };
 
-		renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
-		renderPassInfo.pClearValues = clearValues.data();
+			renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
+			renderPassInfo.pClearValues = clearValues.data();
 
-		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-		m_SecondaryCommandBuffer->Begin(m_SwapChain->GetRenderPass(), m_SwapChain->GetFramebuffer(m_CurrentImageIndex));
+			vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+			m_SecondaryCommandBuffer->Begin(m_SwapChain->GetRenderPass(), m_SwapChain->GetFramebuffer(m_CurrentImageIndex));
 
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(m_SwapChain->GetSwapChainExtent().width);
-		viewport.height = static_cast<float>(m_SwapChain->GetSwapChainExtent().height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
+			VkViewport viewport{};
+			viewport.x = 0.0f;
+			viewport.y = 0.0f;
+			viewport.width = static_cast<float>(m_SwapChain->GetSwapChainExtent().width);
+			viewport.height = static_cast<float>(m_SwapChain->GetSwapChainExtent().height);
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
 
-		VkRect2D scissor{ { 0, 0 }, m_SwapChain->GetSwapChainExtent() };
-		vkCmdSetViewport(m_SecondaryCommandBuffer->GetActiveCommandBuffer(), 0, 1, &viewport);
-		vkCmdSetScissor(m_SecondaryCommandBuffer->GetActiveCommandBuffer(), 0, 1, &scissor);
+			VkRect2D scissor{ { 0, 0 }, m_SwapChain->GetSwapChainExtent() };
+			vkCmdSetViewport(m_SecondaryCommandBuffer->GetActiveCommandBuffer(), 0, 1, &viewport);
+			vkCmdSetScissor(m_SecondaryCommandBuffer->GetActiveCommandBuffer(), 0, 1, &scissor);
+		});
 
 		m_SecondaryCommandBuffer->End();
-
 		m_ExecuteCommandBuffers[0] = m_SecondaryCommandBuffer->GetActiveCommandBuffer();
 	}
 
@@ -250,130 +252,142 @@ namespace VulkanCore {
 		return { envFiltered, irradianceMap };
 	}
 
-	void VulkanRenderer::CopyVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& sourceImage, const VulkanImage& destImage)
+	void VulkanRenderer::CopyVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const VulkanImage* sourceImage, const VulkanImage* destImage)
 	{
-		VkImage srcImage = sourceImage.GetVulkanImageInfo().Image;
-		VkImage dstImage = destImage.GetVulkanImageInfo().Image;
-
-		// TODO: We cannot determine layout like this for image but we are doing this for now to get Bloom
-		// Changing Source Image Layout
-		Utils::InsertImageMemoryBarrier(cmdBuf, srcImage,
-			VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-		// Changing Destination Image Layout
-		Utils::InsertImageMemoryBarrier(cmdBuf, dstImage,
-			VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-		VkImageCopy region{};
-		region.srcOffset = { 0, 0, 0 };
-		region.dstOffset = { 0, 0, 0 };
-		region.extent = { sourceImage.GetSpecification().Width, sourceImage.GetSpecification().Height, 1 };
-		region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		region.srcSubresource.baseArrayLayer = 0;
-		region.srcSubresource.mipLevel = 0;
-		region.srcSubresource.layerCount = 1;
-		region.dstSubresource = region.srcSubresource;
-
-		vkCmdCopyImage(cmdBuf,
-			srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			1,
-			&region);
-
-		// Changing source image back to its previous layout
-		Utils::InsertImageMemoryBarrier(cmdBuf, srcImage,
-			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-	}
-
-	void VulkanRenderer::BlitVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& image)
-	{
-		VkImage vulkanImage = image.GetVulkanImageInfo().Image;
-
-		const uint32_t mipLevels = image.GetSpecification().MipLevels;
-		const glm::uvec2 imgSize = { image.GetSpecification().Width, image.GetSpecification().Height };
-
-		// Setting Base Mip(Oth) to Source
-		VkImageSubresourceRange baseMipSubRange{};
-		baseMipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		baseMipSubRange.baseMipLevel = 0;
-		baseMipSubRange.baseArrayLayer = 0;
-		baseMipSubRange.levelCount = 1;
-		baseMipSubRange.layerCount = 1;
-
-		Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
-			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			baseMipSubRange);
-
-		// Starting at 1st Mip Level
-		for (uint32_t i = 1; i < mipLevels; ++i)
+		Renderer::Submit([commandBuffer, sourceImage, destImage]
 		{
-			VkImageBlit imageBlit{};
+			VK_CORE_PROFILE("VulkanRenderer::CopyVulkanImage");
+			VkCommandBuffer vulkanCmdBuffer = commandBuffer->GetActiveCommandBuffer();
 
-			// Source
-			imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			imageBlit.srcSubresource.layerCount = 1;
-			imageBlit.srcSubresource.mipLevel = i - 1;
-			imageBlit.srcSubresource.baseArrayLayer = 0;
-			imageBlit.srcOffsets[1].x = int32_t(imgSize.x >> (i - 1));
-			imageBlit.srcOffsets[1].y = int32_t(imgSize.y >> (i - 1));
-			imageBlit.srcOffsets[1].z = 1;
+			VkImage srcImage = sourceImage->GetVulkanImageInfo().Image;
+			VkImage dstImage = destImage->GetVulkanImageInfo().Image;
 
-			// Destination
-			imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			imageBlit.dstSubresource.layerCount = 1;
-			imageBlit.dstSubresource.mipLevel = i;
-			imageBlit.dstSubresource.baseArrayLayer = 0;
-			imageBlit.dstOffsets[1].x = int32_t(imgSize.x >> i);
-			imageBlit.dstOffsets[1].y = int32_t(imgSize.y >> i);
-			imageBlit.dstOffsets[1].z = 1;
+			// TODO: We cannot determine layout like this for image but we are doing this for now to get Bloom
+			// Changing Source Image Layout
+			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, srcImage,
+				VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
-			VkImageSubresourceRange mipSubRange{};
-			mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			mipSubRange.baseMipLevel = i;
-			mipSubRange.baseArrayLayer = 0;
-			mipSubRange.levelCount = 1;
-			mipSubRange.layerCount = 1;
-
-			Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
+			// Changing Destination Image Layout
+			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, dstImage,
 				VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				mipSubRange);
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
-			vkCmdBlitImage(cmdBuf,
-				vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				1, &imageBlit,
-				VK_FILTER_LINEAR);
+			VkImageCopy region{};
+			region.srcOffset = { 0, 0, 0 };
+			region.dstOffset = { 0, 0, 0 };
+			region.extent = { sourceImage->GetSpecification().Width, sourceImage->GetSpecification().Height, 1 };
+			region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			region.srcSubresource.baseArrayLayer = 0;
+			region.srcSubresource.mipLevel = 0;
+			region.srcSubresource.layerCount = 1;
+			region.dstSubresource = region.srcSubresource;
 
-			Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
-				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+			vkCmdCopyImage(vulkanCmdBuffer,
+				srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1,
+				&region);
+
+			// Changing source image back to its previous layout
+			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, srcImage,
+				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+		});
+	}
+
+	void VulkanRenderer::BlitVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const VulkanImage* image)
+	{
+		Renderer::Submit([commandBuffer, image]
+		{
+			VK_CORE_PROFILE("VulkanRenderer::BlitVulkanImage");
+			VkCommandBuffer vulkanCmdBuffer = commandBuffer->GetActiveCommandBuffer();
+
+			VkImage vulkanImage = image->GetVulkanImageInfo().Image;
+
+			const uint32_t mipLevels = image->GetSpecification().MipLevels;
+			const glm::uvec2 imgSize = { image->GetSpecification().Width, image->GetSpecification().Height };
+
+			// Setting Base Mip(Oth) to Source
+			VkImageSubresourceRange baseMipSubRange{};
+			baseMipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			baseMipSubRange.baseMipLevel = 0;
+			baseMipSubRange.baseArrayLayer = 0;
+			baseMipSubRange.levelCount = 1;
+			baseMipSubRange.layerCount = 1;
+
+			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, vulkanImage,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				mipSubRange);
-		}
+				baseMipSubRange);
 
-		VkImageSubresourceRange subresourceRange{};
-		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.layerCount = 1;
-		subresourceRange.levelCount = mipLevels;
+			// Starting at 1st Mip Level
+			for (uint32_t i = 1; i < mipLevels; ++i)
+			{
+				VkImageBlit imageBlit{};
 
-		Utils::InsertImageMemoryBarrier(cmdBuf, vulkanImage,
-			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			subresourceRange);
+				// Source
+				imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imageBlit.srcSubresource.layerCount = 1;
+				imageBlit.srcSubresource.mipLevel = i - 1;
+				imageBlit.srcSubresource.baseArrayLayer = 0;
+				imageBlit.srcOffsets[1].x = int32_t(imgSize.x >> (i - 1));
+				imageBlit.srcOffsets[1].y = int32_t(imgSize.y >> (i - 1));
+				imageBlit.srcOffsets[1].z = 1;
+
+				// Destination
+				imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imageBlit.dstSubresource.layerCount = 1;
+				imageBlit.dstSubresource.mipLevel = i;
+				imageBlit.dstSubresource.baseArrayLayer = 0;
+				imageBlit.dstOffsets[1].x = int32_t(imgSize.x >> i);
+				imageBlit.dstOffsets[1].y = int32_t(imgSize.y >> i);
+				imageBlit.dstOffsets[1].z = 1;
+
+				VkImageSubresourceRange mipSubRange{};
+				mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				mipSubRange.baseMipLevel = i;
+				mipSubRange.baseArrayLayer = 0;
+				mipSubRange.levelCount = 1;
+				mipSubRange.layerCount = 1;
+
+				Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, vulkanImage,
+					VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					mipSubRange);
+
+				vkCmdBlitImage(vulkanCmdBuffer,
+					vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+					vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					1, &imageBlit,
+					VK_FILTER_LINEAR);
+
+				Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, vulkanImage,
+					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					mipSubRange);
+			}
+
+			VkImageSubresourceRange subresourceRange{};
+			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.layerCount = 1;
+			subresourceRange.levelCount = mipLevels;
+
+			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, vulkanImage,
+				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				subresourceRange);
+		});
 	}		
 	
 	std::shared_ptr<VulkanImage> VulkanRenderer::CreateBRDFTexture()
@@ -420,23 +434,27 @@ namespace VulkanCore {
 
 	void VulkanRenderer::RenderMesh(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<Mesh> mesh, uint32_t submeshIndex, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
-		auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
+		Renderer::Submit([cmdBuffer, mesh, transformBuffer, transformData, submeshIndex, instanceCount]
+		{
+			VK_CORE_PROFILE("VulkanRenderer::RenderMesh");
 
-		auto meshSource = mesh->GetMeshSource();
-		transformBuffer->WriteData((void*)transformData.data(), 0);
+			// Bind Vertex Buffer
+			auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
 
-		// Bind Vertex Buffer
-		VkBuffer buffers[] = { meshSource->GetVertexBuffer()->GetVulkanBuffer(), transformBuffer->GetVulkanBuffer() };
-		VkDeviceSize offsets[] = { 0, 0 };
-		vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
-		vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
+			auto meshSource = mesh->GetMeshSource();
+			transformBuffer->WriteData((void*)transformData.data(), 0);
+			VkBuffer buffers[] = { meshSource->GetVertexBuffer()->GetVulkanBuffer(), transformBuffer->GetVulkanBuffer() };
+			VkDeviceSize offsets[] = { 0, 0 };
+			vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
+			vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-		const auto& submeshes = mesh->GetMeshSource()->GetSubmeshes();
-		const Submesh& submesh = submeshes[submeshIndex];
-		vkCmdDrawIndexed(drawCmd, submesh.IndexCount, instanceCount, submesh.BaseIndex, submesh.BaseVertex, 0);
+			const auto& submeshes = mesh->GetMeshSource()->GetSubmeshes();
+			const Submesh& submesh = submeshes[submeshIndex];
+			vkCmdDrawIndexed(drawCmd, submesh.IndexCount, instanceCount, submesh.BaseIndex, submesh.BaseVertex, 0);
 
-		s_Data.DrawCalls++;
-		s_Data.InstanceCount += instanceCount;
+			s_Data.DrawCalls++;
+			s_Data.InstanceCount += instanceCount;
+		});
 	}
 
 	void VulkanRenderer::ResetStats()

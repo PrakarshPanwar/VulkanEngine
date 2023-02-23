@@ -74,13 +74,16 @@ namespace VulkanCore {
 		auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
 		auto dstSet = descriptorSet[Renderer::GetCurrentFrameIndex()];
 
-		pipeline->Bind(drawCmd);
+		Renderer::Submit([drawCmd, pipeline, dstSet]
+		{
+			pipeline->Bind(drawCmd);
 
-		vkCmdBindDescriptorSets(drawCmd,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipeline->GetVulkanPipelineLayout(),
-			0, 1, &dstSet,
-			0, nullptr);
+			vkCmdBindDescriptorSets(drawCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipeline->GetVulkanPipelineLayout(),
+				0, 1, &dstSet,
+				0, nullptr);
+		});
 
 		auto view = m_Registry.view<TransformComponent>();
 
@@ -99,8 +102,11 @@ namespace VulkanCore {
 				push.Position = glm::vec4(lightTransform.Translation, pointLightComp.Radius);
 				push.Color = pointLightComp.Color;
 
-				pipeline->SetPushConstants(drawCmd, &push, sizeof(PCPointLight));
-				vkCmdDraw(drawCmd, 6, 1, 0, 0);
+				Renderer::Submit([drawCmd, pipeline, push]
+				{
+					pipeline->SetPushConstants(drawCmd, (void*)&push, sizeof(PCPointLight));
+					vkCmdDraw(drawCmd, 6, 1, 0, 0);
+				});
 			}
 		}
 	}
