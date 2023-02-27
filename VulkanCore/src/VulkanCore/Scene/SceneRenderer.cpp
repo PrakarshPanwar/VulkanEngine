@@ -594,7 +594,7 @@ namespace VulkanCore {
 		ResetDrawCommands();
 	}
 
-	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform)
+	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, const glm::mat4& transform)
 	{
 		auto meshSource = mesh->GetMeshSource();
 		uint64_t meshHandle = meshSource->GetMeshHandle();
@@ -612,6 +612,7 @@ namespace VulkanCore {
 
 			auto& dc = m_MeshDrawList[meshKey];
 			dc.MeshInstance = mesh;
+			dc.MaterialInstance = material;
 			dc.SubmeshIndex = submeshIndex;
 			dc.TransformBuffer = mesh->GetTransformBuffer(meshHandle);
 			dc.InstanceCount++;
@@ -652,7 +653,7 @@ namespace VulkanCore {
 			0, nullptr);
 
 		for (auto& [mk, dc] : m_MeshDrawList)
-			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.SubmeshIndex, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
+			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 

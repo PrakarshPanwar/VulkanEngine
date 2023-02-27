@@ -2,6 +2,7 @@
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Platform/Vulkan/VulkanVertexBuffer.h"
 #include "Platform/Vulkan/VulkanIndexBuffer.h"
+#include "VulkanCore/Renderer/Material.h"
 
 // TODO: This include should be in PCH
 #include <map>
@@ -38,6 +39,7 @@ namespace VulkanCore {
 		glm::mat4 LocalTransform;
 	};
 
+	// TODO: Add MaterialIndex member
 	struct Submesh
 	{
 		std::string MeshName, NodeName;
@@ -111,7 +113,7 @@ namespace VulkanCore {
 	private:
 		std::shared_ptr<MeshSource> m_MeshSource;
 		std::vector<uint32_t> m_Submeshes;
-		// TODO: In we will not need this once we have VulkanMaterial and MaterialTable
+		// TODO: We will not need this once we have VulkanMaterial and MaterialTable
 		int m_MaterialID;
 
 		// Hash => Filepath Hash Value, Value => Transform Storage Buffer Set

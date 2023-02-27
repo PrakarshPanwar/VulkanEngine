@@ -27,6 +27,8 @@ namespace VulkanCore {
 #if USE_VULKAN_DESCRIPTOR
 		std::shared_ptr<VulkanDescriptorSetLayout> CreateDescriptorSetLayout(int index = 0);
 		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> CreateAllDescriptorSetsLayout();
+		
+		VkDescriptorSetLayout CreateVulkanDescriptorSetLayout(uint32_t index = 0);
 #endif
 		std::vector<VkDescriptorSet> AllocateDescriptorSets(uint32_t index = 0);
 		std::vector<VkDescriptorSet> AllocateAllDescriptorSets();

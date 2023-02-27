@@ -30,7 +30,7 @@ namespace VulkanCore {
 		void SetActiveScene(std::shared_ptr<Scene> scene);
 		void SetViewportSize(uint32_t width, uint32_t height) { m_ViewportSize.x = width; m_ViewportSize.y = height; }
 		void RenderScene(EditorCamera& camera);
-		void SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform);
+		void SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, const glm::mat4& transform);
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
@@ -82,6 +82,7 @@ namespace VulkanCore {
 		struct DrawCommand
 		{
 			std::shared_ptr<Mesh> MeshInstance;
+			std::shared_ptr<Material> MaterialInstance;
 			std::shared_ptr<VulkanVertexBuffer> TransformBuffer;
 			uint32_t SubmeshIndex;
 			uint32_t InstanceCount;
