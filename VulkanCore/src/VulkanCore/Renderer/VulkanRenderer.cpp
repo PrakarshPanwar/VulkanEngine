@@ -414,7 +414,7 @@ namespace VulkanCore {
 		return brdfTexture;
 	}
 
-	void VulkanRenderer::RenderMesh(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<Mesh> mesh, uint32_t submeshIndex, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	void VulkanRenderer::RenderMesh(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, uint32_t submeshIndex, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 		auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
 
@@ -426,6 +426,13 @@ namespace VulkanCore {
 		VkDeviceSize offsets[] = { 0, 0 };
 		vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
 		vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+		vkCmdPushConstants(drawCmd,
+			pipeline->GetVulkanPipelineLayout(),
+			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+			0,
+			sizeof(MaterialData),
+			&material->GetMaterialData());
 
 		const auto& submeshes = mesh->GetMeshSource()->GetSubmeshes();
 		const Submesh& submesh = submeshes[submeshIndex];

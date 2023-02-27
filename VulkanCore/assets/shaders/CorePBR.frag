@@ -33,6 +33,13 @@ struct SpotLight
     float Falloff;
 };
 
+layout(push_constant) uniform Material
+{
+    vec4 Albedo;
+    float Roughness;
+    float Metallic;
+} u_Material;
+
 // Buffer Data
 layout(set = 0, binding = 0) uniform Camera
 {
@@ -251,13 +258,13 @@ vec3 IBL(vec3 F0, vec3 Lr)
 
 void main()
 {
-	m_Params.Albedo = texture(u_DiffuseTextures[v_MaterialIndex], Input.TexCoord).rgb;
+	m_Params.Albedo = texture(u_DiffuseTextures[v_MaterialIndex], Input.TexCoord).rgb * u_Material.Albedo.rgb * u_Material.Albedo.a;
     // R->Ambient Occlusion, G->Roughness, B->Metallic
     vec3 aorm = texture(u_AORoughMetalTextures[v_MaterialIndex], Input.TexCoord).rgb;
 
     m_Params.Occlusion = aorm.r;
-    m_Params.Roughness = aorm.g;
-    m_Params.Metallic = aorm.b;
+    m_Params.Roughness = aorm.g * u_Material.Roughness;
+    m_Params.Metallic = aorm.b * u_Material.Metallic;
 
 	vec3 cameraPosWorld = u_Camera.InverseView[3].xyz;
 	m_Params.View = normalize(cameraPosWorld - Input.WorldPosition);
