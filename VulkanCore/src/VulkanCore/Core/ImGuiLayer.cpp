@@ -167,9 +167,18 @@ namespace VulkanCore {
 		ImGui_ImplVulkan_Shutdown();
 	}
 
-	VkDescriptorSet ImGuiLayer::AddTexture(const VulkanImage& Image)
+	VkDescriptorSet ImGuiLayer::AddTexture(const VulkanImage& image)
 	{
-		auto imageDescriptor = Image.GetDescriptorInfo();
+		auto imageDescriptor = image.GetDescriptorInfo();
+
+		return ImGui_ImplVulkan_AddTexture(imageDescriptor.sampler,
+			imageDescriptor.imageView,
+			imageDescriptor.imageLayout);
+	}
+
+	VkDescriptorSet ImGuiLayer::AddTexture(const VulkanTexture& texture)
+	{
+		auto imageDescriptor = texture.GetDescriptorImageInfo();
 
 		return ImGui_ImplVulkan_AddTexture(imageDescriptor.sampler,
 			imageDescriptor.imageView,
