@@ -28,6 +28,12 @@ namespace VulkanCore {
 		inline float GetAspectRatio() { return m_AspectRatio; }
 		inline void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; UpdateProjection(); }
 
+		inline void SetFieldOfView(float fov)
+		{
+			m_FOV = fov;
+			UpdateProjection();
+		}
+
 		const glm::mat4& GetViewMatrix() const { return m_ViewMatrix; }
 		const glm::mat4& GetProjectionMatrix() const { return m_Projection; }
 		glm::mat4 GetViewProjection() const { return m_Projection * m_ViewMatrix; }
