@@ -103,7 +103,7 @@ namespace VulkanCore {
 		});
 	}	
 	
-	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
+	void Renderer::BeginTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
 	{
 		Renderer::Submit([cmdBuffer]
 		{
@@ -112,7 +112,7 @@ namespace VulkanCore {
 		});
 	}
 
-	void Renderer::EndGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
+	void Renderer::EndTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
 	{
 		Renderer::Submit([cmdBuffer]
 		{
@@ -122,6 +122,14 @@ namespace VulkanCore {
 			cmdBuffer->m_TimestampsQueryIndex += 2;
 			cmdBuffer->m_TimestampsQueryIndex = cmdBuffer->m_TimestampsQueryIndex % cmdBuffer->m_TimestampQueryBufferSize;
 		});
+	}
+
+	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
+	{
+	}
+
+	void Renderer::EndGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
+	{
 	}
 
 	std::shared_ptr<VulkanTexture> Renderer::GetWhiteTexture(ImageFormat format)
