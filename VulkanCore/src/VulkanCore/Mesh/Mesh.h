@@ -58,6 +58,7 @@ namespace VulkanCore {
 		const aiScene* GetAssimpScene() const { return m_Scene; }
 		inline const std::vector<MeshNode>& GetMeshNodes() const { return m_Nodes; }
 		inline const std::vector<Submesh>& GetSubmeshes() const { return m_Submeshes; }
+		inline std::shared_ptr<Material> GetMaterial() const { return m_Material; }
 
 		inline std::shared_ptr<VulkanVertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
 		inline std::shared_ptr<VulkanIndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
@@ -78,6 +79,8 @@ namespace VulkanCore {
 
 		std::vector<Vertex> m_Vertices{};
 		std::vector<uint32_t> m_Indices{};
+
+		std::shared_ptr<Material> m_Material;
 
 		std::shared_ptr<VulkanVertexBuffer> m_VertexBuffer;
 		std::shared_ptr<VulkanIndexBuffer> m_IndexBuffer;

@@ -78,6 +78,7 @@ namespace VulkanCore {
 			case VK_OBJECT_TYPE_FRAMEBUFFER:     return "Framebuffer";
 			case VK_OBJECT_TYPE_RENDER_PASS:	 return "Render Pass";
 			case VK_OBJECT_TYPE_SHADER_MODULE:   return "Shader Module";
+			case VK_OBJECT_TYPE_QUEUE:			 return "Queue";
 			default:
 				VK_CORE_ASSERT(false, "Object Type not present in this scope");
 				return "Unsupported";

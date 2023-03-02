@@ -64,7 +64,7 @@ namespace VulkanCore {
 		for (auto ent : view)
 		{
 			auto [transform, meshComponent] = view.get<TransformComponent, MeshComponent>(ent);
-			renderer->SubmitMesh(meshComponent.MeshInstance, meshComponent.MaterialInstance, transform.GetTransform());
+			renderer->SubmitMesh(meshComponent.MeshInstance, meshComponent.MeshInstance->GetMeshSource()->GetMaterial(), transform.GetTransform());
 		}
 	}
 
