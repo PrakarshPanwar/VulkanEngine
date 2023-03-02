@@ -55,10 +55,7 @@ namespace VulkanCore {
 		uint64_t meshHandle = meshSource->GetMeshHandle();
 
 		if (s_MeshSourcesMap.contains(meshHandle))
-		{
 			m_MeshSource = s_MeshSourcesMap[meshHandle];
-			InvalidateSubmeshes();
-		}
 
 		else
 		{
@@ -72,8 +69,9 @@ namespace VulkanCore {
 
 			AssimpMeshImporter::TraverseNodes(m_MeshSource, m_MeshSource->m_Scene->mRootNode, 0);
 			AssimpMeshImporter::InvalidateMesh(m_MeshSource, m_MaterialID);
-			InvalidateSubmeshes();
 		}
+
+		InvalidateSubmeshes();
 	}
 
 	Mesh::Mesh()
@@ -151,6 +149,7 @@ namespace VulkanCore {
 		}
 
 		m_MeshHandle = std::filesystem::hash_value(filepath);
+		m_Material = std::make_shared<Material>();
 
 		// Allocating Root Node
 		m_Nodes.emplace_back();
