@@ -622,14 +622,15 @@ namespace VulkanCore {
 
 	void SceneRenderer::CompositePass()
 	{
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
 		Renderer::Submit([this] { m_CompositePipeline->SetPushConstants(m_SceneCommandBuffer->GetActiveCommandBuffer(), &m_SceneSettings, sizeof(SceneSettings)); });
 		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_CompositePipeline, m_CompositeDescriptorSets);
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 	}
 
 	void SceneRenderer::GeometryPass()
@@ -639,7 +640,7 @@ namespace VulkanCore {
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().RenderPass);
 
 		// Rendering Geometry
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		auto drawCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
 		auto dstSet = m_GeometryDescriptorSets[Renderer::GetCurrentFrameIndex()];
@@ -658,18 +659,18 @@ namespace VulkanCore {
 		for (auto& [mk, dc] : m_MeshDrawList)
 			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.SubmeshIndex, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
 
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		// Rendering Skybox
 		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxDescriptorSets, &m_SkyboxSettings);
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
 		// Rendering Point Lights
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 		m_Scene->OnUpdateLights(m_SceneCommandBuffer, m_PointLightPipeline, m_PointLightDescriptorSets);
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().RenderPass);
 
@@ -685,7 +686,9 @@ namespace VulkanCore {
 
 	void SceneRenderer::BloomCompute()
 	{
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer);
+		int frameIndex = Renderer::GetCurrentFrameIndex();
+
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::Submit([this]
 		{
@@ -771,7 +774,7 @@ namespace VulkanCore {
 
 		});
 
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 	}
 
 	void SceneRenderer::CreateCommandBuffers()

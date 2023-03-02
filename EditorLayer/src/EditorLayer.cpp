@@ -15,6 +15,7 @@
 #include "Platform/Vulkan/VulkanContext.h"
 
 #include <ImGuizmo.h>
+#include <imgui_internal.h>
 #include <optick.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -38,6 +39,9 @@ namespace VulkanCore {
 		VK_INFO("Running Editor Layer");
 
 		std::unique_ptr<Timer> editorInit = std::make_unique<Timer>("Editor Initialization");
+
+		m_MenuIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/MenuIcon.png");
+		m_MenuIconID = ImGuiLayer::AddTexture(*m_MenuIcon);
 
 		m_Scene = std::make_shared<Scene>();
 		m_SceneRenderer = std::make_shared<SceneRenderer>(m_Scene);
@@ -188,6 +192,24 @@ namespace VulkanCore {
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
 		ImGui::Image(m_SceneImages[Renderer::GetCurrentFrameIndex()], region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGui::SetItemAllowOverlap();
+
+		// Button Position just at the top
+		ImGui::SetCursorPos({ ImGui::GetWindowContentRegionMin().x + 5.0f, ImGui::GetWindowContentRegionMin().y + 5.0f });
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 20.0f);
+		if (ImGui::ImageButton((ImTextureID)m_MenuIconID, { 20.0f, 20.0f }, { 0, 1 }, { 1, 0 }))
+			ImGui::OpenPopup("Camera");
+		ImGui::PopStyleVar();
+
+		if (ImGui::BeginPopup("Camera"))
+		{
+			static float fov = 45.0f;
+			ImGui::DragFloat("Field of View", &fov, 0.01f, 5.0f, 90.0f);
+			if (ImGui::IsItemActive())
+				m_EditorCamera.SetFieldOfView(fov);
+
+			ImGui::EndPopup();
+		}
 
 		RenderGizmo();
 		ImGui::End(); // End of Viewport
