@@ -80,6 +80,7 @@ namespace VulkanCore {
 		std::vector<Vertex> m_Vertices{};
 		std::vector<uint32_t> m_Indices{};
 
+		// TODO: In future we will support separate material for each submesh
 		std::shared_ptr<Material> m_Material;
 
 		std::shared_ptr<VulkanVertexBuffer> m_VertexBuffer;
