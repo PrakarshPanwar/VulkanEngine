@@ -68,7 +68,7 @@ namespace VulkanCore {
 			case VK_OBJECT_TYPE_UNKNOWN:	     return "Unknown";
 			case VK_OBJECT_TYPE_BUFFER:		     return "Buffer";
 			case VK_OBJECT_TYPE_COMMAND_POOL:    return "Command Pool";
-			case VK_OBJECT_TYPE_COMMAND_BUFFER:	 return "Command Buffer";
+			case VK_OBJECT_TYPE_COMMAND_BUFFER:  return "Command Buffer";
 			case VK_OBJECT_TYPE_DEVICE:		     return "Device";
 			case VK_OBJECT_TYPE_DESCRIPTOR_POOL: return "Descriptor Pool";
 			case VK_OBJECT_TYPE_IMAGE:		     return "Image";
@@ -76,6 +76,7 @@ namespace VulkanCore {
 			case VK_OBJECT_TYPE_PIPELINE:		 return "Pipeline";
 			case VK_OBJECT_TYPE_SAMPLER:		 return "Image Sampler";
 			case VK_OBJECT_TYPE_FRAMEBUFFER:     return "Framebuffer";
+			case VK_OBJECT_TYPE_RENDER_PASS:	 return "Render Pass";
 			case VK_OBJECT_TYPE_SHADER_MODULE:   return "Shader Module";
 			default:
 				VK_CORE_ASSERT(false, "Object Type not present in this scope");
