@@ -195,6 +195,7 @@ namespace VulkanCore {
 			{
 				auto& material = m_SelectionContext.GetComponent<MeshComponent>().MeshInstance->GetMeshSource()->GetMaterial()->GetMaterialData();
 				ImGui::ColorEdit3("Albedo", glm::value_ptr(material.Albedo));
+				ImGui::DragFloat("Emission", &material.Albedo.w, 0.01f, 0.0f, 10000.0f);
 				ImGui::DragFloat("Roughness", &material.Roughness, 0.01f, 0.0f, 1.0f);
 				ImGui::DragFloat("Metallic", &material.Metallic, 0.01f, 0.0f, 1.0f);
 			}
