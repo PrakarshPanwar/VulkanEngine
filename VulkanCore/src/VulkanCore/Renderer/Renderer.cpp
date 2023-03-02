@@ -93,19 +93,27 @@ namespace VulkanCore {
 		vkCmdDraw(drawCmd, 36, 1, 0, 0);
 	}	
 	
-	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
+	void Renderer::BeginTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
 	{
 		vkCmdWriteTimestamp(cmdBuffer->GetActiveCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex);
 	}
 
-	void Renderer::EndGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
+	void Renderer::EndTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
 	{
 		vkCmdWriteTimestamp(cmdBuffer->GetActiveCommandBuffer(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 			cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex + 1);
 
 		cmdBuffer->m_TimestampsQueryIndex += 2;
 		cmdBuffer->m_TimestampsQueryIndex = cmdBuffer->m_TimestampsQueryIndex % cmdBuffer->m_TimestampQueryBufferSize;
+	}
+
+	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
+	{
+	}
+
+	void Renderer::EndGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
+	{
 	}
 
 	std::shared_ptr<VulkanTexture> Renderer::GetWhiteTexture(ImageFormat format)
