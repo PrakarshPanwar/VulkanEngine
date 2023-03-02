@@ -153,22 +153,6 @@ namespace VulkanCore {
 		return false;
 	}
 
-	bool VulkanDevice::IsExtensionSupported(const char* extensionName)
-	{
-		uint32_t extensionCount;
-		vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, &extensionCount, nullptr);
-
-		std::vector<VkExtensionProperties> extensions(extensionCount);
-		vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, &extensionCount, extensions.data());
-
-		for (auto extension : extensions) {
-			if (strcmp(extension.extensionName, extensionName) == 0)
-				return true;
-		}
-
-		return false;
-	}
-
 	VkCommandBuffer VulkanDevice::GetCommandBuffer(bool compute)
 {
 		VkCommandBufferAllocateInfo allocInfo{};
