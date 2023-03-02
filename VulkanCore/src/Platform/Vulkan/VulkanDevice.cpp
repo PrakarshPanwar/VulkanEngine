@@ -116,6 +116,7 @@ namespace VulkanCore {
 		}
 
 		VK_CORE_ASSERT(false, "Failed to find suitable Memory Type!");
+		return 0;
 	}
 
 	VkFormat VulkanDevice::FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
@@ -133,6 +134,23 @@ namespace VulkanCore {
 		}
 
 		VK_CORE_ASSERT(false, "Failed to find Supported Format!");
+		return (VkFormat)0;
+	}
+
+	bool VulkanDevice::IsExtensionSupported(const char* extensionName)
+	{
+		uint32_t extensionCount;
+		vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, &extensionCount, nullptr);
+
+		std::vector<VkExtensionProperties> extensions(extensionCount);
+		vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, &extensionCount, extensions.data());
+
+		for (auto extension : extensions) {
+			if (strcmp(extension.extensionName, extensionName) == 0)
+				return true;
+		}
+
+		return false;
 	}
 
 	bool VulkanDevice::IsExtensionSupported(const char* extensionName)

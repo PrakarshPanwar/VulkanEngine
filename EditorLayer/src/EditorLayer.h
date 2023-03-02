@@ -57,6 +57,9 @@ namespace VulkanCore {
 		int m_GizmoType = -1;
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
+
+		std::shared_ptr<VulkanTexture> m_MenuIcon;
+		VkDescriptorSet m_MenuIconID;
 	};
 
 }

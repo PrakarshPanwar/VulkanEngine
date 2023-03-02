@@ -23,6 +23,6 @@ namespace VulkanCore {
 			ButtonRight = Button1,
 			ButtonMiddle = Button2
 		};
-
 	}
+
 }

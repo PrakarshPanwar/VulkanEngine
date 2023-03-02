@@ -96,7 +96,7 @@ namespace VulkanCore {
 	{
 	public:
 		Mesh();
-		Mesh(const std::string& filepath, int materialIndex);
+		Mesh(std::shared_ptr<MeshSource> meshSource, int materialIndex);
 		~Mesh();
 
 		void InvalidateSubmeshes();
