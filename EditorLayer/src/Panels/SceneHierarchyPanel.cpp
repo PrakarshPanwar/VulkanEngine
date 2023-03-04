@@ -12,6 +12,8 @@
 
 namespace VulkanCore {
 
+	static const std::filesystem::path g_AssetPath = "assets";
+
 	static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f)
 	{
 		ImGuiIO& io = ImGui::GetIO();
@@ -195,13 +197,28 @@ namespace VulkanCore {
 			if (m_SelectionContext.HasComponent<MeshComponent>())
 			{
 				auto material = m_SelectionContext.GetComponent<MeshComponent>().MeshInstance->GetMeshSource()->GetMaterial();
+				auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
 
 				auto& materialData = material->GetMaterialData();
-				auto [diffuse, normal, arm] = std::static_pointer_cast<VulkanMaterial>(material)->GetMaterialTextureIDs();
+				auto [diffuse, normal, arm] = vulkanMaterial->GetMaterialTextureIDs();
 
 				if (ImGui::TreeNodeEx("ALBEDO", ImGuiTreeNodeFlags_DefaultOpen))
 				{
 					ImGui::Image((ImTextureID)diffuse, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+						{
+							const wchar_t* path = (const wchar_t*)payload->Data;
+							std::filesystem::path scenePath = g_AssetPath / path;
+
+							std::shared_ptr<VulkanTexture> diffuseTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_SRGB);
+							vulkanMaterial->UpdateDiffuseMap(diffuseTex);
+						}
+
+						ImGui::EndDragDropTarget();
+					}
 
 					ImGui::ColorEdit3("Color", glm::value_ptr(materialData.Albedo), ImGuiColorEditFlags_NoInputs);
 					ImGui::DragFloat("Emission", &materialData.Albedo.w, 0.01f, 0.0f, 10000.0f);
@@ -213,8 +230,22 @@ namespace VulkanCore {
 				{
 					ImGui::Image((ImTextureID)normal, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
 
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+						{
+							const wchar_t* path = (const wchar_t*)payload->Data;
+							std::filesystem::path scenePath = g_AssetPath / path;
+
+							std::shared_ptr<VulkanTexture> normalTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_UNORM);
+							vulkanMaterial->UpdateNormalMap(normalTex);
+						}
+
+						ImGui::EndDragDropTarget();
+					}
+
 					ImGui::SameLine();
-					ImGui::Checkbox("Use", &materialData.UseNormalMap);
+					ImGui::Checkbox("Use", (bool*)&materialData.UseNormalMap);
 
 					ImGui::TreePop();
 				}
@@ -222,6 +253,20 @@ namespace VulkanCore {
 				if (ImGui::TreeNodeEx("ROUGHNESS/METALLIC", ImGuiTreeNodeFlags_DefaultOpen))
 				{
 					ImGui::Image((ImTextureID)arm, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+						{
+							const wchar_t* path = (const wchar_t*)payload->Data;
+							std::filesystem::path scenePath = g_AssetPath / path;
+
+							std::shared_ptr<VulkanTexture> armTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_UNORM);
+							vulkanMaterial->UpdateARMMap(armTex);
+						}
+
+						ImGui::EndDragDropTarget();
+					}
 
 					ImGui::DragFloat("Roughness", &materialData.Roughness, 0.01f, 0.0f, 1.0f);
 					ImGui::DragFloat("Metallic", &materialData.Metallic, 0.01f, 0.0f, 1.0f);

@@ -304,7 +304,7 @@ namespace VulkanCore {
 					glm::vec4 albedoColor = materialData["Albedo"].as<glm::vec4>();
 					float metallic = materialData["Metallic"].as<float>();
 					float roughness = materialData["Roughness"].as<float>();
-					bool useNormalMap = materialData["UseNormalMap"].as<bool>();
+					uint32_t useNormalMap = materialData["UseNormalMap"].as<uint32_t>();
 					material->SetMaterialData({ albedoColor, roughness, metallic, useNormalMap });
 				}
 			}

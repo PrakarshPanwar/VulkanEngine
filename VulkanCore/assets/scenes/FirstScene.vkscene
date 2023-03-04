@@ -2,55 +2,69 @@ Scene: FirstScene
 Entities:
   - Entity: 64321564316
     TagComponent:
-      Tag: Blue Spot Light
+      Tag: Ceramic Vase
     TransformComponent:
-      Translation: [-8.69258404, -0.217061043, -1.37194729]
-      Rotation: [3.14159274, -0.797807634, 3.14159274]
-      Scale: [0.99999696, 1, 0.99999696]
-    SpotLightComponent:
-      Color: [0.0722646788, 0.0505806431, 0.451737463, 30]
-      Direction: [0, 0, 0]
-      InnerCutoff: 0.52359879
-      OuterCutoff: 0.785398185
-      Falloff: 0
-      Radius: 0.100000001
-  - Entity: 64321564316
-    TagComponent:
-      Tag: Ceramic Vase 2
-    TransformComponent:
-      Translation: [-8.35873032, -1.16758811, -2.6674633]
-      Rotation: [-1.57079601, 0, 0]
-      Scale: [3, 2.99965668, 2.99965668]
+      Translation: [0, -1.20000005, 2.5]
+      Rotation: [-1.57079637, 0, 0]
+      Scale: [3.5, 3.5, 3.5]
     MeshComponent:
       Filepath: assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx
       Material:
-        Albedo: [0.0131482966, 0.018901756, 0.162162185, 1]
+        Albedo: [1, 1, 1, 1]
         Metallic: 1
         Roughness: 1
-        UseNormalMap: false
+        UseNormalMap: 1
   - Entity: 64321564316
     TagComponent:
-      Tag: Wall1
+      Tag: Flat Plane
     TransformComponent:
-      Translation: [-10.2060223, 1.3801918, -0.0160584822]
-      Rotation: [1.11806941e-09, -1.57045102, 1.11710485e-09]
-      Scale: [9.99999332, 2.68595648, 0.109166376]
+      Translation: [0, -1.29999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [10, 0.100000001, 10]
     MeshComponent:
       Filepath: assets/meshes/Standard/Cube.fbx
       Material:
-        Albedo: [0.270270288, 0.270270288, 0.270270288, 1]
+        Albedo: [1, 0.99613899, 0.99613899, 1]
         Metallic: 1
         Roughness: 1
-        UseNormalMap: false
+        UseNormalMap: 1
   - Entity: 64321564316
     TagComponent:
-      Tag: Green Point Light
+      Tag: Basic Sphere
     TransformComponent:
-      Translation: [2, 0, -0.5]
+      Translation: [3.2692101, 0, -1.26547921]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshComponent:
+      Filepath: assets/meshes/Standard/Sphere.fbx
+      Material:
+        Albedo: [1, 1, 1, 1]
+        Metallic: 1
+        Roughness: 1
+        UseNormalMap: 1
+  - Entity: 64321564316
+    TagComponent:
+      Tag: Brass Vase
+    TransformComponent:
+      Translation: [1.5, -1.20000005, 1.5]
+      Rotation: [-1.57079637, 0, 0]
+      Scale: [6, 6, 6]
+    MeshComponent:
+      Filepath: assets/meshes/BrassVase2K/BrassVase.fbx
+      Material:
+        Albedo: [1, 1, 1, 1]
+        Metallic: 1
+        Roughness: 1
+        UseNormalMap: 1
+  - Entity: 64321564316
+    TagComponent:
+      Tag: Blue Point Light
+    TransformComponent:
+      Translation: [-1, 0, 4.5]
       Rotation: [0, 0, 0]
       Scale: [0.100000001, 0.100000001, 0.100000001]
     PointLightComponent:
-      Color: [0.100000001, 0.800000012, 0.200000003, 10]
+      Color: [0.200000003, 0.300000012, 0.800000012, 20]
       Falloff: 1
       Radius: 0.100000001
   - Entity: 64321564316
@@ -66,68 +80,54 @@ Entities:
       Radius: 0.100000001
   - Entity: 64321564316
     TagComponent:
-      Tag: Blue Point Light
+      Tag: Green Point Light
     TransformComponent:
-      Translation: [-1, 0, 4.5]
+      Translation: [2, 0, -0.5]
       Rotation: [0, 0, 0]
       Scale: [0.100000001, 0.100000001, 0.100000001]
     PointLightComponent:
-      Color: [0.200000003, 0.300000012, 0.800000012, 20]
+      Color: [0.100000001, 0.800000012, 0.200000003, 10]
       Falloff: 1
       Radius: 0.100000001
   - Entity: 64321564316
     TagComponent:
-      Tag: Brass Vase
+      Tag: Wall1
     TransformComponent:
-      Translation: [1.5, -1.20000005, 1.5]
-      Rotation: [-1.57079637, 0, 0]
-      Scale: [6, 6, 6]
-    MeshComponent:
-      Filepath: assets/meshes/BrassVase2K/BrassVase.fbx
-      Material:
-        Albedo: [0.088728562, 0.741312742, 0.129042566, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: false
-  - Entity: 64321564316
-    TagComponent:
-      Tag: Basic Sphere
-    TransformComponent:
-      Translation: [3.2692101, 0, -1.26547921]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
-    MeshComponent:
-      Filepath: assets/meshes/Standard/Sphere.fbx
-      Material:
-        Albedo: [0.0111507168, 0.713773966, 0.722007751, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: false
-  - Entity: 64321564316
-    TagComponent:
-      Tag: Flat Plane
-    TransformComponent:
-      Translation: [0, -1.29999995, 0]
-      Rotation: [0, 0, 0]
-      Scale: [10, 0.100000001, 10]
+      Translation: [-10.2060223, 1.3801918, -0.0160584822]
+      Rotation: [1.11806941e-09, -1.57045102, 1.11710485e-09]
+      Scale: [9.99999332, 2.68595648, 0.109166376]
     MeshComponent:
       Filepath: assets/meshes/Standard/Cube.fbx
       Material:
-        Albedo: [0.270270288, 0.270270288, 0.270270288, 1]
+        Albedo: [1, 0.99613899, 0.99613899, 1]
         Metallic: 1
         Roughness: 1
-        UseNormalMap: false
+        UseNormalMap: 1
   - Entity: 64321564316
     TagComponent:
-      Tag: Ceramic Vase
+      Tag: Ceramic Vase 2
     TransformComponent:
-      Translation: [0, -1.20000005, 2.5]
-      Rotation: [-1.57079637, 0, 0]
-      Scale: [3.5, 3.5, 3.5]
+      Translation: [-8.35873032, -1.16758811, -2.6674633]
+      Rotation: [-1.57079601, 0, 0]
+      Scale: [3, 2.99965668, 2.99965668]
     MeshComponent:
       Filepath: assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx
       Material:
-        Albedo: [0.0131482966, 0.018901756, 0.162162185, 1]
+        Albedo: [1, 1, 1, 1]
         Metallic: 1
         Roughness: 1
-        UseNormalMap: false
+        UseNormalMap: 1
+  - Entity: 64321564316
+    TagComponent:
+      Tag: Blue Spot Light
+    TransformComponent:
+      Translation: [-8.69258404, -0.217061043, -1.37194729]
+      Rotation: [3.14159274, -0.797807634, 3.14159274]
+      Scale: [0.99999696, 1, 0.99999696]
+    SpotLightComponent:
+      Color: [0.0722646788, 0.0505806431, 0.451737463, 30]
+      Direction: [0, 0, 0]
+      InnerCutoff: 0.52359879
+      OuterCutoff: 0.785398185
+      Falloff: 0
+      Radius: 0.100000001

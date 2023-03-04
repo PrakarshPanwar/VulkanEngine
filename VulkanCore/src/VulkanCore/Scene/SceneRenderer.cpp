@@ -246,35 +246,6 @@ namespace VulkanCore {
 
 		device->FlushCommandBuffer(barrierCmd);
 
-		// Textures
-		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/meshes/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg");
-		m_NormalMap = std::make_shared<VulkanTexture>("assets/meshes/CeramicVase2K/textures/antique_ceramic_vase_01_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap = std::make_shared<VulkanTexture>("assets/meshes/CeramicVase2K/textures/antique_ceramic_vase_01_arm_2k.png", ImageFormat::RGBA8_UNORM);
-
-		m_DiffuseMap2 = std::make_shared<VulkanTexture>("assets/meshes/BrassVase2K/textures/brass_vase_03_diff_2k.jpg");
-		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/meshes/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap2 = std::make_shared<VulkanTexture>("assets/meshes/BrassVase2K/textures/brass_vase_03_arm_2k.png", ImageFormat::RGBA8_UNORM);
-
-#define USE_GOLD_MATERIAL 0
-#if USE_GOLD_MATERIAL
-		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldDiffuse2.png");
-		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldNormalGL.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldAORMNew.png", ImageFormat::RGBA8_UNORM);
-#else
-		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesDiff.png");
-		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesNorGL.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesARM.png", ImageFormat::RGBA8_UNORM);
-#endif
-		m_DiffuseMap4 = std::make_shared<VulkanTexture>("assets/textures/ConcreteWall/concrete_wall_006_diff_2k.png");
-		m_NormalMap4 = std::make_shared<VulkanTexture>("assets/textures/ConcreteWall/concrete_wall_006_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap4 = std::make_shared<VulkanTexture>("assets/textures/ConcreteWall/concrete_wall_006_arm_2k.png", ImageFormat::RGBA8_UNORM);
-
-		m_DiffuseMap5 = std::make_shared<VulkanTexture>("assets/textures/PlankFlooring/plank_flooring_diff_2k.png");
-		m_NormalMap5 = std::make_shared<VulkanTexture>("assets/textures/PlankFlooring/plank_flooring_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap5 = std::make_shared<VulkanTexture>("assets/textures/PlankFlooring/plank_flooring_arm_2k.png", ImageFormat::RGBA8_UNORM);
-
-		m_SRGBWhiteTexture = Renderer::GetWhiteTexture();
-		m_UNORMWhiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
 		m_BloomDirtTexture = std::make_shared<VulkanTexture>("assets/textures/LensDirt.png");
 
 		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
@@ -285,26 +256,6 @@ namespace VulkanCore {
 		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
 
 		m_SkyboxVBData = Utils::CreateCubeModel();
-
-		std::vector<VkDescriptorImageInfo> DiffuseMaps, ARMMaps, NormalMaps;
-		DiffuseMaps.push_back(m_SRGBWhiteTexture->GetDescriptorImageInfo());
-		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
-		DiffuseMaps.push_back(m_DiffuseMap2->GetDescriptorImageInfo());
-		DiffuseMaps.push_back(m_DiffuseMap3->GetDescriptorImageInfo());
-		DiffuseMaps.push_back(m_DiffuseMap4->GetDescriptorImageInfo());
-		DiffuseMaps.push_back(m_DiffuseMap5->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_UNORMWhiteTexture->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_NormalMap->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_NormalMap2->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_NormalMap3->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_NormalMap4->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_NormalMap5->GetDescriptorImageInfo());
-		ARMMaps.push_back(m_UNORMWhiteTexture->GetDescriptorImageInfo());
-		ARMMaps.push_back(m_ARMMap->GetDescriptorImageInfo());
-		ARMMaps.push_back(m_ARMMap2->GetDescriptorImageInfo());
-		ARMMaps.push_back(m_ARMMap3->GetDescriptorImageInfo());
-		ARMMaps.push_back(m_ARMMap4->GetDescriptorImageInfo());
-		ARMMaps.push_back(m_ARMMap5->GetDescriptorImageInfo());
 
 		// Writing in Descriptors
 		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();

@@ -37,7 +37,7 @@ layout(push_constant) uniform Material
     vec4 Albedo;
     float Roughness;
     float Metallic;
-    bool UseNormalMap;
+    uint UseNormalMap;
 } u_Material;
 
 // Buffer Data
@@ -268,7 +268,7 @@ void main()
 
 	vec3 cameraPosWorld = u_Camera.InverseView[3].xyz;
 	m_Params.View = normalize(cameraPosWorld - Input.WorldPosition);
-    m_Params.Normal = u_Material.UseNormalMap ? GetNormalsFromMap() : normalize(Input.Normal);
+    m_Params.Normal = u_Material.UseNormalMap == 0 ? normalize(Input.Normal) : GetNormalsFromMap();
     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);
     vec3 Lr = 2.0 * m_Params.NdotV * m_Params.Normal - m_Params.View;
 

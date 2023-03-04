@@ -21,6 +21,10 @@ namespace VulkanCore {
 		{
 			return { m_DiffuseDstID, m_NormalDstID, m_ARMDstID };
 		}
+
+		void UpdateDiffuseMap(std::shared_ptr<VulkanTexture> diffuse);
+		void UpdateNormalMap(std::shared_ptr<VulkanTexture> normal);
+		void UpdateARMMap(std::shared_ptr<VulkanTexture> arm);
 	private:
 		std::string m_DebugName;
 

@@ -9,7 +9,7 @@ namespace VulkanCore {
 		glm::vec4 Albedo{ 1.0f };
 		float Roughness = 1.0f;
 		float Metallic = 1.0f;
-		bool UseNormalMap = false;
+		uint32_t UseNormalMap = 0;
 	};
 
 	class Scene;
