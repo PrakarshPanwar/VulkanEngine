@@ -14,6 +14,9 @@ Entities:
         Metallic: 1
         Roughness: 1
         UseNormalMap: 1
+        AlbedoTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_diff_2k.jpg
+        NormalTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_nor_gl_2k.png
+        ARMTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_arm_2k.png
   - Entity: 64321564316
     TagComponent:
       Tag: Flat Plane
@@ -28,6 +31,9 @@ Entities:
         Metallic: 1
         Roughness: 1
         UseNormalMap: 1
+        AlbedoTexture: assets\textures\ConcreteWall\concrete_wall_006_diff_2k.png
+        NormalTexture: assets\textures\ConcreteWall\concrete_wall_006_nor_gl_2k.png
+        ARMTexture: assets\textures\ConcreteWall\concrete_wall_006_arm_2k.png
   - Entity: 64321564316
     TagComponent:
       Tag: Basic Sphere
@@ -42,6 +48,9 @@ Entities:
         Metallic: 1
         Roughness: 1
         UseNormalMap: 1
+        AlbedoTexture: assets\textures\PlankFlooring\plank_flooring_diff_2k.png
+        NormalTexture: assets\textures\PlankFlooring\plank_flooring_nor_gl_2k.png
+        ARMTexture: assets\textures\PlankFlooring\plank_flooring_arm_2k.png
   - Entity: 64321564316
     TagComponent:
       Tag: Brass Vase
@@ -56,6 +65,9 @@ Entities:
         Metallic: 1
         Roughness: 1
         UseNormalMap: 1
+        AlbedoTexture: assets\meshes\BrassVase2K\textures\brass_vase_03_diff_2k.jpg
+        NormalTexture: assets\meshes\BrassVase2K\textures\brass_vase_03_nor_gl_2k.png
+        ARMTexture: assets\meshes\BrassVase2K\textures\brass_vase_03_arm_2k.png
   - Entity: 64321564316
     TagComponent:
       Tag: Blue Point Light
@@ -103,6 +115,9 @@ Entities:
         Metallic: 1
         Roughness: 1
         UseNormalMap: 1
+        AlbedoTexture: assets\textures\ConcreteWall\concrete_wall_006_diff_2k.png
+        NormalTexture: assets\textures\ConcreteWall\concrete_wall_006_nor_gl_2k.png
+        ARMTexture: assets\textures\ConcreteWall\concrete_wall_006_arm_2k.png
   - Entity: 64321564316
     TagComponent:
       Tag: Ceramic Vase 2
@@ -117,6 +132,9 @@ Entities:
         Metallic: 1
         Roughness: 1
         UseNormalMap: 1
+        AlbedoTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_diff_2k.jpg
+        NormalTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_nor_gl_2k.png
+        ARMTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_arm_2k.png
   - Entity: 64321564316
     TagComponent:
       Tag: Blue Spot Light
