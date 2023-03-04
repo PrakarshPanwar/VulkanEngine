@@ -71,6 +71,7 @@ namespace VulkanCore {
 			case VK_OBJECT_TYPE_COMMAND_BUFFER:  return "Command Buffer";
 			case VK_OBJECT_TYPE_DEVICE:		     return "Device";
 			case VK_OBJECT_TYPE_DESCRIPTOR_POOL: return "Descriptor Pool";
+			case VK_OBJECT_TYPE_DESCRIPTOR_SET:	 return "Descriptor Set";
 			case VK_OBJECT_TYPE_IMAGE:		     return "Image";
 			case VK_OBJECT_TYPE_IMAGE_VIEW:		 return "Image View";
 			case VK_OBJECT_TYPE_PIPELINE:		 return "Pipeline";
