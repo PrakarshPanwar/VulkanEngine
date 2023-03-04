@@ -51,6 +51,7 @@ namespace VulkanCore {
 			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
+		m_ContentBrowserPanel = ContentBrowserPanel();
 
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
 	}
@@ -195,15 +196,26 @@ namespace VulkanCore {
 		ImGui::SetCursorPos({ ImGui::GetWindowContentRegionMin().x + 5.0f, ImGui::GetWindowContentRegionMin().y + 5.0f });
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 20.0f);
 		if (ImGui::ImageButton((ImTextureID)m_MenuIconID, { 20.0f, 20.0f }, { 0, 1 }, { 1, 0 }))
-			ImGui::OpenPopup("Camera");
+			ImGui::OpenPopup("EditorSettings");
 		ImGui::PopStyleVar();
 
-		if (ImGui::BeginPopup("Camera"))
+		if (ImGui::BeginPopup("EditorSettings"))
 		{
 			static float fov = 45.0f;
+			static float thumbnailSize = 128.0f;
+			static float padding = 16.0f;
+
 			ImGui::DragFloat("Field of View", &fov, 0.01f, 5.0f, 90.0f);
 			if (ImGui::IsItemActive())
 				m_EditorCamera.SetFieldOfView(fov);
+
+			ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
+			if (ImGui::IsItemActive())
+				m_ContentBrowserPanel.SetThumbnailSize(thumbnailSize);
+
+			ImGui::SliderFloat("Padding", &padding, 0, 32);
+			if (ImGui::IsItemActive())
+				m_ContentBrowserPanel.SetPadding(padding);
 
 			ImGui::EndPopup();
 		}
@@ -212,6 +224,7 @@ namespace VulkanCore {
 		ImGui::End(); // End of Viewport
 
 		m_SceneHierarchyPanel.OnImGuiRender();
+		m_ContentBrowserPanel.OnImGuiRender();
 		m_SceneRenderer->OnImGuiRender();
 
 		ImGui::End(); // End of DockSpace
