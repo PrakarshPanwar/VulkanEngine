@@ -23,7 +23,11 @@ Entities:
       Scale: [3, 2.99965668, 2.99965668]
     MeshComponent:
       Filepath: assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx
-      MaterialIndex: 1
+      Material:
+        Albedo: [0.0131482966, 0.018901756, 0.162162185, 1]
+        Metallic: 1
+        Roughness: 1
+        UseNormalMap: false
   - Entity: 64321564316
     TagComponent:
       Tag: Wall1
@@ -33,7 +37,11 @@ Entities:
       Scale: [9.99999332, 2.68595648, 0.109166376]
     MeshComponent:
       Filepath: assets/meshes/Standard/Cube.fbx
-      MaterialIndex: 4
+      Material:
+        Albedo: [0.270270288, 0.270270288, 0.270270288, 1]
+        Metallic: 1
+        Roughness: 1
+        UseNormalMap: false
   - Entity: 64321564316
     TagComponent:
       Tag: Green Point Light
@@ -76,7 +84,11 @@ Entities:
       Scale: [6, 6, 6]
     MeshComponent:
       Filepath: assets/meshes/BrassVase2K/BrassVase.fbx
-      MaterialIndex: 2
+      Material:
+        Albedo: [0.088728562, 0.741312742, 0.129042566, 1]
+        Metallic: 1
+        Roughness: 1
+        UseNormalMap: false
   - Entity: 64321564316
     TagComponent:
       Tag: Basic Sphere
@@ -86,7 +98,11 @@ Entities:
       Scale: [1, 1, 1]
     MeshComponent:
       Filepath: assets/meshes/Standard/Sphere.fbx
-      MaterialIndex: 5
+      Material:
+        Albedo: [0.0111507168, 0.713773966, 0.722007751, 1]
+        Metallic: 1
+        Roughness: 1
+        UseNormalMap: false
   - Entity: 64321564316
     TagComponent:
       Tag: Flat Plane
@@ -96,7 +112,11 @@ Entities:
       Scale: [10, 0.100000001, 10]
     MeshComponent:
       Filepath: assets/meshes/Standard/Cube.fbx
-      MaterialIndex: 4
+      Material:
+        Albedo: [0.270270288, 0.270270288, 0.270270288, 1]
+        Metallic: 1
+        Roughness: 1
+        UseNormalMap: false
   - Entity: 64321564316
     TagComponent:
       Tag: Ceramic Vase
@@ -106,4 +126,8 @@ Entities:
       Scale: [3.5, 3.5, 3.5]
     MeshComponent:
       Filepath: assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx
-      MaterialIndex: 1
+      Material:
+        Albedo: [0.0131482966, 0.018901756, 0.162162185, 1]
+        Metallic: 1
+        Roughness: 1
+        UseNormalMap: false

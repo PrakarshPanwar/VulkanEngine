@@ -88,7 +88,7 @@ namespace VulkanCore {
 		}
 	}
 
-	std::shared_ptr<Mesh> Mesh::LoadMesh(const char* filepath, int materialIndex)
+	std::shared_ptr<Mesh> Mesh::LoadMesh(const char* filepath)
 	{
 		std::shared_ptr<MeshSource> meshSource = std::make_shared<MeshSource>(filepath);
 		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(meshSource);

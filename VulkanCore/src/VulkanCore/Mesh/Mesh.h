@@ -112,7 +112,7 @@ namespace VulkanCore {
 		inline std::shared_ptr<MeshSource> GetMeshSource() const { return m_MeshSource; }
 		inline const std::vector<uint32_t>& GetSubmeshes() const { return m_Submeshes; }
 
-		static std::shared_ptr<Mesh> LoadMesh(const char* filepath, int materialIndex);
+		static std::shared_ptr<Mesh> LoadMesh(const char* filepath);
 		static std::shared_ptr<VulkanVertexBuffer> GetTransformBuffer(uint64_t meshKey) { return s_MeshTransformBuffer[meshKey]; }
 
 		static void ClearAllMeshes();

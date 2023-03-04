@@ -273,25 +273,25 @@ namespace VulkanCore {
 	void EditorLayer::LoadEntities()
 	{
 		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
-		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx", 1));
+		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx"));
 		auto& vaseTransform = CeramicVase.GetComponent<TransformComponent>();
 		vaseTransform.Translation = glm::vec3{ 0.0f, -1.2f, 2.5f };
 		vaseTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
 		vaseTransform.Scale = glm::vec3{ 3.5f };
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
-		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Cube.fbx", 4));
+		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Cube.fbx"));
 		auto& planeTransform = FlatPlane.GetComponent<TransformComponent>();
 		planeTransform.Translation = glm::vec3{ 0.0f, -1.3f, 0.0f };
 		planeTransform.Scale = glm::vec3{ 10.0f, 0.1f, 10.0f };
 
 		Entity SphereMesh = m_Scene->CreateEntity("Basic Sphere");
-		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx", 5));
+		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx"));
 
 #define LOAD_SPONZA 0
 #if LOAD_SPONZA
 		Entity SponzaMesh = m_Scene->CreateEntity("Sponza");
-		SponzaMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Sponza/Sponza.obj", 4));
+		SponzaMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Sponza/Sponza.obj"));
 		auto& sponzaTransform = SponzaMesh.GetComponent<TransformComponent>();
 		sponzaTransform.Translation = glm::vec3{ -4.0f, -10.0f, 23.0f };
 		sponzaTransform.Scale = glm::vec3{ 0.25f };
@@ -306,7 +306,7 @@ namespace VulkanCore {
 #endif
 
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
-		BrassVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/BrassVase2K/BrassVase.fbx", 2));
+		BrassVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/BrassVase2K/BrassVase.fbx"));
 		auto& brassTransform = BrassVase.GetComponent<TransformComponent>();
 		brassTransform.Translation = glm::vec3{ 1.5f, -1.2f, 1.5f };
 		brassTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
