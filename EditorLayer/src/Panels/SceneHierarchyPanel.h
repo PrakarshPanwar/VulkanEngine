@@ -1,7 +1,6 @@
 #pragma once
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Scene/Scene.h"
-#include <memory>
 
 namespace VulkanCore {
 
