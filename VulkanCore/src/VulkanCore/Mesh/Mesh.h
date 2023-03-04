@@ -21,7 +21,7 @@ namespace VulkanCore {
 		glm::vec3 Binormal;
 		glm::vec3 Color;
 		glm::vec2 TexCoord;
-		int TexID;
+		//int TexID;
 
 		bool operator==(const Vertex& other) const
 		{
@@ -58,7 +58,10 @@ namespace VulkanCore {
 		const aiScene* GetAssimpScene() const { return m_Scene; }
 		inline const std::vector<MeshNode>& GetMeshNodes() const { return m_Nodes; }
 		inline const std::vector<Submesh>& GetSubmeshes() const { return m_Submeshes; }
+
 		inline std::shared_ptr<Material> GetMaterial() const { return m_Material; }
+		// TODO: This method is temporary for now
+		inline void SetMaterial(std::shared_ptr<Material> material) { m_Material = material; }
 
 		inline std::shared_ptr<VulkanVertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
 		inline std::shared_ptr<VulkanIndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
@@ -74,8 +77,8 @@ namespace VulkanCore {
 		aiScene* m_Scene;
 		std::unique_ptr<Assimp::Importer> m_Importer;
 
-		std::vector<Submesh> m_Submeshes;
-		std::vector<MeshNode> m_Nodes;
+		std::vector<Submesh> m_Submeshes{};
+		std::vector<MeshNode> m_Nodes{};
 
 		std::vector<Vertex> m_Vertices{};
 		std::vector<uint32_t> m_Indices{};
@@ -93,7 +96,7 @@ namespace VulkanCore {
 	class AssimpMeshImporter
 	{
 	public:
-		static void InvalidateMesh(std::shared_ptr<MeshSource> meshSource, int materialIndex);
+		static void InvalidateMesh(std::shared_ptr<MeshSource> meshSource);
 		static void TraverseNodes(std::shared_ptr<MeshSource> meshSource, aiNode* aNode, uint32_t nodeIndex);
 		static void ProcessMesh(std::shared_ptr<MeshSource> meshSource, aiMesh* mesh, const aiScene* scene);
 	};
@@ -102,12 +105,11 @@ namespace VulkanCore {
 	{
 	public:
 		Mesh();
-		Mesh(std::shared_ptr<MeshSource> meshSource, int materialIndex);
+		Mesh(std::shared_ptr<MeshSource> meshSource);
 		~Mesh();
 
 		void InvalidateSubmeshes();
 		inline std::shared_ptr<MeshSource> GetMeshSource() const { return m_MeshSource; }
-		inline int GetMaterialIndex() const { return m_MaterialID; }
 		inline const std::vector<uint32_t>& GetSubmeshes() const { return m_Submeshes; }
 
 		static std::shared_ptr<Mesh> LoadMesh(const char* filepath, int materialIndex);
@@ -118,7 +120,6 @@ namespace VulkanCore {
 		std::shared_ptr<MeshSource> m_MeshSource;
 		std::vector<uint32_t> m_Submeshes;
 		// TODO: We will not need this once we have VulkanMaterial and MaterialTable
-		int m_MaterialID;
 
 		// Hash => Filepath Hash Value, Value => Transform Storage Buffer Set
 		static std::map<uint64_t, std::shared_ptr<MeshSource>> s_MeshSourcesMap;

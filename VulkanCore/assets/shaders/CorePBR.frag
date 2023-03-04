@@ -12,7 +12,6 @@ struct VertexOutput
 };
 
 layout(location = 0) in VertexOutput Input;
-layout(location = 9) in flat int v_MaterialIndex;
 
 struct PointLight
 {
@@ -60,16 +59,15 @@ layout(set = 0, binding = 2) uniform SpotLightData
     SpotLight SpotLights[10];
 } u_SpotLight;
 
-// TODO: Seperate this set
-// Material Data
-layout(binding = 3) uniform sampler2D u_DiffuseTextures[6];
-layout(binding = 4) uniform sampler2D u_NormalTextures[6];
-layout(binding = 5) uniform sampler2D u_AORoughMetalTextures[6];
+// Material Set
+layout(set = 1, binding = 0) uniform sampler2D u_DiffuseTexture;
+layout(set = 1, binding = 1) uniform sampler2D u_NormalTexture;
+layout(set = 1, binding = 2) uniform sampler2D u_ARMTexture;
 
 // IBL
-layout(binding = 6) uniform samplerCube u_IrradianceMap;
-layout(binding = 7) uniform sampler2D u_BRDFTexture;
-layout(binding = 8) uniform samplerCube u_PrefilteredMap;
+layout(set = 0, binding = 6) uniform samplerCube u_IrradianceMap;
+layout(set = 0, binding = 7) uniform sampler2D u_BRDFTexture;
+layout(set = 0, binding = 8) uniform samplerCube u_PrefilteredMap;
 
 const float PI = 3.14159265359;
 
@@ -90,7 +88,7 @@ struct PBRParams
 
 vec3 GetNormalsFromMap()
 {
-    vec3 tangentNormal = normalize(texture(u_NormalTextures[v_MaterialIndex], Input.TexCoord).xyz * 2.0 - 1.0);
+    vec3 tangentNormal = normalize(texture(u_NormalTexture, Input.TexCoord).xyz * 2.0 - 1.0);
     return normalize(Input.WorldNormals * tangentNormal);
 }
 
@@ -259,9 +257,9 @@ vec3 IBL(vec3 F0, vec3 Lr)
 
 void main()
 {
-	m_Params.Albedo = texture(u_DiffuseTextures[v_MaterialIndex], Input.TexCoord).rgb * u_Material.Albedo.rgb * u_Material.Albedo.a;
+	m_Params.Albedo = texture(u_DiffuseTexture, Input.TexCoord).rgb * u_Material.Albedo.rgb * u_Material.Albedo.a;
     // R->Ambient Occlusion, G->Roughness, B->Metallic
-    vec3 aorm = texture(u_AORoughMetalTextures[v_MaterialIndex], Input.TexCoord).rgb;
+    vec3 aorm = texture(u_ARMTexture, Input.TexCoord).rgb;
 
     m_Params.Occlusion = aorm.r;
     m_Params.Roughness = aorm.g * u_Material.Roughness;

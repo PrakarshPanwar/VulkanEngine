@@ -7,6 +7,7 @@
 #include "Renderer.h"
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
+#include "Platform/Vulkan/VulkanMaterial.h"
 
 #include <glm/gtx/integer.hpp>
 
@@ -426,6 +427,17 @@ namespace VulkanCore {
 		VkDeviceSize offsets[] = { 0, 0 };
 		vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
 		vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+		std::shared_ptr<VulkanMaterial> vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
+		VkDescriptorSet descriptorSets[1] = {
+			vulkanMaterial->GetVulkanMaterialDescriptorSet(Renderer::GetCurrentFrameIndex())
+		};
+
+		vkCmdBindDescriptorSets(drawCmd,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipeline->GetVulkanPipelineLayout(),
+			1, 1, descriptorSets,
+			0, nullptr);
 
 		vkCmdPushConstants(drawCmd,
 			pipeline->GetVulkanPipelineLayout(),

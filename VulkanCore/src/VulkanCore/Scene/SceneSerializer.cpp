@@ -171,7 +171,7 @@ namespace VulkanCore {
 
 			auto& mc = entity.GetComponent<MeshComponent>();
 			out << YAML::Key << "Filepath" << YAML::Value << mc.MeshInstance->GetMeshSource()->GetFilePath();
-			out << YAML::Key << "MaterialIndex" << YAML::Value << mc.MeshInstance->GetMaterialIndex();
+			//out << YAML::Key << "MaterialIndex" << YAML::Value << mc.MeshInstance->GetMaterialIndex();
 
 			out << YAML::EndMap;
 		}
