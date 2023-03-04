@@ -1,6 +1,7 @@
 #pragma once
 #include "VulkanCore/Renderer/Camera.h"
 #include "VulkanCore/Mesh/Mesh.h"
+#include "VulkanCore/Renderer/Material.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>

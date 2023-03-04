@@ -10,11 +10,13 @@
 #include "Platform/Vulkan/VulkanBuffer.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 
-#include "Panels/SceneHierarchyPanel.h"
-
 #include <imgui.h>
-
+#include <memory>
 #include <filesystem>
+#include <vector>
+
+#include "Panels/SceneHierarchyPanel.h"
+#include "Panels/ContentBrowserPanel.h"
 
 namespace VulkanCore {
 
@@ -57,6 +59,7 @@ namespace VulkanCore {
 		int m_GizmoType = -1;
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
+		ContentBrowserPanel m_ContentBrowserPanel;
 
 		std::shared_ptr<VulkanTexture> m_MenuIcon;
 		VkDescriptorSet m_MenuIconID;

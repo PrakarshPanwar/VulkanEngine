@@ -100,8 +100,7 @@ namespace VulkanCore {
 			{ ShaderDataType::Float3, "a_Tangent" },
 			{ ShaderDataType::Float3, "a_Binormal" },
 			{ ShaderDataType::Float3, "a_FragColor" },
-			{ ShaderDataType::Float2, "a_TexCoord" },
-			{ ShaderDataType::Int,    "a_TexIndex" }
+			{ ShaderDataType::Float2, "a_TexCoord" }
 		};
 
 		VertexBufferLayout instanceLayout = {
@@ -247,35 +246,6 @@ namespace VulkanCore {
 
 		device->FlushCommandBuffer(barrierCmd);
 
-		// Textures
-		m_DiffuseMap = std::make_shared<VulkanTexture>("assets/meshes/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg");
-		m_NormalMap = std::make_shared<VulkanTexture>("assets/meshes/CeramicVase2K/textures/antique_ceramic_vase_01_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap = std::make_shared<VulkanTexture>("assets/meshes/CeramicVase2K/textures/antique_ceramic_vase_01_arm_2k.png", ImageFormat::RGBA8_UNORM);
-
-		m_DiffuseMap2 = std::make_shared<VulkanTexture>("assets/meshes/BrassVase2K/textures/brass_vase_03_diff_2k.jpg");
-		m_NormalMap2 = std::make_shared<VulkanTexture>("assets/meshes/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap2 = std::make_shared<VulkanTexture>("assets/meshes/BrassVase2K/textures/brass_vase_03_arm_2k.png", ImageFormat::RGBA8_UNORM);
-
-#define USE_GOLD_MATERIAL 0
-#if USE_GOLD_MATERIAL
-		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldDiffuse2.png");
-		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldNormalGL.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/Gold/GoldAORMNew.png", ImageFormat::RGBA8_UNORM);
-#else
-		m_DiffuseMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesDiff.png");
-		m_NormalMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesNorGL.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap3 = std::make_shared<VulkanTexture>("assets/textures/StoneTiles/StoneTilesARM.png", ImageFormat::RGBA8_UNORM);
-#endif
-		m_DiffuseMap4 = std::make_shared<VulkanTexture>("assets/textures/ConcreteWall/concrete_wall_006_diff_2k.png");
-		m_NormalMap4 = std::make_shared<VulkanTexture>("assets/textures/ConcreteWall/concrete_wall_006_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap4 = std::make_shared<VulkanTexture>("assets/textures/ConcreteWall/concrete_wall_006_arm_2k.png", ImageFormat::RGBA8_UNORM);
-
-		m_DiffuseMap5 = std::make_shared<VulkanTexture>("assets/textures/PlankFlooring/plank_flooring_diff_2k.png");
-		m_NormalMap5 = std::make_shared<VulkanTexture>("assets/textures/PlankFlooring/plank_flooring_nor_gl_2k.png", ImageFormat::RGBA8_UNORM);
-		m_ARMMap5 = std::make_shared<VulkanTexture>("assets/textures/PlankFlooring/plank_flooring_arm_2k.png", ImageFormat::RGBA8_UNORM);
-
-		m_SRGBWhiteTexture = Renderer::GetWhiteTexture();
-		m_UNORMWhiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
 		m_BloomDirtTexture = std::make_shared<VulkanTexture>("assets/textures/LensDirt.png");
 
 		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
@@ -286,26 +256,6 @@ namespace VulkanCore {
 		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
 
 		m_SkyboxVBData = Utils::CreateCubeModel();
-
-		std::vector<VkDescriptorImageInfo> DiffuseMaps, ARMMaps, NormalMaps;
-		DiffuseMaps.push_back(m_SRGBWhiteTexture->GetDescriptorImageInfo());
-		DiffuseMaps.push_back(m_DiffuseMap->GetDescriptorImageInfo());
-		DiffuseMaps.push_back(m_DiffuseMap2->GetDescriptorImageInfo());
-		DiffuseMaps.push_back(m_DiffuseMap3->GetDescriptorImageInfo());
-		DiffuseMaps.push_back(m_DiffuseMap4->GetDescriptorImageInfo());
-		DiffuseMaps.push_back(m_DiffuseMap5->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_UNORMWhiteTexture->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_NormalMap->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_NormalMap2->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_NormalMap3->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_NormalMap4->GetDescriptorImageInfo());
-		NormalMaps.push_back(m_NormalMap5->GetDescriptorImageInfo());
-		ARMMaps.push_back(m_UNORMWhiteTexture->GetDescriptorImageInfo());
-		ARMMaps.push_back(m_ARMMap->GetDescriptorImageInfo());
-		ARMMaps.push_back(m_ARMMap2->GetDescriptorImageInfo());
-		ARMMaps.push_back(m_ARMMap3->GetDescriptorImageInfo());
-		ARMMaps.push_back(m_ARMMap4->GetDescriptorImageInfo());
-		ARMMaps.push_back(m_ARMMap5->GetDescriptorImageInfo());
 
 		// Writing in Descriptors
 		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
@@ -330,10 +280,6 @@ namespace VulkanCore {
 
 			auto spotLightUBInfo = m_UBSpotLight[i].GetDescriptorBufferInfo();
 			geomDescriptorWriter[i].WriteBuffer(2, &spotLightUBInfo);
-
-			geomDescriptorWriter[i].WriteImage(3, DiffuseMaps);
-			geomDescriptorWriter[i].WriteImage(4, NormalMaps);
-			geomDescriptorWriter[i].WriteImage(5, ARMMaps);
 			
 			// Irradiance Map
 			VkDescriptorImageInfo irradianceMapInfo = m_IrradianceTexture->GetDescriptorImageInfo();
@@ -594,7 +540,7 @@ namespace VulkanCore {
 		ResetDrawCommands();
 	}
 
-	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, const glm::mat4& transform)
+	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, const glm::mat4& transform)
 	{
 		VK_CORE_PROFILE(__FUNCTION__);
 
@@ -614,6 +560,7 @@ namespace VulkanCore {
 
 			auto& dc = m_MeshDrawList[meshKey];
 			dc.MeshInstance = mesh;
+			dc.MaterialInstance = material;
 			dc.SubmeshIndex = submeshIndex;
 			dc.TransformBuffer = mesh->GetTransformBuffer(meshHandle);
 			dc.InstanceCount++;
@@ -657,7 +604,7 @@ namespace VulkanCore {
 		});
 
 		for (auto& [mk, dc] : m_MeshDrawList)
-			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.SubmeshIndex, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
+			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
 
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
