@@ -100,8 +100,7 @@ namespace VulkanCore {
 			{ ShaderDataType::Float3, "a_Tangent" },
 			{ ShaderDataType::Float3, "a_Binormal" },
 			{ ShaderDataType::Float3, "a_FragColor" },
-			{ ShaderDataType::Float2, "a_TexCoord" },
-			{ ShaderDataType::Int,    "a_TexIndex" }
+			{ ShaderDataType::Float2, "a_TexCoord" }
 		};
 
 		VertexBufferLayout instanceLayout = {
@@ -330,10 +329,6 @@ namespace VulkanCore {
 
 			auto spotLightUBInfo = m_UBSpotLight[i].GetDescriptorBufferInfo();
 			geomDescriptorWriter[i].WriteBuffer(2, &spotLightUBInfo);
-
-			geomDescriptorWriter[i].WriteImage(3, DiffuseMaps);
-			geomDescriptorWriter[i].WriteImage(4, NormalMaps);
-			geomDescriptorWriter[i].WriteImage(5, ARMMaps);
 			
 			// Irradiance Map
 			VkDescriptorImageInfo irradianceMapInfo = m_IrradianceTexture->GetDescriptorImageInfo();

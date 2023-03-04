@@ -215,7 +215,6 @@ namespace VulkanCore {
 
 			uint32_t count = 0;
 			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, nullptr);
-			VK_CORE_ASSERT(count <= 1, "More than one Descriptor Sets are not supported yet!");
 
 			std::vector<SpvReflectDescriptorSet*> DescriptorSets(count);
 			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, DescriptorSets.data());

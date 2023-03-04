@@ -12,6 +12,7 @@ namespace VulkanCore {
 		~VulkanMaterial();
 
 		void Invalidate();
+		void InvalidateDescriptorSets();
 
 		inline VkDescriptorSet GetVulkanMaterialDescriptorSet(uint32_t index) const { return m_MaterialDescriptorSets[index]; }
 	private:
