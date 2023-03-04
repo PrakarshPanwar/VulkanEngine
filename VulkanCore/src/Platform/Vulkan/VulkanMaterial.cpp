@@ -61,4 +61,106 @@ namespace VulkanCore {
 		m_ARMDstID = ImGuiLayer::AddTexture(*m_ARMTexture);
 	}
 
+	void VulkanMaterial::UpdateDiffuseMap(std::shared_ptr<VulkanTexture> diffuse)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		SetDiffuseTexture(diffuse);
+		for (uint32_t i = 0; i < 3; ++i)
+		{
+			VkWriteDescriptorSet writeDescriptor{};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
+			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptor.dstBinding = 0;
+			writeDescriptor.pImageInfo = &diffuse->GetDescriptorImageInfo();
+			writeDescriptor.descriptorCount = 1;
+			writeDescriptor.dstArrayElement = 0;
+
+			vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
+		}
+
+		// Update ImGui Image Panel
+		{
+			VkWriteDescriptorSet writeDescriptor{};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.dstSet = m_DiffuseDstID;
+			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptor.dstBinding = 0;
+			writeDescriptor.pImageInfo = &diffuse->GetDescriptorImageInfo();
+			writeDescriptor.descriptorCount = 1;
+			writeDescriptor.dstArrayElement = 0;
+
+			vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
+		}
+	}
+
+	void VulkanMaterial::UpdateNormalMap(std::shared_ptr<VulkanTexture> normal)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		SetNormalTexture(normal);
+		for (uint32_t i = 0; i < 3; ++i)
+		{
+			VkWriteDescriptorSet writeDescriptor{};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
+			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptor.dstBinding = 1;
+			writeDescriptor.pImageInfo = &normal->GetDescriptorImageInfo();
+			writeDescriptor.descriptorCount = 1;
+			writeDescriptor.dstArrayElement = 0;
+
+			vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
+		}
+
+		// Update ImGui Image Panel
+		{
+			VkWriteDescriptorSet writeDescriptor{};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.dstSet = m_NormalDstID;
+			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptor.dstBinding = 0;
+			writeDescriptor.pImageInfo = &normal->GetDescriptorImageInfo();
+			writeDescriptor.descriptorCount = 1;
+			writeDescriptor.dstArrayElement = 0;
+
+			vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
+		}
+	}
+
+	void VulkanMaterial::UpdateARMMap(std::shared_ptr<VulkanTexture> arm)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		SetARMTexture(arm);
+		for (uint32_t i = 0; i < 3; ++i)
+		{
+			VkWriteDescriptorSet writeDescriptor{};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
+			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptor.dstBinding = 2;
+			writeDescriptor.pImageInfo = &arm->GetDescriptorImageInfo();
+			writeDescriptor.descriptorCount = 1;
+			writeDescriptor.dstArrayElement = 0;
+
+			vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
+		}
+
+		// Update ImGui Image Panel
+		{
+			VkWriteDescriptorSet writeDescriptor{};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.dstSet = m_ARMDstID;
+			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptor.dstBinding = 0;
+			writeDescriptor.pImageInfo = &arm->GetDescriptorImageInfo();
+			writeDescriptor.descriptorCount = 1;
+			writeDescriptor.dstArrayElement = 0;
+
+			vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
+		}
+	}
+
 }
