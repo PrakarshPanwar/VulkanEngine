@@ -1,6 +1,6 @@
 #pragma once
-
 #include <glm/glm.hpp>
+#include "Platform/Vulkan/VulkanTexture.h"
 
 namespace VulkanCore {
 
@@ -23,9 +23,17 @@ namespace VulkanCore {
 		void SetMetallic(float mettalic);
 		void SetRoughness(float roughness);
 
+		void SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture);
+		void SetNormalTexture(std::shared_ptr<VulkanTexture> texture);
+		void SetARMTexture(std::shared_ptr<VulkanTexture> texture);
+
 		inline MaterialData& GetMaterialData() { return m_MaterialData; }
-	private:
+	protected:
 		MaterialData m_MaterialData{};
+
+		std::shared_ptr<VulkanTexture> m_DiffuseTexture;
+		std::shared_ptr<VulkanTexture> m_NormalTexture;
+		std::shared_ptr<VulkanTexture> m_ARMTexture;
 	};
 
 }

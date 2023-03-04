@@ -60,6 +60,7 @@ layout(set = 0, binding = 2) uniform SpotLightData
     SpotLight SpotLights[10];
 } u_SpotLight;
 
+// TODO: Seperate this set
 // Material Data
 layout(binding = 3) uniform sampler2D u_DiffuseTextures[6];
 layout(binding = 4) uniform sampler2D u_NormalTextures[6];

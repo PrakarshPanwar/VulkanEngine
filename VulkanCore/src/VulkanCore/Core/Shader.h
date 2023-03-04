@@ -7,6 +7,7 @@
 
 namespace VulkanCore {
 
+	// Based on OpenGL Macros
 	enum class ShaderType
 	{
 		Vertex = 0x8B31,
@@ -35,6 +36,7 @@ namespace VulkanCore {
 
 		inline std::unordered_map<uint32_t, std::vector<uint32_t>>& GetShaderModules() { return m_VulkanSPIRV; }
 		inline uint32_t GetPushConstantSize() const { return (uint32_t)m_PushConstantSize; }
+		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout(uint32_t index = 0) const { return m_DescriptorSetLayouts[index]; }
 
 		inline bool CheckIfGeometryShaderExists() const { return m_HasGeometryShader; };
 	private:
@@ -51,8 +53,7 @@ namespace VulkanCore {
 		std::vector<std::future<void>> m_Futures;
 		size_t m_PushConstantSize = 0;
 
-		std::unordered_map<uint32_t, VkWriteDescriptorSet> m_WriteDescriptors;
-		std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> m_DescriptorLayoutBindings;
+		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> m_DescriptorSetLayouts;
 		bool m_HasGeometryShader = false;
 	};
 
