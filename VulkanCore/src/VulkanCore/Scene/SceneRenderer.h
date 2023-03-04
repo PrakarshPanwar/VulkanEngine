@@ -151,14 +151,6 @@ namespace VulkanCore {
 		std::vector<VulkanImage> m_SceneRenderTextures;
 
 		std::shared_ptr<VulkanTexture> m_BloomDirtTexture;
-		std::shared_ptr<VulkanTexture> m_DiffuseMap, m_NormalMap, m_ARMMap,
-			m_DiffuseMap2, m_NormalMap2, m_ARMMap2,
-			m_DiffuseMap3, m_NormalMap3, m_ARMMap3,
-			m_DiffuseMap4, m_NormalMap4, m_ARMMap4,
-			m_DiffuseMap5, m_NormalMap5, m_ARMMap5;
-
-		// White Textures
-		std::shared_ptr<VulkanTexture> m_SRGBWhiteTexture, m_UNORMWhiteTexture;
 
 		// Skybox Resources
 		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;
