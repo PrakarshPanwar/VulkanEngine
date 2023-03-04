@@ -25,6 +25,11 @@ namespace VulkanCore {
 		void SetRoughness(float roughness);
 		void SetMaterialData(MaterialData materialData);
 
+		std::tuple<std::string, std::string, std::string> GetMaterialPaths() const
+		{ 
+			return { m_DiffuseTexture->GetFilePath(), m_NormalTexture->GetFilePath(), m_ARMTexture->GetFilePath() };
+		}
+
 		void SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture);
 		void SetNormalTexture(std::shared_ptr<VulkanTexture> texture);
 		void SetARMTexture(std::shared_ptr<VulkanTexture> texture);

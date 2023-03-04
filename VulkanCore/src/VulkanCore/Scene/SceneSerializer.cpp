@@ -179,11 +179,18 @@ namespace VulkanCore {
 			out << YAML::BeginMap;
 
 			// TODO: This will be removed when we will implement Material Assets
+			auto material = mc.MeshInstance->GetMeshSource()->GetMaterial();
 			MaterialData& materialData = mc.MeshInstance->GetMeshSource()->GetMaterial()->GetMaterialData();
 			out << YAML::Key << "Albedo" << YAML::Value << materialData.Albedo;
 			out << YAML::Key << "Metallic" << YAML::Value << materialData.Metallic;
 			out << YAML::Key << "Roughness" << YAML::Value << materialData.Roughness;
 			out << YAML::Key << "UseNormalMap" << YAML::Value << materialData.UseNormalMap;
+
+			// Setting Materials Path
+			auto [diffusePath, normalPath, armPath] = material->GetMaterialPaths();
+			out << YAML::Key << "AlbedoTexture" << YAML::Value << diffusePath;
+			out << YAML::Key << "NormalTexture" << YAML::Value << normalPath;
+			out << YAML::Key << "ARMTexture" << YAML::Value << armPath;
 
 			out << YAML::EndMap; // End Material Map
 
@@ -306,6 +313,29 @@ namespace VulkanCore {
 					float roughness = materialData["Roughness"].as<float>();
 					uint32_t useNormalMap = materialData["UseNormalMap"].as<uint32_t>();
 					material->SetMaterialData({ albedoColor, roughness, metallic, useNormalMap });
+
+					auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
+					std::string albedoPath = materialData["AlbedoTexture"].as<std::string>();
+					std::string normalPath = materialData["NormalTexture"].as<std::string>();
+					std::string armPath = materialData["ARMTexture"].as<std::string>();
+
+					if (!albedoPath.empty())
+					{
+						std::shared_ptr<VulkanTexture> diffuseTex = std::make_shared<VulkanTexture>(albedoPath, ImageFormat::RGBA8_SRGB);
+						vulkanMaterial->UpdateDiffuseMap(diffuseTex);
+					}
+
+					if (!normalPath.empty())
+					{
+						std::shared_ptr<VulkanTexture> normalTex = std::make_shared<VulkanTexture>(normalPath, ImageFormat::RGBA8_UNORM);
+						vulkanMaterial->UpdateNormalMap(normalTex);
+					}
+
+					if (!armPath.empty())
+					{
+						std::shared_ptr<VulkanTexture> armTex = std::make_shared<VulkanTexture>(armPath, ImageFormat::RGBA8_UNORM);
+						vulkanMaterial->UpdateARMMap(armTex);
+					}
 				}
 			}
 		}
