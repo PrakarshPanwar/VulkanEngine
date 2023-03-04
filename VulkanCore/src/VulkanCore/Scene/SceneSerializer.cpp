@@ -1,6 +1,8 @@
 #include "vulkanpch.h"
 #include "SceneSerializer.h"
 
+#include "Platform/Vulkan/VulkanMaterial.h"
+
 #include <yaml-cpp/yaml.h>
 
 #include "VulkanCore/Core/Components.h"
@@ -171,7 +173,19 @@ namespace VulkanCore {
 
 			auto& mc = entity.GetComponent<MeshComponent>();
 			out << YAML::Key << "Filepath" << YAML::Value << mc.MeshInstance->GetMeshSource()->GetFilePath();
-			//out << YAML::Key << "MaterialIndex" << YAML::Value << mc.MeshInstance->GetMaterialIndex();
+
+			// Storing Material Data of Mesh
+			out << YAML::Key << "Material";
+			out << YAML::BeginMap;
+
+			// TODO: This will be removed when we will implement Material Assets
+			MaterialData& materialData = mc.MeshInstance->GetMeshSource()->GetMaterial()->GetMaterialData();
+			out << YAML::Key << "Albedo" << YAML::Value << materialData.Albedo;
+			out << YAML::Key << "Metallic" << YAML::Value << materialData.Metallic;
+			out << YAML::Key << "Roughness" << YAML::Value << materialData.Roughness;
+			out << YAML::Key << "UseNormalMap" << YAML::Value << materialData.UseNormalMap;
+
+			out << YAML::EndMap; // End Material Map
 
 			out << YAML::EndMap;
 		}
@@ -279,9 +293,19 @@ namespace VulkanCore {
 					auto& mc = deserializedEntity.AddComponent<MeshComponent>();
 
 					std::string filepath = meshComponent["Filepath"].as<std::string>();
-					int materialIndex = meshComponent["MaterialIndex"].as<int>();
+					mc.MeshInstance = Mesh::LoadMesh(filepath.c_str());
 
-					mc.MeshInstance = Mesh::LoadMesh(filepath.c_str(), materialIndex);
+					auto meshSource = mc.MeshInstance->GetMeshSource();
+					auto materialData = meshComponent["Material"];
+
+					std::shared_ptr<Material> material = std::make_shared<VulkanMaterial>(std::filesystem::path(filepath).stem().string());
+					meshSource->SetMaterial(material);
+
+					glm::vec4 albedoColor = materialData["Albedo"].as<glm::vec4>();
+					float metallic = materialData["Metallic"].as<float>();
+					float roughness = materialData["Roughness"].as<float>();
+					bool useNormalMap = materialData["UseNormalMap"].as<bool>();
+					material->SetMaterialData({ albedoColor, roughness, metallic, useNormalMap });
 				}
 			}
 		}

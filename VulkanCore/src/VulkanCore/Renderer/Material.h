@@ -9,6 +9,7 @@ namespace VulkanCore {
 		glm::vec4 Albedo{ 1.0f };
 		float Roughness = 1.0f;
 		float Metallic = 1.0f;
+		bool UseNormalMap = false;
 	};
 
 	class Scene;
@@ -22,6 +23,7 @@ namespace VulkanCore {
 		void SetAlbedo(const glm::vec4& albedo);
 		void SetMetallic(float mettalic);
 		void SetRoughness(float roughness);
+		void SetMaterialData(MaterialData materialData);
 
 		void SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture);
 		void SetNormalTexture(std::shared_ptr<VulkanTexture> texture);

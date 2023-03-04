@@ -30,6 +30,11 @@ namespace VulkanCore {
 		m_MaterialData.Roughness = roughness;
 	}
 
+	void Material::SetMaterialData(MaterialData materialData)
+	{
+		m_MaterialData = materialData;
+	}
+
 	void Material::SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture)
 	{
 		m_DiffuseTexture = texture;

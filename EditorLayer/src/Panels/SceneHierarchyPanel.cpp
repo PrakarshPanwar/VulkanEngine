@@ -1,6 +1,7 @@
 #include "SceneHierarchyPanel.h"
 
 #include "VulkanCore/Mesh/Mesh.h"
+#include "Platform/Vulkan/VulkanMaterial.h"
 
 #include <filesystem>
 
@@ -193,11 +194,43 @@ namespace VulkanCore {
 		{
 			if (m_SelectionContext.HasComponent<MeshComponent>())
 			{
-				auto& material = m_SelectionContext.GetComponent<MeshComponent>().MeshInstance->GetMeshSource()->GetMaterial()->GetMaterialData();
-				ImGui::ColorEdit3("Albedo", glm::value_ptr(material.Albedo));
-				ImGui::DragFloat("Emission", &material.Albedo.w, 0.01f, 0.0f, 10000.0f);
-				ImGui::DragFloat("Roughness", &material.Roughness, 0.01f, 0.0f, 1.0f);
-				ImGui::DragFloat("Metallic", &material.Metallic, 0.01f, 0.0f, 1.0f);
+				auto material = m_SelectionContext.GetComponent<MeshComponent>().MeshInstance->GetMeshSource()->GetMaterial();
+
+				auto& materialData = material->GetMaterialData();
+				auto [diffuse, normal, arm] = std::static_pointer_cast<VulkanMaterial>(material)->GetMaterialTextureIDs();
+
+				if (ImGui::TreeNodeEx("ALBEDO", ImGuiTreeNodeFlags_DefaultOpen))
+				{
+					ImGui::Image((ImTextureID)diffuse, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
+
+					ImGui::SameLine();
+					ImGui::ColorEdit3("Color", glm::value_ptr(materialData.Albedo), ImGuiColorEditFlags_NoInputs);
+					ImGui::DragFloat("Emission", &materialData.Albedo.w, 0.01f, 0.0f, 10000.0f);
+
+					ImGui::TreePop();
+				}
+
+				if (ImGui::TreeNodeEx("NORMAL", ImGuiTreeNodeFlags_DefaultOpen))
+				{
+					ImGui::Image((ImTextureID)normal, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
+
+					ImGui::SameLine();
+					ImGui::Checkbox("Use", &materialData.UseNormalMap);
+
+					ImGui::TreePop();
+				}
+
+				if (ImGui::TreeNodeEx("ROUGHNESS/METALLIC", ImGuiTreeNodeFlags_DefaultOpen))
+				{
+					ImGui::Image((ImTextureID)arm, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
+
+					ImGui::SameLine();
+					ImGui::DragFloat("Roughness", &materialData.Roughness, 0.01f, 0.0f, 1.0f);
+					ImGui::DragFloat("Metallic", &materialData.Metallic, 0.01f, 0.0f, 1.0f);
+
+					ImGui::TreePop();
+				}
+
 			}
 		}
 
@@ -331,7 +364,7 @@ namespace VulkanCore {
 
 				else
 				{
-					std::shared_ptr<Mesh> mesh = Mesh::LoadMesh(meshFilePath.c_str(), 0);
+					std::shared_ptr<Mesh> mesh = Mesh::LoadMesh(meshFilePath.c_str());
 					component.MeshInstance = mesh;
 
 					s_ShowMessage = false;
