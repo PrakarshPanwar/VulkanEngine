@@ -7,6 +7,7 @@
 #include "Renderer.h"
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
+#include "Platform/Vulkan/VulkanMaterial.h"
 
 #include <glm/gtx/integer.hpp>
 #include "optick.h"
@@ -432,9 +433,9 @@ namespace VulkanCore {
 		return brdfTexture;
 	}
 
-	void VulkanRenderer::RenderMesh(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<Mesh> mesh, uint32_t submeshIndex, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	void VulkanRenderer::RenderMesh(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, uint32_t submeshIndex, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
-		Renderer::Submit([cmdBuffer, mesh, transformBuffer, transformData, submeshIndex, instanceCount]
+		Renderer::Submit([cmdBuffer, mesh, pipeline, material, transformBuffer, transformData, submeshIndex, instanceCount]
 		{
 			VK_CORE_PROFILE("VulkanRenderer::RenderMesh");
 
@@ -448,6 +449,22 @@ namespace VulkanCore {
 			vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
 			vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
+			std::shared_ptr<VulkanMaterial> vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
+			VkDescriptorSet descriptorSets[1] = { vulkanMaterial->GetVulkanMaterialDescriptorSet() };
+	
+			vkCmdBindDescriptorSets(drawCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipeline->GetVulkanPipelineLayout(),
+				1, 1, descriptorSets,
+				0, nullptr);
+	
+			vkCmdPushConstants(drawCmd,
+				pipeline->GetVulkanPipelineLayout(),
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				sizeof(MaterialData),
+				&material->GetMaterialData());
+	
 			const auto& submeshes = mesh->GetMeshSource()->GetSubmeshes();
 			const Submesh& submesh = submeshes[submeshIndex];
 			vkCmdDrawIndexed(drawCmd, submesh.IndexCount, instanceCount, submesh.BaseIndex, submesh.BaseVertex, 0);
