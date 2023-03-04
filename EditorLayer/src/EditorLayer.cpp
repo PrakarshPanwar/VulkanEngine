@@ -24,6 +24,8 @@
 
 namespace VulkanCore {
 
+	static const std::filesystem::path g_AssetPath = "assets";
+
 	EditorLayer::EditorLayer()
 		: Layer("Editor Layer")
 	{
@@ -191,6 +193,18 @@ namespace VulkanCore {
 
 		ImGui::Image(m_SceneImages[Renderer::GetCurrentFrameIndex()], region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 		ImGui::SetItemAllowOverlap();
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			{
+				const wchar_t* path = (const wchar_t*)payload->Data;
+				std::filesystem::path scenePath = g_AssetPath / path;
+				OpenScene(scenePath.string());
+			}
+
+			ImGui::EndDragDropTarget();
+		}
 
 		// Button Position just at the top
 		ImGui::SetCursorPos({ ImGui::GetWindowContentRegionMin().x + 5.0f, ImGui::GetWindowContentRegionMin().y + 5.0f });
