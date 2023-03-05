@@ -314,28 +314,12 @@ namespace VulkanCore {
 					uint32_t useNormalMap = materialData["UseNormalMap"].as<uint32_t>();
 					material->SetMaterialData({ albedoColor, roughness, metallic, useNormalMap });
 
-					auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
 					std::string albedoPath = materialData["AlbedoTexture"].as<std::string>();
 					std::string normalPath = materialData["NormalTexture"].as<std::string>();
 					std::string armPath = materialData["ARMTexture"].as<std::string>();
 
-					if (!albedoPath.empty())
-					{
-						std::shared_ptr<VulkanTexture> diffuseTex = std::make_shared<VulkanTexture>(albedoPath, ImageFormat::RGBA8_SRGB);
-						vulkanMaterial->UpdateDiffuseMap(diffuseTex);
-					}
-
-					if (!normalPath.empty())
-					{
-						std::shared_ptr<VulkanTexture> normalTex = std::make_shared<VulkanTexture>(normalPath, ImageFormat::RGBA8_UNORM);
-						vulkanMaterial->UpdateNormalMap(normalTex);
-					}
-
-					if (!armPath.empty())
-					{
-						std::shared_ptr<VulkanTexture> armTex = std::make_shared<VulkanTexture>(armPath, ImageFormat::RGBA8_UNORM);
-						vulkanMaterial->UpdateARMMap(armTex);
-					}
+					auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
+					vulkanMaterial->UpdateMaterials(albedoPath, normalPath, armPath);
 				}
 			}
 		}
