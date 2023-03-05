@@ -4,9 +4,25 @@
 #include "Platform/Vulkan/VulkanMaterial.h"
 
 #include <yaml-cpp/yaml.h>
+#include <unordered_set>
 
 #include "VulkanCore/Core/Components.h"
 #include "Entity.h"
+
+namespace std {
+
+	template<>
+	struct hash<tuple<string, string, string>>
+	{
+		size_t operator()(const tuple<string, string, string>& pTuple) const
+		{
+			return hash<string>()(get<0>(pTuple))
+				^ hash<string>()(get<1>(pTuple))
+				^ hash<string>()(get<2>(pTuple));
+		}
+	};
+
+}
 
 namespace YAML {
 
@@ -249,6 +265,8 @@ namespace VulkanCore {
 
 		if (entities)
 		{
+			std::unordered_set<std::tuple<std::string, std::string, std::string>> materialsData;
+
 			for (auto entity : entities)
 			{
 				uint64_t uuid = entity["Entity"].as<uint64_t>(); // TODO: UUIDs
@@ -305,36 +323,24 @@ namespace VulkanCore {
 					auto meshSource = mc.MeshInstance->GetMeshSource();
 					auto materialData = meshComponent["Material"];
 
-					std::shared_ptr<Material> material = std::make_shared<VulkanMaterial>(std::filesystem::path(filepath).stem().string());
-					meshSource->SetMaterial(material);
-
+					std::shared_ptr<Material> material = meshSource->GetMaterial();
 					glm::vec4 albedoColor = materialData["Albedo"].as<glm::vec4>();
 					float metallic = materialData["Metallic"].as<float>();
 					float roughness = materialData["Roughness"].as<float>();
 					uint32_t useNormalMap = materialData["UseNormalMap"].as<uint32_t>();
 					material->SetMaterialData({ albedoColor, roughness, metallic, useNormalMap });
 
-					auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
 					std::string albedoPath = materialData["AlbedoTexture"].as<std::string>();
 					std::string normalPath = materialData["NormalTexture"].as<std::string>();
 					std::string armPath = materialData["ARMTexture"].as<std::string>();
 
-					if (!albedoPath.empty())
+					auto materialTuple = std::make_tuple(albedoPath, normalPath, armPath);
+					if (!materialsData.contains(materialTuple))
 					{
-						std::shared_ptr<VulkanTexture> diffuseTex = std::make_shared<VulkanTexture>(albedoPath, ImageFormat::RGBA8_SRGB);
-						vulkanMaterial->UpdateDiffuseMap(diffuseTex);
-					}
+						auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
+						vulkanMaterial->UpdateMaterials(albedoPath, normalPath, armPath);
 
-					if (!normalPath.empty())
-					{
-						std::shared_ptr<VulkanTexture> normalTex = std::make_shared<VulkanTexture>(normalPath, ImageFormat::RGBA8_UNORM);
-						vulkanMaterial->UpdateNormalMap(normalTex);
-					}
-
-					if (!armPath.empty())
-					{
-						std::shared_ptr<VulkanTexture> armTex = std::make_shared<VulkanTexture>(armPath, ImageFormat::RGBA8_UNORM);
-						vulkanMaterial->UpdateARMMap(armTex);
+						materialsData.emplace(materialTuple);
 					}
 				}
 			}
