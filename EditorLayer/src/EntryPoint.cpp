@@ -20,6 +20,7 @@ namespace VulkanCore {
 		ApplicationSpecification spec{};
 		spec.Name = "Vulkan Application";
 		spec.WorkingDirectory = "../VulkanCore";
+		spec.FullScreen = true;
 		spec.CommandLineArgs = args;
 
 		return std::make_unique<EditorApp>(spec);
