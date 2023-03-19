@@ -196,7 +196,8 @@ namespace VulkanCore {
 		{
 			if (m_SelectionContext.HasComponent<MeshComponent>())
 			{
-				auto material = m_SelectionContext.GetComponent<MeshComponent>().MeshInstance->GetMeshSource()->GetMaterial();
+				auto meshSource = m_SelectionContext.GetComponent<MeshComponent>().MeshInstance->GetMeshSource();
+				auto material = meshSource->GetMaterial();
 				auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
 
 				auto& materialData = material->GetMaterialData();

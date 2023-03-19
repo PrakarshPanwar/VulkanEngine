@@ -48,8 +48,8 @@ namespace VulkanCore {
 
 	}
 
-	VulkanComputePipeline::VulkanComputePipeline(std::shared_ptr<Shader> shader)
-		: m_Shader(shader)
+	VulkanComputePipeline::VulkanComputePipeline(std::shared_ptr<Shader> shader, const std::string& debugName)
+		: m_DebugName(debugName), m_Shader(shader)
 	{
 		CreateComputePipeline();
 	}
@@ -135,6 +135,8 @@ namespace VulkanCore {
 				nullptr,
 				&m_ComputePipeline),
 				"Failed to Create Compute Pipeline!");
+
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_DebugName, m_ComputePipeline);
 		});
 	}
 

@@ -52,7 +52,7 @@ namespace VulkanCore {
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-		if (Application::Get()->GetSpecification().FullScreen)
+		if (Application::Get()->GetSpecification().Fullscreen)
 		{
 			GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 			const GLFWvidmode* mode = glfwGetVideoMode(monitor);
