@@ -29,7 +29,7 @@ namespace VulkanCore {
 	{
 		std::string Name = "VulkanCore Application";
 		std::string WorkingDirectory;
-		bool FullScreen = false;
+		bool Fullscreen = false;
 		ApplicationCommandLineArgs CommandLineArgs;
 	};
 
