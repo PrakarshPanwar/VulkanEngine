@@ -30,6 +30,7 @@ namespace VulkanCore {
 		void SetActiveScene(std::shared_ptr<Scene> scene);
 		void SetViewportSize(uint32_t width, uint32_t height) { m_ViewportSize.x = width; m_ViewportSize.y = height; }
 		void RenderScene(EditorCamera& camera);
+		void RenderLights();
 		void SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, const glm::mat4& transform);
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
@@ -121,7 +122,7 @@ namespace VulkanCore {
 
 		// Pipelines
 		std::shared_ptr<VulkanPipeline> m_GeometryPipeline;
-		std::shared_ptr<VulkanPipeline> m_PointLightPipeline;
+		std::shared_ptr<VulkanPipeline> m_LightPipeline;
 		std::shared_ptr<VulkanPipeline> m_CompositePipeline;
 		std::shared_ptr<VulkanPipeline> m_SkyboxPipeline;
 		std::shared_ptr<VulkanComputePipeline> m_BloomPipeline;
@@ -130,6 +131,7 @@ namespace VulkanCore {
 		// Descriptor Sets
 		std::vector<VkDescriptorSet> m_GeometryDescriptorSets;
 		std::vector<VkDescriptorSet> m_PointLightDescriptorSets;
+		std::vector<VkDescriptorSet> m_SpotLightDescriptorSets;
 		std::vector<VkDescriptorSet> m_CompositeDescriptorSets;
 		std::vector<VkDescriptorSet> m_SkyboxDescriptorSets;
 
@@ -147,10 +149,13 @@ namespace VulkanCore {
 		std::vector<VulkanUniformBuffer> m_UBPointLight;
 		std::vector<VulkanUniformBuffer> m_UBSpotLight;
 
+		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
+
 		std::vector<VulkanImage> m_BloomTextures;
 		std::vector<VulkanImage> m_SceneRenderTextures;
 
 		std::shared_ptr<VulkanTexture> m_BloomDirtTexture;
+		std::shared_ptr<VulkanTexture> m_PointLightTexture, m_SpotLightTexture;
 
 		// Skybox Resources
 		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;

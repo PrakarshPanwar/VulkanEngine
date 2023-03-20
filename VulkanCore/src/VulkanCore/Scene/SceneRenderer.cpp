@@ -128,14 +128,14 @@ namespace VulkanCore {
 			geomPipelineSpec.Layout = vertexLayout;
 			geomPipelineSpec.InstanceLayout = instanceLayout;
 
-			PipelineSpecification pointLightPipelineSpec;
-			pointLightPipelineSpec.DebugName = "Point Light Pipeline";
-			pointLightPipelineSpec.pShader = Renderer::GetShader("PointLight");
-			pointLightPipelineSpec.Blend = true;
-			pointLightPipelineSpec.RenderPass = geomPipelineSpec.RenderPass;
+			PipelineSpecification lightPipelineSpec;
+			lightPipelineSpec.DebugName = "Light Pipeline";
+			lightPipelineSpec.pShader = Renderer::GetShader("LightShader");
+			lightPipelineSpec.Blend = true;
+			lightPipelineSpec.RenderPass = geomPipelineSpec.RenderPass;
 
 			m_GeometryPipeline = std::make_shared<VulkanPipeline>(geomPipelineSpec);
-			m_PointLightPipeline = std::make_shared<VulkanPipeline>(pointLightPipelineSpec);
+			m_LightPipeline = std::make_shared<VulkanPipeline>(lightPipelineSpec);
 		}
 
 		// Composite Pipeline
@@ -254,6 +254,8 @@ namespace VulkanCore {
 		m_IrradianceTexture = irradianceMap;
 
 		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
+		m_PointLightTexture = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/PointLightIcon.png");
+		m_SpotLightTexture = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/SpotLightIcon.png");
 
 		m_SkyboxVBData = Utils::CreateCubeModel();
 
@@ -262,6 +264,7 @@ namespace VulkanCore {
 
 		m_GeometryDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_PointLightDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_SpotLightDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_CompositeDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_SkyboxDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 
@@ -299,14 +302,27 @@ namespace VulkanCore {
 		// Point Light Descriptors
 		std::vector<VulkanDescriptorWriter> pointLightDescriptorWriter(
 			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_PointLightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
+			{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
+
+		std::vector<VulkanDescriptorWriter> spotLightDescriptorWriter(
+			VulkanSwapChain::MaxFramesInFlight,
+			{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
 		for (int i = 0; i < m_PointLightDescriptorSets.size(); ++i)
 		{
 			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
 			pointLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+			spotLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
-			bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i]);
+			auto pointLightTextureInfo = m_PointLightTexture->GetDescriptorImageInfo();
+			pointLightDescriptorWriter[i].WriteImage(1, &pointLightTextureInfo);
+
+			auto spotLightTextureInfo = m_SpotLightTexture->GetDescriptorImageInfo();
+			spotLightDescriptorWriter[i].WriteImage(1, &spotLightTextureInfo);
+
+			bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i])
+				&& spotLightDescriptorWriter[i].Build(m_SpotLightDescriptorSets[i]);
+
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 		}
 
@@ -540,6 +556,61 @@ namespace VulkanCore {
 		ResetDrawCommands();
 	}
 
+	void SceneRenderer::RenderLights()
+	{ 
+		Renderer::Submit([this]
+		{
+			VkCommandBuffer bindCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
+			int frameIndex = Renderer::GetCurrentFrameIndex();
+
+			m_LightPipeline->Bind(bindCmd);
+
+			// Binding Point Light Descriptor Set
+			vkCmdBindDescriptorSets(bindCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				m_LightPipeline->GetVulkanPipelineLayout(),
+				0, 1, &m_PointLightDescriptorSets[frameIndex],
+				0, nullptr);
+		});
+
+		// Point Lights
+		for (auto pointLightPosition : m_PointLightPositions)
+		{
+			Renderer::Submit([this, pointLightPosition]
+			{
+				VkCommandBuffer drawCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
+
+				m_LightPipeline->SetPushConstants(drawCmd, (void*)&pointLightPosition, sizeof(glm::vec4));
+				vkCmdDraw(drawCmd, 6, 1, 0, 0);
+			});
+		}
+
+		Renderer::Submit([this]
+		{
+			VkCommandBuffer bindCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
+			int frameIndex = Renderer::GetCurrentFrameIndex();
+
+			// Binding Spot Light Descriptor Set
+			vkCmdBindDescriptorSets(bindCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				m_LightPipeline->GetVulkanPipelineLayout(),
+				0, 1, &m_SpotLightDescriptorSets[frameIndex],
+				0, nullptr);
+		});
+
+		// Spot Lights
+		for (auto spotLightPosition : m_SpotLightPositions)
+		{
+			Renderer::Submit([this, spotLightPosition]
+			{
+				VkCommandBuffer drawCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
+
+				m_LightPipeline->SetPushConstants(drawCmd, (void*)&spotLightPosition, sizeof(glm::vec4));
+				vkCmdDraw(drawCmd, 6, 1, 0, 0);
+			});
+		}
+	}
+
 	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, const glm::mat4& transform)
 	{
 		VK_CORE_PROFILE(__FUNCTION__);
@@ -583,23 +654,25 @@ namespace VulkanCore {
 	void SceneRenderer::GeometryPass()
 	{
 		m_Scene->OnUpdateGeometry(this);
+		m_Scene->OnUpdateLights(m_PointLightPositions, m_SpotLightPositions);
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().RenderPass);
 
 		// Rendering Geometry
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
-		auto drawCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
-		auto dstSet = m_GeometryDescriptorSets[Renderer::GetCurrentFrameIndex()];
-
-		Renderer::Submit([this, drawCmd, dstSet]
+		Renderer::Submit([this]
 		{
-			m_GeometryPipeline->Bind(drawCmd);
+			VkCommandBuffer bindCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
+			int frameIndex = Renderer::GetCurrentFrameIndex();
 
-			vkCmdBindDescriptorSets(drawCmd,
+			m_GeometryPipeline->Bind(bindCmd);
+
+			// Binding Static Geometry Descriptor Sets
+			vkCmdBindDescriptorSets(bindCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				m_GeometryPipeline->GetVulkanPipelineLayout(),
-				0, 1, &dstSet,
+				0, 1, &m_GeometryDescriptorSets[frameIndex],
 				0, nullptr);
 		});
 
@@ -616,7 +689,7 @@ namespace VulkanCore {
 
 		// Rendering Point Lights
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
-		m_Scene->OnUpdateLights(m_SceneCommandBuffer, m_PointLightPipeline, m_PointLightDescriptorSets);
+		RenderLights();
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().RenderPass);
@@ -737,6 +810,9 @@ namespace VulkanCore {
 			m_MeshTransformMap[mk].clear();
 			dc.InstanceCount = 0;
 		}
+
+		m_PointLightPositions.clear();
+		m_SpotLightPositions.clear();
 	}
 
 }
