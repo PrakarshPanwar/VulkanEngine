@@ -1,6 +1,8 @@
 #version 460 core
 
 layout(location = 0) in vec2 v_FragOffset;
+layout(location = 1) in vec2 v_TexCoord;
+
 layout(location = 0) out vec4 o_Color;
 
 layout(push_constant) uniform PointLight
@@ -9,14 +11,9 @@ layout(push_constant) uniform PointLight
 	vec4 Color;
 } u_PointLight;
 
-const float M_PI = 3.1415926538;
+layout(binding = 1) uniform sampler2D u_PointLightTexture;
 
 void main()
 {
-	float dis = sqrt(dot(v_FragOffset, v_FragOffset));
-	if (dis >= 1.0)
-		discard;
-
-	float cosDis = 0.5 * (cos(dis * M_PI) + 1.0);
-	o_Color = vec4(u_PointLight.Color.xyz + cosDis, cosDis);
+	o_Color = texture(u_PointLightTexture, v_TexCoord);
 }

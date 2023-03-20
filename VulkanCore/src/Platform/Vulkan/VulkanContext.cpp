@@ -66,6 +66,7 @@ namespace VulkanCore {
 			switch (objectType)
 			{
 			case VK_OBJECT_TYPE_UNKNOWN:	     return "Unknown";
+			case VK_OBJECT_TYPE_INSTANCE:		 return "Instance";
 			case VK_OBJECT_TYPE_BUFFER:		     return "Buffer";
 			case VK_OBJECT_TYPE_COMMAND_POOL:    return "Command Pool";
 			case VK_OBJECT_TYPE_COMMAND_BUFFER:  return "Command Buffer";

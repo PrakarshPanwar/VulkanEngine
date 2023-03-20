@@ -157,6 +157,7 @@ namespace VulkanCore {
 
 		// White Textures
 		std::shared_ptr<VulkanTexture> m_SRGBWhiteTexture, m_UNORMWhiteTexture;
+		std::shared_ptr<VulkanTexture> m_PointLightTexture;
 
 		// Skybox Resources
 		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;
