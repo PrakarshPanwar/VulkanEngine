@@ -1,17 +1,18 @@
 #version 460 core
 
-const vec2 Offsets[6] = vec2[](
-  vec2(-1.0, -1.0),
-  vec2(-1.0,  1.0),
-  vec2( 1.0, -1.0),
-  vec2( 1.0, -1.0),
-  vec2(-1.0,  1.0),
-  vec2( 1.0,  1.0)
+const vec4 Offsets[6] = vec4[](
+  vec4(-1.0, -1.0, 0.0, 0.0),
+  vec4( 1.0, -1.0, 1.0, 0.0),
+  vec4( 1.0,  1.0, 1.0, 1.0),
+  vec4( 1.0,  1.0, 1.0, 1.0),
+  vec4(-1.0,  1.0, 0.0, 1.0),
+  vec4(-1.0, -1.0, 0.0, 0.0)
 );
 
 layout(location = 0) out vec2 v_FragOffset;
+layout(location = 1) out vec2 v_TexCoord;
 
-layout(set = 0, binding = 0) uniform Camera
+layout(binding = 0) uniform Camera
 {
 	mat4 Projection;
 	mat4 View;
@@ -26,7 +27,10 @@ layout(push_constant) uniform PointLight
 
 void main()
 {
-	v_FragOffset = Offsets[gl_VertexIndex];
+	vec4 offset = Offsets[gl_VertexIndex];
+	v_FragOffset = offset.xy;
+	v_TexCoord = vec2(offset.z, 1.0 - offset.w);
+
 	vec3 cameraRightWorld = { u_Camera.View[0][0], u_Camera.View[1][0], u_Camera.View[2][0] };
 	vec3 cameraUpWorld = { u_Camera.View[0][1], u_Camera.View[1][1], u_Camera.View[2][1] };
 
