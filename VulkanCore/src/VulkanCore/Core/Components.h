@@ -153,10 +153,4 @@ namespace VulkanCore {
 		glm::mat4 NormalMatrix{};
 	};
 
-	struct PCPointLight
-	{
-		glm::vec4 Position{};
-		glm::vec4 Color{};
-	};
-
 }

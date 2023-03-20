@@ -128,14 +128,14 @@ namespace VulkanCore {
 			geomPipelineSpec.Layout = vertexLayout;
 			geomPipelineSpec.InstanceLayout = instanceLayout;
 
-			PipelineSpecification pointLightPipelineSpec;
-			pointLightPipelineSpec.DebugName = "Point Light Pipeline";
-			pointLightPipelineSpec.pShader = Renderer::GetShader("PointLight");
-			pointLightPipelineSpec.Blend = true;
-			pointLightPipelineSpec.RenderPass = geomPipelineSpec.RenderPass;
+			PipelineSpecification lightPipelineSpec;
+			lightPipelineSpec.DebugName = "Light Pipeline";
+			lightPipelineSpec.pShader = Renderer::GetShader("LightShader");
+			lightPipelineSpec.Blend = true;
+			lightPipelineSpec.RenderPass = geomPipelineSpec.RenderPass;
 
 			m_GeometryPipeline = std::make_shared<VulkanPipeline>(geomPipelineSpec);
-			m_PointLightPipeline = std::make_shared<VulkanPipeline>(pointLightPipelineSpec);
+			m_LightPipeline = std::make_shared<VulkanPipeline>(lightPipelineSpec);
 		}
 
 		// Composite Pipeline
@@ -254,6 +254,8 @@ namespace VulkanCore {
 		m_IrradianceTexture = irradianceMap;
 
 		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
+		m_PointLightTexture = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/PointLightIcon.png");
+		m_SpotLightTexture = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/SpotLightIcon.png");
 
 		m_SkyboxVBData = Utils::CreateCubeModel();
 
@@ -262,6 +264,7 @@ namespace VulkanCore {
 
 		m_GeometryDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_PointLightDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_SpotLightDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_CompositeDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_SkyboxDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 
@@ -299,14 +302,27 @@ namespace VulkanCore {
 		// Point Light Descriptors
 		std::vector<VulkanDescriptorWriter> pointLightDescriptorWriter(
 			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_PointLightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
+			{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
+
+		std::vector<VulkanDescriptorWriter> spotLightDescriptorWriter(
+			VulkanSwapChain::MaxFramesInFlight,
+			{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
 		for (int i = 0; i < m_PointLightDescriptorSets.size(); ++i)
 		{
 			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
 			pointLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+			spotLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
-			bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i]);
+			auto pointLightTextureInfo = m_PointLightTexture->GetDescriptorImageInfo();
+			pointLightDescriptorWriter[i].WriteImage(1, &pointLightTextureInfo);
+
+			auto spotLightTextureInfo = m_SpotLightTexture->GetDescriptorImageInfo();
+			spotLightDescriptorWriter[i].WriteImage(1, &spotLightTextureInfo);
+
+			bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i])
+				&& spotLightDescriptorWriter[i].Build(m_SpotLightDescriptorSets[i]);
+
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 		}
 
@@ -611,7 +627,7 @@ namespace VulkanCore {
 
 		// Rendering Point Lights
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
-		m_Scene->OnUpdateLights(m_SceneCommandBuffer, m_PointLightPipeline, m_PointLightDescriptorSets);
+		m_Scene->OnUpdateLights(m_SceneCommandBuffer, m_LightPipeline, m_PointLightDescriptorSets, m_SpotLightDescriptorSets);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().RenderPass);

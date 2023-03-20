@@ -121,7 +121,7 @@ namespace VulkanCore {
 
 		// Pipelines
 		std::shared_ptr<VulkanPipeline> m_GeometryPipeline;
-		std::shared_ptr<VulkanPipeline> m_PointLightPipeline;
+		std::shared_ptr<VulkanPipeline> m_LightPipeline;
 		std::shared_ptr<VulkanPipeline> m_CompositePipeline;
 		std::shared_ptr<VulkanPipeline> m_SkyboxPipeline;
 		std::shared_ptr<VulkanComputePipeline> m_BloomPipeline;
@@ -130,6 +130,7 @@ namespace VulkanCore {
 		// Descriptor Sets
 		std::vector<VkDescriptorSet> m_GeometryDescriptorSets;
 		std::vector<VkDescriptorSet> m_PointLightDescriptorSets;
+		std::vector<VkDescriptorSet> m_SpotLightDescriptorSets;
 		std::vector<VkDescriptorSet> m_CompositeDescriptorSets;
 		std::vector<VkDescriptorSet> m_SkyboxDescriptorSets;
 
@@ -151,6 +152,7 @@ namespace VulkanCore {
 		std::vector<VulkanImage> m_SceneRenderTextures;
 
 		std::shared_ptr<VulkanTexture> m_BloomDirtTexture;
+		std::shared_ptr<VulkanTexture> m_PointLightTexture, m_SpotLightTexture;
 
 		// Skybox Resources
 		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;
