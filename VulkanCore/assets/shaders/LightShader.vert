@@ -22,8 +22,7 @@ layout(binding = 0) uniform Camera
 layout(push_constant) uniform PointLight
 {
 	vec4 Position;
-	vec4 Color;
-} u_PointLight;
+} u_Light;
 
 void main()
 {
@@ -34,9 +33,9 @@ void main()
 	vec3 cameraRightWorld = { u_Camera.View[0][0], u_Camera.View[1][0], u_Camera.View[2][0] };
 	vec3 cameraUpWorld = { u_Camera.View[0][1], u_Camera.View[1][1], u_Camera.View[2][1] };
 
-	vec3 positionWorld = u_PointLight.Position.xyz 
-		+ u_PointLight.Position.w * v_FragOffset.x * cameraRightWorld
-		+ u_PointLight.Position.w * v_FragOffset.y * cameraUpWorld;
+	vec3 positionWorld = u_Light.Position.xyz 
+		+ u_Light.Position.w * v_FragOffset.x * cameraRightWorld
+		+ u_Light.Position.w * v_FragOffset.y * cameraUpWorld;
 
 	gl_Position = u_Camera.Projection * u_Camera.View * vec4(positionWorld, 1.0);
 }
