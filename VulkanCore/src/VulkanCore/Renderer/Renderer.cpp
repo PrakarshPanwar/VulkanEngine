@@ -152,7 +152,7 @@ namespace VulkanCore {
 
 		Renderer::Submit([commandBuffer, pipeline, dstSet]
 		{
-			VK_CORE_PROFILE("Renderer::SubmitFullscreenQuad");
+			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad");
 
 			auto drawCmd = commandBuffer->GetActiveCommandBuffer();
 
@@ -174,6 +174,7 @@ namespace VulkanCore {
 
 	void Renderer::WaitandRender()
 	{
+		VK_CORE_PROFILE();
 		RenderThread::Wait();
 	}
 

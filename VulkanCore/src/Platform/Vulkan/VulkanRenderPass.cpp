@@ -212,7 +212,7 @@ namespace VulkanCore {
 
 		Renderer::Submit([this, beginCmd, Framebuffer, framebufferExtent, fbSpec]
 		{
-			VK_CORE_PROFILE("VulkanRenderPass::Begin");
+			VK_CORE_PROFILE_FN("VulkanRenderPass::Begin");
 
 			VkRenderPassBeginInfo beginPassInfo{};
 			beginPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

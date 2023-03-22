@@ -36,6 +36,8 @@ namespace VulkanCore {
 
 	VkCommandBuffer VulkanRenderer::BeginFrame()
 	{
+		VK_CORE_PROFILE();
+
 		VK_CORE_ASSERT(!IsFrameStarted, "Cannot call BeginFrame() while frame being already in progress!");
 
 		auto result = m_SwapChain->AcquireNextImage(&m_CurrentImageIndex);
@@ -257,7 +259,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([commandBuffer, sourceImage, destImage]
 		{
-			VK_CORE_PROFILE("VulkanRenderer::CopyVulkanImage");
+			VK_CORE_PROFILE_FN("VulkanRenderer::CopyVulkanImage");
 			VkCommandBuffer vulkanCmdBuffer = commandBuffer->GetActiveCommandBuffer();
 
 			VkImage srcImage = sourceImage->GetVulkanImageInfo().Image;
@@ -307,7 +309,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([commandBuffer, image]
 		{
-			VK_CORE_PROFILE("VulkanRenderer::BlitVulkanImage");
+			VK_CORE_PROFILE_FN("VulkanRenderer::BlitVulkanImage");
 			VkCommandBuffer vulkanCmdBuffer = commandBuffer->GetActiveCommandBuffer();
 
 			VkImage vulkanImage = image->GetVulkanImageInfo().Image;
@@ -437,7 +439,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer, mesh, pipeline, material, transformBuffer, transformData, submeshIndex, instanceCount]
 		{
-			VK_CORE_PROFILE("VulkanRenderer::RenderMesh");
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMesh");
 
 			// Bind Vertex Buffer
 			auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
@@ -522,22 +524,27 @@ namespace VulkanCore {
 
 	void VulkanRenderer::FinalQueueSubmit()
 	{
-		VK_CORE_PROFILE("VulkanRenderer::FinalQueueSubmit");
-
-		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
-
-		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), sceneRenderer->GetCommandBuffer()->GetActiveCommandBuffer() };
-		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
+		Renderer::Submit([this]
 		{
-			m_Window->ResetWindowResizeFlag();
-			RecreateSwapChain();
-			sceneRenderer->RecreateScene();
-		}
+			VK_CORE_PROFILE_FN("VulkanRenderer::FinalQueueSubmit");
 
-		else if (result != VK_SUCCESS)
-			VK_CORE_ERROR("Failed to Present Swap Chain Image!");
+			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
+
+			const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), sceneRenderer->GetCommandBuffer()->GetActiveCommandBuffer() };
+			auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
+
+			if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
+			{
+				m_Window->ResetWindowResizeFlag();
+				RecreateSwapChain();
+				sceneRenderer->RecreateScene();
+			}
+
+			else if (result != VK_SUCCESS)
+				VK_CORE_ERROR("Failed to Present Swap Chain Image!");
+		});
+
+		Renderer::WaitandRender();
 
 		IsFrameStarted = false;
 		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;

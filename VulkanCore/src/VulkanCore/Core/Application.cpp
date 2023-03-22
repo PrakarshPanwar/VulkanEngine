@@ -79,7 +79,6 @@ namespace VulkanCore {
 				m_Renderer->EndScene();
 			}
 
-			Renderer::WaitandRender();
 			m_Renderer->FinalQueueSubmit();
 		}
 
@@ -126,7 +125,7 @@ namespace VulkanCore {
 
 	void Application::RenderImGui()
 	{
-		VK_CORE_PROFILE("Application::RenderImGui");
+		VK_CORE_PROFILE();
 
 		for (Layer* layer : m_LayerStack)
 			layer->OnImGuiRender();
