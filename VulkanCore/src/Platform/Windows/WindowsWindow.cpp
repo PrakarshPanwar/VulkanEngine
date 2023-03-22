@@ -2,6 +2,7 @@
 #include "WindowsWindow.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Core/Application.h"
 
 #include "VulkanCore/Events/ApplicationEvent.h"
 #include "VulkanCore/Events/MouseEvent.h"
@@ -52,8 +53,28 @@ namespace VulkanCore {
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
+		if (Application::Get()->GetSpecification().Fullscreen)
+		{
+			GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+			const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+			m_Data.Width = mode->width;
+			m_Data.Height = mode->height;
+			m_WindowSpecs.Width = mode->width;
+			m_WindowSpecs.Height = mode->height;
+
+			glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+			glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+			glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+			glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+
+			m_Window = glfwCreateWindow(m_WindowSpecs.Width, m_WindowSpecs.Height, m_WindowSpecs.Name.c_str(), nullptr, nullptr);
+		}
+
+		else
+			m_Window = glfwCreateWindow(m_WindowSpecs.Width, m_WindowSpecs.Height, m_WindowSpecs.Name.c_str(), nullptr, nullptr);
+
 		VK_CORE_INFO("Creating Window '{0}' ({1}, {2})", m_WindowSpecs.Name, m_WindowSpecs.Width, m_WindowSpecs.Height);
-		m_Window = glfwCreateWindow(m_WindowSpecs.Width, m_WindowSpecs.Height, m_WindowSpecs.Name.c_str(), nullptr, nullptr);
 		glfwMakeContextCurrent(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);

@@ -8,7 +8,7 @@ namespace VulkanCore {
 	{
 	public:
 		VulkanComputePipeline() = default;
-		VulkanComputePipeline(std::shared_ptr<Shader> shader);
+		VulkanComputePipeline(std::shared_ptr<Shader> shader, const std::string& debugName = {});
 
 		~VulkanComputePipeline();
 
@@ -23,6 +23,8 @@ namespace VulkanCore {
 	private:
 		void CreateComputePipeline();
 	private:
+		std::string m_DebugName;
+
 		VkPipeline m_ComputePipeline;
 		VkPipelineLayout m_PipelineLayout = nullptr;
 		VkShaderModule m_compShaderModule = nullptr;

@@ -155,6 +155,11 @@ namespace VulkanCore {
 		m_Nodes.emplace_back();
 	}
 
+	MeshSource::MeshSource()
+		: m_Material(std::make_shared<VulkanMaterial>("Default Material"))
+	{
+	}
+
 	MeshSource::~MeshSource()
 	{
 	}

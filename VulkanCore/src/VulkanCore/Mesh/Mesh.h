@@ -51,7 +51,7 @@ namespace VulkanCore {
 	class MeshSource
 	{
 	public:
-		MeshSource() = default;
+		MeshSource();
 		MeshSource(const std::string& filepath);
 		~MeshSource();
 

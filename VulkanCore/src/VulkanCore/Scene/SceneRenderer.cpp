@@ -176,7 +176,7 @@ namespace VulkanCore {
 
 		// Bloom Pipeline
 		{
-			m_BloomPipeline = std::make_shared<VulkanComputePipeline>(Renderer::GetShader("Bloom"));
+			m_BloomPipeline = std::make_shared<VulkanComputePipeline>(Renderer::GetShader("Bloom"), "Bloom Pipeline");
 		}
 	}
 
