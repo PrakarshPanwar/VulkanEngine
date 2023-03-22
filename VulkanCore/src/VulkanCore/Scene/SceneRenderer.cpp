@@ -61,7 +61,7 @@ namespace VulkanCore {
 				 1.0f, -1.0f,  1.0f
 			};
 
-			return std::make_shared<VulkanVertexBuffer>(skyboxVertices, sizeof(skyboxVertices));
+			return std::make_shared<VulkanVertexBuffer>(skyboxVertices, (uint32_t)sizeof(skyboxVertices));
 		}
 
 		static uint32_t CalculateMipCount(uint32_t width, uint32_t height)
@@ -578,6 +578,8 @@ namespace VulkanCore {
 		{
 			Renderer::Submit([this, pointLightPosition]
 			{
+				VK_CORE_PROFILE_FN("Render-PointLights");
+
 				VkCommandBuffer drawCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
 
 				m_LightPipeline->SetPushConstants(drawCmd, (void*)&pointLightPosition, sizeof(glm::vec4));
@@ -603,6 +605,8 @@ namespace VulkanCore {
 		{
 			Renderer::Submit([this, spotLightPosition]
 			{
+				VK_CORE_PROFILE_FN("Render-SpotLights");
+
 				VkCommandBuffer drawCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
 
 				m_LightPipeline->SetPushConstants(drawCmd, (void*)&spotLightPosition, sizeof(glm::vec4));
@@ -613,7 +617,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, const glm::mat4& transform)
 	{
-		VK_CORE_PROFILE(__FUNCTION__);
+		VK_CORE_PROFILE();
 
 		auto meshSource = mesh->GetMeshSource();
 		uint64_t meshHandle = meshSource->GetMeshHandle();
@@ -712,7 +716,7 @@ namespace VulkanCore {
 
 		Renderer::Submit([this]
 		{
-			VK_CORE_PROFILE("SceneRenderer::BloomCompute");
+			VK_CORE_PROFILE_FN("SceneRenderer::BloomCompute");
 
 			int frameIndex = Renderer::GetCurrentFrameIndex();
 

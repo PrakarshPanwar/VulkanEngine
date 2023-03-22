@@ -122,7 +122,7 @@ namespace VulkanCore {
 
 	void ImGuiLayer::ImGuiEnd()
 	{
-		VK_CORE_PROFILE("ImGuiLayer::ImGuiEnd");
+		VK_CORE_PROFILE();
 
 		int currentFrameIndex = Renderer::GetCurrentFrameIndex();
 		auto swapChain = VulkanSwapChain::GetSwapChain();

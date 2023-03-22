@@ -27,6 +27,7 @@ namespace VulkanCore {
 
 	void WindowsWindow::OnUpdate()
 	{
+		VK_CORE_PROFILE();
 		glfwPollEvents();
 	}
 

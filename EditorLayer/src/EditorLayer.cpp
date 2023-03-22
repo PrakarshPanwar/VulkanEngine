@@ -66,7 +66,7 @@ namespace VulkanCore {
 
 	void EditorLayer::OnUpdate()
 	{
-		VK_CORE_PROFILE("EditorLayer::OnUpdate");
+		VK_CORE_PROFILE();
 
 		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
 			m_EditorCamera.OnUpdate();

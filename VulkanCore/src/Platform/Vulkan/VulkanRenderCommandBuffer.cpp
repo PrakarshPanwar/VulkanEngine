@@ -85,6 +85,8 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([this]
 		{
+			VK_CORE_PROFILE_FN("VulkanRenderCommandBuffer::Begin");
+
 			VkCommandBufferBeginInfo beginInfo{};
 			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;

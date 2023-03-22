@@ -41,6 +41,7 @@ namespace VulkanCore {
 	{
 		{
 			// Point Lights
+			VK_CORE_PROFILE_FN("Scene-PointLights");
 			auto view = m_Registry.view<TransformComponent, PointLightComponent>();
 
 			for (auto ent : view)
@@ -54,6 +55,7 @@ namespace VulkanCore {
 
 		{
 			// Spot Lights
+			VK_CORE_PROFILE_FN("Scene-SpotLights");
 			auto view = m_Registry.view<TransformComponent, SpotLightComponent>();
 
 			for (auto ent : view)
