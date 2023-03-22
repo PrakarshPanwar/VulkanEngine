@@ -196,13 +196,19 @@ namespace VulkanCore {
 		{
 			if (m_SelectionContext.HasComponent<MeshComponent>())
 			{
-				auto material = m_SelectionContext.GetComponent<MeshComponent>().MeshInstance->GetMeshSource()->GetMaterial();
+				auto meshSource = m_SelectionContext.GetComponent<MeshComponent>().MeshInstance->GetMeshSource();
+				auto material = meshSource->GetMaterial();
 				auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
 
 				auto& materialData = material->GetMaterialData();
 				auto [diffuse, normal, arm] = vulkanMaterial->GetMaterialTextureIDs();
 
-				if (ImGui::TreeNodeEx("ALBEDO", ImGuiTreeNodeFlags_DefaultOpen))
+				const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
+				bool albedoNode = ImGui::TreeNodeEx("ALBEDO", treeNodeFlags);
+				ImGui::PopStyleVar();
+
+				if (albedoNode)
 				{
 					ImGui::Image((ImTextureID)diffuse, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
 
@@ -226,7 +232,11 @@ namespace VulkanCore {
 					ImGui::TreePop();
 				}
 
-				if (ImGui::TreeNodeEx("NORMAL", ImGuiTreeNodeFlags_DefaultOpen))
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
+				bool normalNode = ImGui::TreeNodeEx("NORMAL", treeNodeFlags);
+				ImGui::PopStyleVar();
+
+				if (normalNode)
 				{
 					ImGui::Image((ImTextureID)normal, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
 
@@ -250,7 +260,11 @@ namespace VulkanCore {
 					ImGui::TreePop();
 				}
 
-				if (ImGui::TreeNodeEx("ROUGHNESS/METALLIC", ImGuiTreeNodeFlags_DefaultOpen))
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
+				bool armNode = ImGui::TreeNodeEx("ROUGHNESS/METALLIC", treeNodeFlags);
+				ImGui::PopStyleVar();
+
+				if (armNode)
 				{
 					ImGui::Image((ImTextureID)arm, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
 
