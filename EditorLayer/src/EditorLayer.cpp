@@ -261,13 +261,10 @@ namespace VulkanCore {
 		return false;
 	}
 
-	void EditorLayer::RecreateSceneDescriptors()
+	void EditorLayer::UpdateSceneDescriptors()
 	{
-		m_SceneImages.clear();
-		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
-
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
+			ImGuiLayer::UpdateDescriptor(m_SceneImages[i], m_SceneRenderer->GetFinalPassImage(i));
 	}
 
 	void EditorLayer::LoadEntities()

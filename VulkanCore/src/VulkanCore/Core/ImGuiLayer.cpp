@@ -185,6 +185,38 @@ namespace VulkanCore {
 			imageDescriptor.imageLayout);
 	}
 
+	void ImGuiLayer::UpdateDescriptor(VkDescriptorSet descriptorSet, const VulkanImage& image)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		VkWriteDescriptorSet writeDescriptor{};
+		writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptor.dstSet = descriptorSet;
+		writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptor.dstBinding = 0;
+		writeDescriptor.pImageInfo = &image.GetDescriptorInfo();
+		writeDescriptor.descriptorCount = 1;
+		writeDescriptor.dstArrayElement = 0;
+
+		vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
+	}
+
+	void ImGuiLayer::UpdateDescriptor(VkDescriptorSet descriptorSet, const VulkanTexture& texture)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		VkWriteDescriptorSet writeDescriptor{};
+		writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptor.dstSet = descriptorSet;
+		writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptor.dstBinding = 0;
+		writeDescriptor.pImageInfo = &texture.GetDescriptorImageInfo();
+		writeDescriptor.descriptorCount = 1;
+		writeDescriptor.dstArrayElement = 0;
+
+		vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
+	}
+
 	void ImGuiLayer::CheckVkResult(VkResult error)
 	{
 		if (error == 0)
