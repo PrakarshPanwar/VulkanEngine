@@ -208,7 +208,7 @@ namespace VulkanCore {
 
 	bool VulkanDescriptorWriter::Build(VkDescriptorSet& set)
 	{
-		bool success = m_Pool.AllocateDescriptorSet(m_SetLayout.GetDescriptorSetLayout(), set);
+		bool success = m_Pool.AllocateDescriptorSet(m_SetLayout.GetVulkanDescriptorSetLayout(), set);
 
 		if (!success)
 			return false;

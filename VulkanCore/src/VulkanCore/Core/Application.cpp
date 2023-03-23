@@ -4,6 +4,7 @@
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanCore/Renderer/RenderThread.h"
+#include "optick.h"
 
 namespace VulkanCore {
 
@@ -55,6 +56,7 @@ namespace VulkanCore {
 
 		while (m_Running)
 		{
+			VK_CORE_BEGIN_FRAME("Main Thread");
 			m_Window->OnUpdate();
 
 			if (auto commandBuffer = m_Renderer->BeginFrame())
@@ -64,8 +66,6 @@ namespace VulkanCore {
 				m_ImGuiLayer->ImGuiBegin();
 				Renderer::Submit([this]() { RenderImGui(); });
 				Renderer::Submit([this]() { m_ImGuiLayer->ImGuiEnd(); });
-
-				Renderer::WaitandRender();
 
 				m_Renderer->EndSwapChainRenderPass(commandBuffer);
 				m_Renderer->EndFrame();
@@ -125,6 +125,8 @@ namespace VulkanCore {
 
 	void Application::RenderImGui()
 	{
+		VK_CORE_PROFILE();
+
 		for (Layer* layer : m_LayerStack)
 			layer->OnImGuiRender();
 	}

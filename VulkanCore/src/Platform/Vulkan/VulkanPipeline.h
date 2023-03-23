@@ -75,7 +75,7 @@ namespace VulkanCore {
 
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
 		inline PipelineSpecification GetSpecification() const { return m_Specification; }
-		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
+		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout(uint32_t index = 0) const { return m_DescriptorSetLayout[index]; }
 	private:
 		void CreateGraphicsPipeline(std::shared_ptr<Shader> shader, const PipelineConfigInfo& pipelineInfo);
 		void CreateGraphicsPipeline();
@@ -89,7 +89,7 @@ namespace VulkanCore {
 		VkPipelineLayout m_PipelineLayout = nullptr;
 		VkShaderModule m_vertShaderModule, m_fragShaderModule, m_geomShaderModule = nullptr;
 		std::shared_ptr<Shader> m_Shader;
-		std::shared_ptr<VulkanDescriptorSetLayout> m_DescriptorSetLayout;
+		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> m_DescriptorSetLayout;
 	};
 
 }

@@ -16,6 +16,7 @@
 
 #include <ImGuizmo.h>
 #include <imgui_internal.h>
+#include <optick.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
@@ -23,6 +24,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 namespace VulkanCore {
+
+	static const std::filesystem::path g_AssetPath = "assets";
 
 	EditorLayer::EditorLayer()
 		: Layer("Editor Layer")
@@ -51,6 +54,7 @@ namespace VulkanCore {
 			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
+		m_ContentBrowserPanel = ContentBrowserPanel();
 
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
 	}
@@ -62,6 +66,8 @@ namespace VulkanCore {
 
 	void EditorLayer::OnUpdate()
 	{
+		VK_CORE_PROFILE();
+
 		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
 			m_EditorCamera.OnUpdate();
 
@@ -191,19 +197,42 @@ namespace VulkanCore {
 		ImGui::Image(m_SceneImages[Renderer::GetCurrentFrameIndex()], region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 		ImGui::SetItemAllowOverlap();
 
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			{
+				const wchar_t* path = (const wchar_t*)payload->Data;
+				std::filesystem::path scenePath = g_AssetPath / path;
+				OpenScene(scenePath.string());
+			}
+
+			ImGui::EndDragDropTarget();
+		}
+
 		// Button Position just at the top
 		ImGui::SetCursorPos({ ImGui::GetWindowContentRegionMin().x + 5.0f, ImGui::GetWindowContentRegionMin().y + 5.0f });
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 20.0f);
 		if (ImGui::ImageButton((ImTextureID)m_MenuIconID, { 20.0f, 20.0f }, { 0, 1 }, { 1, 0 }))
-			ImGui::OpenPopup("Camera");
+			ImGui::OpenPopup("EditorSettings");
 		ImGui::PopStyleVar();
 
-		if (ImGui::BeginPopup("Camera"))
+		if (ImGui::BeginPopup("EditorSettings"))
 		{
 			static float fov = 45.0f;
+			static float thumbnailSize = 128.0f;
+			static float padding = 16.0f;
+
 			ImGui::DragFloat("Field of View", &fov, 0.01f, 5.0f, 90.0f);
 			if (ImGui::IsItemActive())
 				m_EditorCamera.SetFieldOfView(fov);
+
+			ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
+			if (ImGui::IsItemActive())
+				m_ContentBrowserPanel.SetThumbnailSize(thumbnailSize);
+
+			ImGui::SliderFloat("Padding", &padding, 0, 32);
+			if (ImGui::IsItemActive())
+				m_ContentBrowserPanel.SetPadding(padding);
 
 			ImGui::EndPopup();
 		}
@@ -212,6 +241,7 @@ namespace VulkanCore {
 		ImGui::End(); // End of Viewport
 
 		m_SceneHierarchyPanel.OnImGuiRender();
+		m_ContentBrowserPanel.OnImGuiRender();
 		m_SceneRenderer->OnImGuiRender();
 
 		ImGui::End(); // End of DockSpace
@@ -273,25 +303,25 @@ namespace VulkanCore {
 	void EditorLayer::LoadEntities()
 	{
 		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
-		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx", 1));
+		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx"));
 		auto& vaseTransform = CeramicVase.GetComponent<TransformComponent>();
 		vaseTransform.Translation = glm::vec3{ 0.0f, -1.2f, 2.5f };
 		vaseTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
 		vaseTransform.Scale = glm::vec3{ 3.5f };
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
-		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Cube.fbx", 4));
+		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Cube.fbx"));
 		auto& planeTransform = FlatPlane.GetComponent<TransformComponent>();
 		planeTransform.Translation = glm::vec3{ 0.0f, -1.3f, 0.0f };
 		planeTransform.Scale = glm::vec3{ 10.0f, 0.1f, 10.0f };
 
 		Entity SphereMesh = m_Scene->CreateEntity("Basic Sphere");
-		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx", 5));
+		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx"));
 
 #define LOAD_SPONZA 0
 #if LOAD_SPONZA
 		Entity SponzaMesh = m_Scene->CreateEntity("Sponza");
-		SponzaMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Sponza/Sponza.obj", 4));
+		SponzaMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Sponza/Sponza.obj"));
 		auto& sponzaTransform = SponzaMesh.GetComponent<TransformComponent>();
 		sponzaTransform.Translation = glm::vec3{ -4.0f, -10.0f, 23.0f };
 		sponzaTransform.Scale = glm::vec3{ 0.25f };
@@ -306,7 +336,7 @@ namespace VulkanCore {
 #endif
 
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
-		BrassVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/BrassVase2K/BrassVase.fbx", 2));
+		BrassVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/BrassVase2K/BrassVase.fbx"));
 		auto& brassTransform = BrassVase.GetComponent<TransformComponent>();
 		brassTransform.Translation = glm::vec3{ 1.5f, -1.2f, 1.5f };
 		brassTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);

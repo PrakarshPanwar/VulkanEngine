@@ -83,14 +83,19 @@ namespace VulkanCore {
 
 	void VulkanRenderCommandBuffer::Begin()
 	{
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+		Renderer::Submit([this]
+		{
+			VK_CORE_PROFILE_FN("VulkanRenderCommandBuffer::Begin");
 
-		vkBeginCommandBuffer(GetActiveCommandBuffer(), &beginInfo);
+			VkCommandBufferBeginInfo beginInfo{};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 
-		if (m_TimestampQueryPool)
-			vkCmdResetQueryPool(GetActiveCommandBuffer(), m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
+			vkBeginCommandBuffer(GetActiveCommandBuffer(), &beginInfo);
+
+			if (m_TimestampQueryPool)
+				vkCmdResetQueryPool(GetActiveCommandBuffer(), m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
+		});
 	}
 
 	void VulkanRenderCommandBuffer::Begin(VkRenderPass renderPass, VkFramebuffer framebuffer)
@@ -113,7 +118,7 @@ namespace VulkanCore {
 
 	void VulkanRenderCommandBuffer::End()
 	{
-		vkEndCommandBuffer(GetActiveCommandBuffer());
+		Renderer::Submit([this] { vkEndCommandBuffer(GetActiveCommandBuffer()); });
 	}
 
 	void VulkanRenderCommandBuffer::Execute(VkCommandBuffer secondaryCmdBuffers[], uint32_t count)

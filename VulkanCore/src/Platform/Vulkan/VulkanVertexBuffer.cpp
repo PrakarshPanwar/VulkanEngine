@@ -2,6 +2,7 @@
 #include "VulkanVertexBuffer.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanAllocator.h"
 
 namespace VulkanCore {
