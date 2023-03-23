@@ -7,25 +7,22 @@ layout(location = 2) in vec3 a_Tangent;
 layout(location = 3) in vec3 a_Binormal;
 layout(location = 4) in vec3 a_FragColor;
 layout(location = 5) in vec2 a_TexCoord;
-layout(location = 6) in int a_TexID;
 
 // Instance Bindings
-layout(location = 7) in vec4 a_MRow0;
-layout(location = 8) in vec4 a_MRow1;
-layout(location = 9) in vec4 a_MRow2;
+layout(location = 6) in vec4 a_MRow0;
+layout(location = 7) in vec4 a_MRow1;
+layout(location = 8) in vec4 a_MRow2;
 
 struct VertexOutput
 {
 	vec3 WorldPosition;
 	vec3 Normal;
-	vec3 ViewPosition;
 	mat3 WorldNormals;
 	vec2 TexCoord;
 	vec3 VertexColor;
 };
 
 layout(location = 0) out VertexOutput Output;
-layout(location = 9) out flat int v_MaterialIndex;
 
 layout(set = 0, binding = 0) uniform Camera
 {
@@ -59,8 +56,4 @@ void main()
 	Output.WorldNormals = mat3(T, B, N);
 	Output.VertexColor = a_FragColor;
 	Output.TexCoord = vec2(a_TexCoord.x, 1.0 - a_TexCoord.y);
-
-	Output.ViewPosition = vec3(u_Camera.View * positionWorld);
-
-	v_MaterialIndex = a_TexID;
 }

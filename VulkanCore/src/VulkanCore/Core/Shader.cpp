@@ -199,11 +199,11 @@ namespace VulkanCore {
 
 	std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> Shader::CreateAllDescriptorSetsLayout()
 	{
-		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> descriptorSetsLayout;
+		// Key: Set number
+		std::unordered_map<uint32_t, DescriptorSetLayoutBuilder> descriptorSetLayoutBuilderMap;
 
 		for (auto&& [stage, source] : m_VulkanSPIRV)
 		{
-			DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
 			SpvReflectShaderModule shaderModule = {};
 
 			SpvReflectResult result = spvReflectCreateShaderModule(
@@ -215,7 +215,6 @@ namespace VulkanCore {
 
 			uint32_t count = 0;
 			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, nullptr);
-			VK_CORE_ASSERT(count <= 1, "More than one Descriptor Sets are not supported yet!");
 
 			std::vector<SpvReflectDescriptorSet*> DescriptorSets(count);
 			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, DescriptorSets.data());
@@ -245,30 +244,35 @@ namespace VulkanCore {
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
-					descriptorSetLayoutBuilder.AddBinding(
+					descriptorSetLayoutBuilderMap[reflectionSet.set].AddBinding(
 						reflectionBinding.binding,
 						(VkDescriptorType)reflectionBinding.descriptor_type,
 						shaderStageFlags,
 						arrayCount);
-
 				}
-
-				auto descriptorSetLayout = descriptorSetLayoutBuilder.Build();
-				descriptorSetsLayout.push_back(descriptorSetLayout);
 			}
 
 			spvReflectDestroyShaderModule(&shaderModule);
 		}
 
-		return descriptorSetsLayout;
+		for (auto&& [setID, descriptorSetLayoutBuilder] : descriptorSetLayoutBuilderMap)
+			m_DescriptorSetLayouts.push_back(descriptorSetLayoutBuilder.Build());
+
+		return m_DescriptorSetLayouts;
 	}
+
+	VkDescriptorSetLayout Shader::CreateVulkanDescriptorSetLayout(uint32_t index)
+	{
+		return nullptr;
+	}
+
 #else
 #endif
 
 	std::vector<VkDescriptorSet> Shader::AllocateDescriptorSets(uint32_t index)
 	{
 		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
-		VkDescriptorSetLayout setLayout = CreateDescriptorSetLayout(index)->GetDescriptorSetLayout();
+		VkDescriptorSetLayout setLayout = CreateDescriptorSetLayout(index)->GetVulkanDescriptorSetLayout();
 
 		std::vector<VkDescriptorSet> descriptorSets(3);
 		for (uint32_t i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)

@@ -56,7 +56,7 @@ namespace VulkanCore {
 	void Renderer::BuildShaders()
 	{
 		m_Shaders["CorePBR"] = Utils::MakeShader("CorePBR");
-		m_Shaders["PointLight"] = Utils::MakeShader("PointLight");
+		m_Shaders["LightShader"] = Utils::MakeShader("LightShader");
 		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
 		m_Shaders["Bloom"] = Utils::MakeShader("Bloom");
 		m_Shaders["Skybox"] = Utils::MakeShader("Skybox");
@@ -76,36 +76,52 @@ namespace VulkanCore {
 		auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
 		auto dstSet = descriptorSet[GetCurrentFrameIndex()];
 
-		pipeline->Bind(drawCmd);
+// 		if (pcData)
+// 			pipeline->SetPushConstants(drawCmd, pcData, sizeof(glm::vec2));
 
-		if (pcData)
-			pipeline->SetPushConstants(drawCmd, pcData, sizeof(glm::vec2));
+		Renderer::Submit([drawCmd, pipeline, dstSet, pcData, skyboxVB]
+		{
+			pipeline->Bind(drawCmd);
 
-		vkCmdBindDescriptorSets(drawCmd,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipeline->GetVulkanPipelineLayout(),
-			0, 1, &dstSet,
-			0, nullptr);
+			vkCmdBindDescriptorSets(drawCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipeline->GetVulkanPipelineLayout(),
+				0, 1, &dstSet,
+				0, nullptr);
 
-		VkBuffer skyboxBuffer[] = { skyboxVB->GetVulkanBuffer() };
-		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(drawCmd, 0, 1, skyboxBuffer, offsets);
-		vkCmdDraw(drawCmd, 36, 1, 0, 0);
+			vkCmdPushConstants(drawCmd,
+				pipeline->GetVulkanPipelineLayout(),
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				(uint32_t)sizeof(glm::vec2),
+				pcData);
+
+			VkBuffer skyboxBuffer[] = { skyboxVB->GetVulkanBuffer() };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(drawCmd, 0, 1, skyboxBuffer, offsets);
+			vkCmdDraw(drawCmd, 36, 1, 0, 0);
+		});
 	}	
 	
 	void Renderer::BeginTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
 	{
-		vkCmdWriteTimestamp(cmdBuffer->GetActiveCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex);
+		Renderer::Submit([cmdBuffer]
+		{
+			vkCmdWriteTimestamp(cmdBuffer->GetActiveCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+				cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex);
+		});
 	}
 
 	void Renderer::EndTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
 	{
-		vkCmdWriteTimestamp(cmdBuffer->GetActiveCommandBuffer(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+		Renderer::Submit([cmdBuffer]
+		{
+			vkCmdWriteTimestamp(cmdBuffer->GetActiveCommandBuffer(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 			cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex + 1);
 
-		cmdBuffer->m_TimestampsQueryIndex += 2;
-		cmdBuffer->m_TimestampsQueryIndex = cmdBuffer->m_TimestampsQueryIndex % cmdBuffer->m_TimestampQueryBufferSize;
+			cmdBuffer->m_TimestampsQueryIndex += 2;
+			cmdBuffer->m_TimestampsQueryIndex = cmdBuffer->m_TimestampsQueryIndex % cmdBuffer->m_TimestampQueryBufferSize;
+		});
 	}
 
 	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
@@ -130,20 +146,26 @@ namespace VulkanCore {
 		return whiteTexture;
 	}
 
-	void Renderer::SubmitFullscreenQuad(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
+	void Renderer::SubmitFullscreenQuad(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
 	{
-		auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
 		auto dstSet = descriptorSet[GetCurrentFrameIndex()];
 
-		pipeline->Bind(drawCmd);
+		Renderer::Submit([commandBuffer, pipeline, dstSet]
+		{
+			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad");
 
-		vkCmdBindDescriptorSets(drawCmd,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipeline->GetVulkanPipelineLayout(),
-			0, 1, &dstSet,
-			0, nullptr);
+			auto drawCmd = commandBuffer->GetActiveCommandBuffer();
 
-		vkCmdDraw(drawCmd, 3, 1, 0, 0);
+			pipeline->Bind(drawCmd);
+
+			vkCmdBindDescriptorSets(drawCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipeline->GetVulkanPipelineLayout(),
+				0, 1, &dstSet,
+				0, nullptr);
+
+			vkCmdDraw(drawCmd, 3, 1, 0, 0);
+		});
 	}
 
 	void Renderer::RenderMesh(std::shared_ptr<Mesh> mesh)
@@ -152,6 +174,7 @@ namespace VulkanCore {
 
 	void Renderer::WaitandRender()
 	{
+		VK_CORE_PROFILE();
 		RenderThread::Wait();
 	}
 
