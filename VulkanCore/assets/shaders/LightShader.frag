@@ -10,9 +10,9 @@ layout(push_constant) uniform Light
 	vec4 Position;
 } u_Light;
 
-layout(binding = 1) uniform sampler2D u_LightTexture;
+layout(binding = 1) uniform sampler2D u_LightTextureIcon;
 
 void main()
 {
-	o_Color = texture(u_LightTexture, v_TexCoord);
+	o_Color = texture(u_LightTextureIcon, v_TexCoord);
 }
