@@ -23,6 +23,8 @@ namespace VulkanCore {
 
 		static VkDescriptorSet AddTexture(const VulkanImage& image);
 		static VkDescriptorSet AddTexture(const VulkanTexture& texture);
+		static void UpdateDescriptor(VkDescriptorSet descriptorSet, const VulkanImage& image);
+		static void UpdateDescriptor(VkDescriptorSet descriptorSet, const VulkanTexture& texture);
 
 		static void CheckVkResult(VkResult error);
 

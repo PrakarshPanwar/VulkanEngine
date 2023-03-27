@@ -254,8 +254,8 @@ namespace VulkanCore {
 		m_IrradianceTexture = irradianceMap;
 
 		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
-		m_PointLightTexture = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/PointLightIcon.png");
-		m_SpotLightTexture = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/SpotLightIcon.png");
+		m_PointLightTextureIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/PointLightIcon.png");
+		m_SpotLightTextureIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/SpotLightIcon.png");
 
 		m_SkyboxVBData = Utils::CreateCubeModel();
 
@@ -314,10 +314,10 @@ namespace VulkanCore {
 			pointLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 			spotLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
-			auto pointLightTextureInfo = m_PointLightTexture->GetDescriptorImageInfo();
+			auto pointLightTextureInfo = m_PointLightTextureIcon->GetDescriptorImageInfo();
 			pointLightDescriptorWriter[i].WriteImage(1, &pointLightTextureInfo);
 
-			auto spotLightTextureInfo = m_SpotLightTexture->GetDescriptorImageInfo();
+			auto spotLightTextureInfo = m_SpotLightTextureIcon->GetDescriptorImageInfo();
 			spotLightDescriptorWriter[i].WriteImage(1, &spotLightTextureInfo);
 
 			bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i])

@@ -1,6 +1,7 @@
 #include "SceneHierarchyPanel.h"
 
 #include "VulkanCore/Mesh/Mesh.h"
+#include "VulkanCore/Renderer/Renderer.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
 
 #include <filesystem>
@@ -212,6 +213,20 @@ namespace VulkanCore {
 				{
 					ImGui::Image((ImTextureID)diffuse, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
 
+					if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+						ImGui::OpenPopup("RemoveTexture");
+
+					if (ImGui::BeginPopup("RemoveTexture"))
+					{
+						if (ImGui::MenuItem("Remove Texture"))
+						{
+							auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_SRGB);
+							vulkanMaterial->UpdateDiffuseMap(whiteTexture);
+						}
+
+						ImGui::EndPopup();
+					}
+
 					if (ImGui::BeginDragDropTarget())
 					{
 						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
@@ -240,6 +255,20 @@ namespace VulkanCore {
 				{
 					ImGui::Image((ImTextureID)normal, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
 
+					if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+						ImGui::OpenPopup("RemoveTexture");
+
+					if (ImGui::BeginPopup("RemoveTexture"))
+					{
+						if (ImGui::MenuItem("Remove Texture"))
+						{
+							auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
+							vulkanMaterial->UpdateNormalMap(whiteTexture);
+						}
+
+						ImGui::EndPopup();
+					}
+
 					if (ImGui::BeginDragDropTarget())
 					{
 						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
@@ -267,6 +296,20 @@ namespace VulkanCore {
 				if (armNode)
 				{
 					ImGui::Image((ImTextureID)arm, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
+
+					if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+						ImGui::OpenPopup("RemoveTexture");
+
+					if (ImGui::BeginPopup("RemoveTexture"))
+					{
+						if (ImGui::MenuItem("Remove Texture"))
+						{
+							auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
+							vulkanMaterial->UpdateARMMap(whiteTexture);
+						}
+
+						ImGui::EndPopup();
+					}
 
 					if (ImGui::BeginDragDropTarget())
 					{
