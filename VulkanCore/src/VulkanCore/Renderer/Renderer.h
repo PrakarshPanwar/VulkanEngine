@@ -15,6 +15,7 @@ namespace VulkanCore {
 	public:
 		static void SetRendererAPI(VulkanRenderer* vkRenderer);
 		static int GetCurrentFrameIndex();
+		static int RT_GetCurrentFrameIndex();
 		static void BeginRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
 		static void EndRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
 		static void BuildShaders();

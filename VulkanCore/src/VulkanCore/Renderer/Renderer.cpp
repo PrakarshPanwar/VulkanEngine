@@ -41,16 +41,20 @@ namespace VulkanCore {
 		return VulkanRenderer::Get()->GetCurrentFrameIndex();
 	}
 
+	int Renderer::RT_GetCurrentFrameIndex()
+	{
+		int threadFrameIndex = RenderThread::GetThreadFrameIndex();
+		return threadFrameIndex;
+	}
+
 	void Renderer::BeginRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)
 	{
-		auto beginPassCmd = cmdBuffer->GetActiveCommandBuffer();
-		renderPass->Begin(beginPassCmd);
+		renderPass->Begin(cmdBuffer);
 	}
 
 	void Renderer::EndRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)
 	{
-		auto endPassCmd = cmdBuffer->GetActiveCommandBuffer();
-		renderPass->End(endPassCmd);
+		renderPass->End(cmdBuffer);
 	}
 
 	void Renderer::BuildShaders()
@@ -107,7 +111,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer]
 		{
-			vkCmdWriteTimestamp(cmdBuffer->GetActiveCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			vkCmdWriteTimestamp(cmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 				cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex);
 		});
 	}
@@ -116,7 +120,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer]
 		{
-			vkCmdWriteTimestamp(cmdBuffer->GetActiveCommandBuffer(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+			vkCmdWriteTimestamp(cmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 			cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex + 1);
 
 			cmdBuffer->m_TimestampsQueryIndex += 2;
@@ -154,7 +158,7 @@ namespace VulkanCore {
 		{
 			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad");
 
-			auto drawCmd = commandBuffer->GetActiveCommandBuffer();
+			auto drawCmd = commandBuffer->RT_GetActiveCommandBuffer();
 
 			pipeline->Bind(drawCmd);
 

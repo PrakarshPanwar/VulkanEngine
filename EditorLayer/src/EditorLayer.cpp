@@ -50,6 +50,9 @@ namespace VulkanCore {
 
 		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
 
+		RenderThread::NotifyThread();
+		RenderThread::Wait();
+
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
 			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
 

@@ -217,7 +217,7 @@ namespace VulkanCore {
 			VkRenderPassBeginInfo beginPassInfo{};
 			beginPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			beginPassInfo.renderPass = m_RenderPass;
-			beginPassInfo.framebuffer = Framebuffer->GetVulkanFramebuffers()[Renderer::GetCurrentFrameIndex()];
+			beginPassInfo.framebuffer = Framebuffer->GetVulkanFramebuffers()[Renderer::RT_GetCurrentFrameIndex()];
 			beginPassInfo.renderArea.offset = { 0, 0 };
 			beginPassInfo.renderArea.extent = framebufferExtent;
 
@@ -248,9 +248,64 @@ namespace VulkanCore {
 		});
 	}
 
+	void VulkanRenderPass::Begin(std::shared_ptr<VulkanRenderCommandBuffer> beginCmd)
+	{
+		auto Framebuffer = m_Specification.TargetFramebuffer;
+		const FramebufferSpecification fbSpec = Framebuffer->GetSpecification();
+		const VkExtent2D framebufferExtent = { fbSpec.Width, fbSpec.Height };
+
+		Renderer::Submit([this, beginCmd, Framebuffer, framebufferExtent, fbSpec]
+		{
+			VK_CORE_PROFILE_FN("VulkanRenderPass::Begin");
+
+			VkCommandBuffer vulkanCommandBuffer = beginCmd->RT_GetActiveCommandBuffer();
+
+			VkRenderPassBeginInfo beginPassInfo{};
+			beginPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			beginPassInfo.renderPass = m_RenderPass;
+			beginPassInfo.framebuffer = Framebuffer->GetVulkanFramebuffers()[Renderer::RT_GetCurrentFrameIndex()];
+			beginPassInfo.renderArea.offset = { 0, 0 };
+			beginPassInfo.renderArea.extent = framebufferExtent;
+
+			// TODO: We may change this in future as there will be multiple allocation/deallocation in
+			// clearValues vector
+			std::vector<VkClearValue> clearValues{ m_AttachmentDescriptions.size() };
+			for (uint32_t i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
+				clearValues[i].color = { fbSpec.ClearColor.x, fbSpec.ClearColor.y, fbSpec.ClearColor.z, fbSpec.ClearColor.w };
+
+			clearValues[clearValues.size() - 1].depthStencil = { 1.0f, 0 };
+
+			beginPassInfo.clearValueCount = (uint32_t)clearValues.size();
+			beginPassInfo.pClearValues = clearValues.data();
+
+			vkCmdBeginRenderPass(vulkanCommandBuffer, &beginPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+			VkViewport viewport{};
+			viewport.x = 0.0f;
+			viewport.y = static_cast<float>(fbSpec.Height);
+			viewport.width = static_cast<float>(fbSpec.Width);
+			viewport.height = -static_cast<float>(fbSpec.Height);
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+
+			VkRect2D scissor{ { 0, 0 }, framebufferExtent };
+			vkCmdSetViewport(vulkanCommandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(vulkanCommandBuffer, 0, 1, &scissor);
+		});
+	}
+
 	void VulkanRenderPass::End(VkCommandBuffer endCmd)
 	{
 		Renderer::Submit([endCmd] { vkCmdEndRenderPass(endCmd); });
+	}
+
+	void VulkanRenderPass::End(std::shared_ptr<VulkanRenderCommandBuffer> endCmd)
+	{
+		Renderer::Submit([endCmd]
+		{
+			VkCommandBuffer vulkanCmdBuffer = endCmd->RT_GetActiveCommandBuffer();
+			vkCmdEndRenderPass(vulkanCmdBuffer);
+		});
 	}
 
 }

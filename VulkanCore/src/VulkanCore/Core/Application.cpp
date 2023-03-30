@@ -59,25 +59,29 @@ namespace VulkanCore {
 			VK_CORE_BEGIN_FRAME("Main Thread");
 			m_Window->OnUpdate();
 
-			if (auto commandBuffer = m_Renderer->BeginFrame())
-			{
-				m_Renderer->BeginSwapChainRenderPass(commandBuffer);
+			RenderThread::NotifyThread();
+			RenderThread::Wait();
 
-				m_ImGuiLayer->ImGuiBegin();
-				Renderer::Submit([this]() { RenderImGui(); });
-				Renderer::Submit([this]() { m_ImGuiLayer->ImGuiEnd(); });
+			// Render Swapchain/ImGui
+			m_Renderer->BeginFrame();
+			m_Renderer->BeginSwapChainRenderPass();
 
-				m_Renderer->EndSwapChainRenderPass(commandBuffer);
-				m_Renderer->EndFrame();
-			}
+			m_ImGuiLayer->ImGuiBeginGLFW();
+			//m_ImGuiLayer->ImGuiBegin();
+			Renderer::Submit([this]() { RenderImGui(); });
+			Renderer::Submit([this]() { m_ImGuiLayer->ImGuiEnd(); });
 
-			if (auto commandBuffer = m_Renderer->BeginScene())
-			{
-				for (Layer* layer : m_LayerStack)
-					layer->OnUpdate();
+			VK_CORE_WARN("Difference between frames: {}", std::abs(Renderer::GetCurrentFrameIndex() - Renderer::RT_GetCurrentFrameIndex()));
 
-				m_Renderer->EndScene();
-			}
+			m_Renderer->EndSwapChainRenderPass();
+			m_Renderer->EndFrame();
+
+			// Render Scene
+			m_Renderer->BeginScene();
+			for (Layer* layer : m_LayerStack)
+				layer->OnUpdate();
+
+			m_Renderer->EndScene();
 
 			m_Renderer->FinalQueueSubmit();
 		}
@@ -127,6 +131,7 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
+		m_ImGuiLayer->ImGuiBegin();
 		for (Layer* layer : m_LayerStack)
 			layer->OnImGuiRender();
 	}

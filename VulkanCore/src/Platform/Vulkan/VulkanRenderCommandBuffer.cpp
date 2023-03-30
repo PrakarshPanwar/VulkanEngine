@@ -91,10 +91,10 @@ namespace VulkanCore {
 			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 
-			vkBeginCommandBuffer(GetActiveCommandBuffer(), &beginInfo);
+			vkBeginCommandBuffer(RT_GetActiveCommandBuffer(), &beginInfo);
 
 			if (m_TimestampQueryPool)
-				vkCmdResetQueryPool(GetActiveCommandBuffer(), m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
+				vkCmdResetQueryPool(RT_GetActiveCommandBuffer(), m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
 		});
 	}
 
@@ -110,25 +110,30 @@ namespace VulkanCore {
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 		beginInfo.pInheritanceInfo = &inheritanceInfo;
 
-		vkBeginCommandBuffer(GetActiveCommandBuffer(), &beginInfo);
+		vkBeginCommandBuffer(RT_GetActiveCommandBuffer(), &beginInfo);
 
 		if (m_TimestampQueryPool)
-			vkCmdResetQueryPool(GetActiveCommandBuffer(), m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
+			vkCmdResetQueryPool(RT_GetActiveCommandBuffer(), m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
 	}
 
 	void VulkanRenderCommandBuffer::End()
 	{
-		Renderer::Submit([this] { vkEndCommandBuffer(GetActiveCommandBuffer()); });
+		Renderer::Submit([this] { vkEndCommandBuffer(RT_GetActiveCommandBuffer()); });
 	}
 
 	void VulkanRenderCommandBuffer::Execute(VkCommandBuffer secondaryCmdBuffers[], uint32_t count)
 	{
-		vkCmdExecuteCommands(GetActiveCommandBuffer(), count, secondaryCmdBuffers);
+		vkCmdExecuteCommands(RT_GetActiveCommandBuffer(), count, secondaryCmdBuffers);
 	}
 
 	VkCommandBuffer VulkanRenderCommandBuffer::GetActiveCommandBuffer() const
 	{
 		return m_CommandBuffers[Renderer::GetCurrentFrameIndex()];
+	}
+
+	VkCommandBuffer VulkanRenderCommandBuffer::RT_GetActiveCommandBuffer() const
+	{
+		return m_CommandBuffers[Renderer::RT_GetCurrentFrameIndex()];
 	}
 
 	void VulkanRenderCommandBuffer::RetrieveQueryPoolResults()

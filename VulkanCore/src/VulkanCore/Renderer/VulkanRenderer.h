@@ -25,15 +25,16 @@ namespace VulkanCore {
 
 		void Init();
 
-		VkCommandBuffer BeginFrame();
+		void BeginFrame();
 		void EndFrame();
-		VkCommandBuffer BeginScene();
+		void BeginScene();
 		void EndScene();
-		void BeginSwapChainRenderPass(VkCommandBuffer commandBuffer);
-		void EndSwapChainRenderPass(VkCommandBuffer commandBuffer);
+		void BeginSwapChainRenderPass();
+		void EndSwapChainRenderPass();
 		inline float GetAspectRatio() const { return m_SwapChain->ExtentAspectRatio(); }
 
 		inline bool IsFrameInProgress() const { return IsFrameStarted; }
+		inline std::shared_ptr<VulkanRenderCommandBuffer> GetRendererCommandBuffer() const { return m_CommandBuffer; }
 		inline VkCommandBuffer GetCurrentCommandBuffer() const
 		{
 			VK_CORE_ASSERT(IsFrameStarted, "Cannot get Command Buffer when frame is not in progress!");
@@ -62,8 +63,6 @@ namespace VulkanCore {
 		std::unique_ptr<VulkanSwapChain> m_SwapChain;
 
 		std::shared_ptr<VulkanRenderCommandBuffer> m_CommandBuffer;
-		std::shared_ptr<VulkanRenderCommandBuffer> m_SecondaryCommandBuffer;
-		std::array<VkCommandBuffer, 2> m_ExecuteCommandBuffers;
 
 		uint32_t m_CurrentImageIndex;
 		int m_CurrentFrameIndex = 0;

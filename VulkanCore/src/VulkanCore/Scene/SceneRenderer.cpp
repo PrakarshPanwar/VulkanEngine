@@ -268,63 +268,71 @@ namespace VulkanCore {
 		m_CompositeDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_SkyboxDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
 
-		// Geometry Descriptors
-		std::vector<VulkanDescriptorWriter> geomDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_GeometryPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-		for (int i = 0; i < m_GeometryDescriptorSets.size(); ++i)
+		Renderer::Submit([this, vulkanDescriptorPool]
 		{
-			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
-			geomDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+			// Geometry Descriptors
+			std::vector<VulkanDescriptorWriter> geomDescriptorWriter(
+				VulkanSwapChain::MaxFramesInFlight,
+				{ *m_GeometryPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-			auto pointLightUBInfo = m_UBPointLight[i].GetDescriptorBufferInfo();
-			geomDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
+			for (int i = 0; i < m_GeometryDescriptorSets.size(); ++i)
+			{
+				auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
+				geomDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
-			auto spotLightUBInfo = m_UBSpotLight[i].GetDescriptorBufferInfo();
-			geomDescriptorWriter[i].WriteBuffer(2, &spotLightUBInfo);
+				auto pointLightUBInfo = m_UBPointLight[i].GetDescriptorBufferInfo();
+				geomDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
+
+				auto spotLightUBInfo = m_UBSpotLight[i].GetDescriptorBufferInfo();
+				geomDescriptorWriter[i].WriteBuffer(2, &spotLightUBInfo);
 			
-			// Irradiance Map
-			VkDescriptorImageInfo irradianceMapInfo = m_IrradianceTexture->GetDescriptorImageInfo();
-			geomDescriptorWriter[i].WriteImage(6, &irradianceMapInfo);
+				// Irradiance Map
+				VkDescriptorImageInfo irradianceMapInfo = m_IrradianceTexture->GetDescriptorImageInfo();
+				geomDescriptorWriter[i].WriteImage(6, &irradianceMapInfo);
 
-			// BRDF LUT Texture
-			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorInfo();
-			geomDescriptorWriter[i].WriteImage(7, &brdfTextureInfo);
+				// BRDF LUT Texture
+				VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorInfo();
+				geomDescriptorWriter[i].WriteImage(7, &brdfTextureInfo);
 
-			// Prefiltered Map
-			VkDescriptorImageInfo prefilteredMapInfo = m_PrefilteredTexture->GetDescriptorImageInfo();
-			geomDescriptorWriter[i].WriteImage(8, &prefilteredMapInfo);
+				// Prefiltered Map
+				VkDescriptorImageInfo prefilteredMapInfo = m_PrefilteredTexture->GetDescriptorImageInfo();
+				geomDescriptorWriter[i].WriteImage(8, &prefilteredMapInfo);
 
-			geomDescriptorWriter[i].Build(m_GeometryDescriptorSets[i]);
-		}
+				geomDescriptorWriter[i].Build(m_GeometryDescriptorSets[i]);
+			}
+		});
 
-		// Point Light Descriptors
-		std::vector<VulkanDescriptorWriter> pointLightDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-		std::vector<VulkanDescriptorWriter> spotLightDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		for (int i = 0; i < m_PointLightDescriptorSets.size(); ++i)
+		Renderer::Submit([this, vulkanDescriptorPool]
 		{
-			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
-			pointLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
-			spotLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+			// Point Light Descriptors
+			std::vector<VulkanDescriptorWriter> pointLightDescriptorWriter(
+				VulkanSwapChain::MaxFramesInFlight,
+				{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-			auto pointLightTextureInfo = m_PointLightTexture->GetDescriptorImageInfo();
-			pointLightDescriptorWriter[i].WriteImage(1, &pointLightTextureInfo);
+			std::vector<VulkanDescriptorWriter> spotLightDescriptorWriter(
+				VulkanSwapChain::MaxFramesInFlight,
+				{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-			auto spotLightTextureInfo = m_SpotLightTexture->GetDescriptorImageInfo();
-			spotLightDescriptorWriter[i].WriteImage(1, &spotLightTextureInfo);
+			for (int i = 0; i < m_PointLightDescriptorSets.size(); ++i)
+			{
+				auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
+				pointLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+				spotLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
-			bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i])
-				&& spotLightDescriptorWriter[i].Build(m_SpotLightDescriptorSets[i]);
+				auto pointLightTextureInfo = m_PointLightTexture->GetDescriptorImageInfo();
+				pointLightDescriptorWriter[i].WriteImage(1, &pointLightTextureInfo);
 
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
-		}
+				auto spotLightTextureInfo = m_SpotLightTexture->GetDescriptorImageInfo();
+				spotLightDescriptorWriter[i].WriteImage(1, &spotLightTextureInfo);
+
+				bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i])
+					&& spotLightDescriptorWriter[i].Build(m_SpotLightDescriptorSets[i]);
+
+				VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+			}
+		});
 
 		m_BloomPrefilterSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_BloomPingSets.resize(VulkanSwapChain::MaxFramesInFlight);
@@ -332,134 +340,143 @@ namespace VulkanCore {
 		m_BloomUpsampleFirstSets.resize(VulkanSwapChain::MaxFramesInFlight);
 		m_BloomUpsampleSets.resize(VulkanSwapChain::MaxFramesInFlight);
 
-		// Bloom Compute Descriptors
-		std::vector<VulkanDescriptorWriter> bloomDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_BloomPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		const uint32_t mipCount = m_BloomTextures[0].GetSpecification().MipLevels;
-		for (int i = 0; i < m_BloomPrefilterSets.size(); i++)
+		Renderer::Submit([this, vulkanDescriptorPool]
 		{
-			// Set A : Prefiltered Sets
-			// Binding 0(o_Image): BloomTex[0]
-			// Binding 1(u_Texture): RenderTex
-			// Binding 2(u_BloomTexture): RenderTex
+			// Bloom Compute Descriptors
+			std::vector<VulkanDescriptorWriter> bloomDescriptorWriter(
+				VulkanSwapChain::MaxFramesInFlight,
+				{ *m_BloomPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-			VkDescriptorImageInfo outputImageInfo = m_BloomTextures[0].GetDescriptorInfo();
-			bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
-
-			VkDescriptorImageInfo texInfo = m_SceneRenderTextures[i].GetDescriptorInfo();
-			bloomDescriptorWriter[i].WriteImage(1, &texInfo);
-			bloomDescriptorWriter[i].WriteImage(2, &texInfo);
-
-			bool success = bloomDescriptorWriter[i].Build(m_BloomPrefilterSets[i]);
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
-
-			m_BloomPingSets[i].resize(mipCount - 1);
-			m_BloomPongSets[i].resize(mipCount - 1);
-			for (uint32_t j = 1; j < mipCount; ++j)
+			const uint32_t mipCount = m_BloomTextures[0].GetSpecification().MipLevels;
+			for (int i = 0; i < m_BloomPrefilterSets.size(); i++)
 			{
-				// Set B: Downsampling(Ping)
-				// Binding 0(o_Image): BloomTex[1]
+				// Set A : Prefiltered Sets
+				// Binding 0(o_Image): BloomTex[0]
+				// Binding 1(u_Texture): RenderTex
+				// Binding 2(u_BloomTexture): RenderTex
+
+				VkDescriptorImageInfo outputImageInfo = m_BloomTextures[0].GetDescriptorInfo();
+				bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
+
+				VkDescriptorImageInfo texInfo = m_SceneRenderTextures[i].GetDescriptorInfo();
+				bloomDescriptorWriter[i].WriteImage(1, &texInfo);
+				bloomDescriptorWriter[i].WriteImage(2, &texInfo);
+
+				bool success = bloomDescriptorWriter[i].Build(m_BloomPrefilterSets[i]);
+				VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+
+				m_BloomPingSets[i].resize(mipCount - 1);
+				m_BloomPongSets[i].resize(mipCount - 1);
+				for (uint32_t j = 1; j < mipCount; ++j)
+				{
+					// Set B: Downsampling(Ping)
+					// Binding 0(o_Image): BloomTex[1]
+					// Binding 1(u_Texture): BloomTex[0]
+					// Binding 2(u_BloomTexture): RenderTex
+					int currentIdx = j - 1;
+
+					outputImageInfo = m_BloomTextures[1].GetDescriptorInfo();
+					outputImageInfo.imageView = m_BloomTextures[1].CreateImageViewSingleMip(j);
+					bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
+
+					texInfo = m_BloomTextures[0].GetDescriptorInfo();
+					bloomDescriptorWriter[i].WriteImage(1, &texInfo);
+
+					success = bloomDescriptorWriter[i].Build(m_BloomPingSets[i][currentIdx]);
+					VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+
+					// Set C: Downsampling(Pong)
+					// Binding 0(o_Image): BloomTex[0]
+					// Binding 1(u_Texture): BloomTex[1]
+					// Binding 2(u_BloomTexture): RenderTex
+
+					outputImageInfo = m_BloomTextures[0].GetDescriptorInfo();
+					outputImageInfo.imageView = m_BloomTextures[0].CreateImageViewSingleMip(j);
+					bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
+
+					texInfo = m_BloomTextures[1].GetDescriptorInfo();
+					bloomDescriptorWriter[i].WriteImage(1, &texInfo);
+
+					success = bloomDescriptorWriter[i].Build(m_BloomPongSets[i][currentIdx]);
+					VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+				}
+
+				// Set D: Upsample First
+				// Binding 0(o_Image): BloomTex[2]
 				// Binding 1(u_Texture): BloomTex[0]
 				// Binding 2(u_BloomTexture): RenderTex
-				int currentIdx = j - 1;
 
-				outputImageInfo = m_BloomTextures[1].GetDescriptorInfo();
-				outputImageInfo.imageView = m_BloomTextures[1].CreateImageViewSingleMip(j);
+				outputImageInfo = m_BloomTextures[2].GetDescriptorInfo();
+				outputImageInfo.imageView = m_BloomTextures[2].CreateImageViewSingleMip(mipCount - 1);
 				bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
 
 				texInfo = m_BloomTextures[0].GetDescriptorInfo();
 				bloomDescriptorWriter[i].WriteImage(1, &texInfo);
 
-				success = bloomDescriptorWriter[i].Build(m_BloomPingSets[i][currentIdx]);
+				success = bloomDescriptorWriter[i].Build(m_BloomUpsampleFirstSets[i]);
 				VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 
-				// Set C: Downsampling(Pong)
-				// Binding 0(o_Image): BloomTex[0]
-				// Binding 1(u_Texture): BloomTex[1]
-				// Binding 2(u_BloomTexture): RenderTex
+				// Set E: Upsample
+				// Binding 0(o_Image): BloomTex[2]
+				// Binding 1(u_Texture): BloomTex[0]
+				// Binding 2(u_BloomTexture): BloomTex[2]
 
-				outputImageInfo = m_BloomTextures[0].GetDescriptorInfo();
-				outputImageInfo.imageView = m_BloomTextures[0].CreateImageViewSingleMip(j);
-				bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
+				m_BloomUpsampleSets[i].resize(mipCount - 1);
+				for (int j = mipCount - 2; j >= 0; --j)
+				{
+					outputImageInfo.imageView = m_BloomTextures[2].CreateImageViewSingleMip(j);
+					bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
 
-				texInfo = m_BloomTextures[1].GetDescriptorInfo();
-				bloomDescriptorWriter[i].WriteImage(1, &texInfo);
+					VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2].GetDescriptorInfo();
+					bloomDescriptorWriter[i].WriteImage(2, &bloomTexInfo);
 
-				success = bloomDescriptorWriter[i].Build(m_BloomPongSets[i][currentIdx]);
-				VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+					success = bloomDescriptorWriter[i].Build(m_BloomUpsampleSets[i][j]);
+					VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+				}
 			}
+		});
 
-			// Set D: Upsample First
-			// Binding 0(o_Image): BloomTex[2]
-			// Binding 1(u_Texture): BloomTex[0]
-			// Binding 2(u_BloomTexture): RenderTex
+		Renderer::Submit([this, vulkanDescriptorPool]
+		{
+			// Composite Descriptors
+			std::vector<VulkanDescriptorWriter> compDescriptorWriter(
+				VulkanSwapChain::MaxFramesInFlight,
+				{ *m_CompositePipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-			outputImageInfo = m_BloomTextures[2].GetDescriptorInfo();
-			outputImageInfo.imageView = m_BloomTextures[2].CreateImageViewSingleMip(mipCount - 1);
-			bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
-
-			texInfo = m_BloomTextures[0].GetDescriptorInfo();
-			bloomDescriptorWriter[i].WriteImage(1, &texInfo);
-
-			success = bloomDescriptorWriter[i].Build(m_BloomUpsampleFirstSets[i]);
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
-
-			// Set E: Upsample
-			// Binding 0(o_Image): BloomTex[2]
-			// Binding 1(u_Texture): BloomTex[0]
-			// Binding 2(u_BloomTexture): BloomTex[2]
-
-			m_BloomUpsampleSets[i].resize(mipCount - 1);
-			for (int j = mipCount - 2; j >= 0; --j)
+			for (int i = 0; i < m_CompositeDescriptorSets.size(); ++i)
 			{
-				outputImageInfo.imageView = m_BloomTextures[2].CreateImageViewSingleMip(j);
-				bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
-
+				VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
 				VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2].GetDescriptorInfo();
-				bloomDescriptorWriter[i].WriteImage(2, &bloomTexInfo);
+				VkDescriptorImageInfo bloomDirtTexInfo = m_BloomDirtTexture->GetDescriptorImageInfo();
 
-				success = bloomDescriptorWriter[i].Build(m_BloomUpsampleSets[i][j]);
+				compDescriptorWriter[i].WriteImage(0, &imagesInfo);
+				compDescriptorWriter[i].WriteImage(1, &bloomTexInfo);
+				compDescriptorWriter[i].WriteImage(2, &bloomDirtTexInfo);
+
+				bool success = compDescriptorWriter[i].Build(m_CompositeDescriptorSets[i]);
 				VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 			}
-		}
+		});
 
-		// Composite Descriptors
-		std::vector<VulkanDescriptorWriter> compDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_CompositePipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		for (int i = 0; i < m_CompositeDescriptorSets.size(); ++i)
+		Renderer::Submit([this, vulkanDescriptorPool]
 		{
-			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
-			VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2].GetDescriptorInfo();
-			VkDescriptorImageInfo bloomDirtTexInfo = m_BloomDirtTexture->GetDescriptorImageInfo();
+			// Skybox Descriptors
+			std::vector<VulkanDescriptorWriter> skyboxDescriptorWriter(
+				VulkanSwapChain::MaxFramesInFlight,
+				{ *m_SkyboxPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-			compDescriptorWriter[i].WriteImage(0, &imagesInfo);
-			compDescriptorWriter[i].WriteImage(1, &bloomTexInfo);
-			compDescriptorWriter[i].WriteImage(2, &bloomDirtTexInfo);
+			for (int i = 0; i < m_SkyboxDescriptorSets.size(); ++i)
+			{
+				auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
+				skyboxDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
 
-			bool success = compDescriptorWriter[i].Build(m_CompositeDescriptorSets[i]);
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
-		}
+				VkDescriptorImageInfo imageInfo = m_CubemapTexture->GetDescriptorImageInfo();
+				skyboxDescriptorWriter[i].WriteImage(1, &imageInfo);
 
-		// Skybox Descriptors
-		std::vector<VulkanDescriptorWriter> skyboxDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_SkyboxPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		for (int i = 0; i < m_SkyboxDescriptorSets.size(); ++i)
-		{
-			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
-			skyboxDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
-
-			VkDescriptorImageInfo imageInfo = m_CubemapTexture->GetDescriptorImageInfo();
-			skyboxDescriptorWriter[i].WriteImage(1, &imageInfo);
-
-			bool success = skyboxDescriptorWriter[i].Build(m_SkyboxDescriptorSets[i]);
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
-		}
+				bool success = skyboxDescriptorWriter[i].Build(m_SkyboxDescriptorSets[i]);
+				VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+			}
+		});
 		
 		m_BloomDebugImage = ImGuiLayer::AddTexture(m_BloomTextures[2]);
 	}
@@ -560,8 +577,8 @@ namespace VulkanCore {
 	{ 
 		Renderer::Submit([this]
 		{
-			VkCommandBuffer bindCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
-			int frameIndex = Renderer::GetCurrentFrameIndex();
+			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
+			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 			m_LightPipeline->Bind(bindCmd);
 
@@ -580,7 +597,7 @@ namespace VulkanCore {
 			{
 				VK_CORE_PROFILE_FN("Render-PointLights");
 
-				VkCommandBuffer drawCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
+				VkCommandBuffer drawCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
 
 				m_LightPipeline->SetPushConstants(drawCmd, (void*)&pointLightPosition, sizeof(glm::vec4));
 				vkCmdDraw(drawCmd, 6, 1, 0, 0);
@@ -589,8 +606,8 @@ namespace VulkanCore {
 
 		Renderer::Submit([this]
 		{
-			VkCommandBuffer bindCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
-			int frameIndex = Renderer::GetCurrentFrameIndex();
+			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
+			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 			// Binding Spot Light Descriptor Set
 			vkCmdBindDescriptorSets(bindCmd,
@@ -607,7 +624,7 @@ namespace VulkanCore {
 			{
 				VK_CORE_PROFILE_FN("Render-SpotLights");
 
-				VkCommandBuffer drawCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
+				VkCommandBuffer drawCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
 
 				m_LightPipeline->SetPushConstants(drawCmd, (void*)&spotLightPosition, sizeof(glm::vec4));
 				vkCmdDraw(drawCmd, 6, 1, 0, 0);
@@ -648,7 +665,7 @@ namespace VulkanCore {
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
-		Renderer::Submit([this] { m_CompositePipeline->SetPushConstants(m_SceneCommandBuffer->GetActiveCommandBuffer(), &m_SceneSettings, sizeof(SceneSettings)); });
+		Renderer::Submit([this] { m_CompositePipeline->SetPushConstants(m_SceneCommandBuffer->RT_GetActiveCommandBuffer(), &m_SceneSettings, sizeof(SceneSettings)); });
 		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_CompositePipeline, m_CompositeDescriptorSets);
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
@@ -667,8 +684,8 @@ namespace VulkanCore {
 
 		Renderer::Submit([this]
 		{
-			VkCommandBuffer bindCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
-			int frameIndex = Renderer::GetCurrentFrameIndex();
+			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
+			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 			m_GeometryPipeline->Bind(bindCmd);
 
@@ -718,9 +735,9 @@ namespace VulkanCore {
 		{
 			VK_CORE_PROFILE_FN("SceneRenderer::BloomCompute");
 
-			int frameIndex = Renderer::GetCurrentFrameIndex();
+			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
-			VkCommandBuffer dispatchCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
+			VkCommandBuffer dispatchCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
 			m_BloomPipeline->Bind(dispatchCmd);
 
 			// Prefilter
