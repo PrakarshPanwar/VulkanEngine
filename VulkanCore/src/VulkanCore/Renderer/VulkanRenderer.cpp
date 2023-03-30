@@ -34,26 +34,28 @@ namespace VulkanCore {
 		CreateCommandBuffers();
 	}
 
-	VkCommandBuffer VulkanRenderer::BeginFrame()
+	void VulkanRenderer::BeginFrame()
 	{
 		VK_CORE_PROFILE();
 
 		VK_CORE_ASSERT(!IsFrameStarted, "Cannot call BeginFrame() while frame being already in progress!");
 
-		auto result = m_SwapChain->AcquireNextImage(&m_CurrentImageIndex);
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		Renderer::Submit([this]
 		{
-			RecreateSwapChain();
-			return nullptr;
-		}
+			auto result = m_SwapChain->AcquireNextImage(&m_CurrentImageIndex);
 
-		VK_CORE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to Acquire Swap Chain!");
+			if (result == VK_ERROR_OUT_OF_DATE_KHR)
+			{
+				RecreateSwapChain();
+				return nullptr;
+			}
+
+			VK_CORE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to Acquire Swap Chain!");
+		});
 
 		IsFrameStarted = true;
 
 		m_CommandBuffer->Begin();
-		return m_CommandBuffer->GetActiveCommandBuffer();
 	}
 
 	void VulkanRenderer::EndFrame()
@@ -62,12 +64,10 @@ namespace VulkanCore {
 		m_CommandBuffer->End();
 	}
 
-	VkCommandBuffer VulkanRenderer::BeginScene()
+	void VulkanRenderer::BeginScene()
 	{
 		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer();
 		commandBuffer->Begin();
-
-		return commandBuffer->GetActiveCommandBuffer();
 	}
 
 	void VulkanRenderer::EndScene()
@@ -76,13 +76,15 @@ namespace VulkanCore {
 		commandBuffer->End();
 	}
 
-	void VulkanRenderer::BeginSwapChainRenderPass(VkCommandBuffer commandBuffer)
+	void VulkanRenderer::BeginSwapChainRenderPass()
 	{
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call BeginSwapChainRenderPass() if frame is not in progress!");
-		VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot begin Render Pass on Command Buffer from a different frame!");
+		//VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot begin Render Pass on Command Buffer from a different frame!");
 	
-		Renderer::Submit([this, commandBuffer]
+		Renderer::Submit([this]
 		{
+			VkCommandBuffer commandBuffer = m_CommandBuffer->RT_GetActiveCommandBuffer();
+
 			VkRenderPassBeginInfo renderPassInfo{};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			renderPassInfo.renderPass = m_SwapChain->GetRenderPass();
@@ -97,8 +99,7 @@ namespace VulkanCore {
 			renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
 			renderPassInfo.pClearValues = clearValues.data();
 
-			vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-			m_SecondaryCommandBuffer->Begin(m_SwapChain->GetRenderPass(), m_SwapChain->GetFramebuffer(m_CurrentImageIndex));
+			vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 			VkViewport viewport{};
 			viewport.x = 0.0f;
@@ -109,23 +110,19 @@ namespace VulkanCore {
 			viewport.maxDepth = 1.0f;
 
 			VkRect2D scissor{ { 0, 0 }, m_SwapChain->GetSwapChainExtent() };
-			vkCmdSetViewport(m_SecondaryCommandBuffer->GetActiveCommandBuffer(), 0, 1, &viewport);
-			vkCmdSetScissor(m_SecondaryCommandBuffer->GetActiveCommandBuffer(), 0, 1, &scissor);
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 		});
-
-		m_SecondaryCommandBuffer->End();
-		m_ExecuteCommandBuffers[0] = m_SecondaryCommandBuffer->GetActiveCommandBuffer();
 	}
 
-	void VulkanRenderer::EndSwapChainRenderPass(VkCommandBuffer commandBuffer)
+	void VulkanRenderer::EndSwapChainRenderPass()
 	{
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndSwapChainRenderPass() if frame is not in progress!");
-		VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot end Render Pass on Command Buffer from a different frame!");
+		//VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot end Render Pass on Command Buffer from a different frame!");
 
-		Renderer::Submit([this, commandBuffer]
+		Renderer::Submit([this]
 		{
-			m_ExecuteCommandBuffers[1] = ImGuiLayer::Get()->m_ImGuiCmdBuffer->GetActiveCommandBuffer();
-			m_CommandBuffer->Execute(m_ExecuteCommandBuffers.data(), (uint32_t)m_ExecuteCommandBuffers.size());
+			VkCommandBuffer commandBuffer =	m_CommandBuffer->RT_GetActiveCommandBuffer();
 			vkCmdEndRenderPass(commandBuffer);
 		});
 	}
@@ -260,7 +257,7 @@ namespace VulkanCore {
 		Renderer::Submit([commandBuffer, sourceImage, destImage]
 		{
 			VK_CORE_PROFILE_FN("VulkanRenderer::CopyVulkanImage");
-			VkCommandBuffer vulkanCmdBuffer = commandBuffer->GetActiveCommandBuffer();
+			VkCommandBuffer vulkanCmdBuffer = commandBuffer->RT_GetActiveCommandBuffer();
 
 			VkImage srcImage = sourceImage->GetVulkanImageInfo().Image;
 			VkImage dstImage = destImage->GetVulkanImageInfo().Image;
@@ -310,7 +307,7 @@ namespace VulkanCore {
 		Renderer::Submit([commandBuffer, image]
 		{
 			VK_CORE_PROFILE_FN("VulkanRenderer::BlitVulkanImage");
-			VkCommandBuffer vulkanCmdBuffer = commandBuffer->GetActiveCommandBuffer();
+			VkCommandBuffer vulkanCmdBuffer = commandBuffer->RT_GetActiveCommandBuffer();
 
 			VkImage vulkanImage = image->GetVulkanImageInfo().Image;
 
@@ -442,7 +439,7 @@ namespace VulkanCore {
 			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMesh");
 
 			// Bind Vertex Buffer
-			auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
+			auto drawCmd = cmdBuffer->RT_GetActiveCommandBuffer();
 
 			auto meshSource = mesh->GetMeshSource();
 			transformBuffer->WriteData((void*)transformData.data(), 0);
@@ -487,7 +484,6 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 
 		m_CommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetRenderThreadCommandPool());
-		m_SecondaryCommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetRenderThreadCommandPool(), CommandBufferLevel::Secondary);
 	}
 
 	void VulkanRenderer::RecreateSwapChain()
@@ -530,7 +526,7 @@ namespace VulkanCore {
 
 			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
-			const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), sceneRenderer->GetCommandBuffer()->GetActiveCommandBuffer() };
+			const std::vector<VkCommandBuffer> cmdBuffers{ m_CommandBuffer->RT_GetActiveCommandBuffer(), sceneRenderer->GetCommandBuffer()->RT_GetActiveCommandBuffer() };
 			auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
 
 			if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
@@ -544,7 +540,7 @@ namespace VulkanCore {
 				VK_CORE_ERROR("Failed to Present Swap Chain Image!");
 		});
 
-		Renderer::WaitandRender();
+		RenderThread::NextFrame();
 
 		IsFrameStarted = false;
 		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;

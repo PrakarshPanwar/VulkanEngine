@@ -1,6 +1,7 @@
 #pragma once
 #include "VulkanDevice.h"
 #include "VulkanFramebuffer.h"
+#include "VulkanRenderCommandBuffer.h"
 
 namespace VulkanCore {
 
@@ -21,6 +22,8 @@ namespace VulkanCore {
 
 		void Begin(VkCommandBuffer beginCmd);
 		void End(VkCommandBuffer endCmd);
+		void Begin(std::shared_ptr<VulkanRenderCommandBuffer> beginCmd);
+		void End(std::shared_ptr<VulkanRenderCommandBuffer> endCmd);
 
 		inline VkRenderPass GetRenderPass() const { return m_RenderPass; }
 		inline const RenderPassSpecification& GetSpecification() const { return m_Specification; }
