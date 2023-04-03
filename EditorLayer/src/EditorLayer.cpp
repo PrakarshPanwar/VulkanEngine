@@ -48,14 +48,6 @@ namespace VulkanCore {
 		m_Scene = std::make_shared<Scene>();
 		m_SceneRenderer = std::make_shared<SceneRenderer>(m_Scene);
 
-		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
-
-		RenderThread::NotifyThread();
-		RenderThread::Wait();
-
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
-
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 		m_ContentBrowserPanel = ContentBrowserPanel();
 
@@ -197,7 +189,7 @@ namespace VulkanCore {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
-		ImGui::Image(m_SceneImages[Renderer::GetCurrentFrameIndex()], region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGui::Image(m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 		ImGui::SetItemAllowOverlap();
 
 		if (ImGui::BeginDragDropTarget())
@@ -296,11 +288,6 @@ namespace VulkanCore {
 
 	void EditorLayer::RecreateSceneDescriptors()
 	{
-		m_SceneImages.clear();
-		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
-
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
 	}
 
 	void EditorLayer::LoadEntities()

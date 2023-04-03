@@ -116,7 +116,6 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
-		ImGui_ImplVulkan_NewFrame();
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 	}
@@ -124,16 +123,16 @@ namespace VulkanCore {
 	void ImGuiLayer::ImGuiBeginGLFW()
 	{
 		ImGui_ImplGlfw_NewFrame();
+		ImGui_ImplVulkan_NewFrame();
 	}
 
 	void ImGuiLayer::ImGuiEnd()
 	{
 		VK_CORE_PROFILE();
 
-		//int currentFrameIndex = Renderer::RT_GetCurrentFrameIndex();
 		auto swapChain = VulkanSwapChain::GetSwapChain();
 		auto cmdBuffer = VulkanRenderer::Get()->GetRendererCommandBuffer();
-		auto commandBuffer = cmdBuffer->RT_GetActiveCommandBuffer();
+		VkCommandBuffer vulkanCmdBuffer = cmdBuffer->RT_GetActiveCommandBuffer();
 
 #if IMGUI_VIEWPORTS
 		ImGuiIO& io = ImGui::GetIO();
@@ -141,14 +140,8 @@ namespace VulkanCore {
 		io.DisplaySize = ImVec2{ (float)app->GetWindow()->GetWidth(), (float)app->GetWindow()->GetHeight() };
 #endif
 
-		VkCommandBufferBeginInfo cmdBufInfo{};
-		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		cmdBufInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-
-		//VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &cmdBufInfo), "Failed to Begin Command Buffer!");
-
 		ImGui::Render();
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vulkanCmdBuffer);
 
 #if IMGUI_VIEWPORTS
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -159,8 +152,6 @@ namespace VulkanCore {
 			glfwMakeContextCurrent(backup_current_context);
 		}
 #endif
-
-		//vkEndCommandBuffer(commandBuffer);
 	}
 
 	void ImGuiLayer::ShutDown()

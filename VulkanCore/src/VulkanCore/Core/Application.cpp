@@ -17,7 +17,6 @@ namespace VulkanCore {
 
 		m_AppTimer = std::make_unique<Timer>("Application Initialization");
 		Log::Init();
-		RenderThread::Init();
 
 		std::filesystem::current_path(m_Specification.WorkingDirectory);
 		m_Window = std::make_shared<WindowsWindow>(WindowSpecs(1920, 1080, m_Specification.Name));
@@ -46,6 +45,7 @@ namespace VulkanCore {
 		m_ImGuiLayer = std::make_shared<ImGuiLayer>();
 		m_ImGuiLayer->OnAttach();
 
+		RenderThread::Init();
 		Renderer::BuildShaders();
 		Renderer::SetRendererAPI(m_Renderer.get());
 	}
@@ -59,9 +59,6 @@ namespace VulkanCore {
 			VK_CORE_BEGIN_FRAME("Main Thread");
 			m_Window->OnUpdate();
 
-			RenderThread::NotifyThread();
-			RenderThread::Wait();
-
 			// Render Swapchain/ImGui
 			m_Renderer->BeginFrame();
 			m_Renderer->BeginSwapChainRenderPass();
@@ -70,8 +67,6 @@ namespace VulkanCore {
 			//m_ImGuiLayer->ImGuiBegin();
 			Renderer::Submit([this]() { RenderImGui(); });
 			Renderer::Submit([this]() { m_ImGuiLayer->ImGuiEnd(); });
-
-			VK_CORE_WARN("Difference between frames: {}", std::abs(Renderer::GetCurrentFrameIndex() - Renderer::RT_GetCurrentFrameIndex()));
 
 			m_Renderer->EndSwapChainRenderPass();
 			m_Renderer->EndFrame();
@@ -84,9 +79,11 @@ namespace VulkanCore {
 			m_Renderer->EndScene();
 
 			m_Renderer->FinalQueueSubmit();
+
+			Renderer::WaitAndRender();
 		}
 
-		RenderThread::WaitandDestroy();
+		RenderThread::WaitAndDestroy();
 	}
 
 	void Application::OnEvent(Event& e)

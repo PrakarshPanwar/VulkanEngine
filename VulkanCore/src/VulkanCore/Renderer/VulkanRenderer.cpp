@@ -449,7 +449,7 @@ namespace VulkanCore {
 			vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 			std::shared_ptr<VulkanMaterial> vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
-			VkDescriptorSet descriptorSets[1] = { vulkanMaterial->GetVulkanMaterialDescriptorSet() };
+			VkDescriptorSet descriptorSets[1] = { vulkanMaterial->RT_GetVulkanMaterialDescriptorSet() };
 	
 			vkCmdBindDescriptorSets(drawCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
