@@ -1,13 +1,14 @@
 #include "vulkanpch.h"
 #include "RenderThread.h"
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 #include <Windows.h>
 
 namespace VulkanCore {
 
 	std::mutex RenderThread::m_ThreadMutex;
-	std::condition_variable RenderThread::m_ConditionVariable;
+	std::atomic<bool> RenderThread::m_RenderThreadAtomic;
 	std::vector<std::function<void()>> RenderThread::m_RenderCommandQueue;
 	std::jthread RenderThread::m_RenderThread;
 	int RenderThread::m_ThreadFrameIndex = 0;
@@ -16,6 +17,7 @@ namespace VulkanCore {
 	void RenderThread::Init()
 	{
 		m_Running = true;
+		m_RenderThreadAtomic.store(false);
 		m_RenderThread = std::jthread(std::bind(&RenderThread::ThreadEntryPoint));
 
 		auto threadHandle = m_RenderThread.native_handle();
@@ -32,7 +34,7 @@ namespace VulkanCore {
 			// Swap Queues
 			std::vector<std::function<void()>> executeQueue;
 			{
-				std::unique_lock swapLock(m_ThreadMutex);
+				std::scoped_lock swapLock(m_ThreadMutex);
 				executeQueue.swap(m_RenderCommandQueue);
 			}
 
@@ -40,10 +42,10 @@ namespace VulkanCore {
 			for (const auto& executeCommand : executeQueue)
 				executeCommand();
 
-			m_ConditionVariable.notify_one();
+			m_RenderThreadAtomic.notify_one();
 
-			std::unique_lock waitLock(m_ThreadMutex);
-			m_ConditionVariable.wait(waitLock);
+			m_RenderThreadAtomic.wait(false);
+			m_RenderThreadAtomic.store(false);
 		}
 	}
 
@@ -51,37 +53,32 @@ namespace VulkanCore {
 	{
 		auto nextFrame = []
 		{
-			VK_CORE_WARN("Proceeding to Next Frame");
 			m_ThreadFrameIndex = (m_ThreadFrameIndex + 1) % 3;
 		};
 
 		SubmitToThread(nextFrame);
+		m_RenderThreadAtomic.store(true);
+		m_RenderThreadAtomic.notify_one();
 	}
 
 	void RenderThread::Wait()
 	{
-		std::unique_lock<std::mutex> waitLock(m_ThreadMutex);
-		m_ConditionVariable.wait(waitLock);
+		m_RenderThreadAtomic.wait(true);
 	}
 
 	void RenderThread::WaitAndSet()
 	{
-		{
-			std::unique_lock<std::mutex> waitAndSetLock(m_ThreadMutex);
-			m_Running = true;
-			m_ConditionVariable.notify_one();
-		}
-
-		m_Running = false;
+		m_RenderThreadAtomic.wait(true);
 	}
 
-	void RenderThread::WaitandDestroy()
+	void RenderThread::WaitAndDestroy()
 	{
 		{
-			std::unique_lock<std::mutex> waitLock(m_ThreadMutex);
+			m_RenderThreadAtomic.store(true);
+			m_RenderThreadAtomic.notify_one();
 
+			std::scoped_lock waitLock(m_ThreadMutex);
 			m_Running = false;
-			m_ConditionVariable.notify_one();
 		}
 
 		if (m_RenderThread.joinable())
@@ -90,7 +87,7 @@ namespace VulkanCore {
 
 	void RenderThread::NotifyThread()
 	{
-		m_ConditionVariable.notify_one();
+		m_RenderThreadAtomic.notify_one();
 	}
 
 }

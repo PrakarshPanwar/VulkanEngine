@@ -184,6 +184,14 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
+		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
+
+		Renderer::Submit([this]
+		{
+			for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
+				m_SceneImages[i] = ImGuiLayer::AddTexture(GetFinalPassImage(i));
+		});
+
 		m_UBCamera.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_UBPointLight.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_UBSpotLight.reserve(VulkanSwapChain::MaxFramesInFlight);
@@ -727,8 +735,6 @@ namespace VulkanCore {
 
 	void SceneRenderer::BloomCompute()
 	{
-		int frameIndex = Renderer::GetCurrentFrameIndex();
-
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::Submit([this]

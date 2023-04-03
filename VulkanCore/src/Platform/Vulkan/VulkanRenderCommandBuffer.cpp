@@ -151,6 +151,7 @@ namespace VulkanCore {
 		return m_TimestampQueryPoolBuffer[(index << 1) + 1] - m_TimestampQueryPoolBuffer[index << 1];
 	}
 
+	// TODO: Use RT_GetCurrentFrameIndex
 	void VulkanRenderCommandBuffer::SubmitCommandBuffersToQueue()
 	{
 		uint32_t currentFrameIndex = Renderer::GetCurrentFrameIndex();
