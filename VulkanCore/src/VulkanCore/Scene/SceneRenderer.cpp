@@ -90,6 +90,8 @@ namespace VulkanCore {
 		CreateCommandBuffers();
 		CreatePipelines();
 		CreateDescriptorSets();
+
+		Renderer::WaitAndExecute();
 	}
 
 	void SceneRenderer::CreatePipelines()

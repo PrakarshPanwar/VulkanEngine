@@ -3,7 +3,6 @@
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
-#include "VulkanCore/Renderer/RenderThread.h"
 #include "optick.h"
 
 namespace VulkanCore {
@@ -45,7 +44,7 @@ namespace VulkanCore {
 		m_ImGuiLayer = std::make_shared<ImGuiLayer>();
 		m_ImGuiLayer->OnAttach();
 
-		RenderThread::Init();
+		Renderer::Init();
 		Renderer::BuildShaders();
 		Renderer::SetRendererAPI(m_Renderer.get());
 	}

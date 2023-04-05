@@ -173,6 +173,11 @@ namespace VulkanCore {
 	{
 	}
 
+	void Renderer::Init()
+	{
+		RenderThread::Init();
+	}
+
 	void Renderer::WaitAndRender()
 	{
 		VK_CORE_PROFILE();
