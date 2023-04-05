@@ -45,6 +45,7 @@ namespace VulkanCore {
 			RenderThread::SubmitToThread(func);
 		}
 
+		static void Init();
 		static void WaitAndRender();
 		static void WaitAndExecute();
 	private:
