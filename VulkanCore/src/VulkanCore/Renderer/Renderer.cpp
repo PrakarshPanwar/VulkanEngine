@@ -182,14 +182,14 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
-		RenderThread::SetDispatchFlag(true);
+		RenderThread::SetAtomicFlag(true);
 		RenderThread::NotifyThread();
 		RenderThread::WaitAndSet();
 	}
 
 	void Renderer::WaitAndExecute()
 	{
-		RenderThread::SetDispatchFlag(true);
+		RenderThread::SetAtomicFlag(true);
 		RenderThread::NotifyThread();
 		RenderThread::Wait();
 	}

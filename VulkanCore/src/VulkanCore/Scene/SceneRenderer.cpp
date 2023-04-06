@@ -558,6 +558,8 @@ namespace VulkanCore {
 
 	void SceneRenderer::RenderScene(EditorCamera& camera)
 	{
+		VK_CORE_PROFILE_FN("Submit-SceneRenderer");
+
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
 		// Camera

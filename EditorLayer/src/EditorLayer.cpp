@@ -51,6 +51,13 @@ namespace VulkanCore {
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 		m_ContentBrowserPanel = ContentBrowserPanel();
 
+		auto commandLineArgs = Application::Get()->GetSpecification().CommandLineArgs;
+		if (commandLineArgs.Count > 1)
+		{
+			std::string sceneFilePath = commandLineArgs[1];
+			OpenScene(sceneFilePath);
+		}
+
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
 	}
 
