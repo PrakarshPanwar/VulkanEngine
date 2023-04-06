@@ -541,6 +541,7 @@ namespace VulkanCore {
 		});
 
 		RenderThread::NextFrame();
+		Renderer::WaitAndRender();
 
 		IsFrameStarted = false;
 		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;

@@ -78,8 +78,6 @@ namespace VulkanCore {
 			m_Renderer->EndScene();
 
 			m_Renderer->FinalQueueSubmit();
-
-			Renderer::WaitAndRender();
 		}
 
 		RenderThread::WaitAndDestroy();

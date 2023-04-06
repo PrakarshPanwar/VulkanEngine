@@ -68,6 +68,12 @@ namespace VulkanCore {
 
 	void RenderThread::WaitAndSet()
 	{
+		int mainFrameIndex = Renderer::GetCurrentFrameIndex();
+		int renderFrameIndex = Renderer::RT_GetCurrentFrameIndex();
+
+		if (mainFrameIndex == renderFrameIndex)
+			return;
+
 		m_RenderThreadAtomic.wait(true);
 	}
 
