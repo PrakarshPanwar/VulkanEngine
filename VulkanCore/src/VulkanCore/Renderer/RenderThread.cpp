@@ -47,6 +47,8 @@ namespace VulkanCore {
 			m_RenderThreadAtomic.wait(false);
 			m_RenderThreadAtomic.store(false);
 		}
+
+		ExecuteCommandQueue();
 	}
 
 	void RenderThread::NextFrame()
@@ -94,6 +96,19 @@ namespace VulkanCore {
 	void RenderThread::NotifyThread()
 	{
 		m_RenderThreadAtomic.notify_one();
+	}
+
+	void RenderThread::ExecuteCommandQueue()
+	{
+		// Swap Queues
+		std::vector<std::function<void()>> executeQueue;
+		{
+			std::scoped_lock swapLock(m_ThreadMutex);
+			executeQueue.swap(m_RenderCommandQueue);
+		}
+
+		for (const auto& executeCommand : executeQueue)
+			executeCommand();
 	}
 
 }

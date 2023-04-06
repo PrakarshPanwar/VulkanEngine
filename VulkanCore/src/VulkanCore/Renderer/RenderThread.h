@@ -20,12 +20,13 @@ namespace VulkanCore {
 		static void WaitAndSet();
 		static void WaitAndDestroy();
 		static void NotifyThread();
-		static void SetDispatchFlag(bool dispatchFlag) { m_RenderThreadAtomic.store(dispatchFlag); }
+		static void SetAtomicFlag(bool dispatchFlag) { m_RenderThreadAtomic.store(dispatchFlag); }
 
 		static int GetThreadFrameIndex() { return m_ThreadFrameIndex; }
 		bool CommandQueueEmpty() { return m_RenderCommandQueue.empty(); }
 	private:
 		static void ThreadEntryPoint();
+		static void ExecuteCommandQueue();
 	private:
 		static std::mutex m_ThreadMutex;
 		static std::atomic<bool> m_RenderThreadAtomic;
