@@ -62,8 +62,7 @@ namespace VulkanCore {
 			m_Renderer->BeginFrame();
 			m_Renderer->BeginSwapChainRenderPass();
 
-			m_ImGuiLayer->ImGuiBeginGLFW();
-			//m_ImGuiLayer->ImGuiBegin();
+			m_ImGuiLayer->ImGuiBegin();
 			Renderer::Submit([this]() { RenderImGui(); });
 			Renderer::Submit([this]() { m_ImGuiLayer->ImGuiEnd(); });
 
@@ -125,7 +124,7 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
-		m_ImGuiLayer->ImGuiBegin();
+		m_ImGuiLayer->ImGuiNewFrame();
 		for (Layer* layer : m_LayerStack)
 			layer->OnImGuiRender();
 	}
