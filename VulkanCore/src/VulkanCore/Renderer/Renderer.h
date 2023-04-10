@@ -15,6 +15,7 @@ namespace VulkanCore {
 	public:
 		static void SetRendererAPI(VulkanRenderer* vkRenderer);
 		static int GetCurrentFrameIndex();
+		static int RT_GetCurrentFrameIndex();
 		static void BeginRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
 		static void EndRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
 		static void BuildShaders();
@@ -27,7 +28,7 @@ namespace VulkanCore {
 		static void EndGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
 
 		static std::shared_ptr<VulkanTexture> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
-		static void SubmitFullscreenQuad(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
+		static void SubmitFullscreenQuad(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
 		static void RenderMesh(std::shared_ptr<Mesh> mesh);
 
 		static std::shared_ptr<Shader> GetShader(const std::string& name)
@@ -44,7 +45,9 @@ namespace VulkanCore {
 			RenderThread::SubmitToThread(func);
 		}
 
-		static void WaitandRender();
+		static void Init();
+		static void WaitAndRender();
+		static void WaitAndExecute();
 	private:
 		static std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
 		static VulkanRenderer* s_Renderer;

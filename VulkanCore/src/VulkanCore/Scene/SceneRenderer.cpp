@@ -185,6 +185,13 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
+		Renderer::WaitAndExecute();
+
+		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
+
+		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
+			m_SceneImages[i] = ImGuiLayer::AddTexture(GetFinalPassImage(i));
+
 		m_UBCamera.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_UBPointLight.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_UBSpotLight.reserve(VulkanSwapChain::MaxFramesInFlight);
@@ -549,6 +556,8 @@ namespace VulkanCore {
 
 	void SceneRenderer::RenderScene(EditorCamera& camera)
 	{
+		VK_CORE_PROFILE_FN("Submit-SceneRenderer");
+
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
 		// Camera
@@ -595,8 +604,8 @@ namespace VulkanCore {
 	{ 
 		Renderer::Submit([this]
 		{
-			VkCommandBuffer bindCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
-			int frameIndex = Renderer::GetCurrentFrameIndex();
+			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
+			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 			m_LightPipeline->Bind(bindCmd);
 
@@ -615,7 +624,7 @@ namespace VulkanCore {
 			{
 				VK_CORE_PROFILE_FN("Render-PointLights");
 
-				VkCommandBuffer drawCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
+				VkCommandBuffer drawCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
 
 				m_LightPipeline->SetPushConstants(drawCmd, (void*)&pointLightPosition, sizeof(glm::vec4));
 				vkCmdDraw(drawCmd, 6, 1, 0, 0);
@@ -624,8 +633,8 @@ namespace VulkanCore {
 
 		Renderer::Submit([this]
 		{
-			VkCommandBuffer bindCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
-			int frameIndex = Renderer::GetCurrentFrameIndex();
+			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
+			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 			// Binding Spot Light Descriptor Set
 			vkCmdBindDescriptorSets(bindCmd,
@@ -642,7 +651,7 @@ namespace VulkanCore {
 			{
 				VK_CORE_PROFILE_FN("Render-SpotLights");
 
-				VkCommandBuffer drawCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
+				VkCommandBuffer drawCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
 
 				m_LightPipeline->SetPushConstants(drawCmd, (void*)&spotLightPosition, sizeof(glm::vec4));
 				vkCmdDraw(drawCmd, 6, 1, 0, 0);
@@ -683,7 +692,7 @@ namespace VulkanCore {
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
-		Renderer::Submit([this] { m_CompositePipeline->SetPushConstants(m_SceneCommandBuffer->GetActiveCommandBuffer(), &m_SceneSettings, sizeof(SceneSettings)); });
+		Renderer::Submit([this] { m_CompositePipeline->SetPushConstants(m_SceneCommandBuffer->RT_GetActiveCommandBuffer(), &m_SceneSettings, sizeof(SceneSettings)); });
 		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_CompositePipeline, m_CompositeDescriptorSets);
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
@@ -702,8 +711,8 @@ namespace VulkanCore {
 
 		Renderer::Submit([this]
 		{
-			VkCommandBuffer bindCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
-			int frameIndex = Renderer::GetCurrentFrameIndex();
+			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
+			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 			m_GeometryPipeline->Bind(bindCmd);
 
@@ -745,17 +754,15 @@ namespace VulkanCore {
 
 	void SceneRenderer::BloomCompute()
 	{
-		int frameIndex = Renderer::GetCurrentFrameIndex();
-
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::Submit([this]
 		{
 			VK_CORE_PROFILE_FN("SceneRenderer::BloomCompute");
 
-			int frameIndex = Renderer::GetCurrentFrameIndex();
+			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
-			VkCommandBuffer dispatchCmd = m_SceneCommandBuffer->GetActiveCommandBuffer();
+			VkCommandBuffer dispatchCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
 			m_BloomPipeline->Bind(dispatchCmd);
 
 			// Prefilter

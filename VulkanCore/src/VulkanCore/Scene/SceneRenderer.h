@@ -43,6 +43,7 @@ namespace VulkanCore {
 		inline VkRenderPass GetVulkanRenderPass() { return m_SceneRenderPass->GetRenderPass(); }
 		inline std::shared_ptr<Shader> GetGeometryPipelineShader() const { return m_GeometryPipeline->GetSpecification().pShader; }
 		inline const VulkanImage& GetFinalPassImage(uint32_t index) { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
+		inline VkDescriptorSet GetSceneImage(uint32_t index) { return m_SceneImages[index]; }
 
 		struct MeshKey
 		{
@@ -125,6 +126,7 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanRenderCommandBuffer> m_SceneCommandBuffer;
 		std::shared_ptr<VulkanFramebuffer> m_SceneFramebuffer;
 		std::shared_ptr<VulkanRenderPass> m_SceneRenderPass;
+		std::vector<VkDescriptorSet> m_SceneImages;
 
 		// Pipelines
 		std::shared_ptr<VulkanPipeline> m_GeometryPipeline;

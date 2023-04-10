@@ -17,6 +17,7 @@ namespace VulkanCore {
 
 		void OnAttach() override;
 		void OnDetach() override;
+		void ImGuiNewFrame();
 		void ImGuiBegin();
 		void ImGuiEnd();
 		void ShutDown();

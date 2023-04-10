@@ -17,6 +17,7 @@ namespace VulkanCore {
 		void InitializeMaterialTextures();
 
 		inline VkDescriptorSet GetVulkanMaterialDescriptorSet() const { return m_MaterialDescriptorSets[Renderer::GetCurrentFrameIndex()]; }
+		inline VkDescriptorSet RT_GetVulkanMaterialDescriptorSet() const { return m_MaterialDescriptorSets[Renderer::RT_GetCurrentFrameIndex()]; }
 		inline std::tuple<VkDescriptorSet, VkDescriptorSet, VkDescriptorSet> GetMaterialTextureIDs() const
 		{
 			return { m_DiffuseDstID, m_NormalDstID, m_ARMDstID };
