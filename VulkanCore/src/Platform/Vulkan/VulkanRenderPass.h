@@ -30,6 +30,7 @@ namespace VulkanCore {
 	private:
 		RenderPassSpecification m_Specification;
 
+		std::vector<VkClearValue> m_ClearValues;
 		std::vector<VkAttachmentDescription> m_AttachmentDescriptions;
 		VkRenderPass m_RenderPass = nullptr;
 	};
