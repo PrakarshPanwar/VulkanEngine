@@ -193,7 +193,6 @@ namespace VulkanCore {
 
 		VK_CHECK_RESULT(vkCreateRenderPass(device->GetVulkanDevice(), &renderPassInfo, nullptr, &m_RenderPass), "Failed to Create Scene Render Pass!");
 
-		m_ClearValues.resize(attachmentDescriptions.size());
 		m_AttachmentDescriptions = attachmentDescriptions;
 		m_ClearValues.resize(m_AttachmentDescriptions.size());
 		Framebuffer->CreateFramebuffer(m_RenderPass);
@@ -360,7 +359,7 @@ namespace VulkanCore {
 	}
 
 	void VulkanRenderPass::RecreateFramebuffers(uint32_t width, uint32_t height)
-{
+	{
 		auto Framebuffer = m_Specification.TargetFramebuffer;
 		Framebuffer->Resize(width, height);
 		Framebuffer->CreateFramebuffer(m_RenderPass);
@@ -434,7 +433,14 @@ namespace VulkanCore {
 			for (uint32_t i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
 				m_ClearValues[i].color = { fbSpec.ClearColor.x, fbSpec.ClearColor.y, fbSpec.ClearColor.z, fbSpec.ClearColor.w };
 
-			m_ClearValues[m_ClearValues.size() - 1].depthStencil = { 1.0f, 0 };
+			if (m_Specification.TargetFramebuffer->GetSpecification().ReadDepthTexture)
+			{
+				m_ClearValues[m_ClearValues.size() - 2].depthStencil = { 1.0f, 0 };
+				m_ClearValues[m_ClearValues.size() - 1].depthStencil = { 1.0f, 0 };
+			}
+
+			else
+				m_ClearValues[m_ClearValues.size() - 1].depthStencil = { 1.0f, 0 };
 
 			beginPassInfo.clearValueCount = (uint32_t)m_ClearValues.size();
 			beginPassInfo.pClearValues = m_ClearValues.data();
