@@ -16,6 +16,7 @@
 
 #include <ImGuizmo.h>
 #include <imgui_internal.h>
+#include <optick.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
@@ -47,13 +48,15 @@ namespace VulkanCore {
 		m_Scene = std::make_shared<Scene>();
 		m_SceneRenderer = std::make_shared<SceneRenderer>(m_Scene);
 
-		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
-
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
-
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 		m_ContentBrowserPanel = ContentBrowserPanel();
+
+		auto commandLineArgs = Application::Get()->GetSpecification().CommandLineArgs;
+		if (commandLineArgs.Count > 1)
+		{
+			std::string sceneFilePath = commandLineArgs[1];
+			OpenScene(sceneFilePath);
+		}
 
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
 	}
@@ -65,6 +68,8 @@ namespace VulkanCore {
 
 	void EditorLayer::OnUpdate()
 	{
+		VK_CORE_PROFILE();
+
 		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
 			m_EditorCamera.OnUpdate();
 
@@ -191,7 +196,7 @@ namespace VulkanCore {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
-		ImGui::Image(m_SceneImages[Renderer::GetCurrentFrameIndex()], region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGui::Image(m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 		ImGui::SetItemAllowOverlap();
 
 		if (ImGui::BeginDragDropTarget())
@@ -290,11 +295,6 @@ namespace VulkanCore {
 
 	void EditorLayer::RecreateSceneDescriptors()
 	{
-		m_SceneImages.clear();
-		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
-
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
 	}
 
 	void EditorLayer::LoadEntities()

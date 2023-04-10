@@ -3,7 +3,7 @@
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
-#include "VulkanCore/Renderer/RenderThread.h"
+#include "optick.h"
 
 namespace VulkanCore {
 
@@ -16,7 +16,6 @@ namespace VulkanCore {
 
 		m_AppTimer = std::make_unique<Timer>("Application Initialization");
 		Log::Init();
-		RenderThread::Init();
 
 		std::filesystem::current_path(m_Specification.WorkingDirectory);
 		m_Window = std::make_shared<WindowsWindow>(WindowSpecs(1920, 1080, m_Specification.Name));
@@ -45,6 +44,7 @@ namespace VulkanCore {
 		m_ImGuiLayer = std::make_shared<ImGuiLayer>();
 		m_ImGuiLayer->OnAttach();
 
+		Renderer::Init();
 		Renderer::BuildShaders();
 		Renderer::SetRendererAPI(m_Renderer.get());
 	}
@@ -55,34 +55,31 @@ namespace VulkanCore {
 
 		while (m_Running)
 		{
+			VK_CORE_BEGIN_FRAME("Main Thread");
 			m_Window->OnUpdate();
 
-			if (auto commandBuffer = m_Renderer->BeginFrame())
-			{
-				m_Renderer->BeginSwapChainRenderPass(commandBuffer);
+			// Render Swapchain/ImGui
+			m_Renderer->BeginFrame();
+			m_Renderer->BeginSwapChainRenderPass();
 
-				m_ImGuiLayer->ImGuiBegin();
-				Renderer::Submit([this]() { RenderImGui(); });
-				Renderer::Submit([this]() { m_ImGuiLayer->ImGuiEnd(); });
+			m_ImGuiLayer->ImGuiBegin();
+			Renderer::Submit([this]() { RenderImGui(); });
+			Renderer::Submit([this]() { m_ImGuiLayer->ImGuiEnd(); });
 
-				Renderer::WaitandRender();
+			m_Renderer->EndSwapChainRenderPass();
+			m_Renderer->EndFrame();
 
-				m_Renderer->EndSwapChainRenderPass(commandBuffer);
-				m_Renderer->EndFrame();
-			}
+			// Render Scene
+			m_Renderer->BeginScene();
+			for (Layer* layer : m_LayerStack)
+				layer->OnUpdate();
 
-			if (auto commandBuffer = m_Renderer->BeginScene())
-			{
-				for (Layer* layer : m_LayerStack)
-					layer->OnUpdate();
-
-				m_Renderer->EndScene();
-			}
+			m_Renderer->EndScene();
 
 			m_Renderer->FinalQueueSubmit();
 		}
 
-		RenderThread::WaitandDestroy();
+		RenderThread::WaitAndDestroy();
 	}
 
 	void Application::OnEvent(Event& e)
@@ -125,6 +122,9 @@ namespace VulkanCore {
 
 	void Application::RenderImGui()
 	{
+		VK_CORE_PROFILE();
+
+		m_ImGuiLayer->ImGuiNewFrame();
 		for (Layer* layer : m_LayerStack)
 			layer->OnImGuiRender();
 	}

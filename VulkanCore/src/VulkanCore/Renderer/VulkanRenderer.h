@@ -25,15 +25,16 @@ namespace VulkanCore {
 
 		void Init();
 
-		VkCommandBuffer BeginFrame();
+		void BeginFrame();
 		void EndFrame();
-		VkCommandBuffer BeginScene();
+		void BeginScene();
 		void EndScene();
-		void BeginSwapChainRenderPass(VkCommandBuffer commandBuffer);
-		void EndSwapChainRenderPass(VkCommandBuffer commandBuffer);
+		void BeginSwapChainRenderPass();
+		void EndSwapChainRenderPass();
 		inline float GetAspectRatio() const { return m_SwapChain->ExtentAspectRatio(); }
 
 		inline bool IsFrameInProgress() const { return IsFrameStarted; }
+		inline std::shared_ptr<VulkanRenderCommandBuffer> GetRendererCommandBuffer() const { return m_CommandBuffer; }
 		inline VkCommandBuffer GetCurrentCommandBuffer() const
 		{
 			VK_CORE_ASSERT(IsFrameStarted, "Cannot get Command Buffer when frame is not in progress!");
@@ -42,8 +43,8 @@ namespace VulkanCore {
 
 		static std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> CreateEnviromentMap(const std::string& filepath);
 		static std::shared_ptr<VulkanImage> CreateBRDFTexture();
-		static void CopyVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& sourceImage, const VulkanImage& destImage);
-		static void BlitVulkanImage(VkCommandBuffer cmdBuf, const VulkanImage& image);
+		static void CopyVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const VulkanImage* sourceImage, const VulkanImage* destImage);
+		static void BlitVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const VulkanImage* image);
 		static void RenderMesh(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, uint32_t submeshIndex, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount);
 		static RendererStats GetRendererStats() { return s_Data; }
 		static void ResetStats();
@@ -62,8 +63,6 @@ namespace VulkanCore {
 		std::unique_ptr<VulkanSwapChain> m_SwapChain;
 
 		std::shared_ptr<VulkanRenderCommandBuffer> m_CommandBuffer;
-		std::shared_ptr<VulkanRenderCommandBuffer> m_SecondaryCommandBuffer;
-		std::array<VkCommandBuffer, 2> m_ExecuteCommandBuffers;
 
 		uint32_t m_CurrentImageIndex;
 		int m_CurrentFrameIndex = 0;
