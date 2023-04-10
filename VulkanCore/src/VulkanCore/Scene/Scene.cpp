@@ -26,37 +26,6 @@ namespace VulkanCore {
 		return entity;
 	}
 
-	void Scene::OnUpdateGeometry(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
-	{
-		auto drawCmd = cmdBuffers[Renderer::GetCurrentFrameIndex()];
-		auto dstSet = descriptorSet[Renderer::GetCurrentFrameIndex()];
-
-		pipeline->Bind(drawCmd);
-
-		vkCmdBindDescriptorSets(drawCmd,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipeline->GetVulkanPipelineLayout(),
-			0, 1, &dstSet,
-			0, nullptr);
-
-		auto view = m_Registry.view<TransformComponent>();
-
-		for (auto ent : view)
-		{
-			Entity entity = { ent, this };
-
-			if (entity.HasComponent<MeshComponent>())
-			{
-				PCModelData pushConstants{};
-				pushConstants.ModelMatrix = entity.GetComponent<TransformComponent>().GetTransform();
-				pushConstants.NormalMatrix = entity.GetComponent<TransformComponent>().GetNormalMatrix();
-
-				pipeline->SetPushConstants(drawCmd, &pushConstants, sizeof(PCModelData));
-				Renderer::RenderMesh(entity.GetComponent<MeshComponent>().MeshInstance);
-			}
-		}
-	}
-
 	void Scene::OnUpdateGeometry(SceneRenderer* renderer)
 	{
 		auto view = m_Registry.view<TransformComponent, MeshComponent>();
@@ -68,24 +37,11 @@ namespace VulkanCore {
 		}
 	}
 
-	// TODO: This should be managed by SceneRenderer
-	void Scene::OnUpdateLights(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& pointLightDescriptorSet, const std::vector<VkDescriptorSet>& spotLightDescriptorSet)
+	void Scene::OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions)
 	{
-		auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
-		auto pointLightDstSet = pointLightDescriptorSet[Renderer::GetCurrentFrameIndex()];
-		auto spotLightDstSet = spotLightDescriptorSet[Renderer::GetCurrentFrameIndex()];
-
-		pipeline->Bind(drawCmd);
-
-		// Binding Point Light Descriptor Set
-		vkCmdBindDescriptorSets(drawCmd,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipeline->GetVulkanPipelineLayout(),
-			0, 1, &pointLightDstSet,
-			0, nullptr);
-
 		{
 			// Point Lights
+			VK_CORE_PROFILE_FN("Scene-PointLights");
 			auto view = m_Registry.view<TransformComponent, PointLightComponent>();
 
 			for (auto ent : view)
@@ -93,20 +49,13 @@ namespace VulkanCore {
 				auto [transform, pointLightComponent] = view.get<TransformComponent, PointLightComponent>(ent);
 
 				glm::vec4 position = glm::vec4(transform.Translation, pointLightComponent.Radius);
-				pipeline->SetPushConstants(drawCmd, &position, sizeof(glm::vec4));
-				vkCmdDraw(drawCmd, 6, 1, 0, 0);
+				pointLightPositions.push_back(position);
 			}
 		}
 
-		// Binding Spot Light Descriptor Set
-		vkCmdBindDescriptorSets(drawCmd,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipeline->GetVulkanPipelineLayout(),
-			0, 1, &spotLightDstSet,
-			0, nullptr);
-
 		{
 			// Spot Lights
+			VK_CORE_PROFILE_FN("Scene-SpotLights");
 			auto view = m_Registry.view<TransformComponent, SpotLightComponent>();
 
 			for (auto ent : view)
@@ -114,11 +63,9 @@ namespace VulkanCore {
 				auto [transform, spotLightComponent] = view.get<TransformComponent, SpotLightComponent>(ent);
 
 				glm::vec4 position = glm::vec4(transform.Translation, spotLightComponent.Radius);
-				pipeline->SetPushConstants(drawCmd, &position, sizeof(glm::vec4));
-				vkCmdDraw(drawCmd, 6, 1, 0, 0);
+				spotLightPositions.push_back(position);
 			}
 		}
-
 	}
 
 	void Scene::UpdatePointLightUB(UBPointLights& ubo)

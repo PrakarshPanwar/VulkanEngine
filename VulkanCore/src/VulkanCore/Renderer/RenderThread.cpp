@@ -1,20 +1,23 @@
 #include "vulkanpch.h"
 #include "RenderThread.h"
-#include "../Core/Log.h"
+#include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 #include <Windows.h>
 
 namespace VulkanCore {
 
-	std::mutex RenderThread::m_RTMutex;
-	std::condition_variable RenderThread::m_RTCondVar;
-	std::vector<std::function<void()>> RenderThread::m_RTQueue;
+	std::mutex RenderThread::m_ThreadMutex;
+	std::atomic<bool> RenderThread::m_RenderThreadAtomic;
+	std::vector<std::function<void()>> RenderThread::m_RenderCommandQueue;
 	std::jthread RenderThread::m_RenderThread;
-	bool RenderThread::m_RTShutDown;
+	int RenderThread::m_ThreadFrameIndex = 0;
+	bool RenderThread::m_Running;
 
 	void RenderThread::Init()
 	{
-		m_RTShutDown = false;
+		m_Running = true;
+		m_RenderThreadAtomic.store(false);
 		m_RenderThread = std::jthread(std::bind(&RenderThread::ThreadEntryPoint));
 
 		auto threadHandle = m_RenderThread.native_handle();
@@ -23,68 +26,89 @@ namespace VulkanCore {
 	}
 
 	void RenderThread::ThreadEntryPoint()
-{
-		std::function<void()> JobWork;
-
-		while (true)
+	{
+		while (m_Running)
 		{
+			VK_CORE_PROFILE_THREAD("Render Thread");
+
+			// Swap Queues
+			std::vector<std::function<void()>> executeQueue;
 			{
-				std::unique_lock<std::mutex> entryLock(m_RTMutex);
-				m_RTCondVar.wait(entryLock, [] { return m_RTShutDown || !m_RTQueue.empty(); });
-
-				if (m_RTQueue.empty())
-				{
-					VK_CORE_WARN("Render Thread(ID: {}) Terminates", m_RenderThread.get_id());
-					return;
-				}
-
-				JobWork = std::move(m_RTQueue.front());
-				m_RTQueue.erase(m_RTQueue.begin());
+				std::scoped_lock swapLock(m_ThreadMutex);
+				executeQueue.swap(m_RenderCommandQueue);
 			}
 
-			// Do the job without holding any locks
-			JobWork();
+			// Execute Command Queue
+			for (const auto& executeCommand : executeQueue)
+				executeCommand();
+
+			m_RenderThreadAtomic.notify_one();
+
+			m_RenderThreadAtomic.wait(false);
+			m_RenderThreadAtomic.store(false);
 		}
+
+		ExecuteCommandQueue();
+	}
+
+	void RenderThread::NextFrame()
+	{
+		auto nextFrame = []
+		{
+			m_ThreadFrameIndex = (m_ThreadFrameIndex + 1) % 3;
+		};
+
+		SubmitToThread(nextFrame);
+		m_RenderThreadAtomic.store(true);
+		m_RenderThreadAtomic.notify_one();
 	}
 
 	void RenderThread::Wait()
 	{
-		{
-			std::unique_lock<std::mutex> waitLock(m_RTMutex);
-			m_RTCondVar.wait(waitLock, [] { return m_RTQueue.empty(); });
-		}
+		m_RenderThreadAtomic.wait(true);
 	}
 
 	void RenderThread::WaitAndSet()
 	{
-		{
-			std::unique_lock<std::mutex> waitAndSetLock(m_RTMutex);
-			m_RTShutDown = true;
-			m_RTCondVar.notify_one();
-		}
+		int mainFrameIndex = Renderer::GetCurrentFrameIndex();
+		int renderFrameIndex = Renderer::RT_GetCurrentFrameIndex();
 
-		m_RTShutDown = false;
+		if (mainFrameIndex == renderFrameIndex)
+			return;
+
+		m_RenderThreadAtomic.wait(true);
 	}
 
-	void RenderThread::WaitandDestroy()
+	void RenderThread::WaitAndDestroy()
 	{
 		{
-			std::unique_lock<std::mutex> waitLock(m_RTMutex);
+			m_RenderThreadAtomic.store(true);
+			m_RenderThreadAtomic.notify_one();
 
-			m_RTShutDown = true;
-			m_RTCondVar.notify_all();
+			std::scoped_lock waitLock(m_ThreadMutex);
+			m_Running = false;
 		}
 
 		if (m_RenderThread.joinable())
 			m_RenderThread.join();
 	}
 
-	// This process should take place in Render Thread
-	void RenderThread::NotifyMainThread()
+	void RenderThread::NotifyThread()
 	{
+		m_RenderThreadAtomic.notify_one();
+	}
+
+	void RenderThread::ExecuteCommandQueue()
+	{
+		// Swap Queues
+		std::vector<std::function<void()>> executeQueue;
 		{
-			m_RTCondVar.notify_one();
+			std::scoped_lock swapLock(m_ThreadMutex);
+			executeQueue.swap(m_RenderCommandQueue);
 		}
+
+		for (const auto& executeCommand : executeQueue)
+			executeCommand();
 	}
 
 }

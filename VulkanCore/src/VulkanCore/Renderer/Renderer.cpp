@@ -38,19 +38,22 @@ namespace VulkanCore {
 
 	int Renderer::GetCurrentFrameIndex()
 	{
-		return VulkanRenderer::Get()->GetCurrentFrameIndex();
+		return s_Renderer->GetCurrentFrameIndex();
+	}
+
+	int Renderer::RT_GetCurrentFrameIndex()
+	{
+		return RenderThread::GetThreadFrameIndex();
 	}
 
 	void Renderer::BeginRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)
 	{
-		auto beginPassCmd = cmdBuffer->GetActiveCommandBuffer();
-		renderPass->Begin(beginPassCmd);
+		renderPass->Begin(cmdBuffer);
 	}
 
 	void Renderer::EndRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)
 	{
-		auto endPassCmd = cmdBuffer->GetActiveCommandBuffer();
-		renderPass->End(endPassCmd);
+		renderPass->End(cmdBuffer);
 	}
 
 	void Renderer::BuildShaders()
@@ -73,39 +76,54 @@ namespace VulkanCore {
 
 	void Renderer::RenderSkybox(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData /*= nullptr*/)
 	{
-		auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
-		auto dstSet = descriptorSet[GetCurrentFrameIndex()];
+		Renderer::Submit([cmdBuffer, pipeline, descriptorSet, pcData, skyboxVB]
+		{
+			VK_CORE_PROFILE_FN("Renderer::RenderSkybox");
 
-		pipeline->Bind(drawCmd);
+			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
-		if (pcData)
-			pipeline->SetPushConstants(drawCmd, pcData, sizeof(glm::vec2));
+			VkCommandBuffer vulkanDrawCmd = cmdBuffer->RT_GetActiveCommandBuffer();
+			pipeline->Bind(vulkanDrawCmd);
 
-		vkCmdBindDescriptorSets(drawCmd,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipeline->GetVulkanPipelineLayout(),
-			0, 1, &dstSet,
-			0, nullptr);
+			vkCmdBindDescriptorSets(vulkanDrawCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipeline->GetVulkanPipelineLayout(),
+				0, 1, &descriptorSet[frameIndex],
+				0, nullptr);
 
-		VkBuffer skyboxBuffer[] = { skyboxVB->GetVulkanBuffer() };
-		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(drawCmd, 0, 1, skyboxBuffer, offsets);
-		vkCmdDraw(drawCmd, 36, 1, 0, 0);
+			vkCmdPushConstants(vulkanDrawCmd,
+				pipeline->GetVulkanPipelineLayout(),
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				(uint32_t)sizeof(glm::vec2),
+				pcData);
+
+			VkBuffer skyboxBuffer[] = { skyboxVB->GetVulkanBuffer() };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(vulkanDrawCmd, 0, 1, skyboxBuffer, offsets);
+			vkCmdDraw(vulkanDrawCmd, 36, 1, 0, 0);
+		});
 	}	
 	
 	void Renderer::BeginTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
 	{
-		vkCmdWriteTimestamp(cmdBuffer->GetActiveCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex);
+		Renderer::Submit([cmdBuffer]
+		{
+			vkCmdWriteTimestamp(cmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+				cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex);
+		});
 	}
 
 	void Renderer::EndTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
 	{
-		vkCmdWriteTimestamp(cmdBuffer->GetActiveCommandBuffer(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+		Renderer::Submit([cmdBuffer]
+		{
+			vkCmdWriteTimestamp(cmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 			cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex + 1);
 
-		cmdBuffer->m_TimestampsQueryIndex += 2;
-		cmdBuffer->m_TimestampsQueryIndex = cmdBuffer->m_TimestampsQueryIndex % cmdBuffer->m_TimestampQueryBufferSize;
+			cmdBuffer->m_TimestampsQueryIndex += 2;
+			cmdBuffer->m_TimestampsQueryIndex = cmdBuffer->m_TimestampsQueryIndex % cmdBuffer->m_TimestampQueryBufferSize;
+		});
 	}
 
 	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
@@ -132,26 +150,47 @@ namespace VulkanCore {
 
 	void Renderer::SubmitFullscreenQuad(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
 	{
-		auto drawCmd = cmdBuffer->GetActiveCommandBuffer();
-		auto dstSet = descriptorSet[GetCurrentFrameIndex()];
+		Renderer::Submit([cmdBuffer, pipeline, descriptorSet]
+		{
+			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad");
 
-		pipeline->Bind(drawCmd);
+			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
+			auto vulkanDrawCmd = cmdBuffer->RT_GetActiveCommandBuffer();
 
-		vkCmdBindDescriptorSets(drawCmd,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipeline->GetVulkanPipelineLayout(),
-			0, 1, &dstSet,
-			0, nullptr);
+			pipeline->Bind(vulkanDrawCmd);
 
-		vkCmdDraw(drawCmd, 3, 1, 0, 0);
+			vkCmdBindDescriptorSets(vulkanDrawCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipeline->GetVulkanPipelineLayout(),
+				0, 1, &descriptorSet[frameIndex],
+				0, nullptr);
+
+			vkCmdDraw(vulkanDrawCmd, 3, 1, 0, 0);
+		});
 	}
 
 	void Renderer::RenderMesh(std::shared_ptr<Mesh> mesh)
 	{
 	}
 
-	void Renderer::WaitandRender()
+	void Renderer::Init()
 	{
+		RenderThread::Init();
+	}
+
+	void Renderer::WaitAndRender()
+	{
+		VK_CORE_PROFILE();
+
+		RenderThread::SetAtomicFlag(true);
+		RenderThread::NotifyThread();
+		RenderThread::WaitAndSet();
+	}
+
+	void Renderer::WaitAndExecute()
+	{
+		RenderThread::SetAtomicFlag(true);
+		RenderThread::NotifyThread();
 		RenderThread::Wait();
 	}
 

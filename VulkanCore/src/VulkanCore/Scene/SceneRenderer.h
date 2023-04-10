@@ -30,6 +30,7 @@ namespace VulkanCore {
 		void SetActiveScene(std::shared_ptr<Scene> scene);
 		void SetViewportSize(uint32_t width, uint32_t height) { m_ViewportSize.x = width; m_ViewportSize.y = height; }
 		void RenderScene(EditorCamera& camera);
+		void RenderLights();
 		void SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, const glm::mat4& transform);
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
@@ -42,6 +43,7 @@ namespace VulkanCore {
 		inline VkRenderPass GetVulkanRenderPass() { return m_SceneRenderPass->GetRenderPass(); }
 		inline std::shared_ptr<Shader> GetGeometryPipelineShader() const { return m_GeometryPipeline->GetSpecification().pShader; }
 		inline const VulkanImage& GetFinalPassImage(uint32_t index) { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
+		inline VkDescriptorSet GetSceneImage(uint32_t index) { return m_SceneImages[index]; }
 
 		struct MeshKey
 		{
@@ -118,6 +120,7 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanRenderCommandBuffer> m_SceneCommandBuffer;
 		std::shared_ptr<VulkanFramebuffer> m_SceneFramebuffer;
 		std::shared_ptr<VulkanRenderPass> m_SceneRenderPass;
+		std::vector<VkDescriptorSet> m_SceneImages;
 
 		// Pipelines
 		std::shared_ptr<VulkanPipeline> m_GeometryPipeline;
@@ -147,6 +150,8 @@ namespace VulkanCore {
 		std::vector<VulkanUniformBuffer> m_UBCamera;
 		std::vector<VulkanUniformBuffer> m_UBPointLight;
 		std::vector<VulkanUniformBuffer> m_UBSpotLight;
+
+		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 
 		std::vector<VulkanImage> m_BloomTextures;
 		std::vector<VulkanImage> m_SceneRenderTextures;

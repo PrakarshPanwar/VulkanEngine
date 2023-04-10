@@ -83,14 +83,19 @@ namespace VulkanCore {
 
 	void VulkanRenderCommandBuffer::Begin()
 	{
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+		Renderer::Submit([this]
+		{
+			VK_CORE_PROFILE_FN("VulkanRenderCommandBuffer::Begin");
 
-		vkBeginCommandBuffer(GetActiveCommandBuffer(), &beginInfo);
+			VkCommandBufferBeginInfo beginInfo{};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 
-		if (m_TimestampQueryPool)
-			vkCmdResetQueryPool(GetActiveCommandBuffer(), m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
+			vkBeginCommandBuffer(RT_GetActiveCommandBuffer(), &beginInfo);
+
+			if (m_TimestampQueryPool)
+				vkCmdResetQueryPool(RT_GetActiveCommandBuffer(), m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
+		});
 	}
 
 	void VulkanRenderCommandBuffer::Begin(VkRenderPass renderPass, VkFramebuffer framebuffer)
@@ -105,25 +110,30 @@ namespace VulkanCore {
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 		beginInfo.pInheritanceInfo = &inheritanceInfo;
 
-		vkBeginCommandBuffer(GetActiveCommandBuffer(), &beginInfo);
+		vkBeginCommandBuffer(RT_GetActiveCommandBuffer(), &beginInfo);
 
 		if (m_TimestampQueryPool)
-			vkCmdResetQueryPool(GetActiveCommandBuffer(), m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
+			vkCmdResetQueryPool(RT_GetActiveCommandBuffer(), m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
 	}
 
 	void VulkanRenderCommandBuffer::End()
 	{
-		vkEndCommandBuffer(GetActiveCommandBuffer());
+		Renderer::Submit([this] { vkEndCommandBuffer(RT_GetActiveCommandBuffer()); });
 	}
 
 	void VulkanRenderCommandBuffer::Execute(VkCommandBuffer secondaryCmdBuffers[], uint32_t count)
 	{
-		vkCmdExecuteCommands(GetActiveCommandBuffer(), count, secondaryCmdBuffers);
+		vkCmdExecuteCommands(RT_GetActiveCommandBuffer(), count, secondaryCmdBuffers);
 	}
 
 	VkCommandBuffer VulkanRenderCommandBuffer::GetActiveCommandBuffer() const
 	{
 		return m_CommandBuffers[Renderer::GetCurrentFrameIndex()];
+	}
+
+	VkCommandBuffer VulkanRenderCommandBuffer::RT_GetActiveCommandBuffer() const
+	{
+		return m_CommandBuffers[Renderer::RT_GetCurrentFrameIndex()];
 	}
 
 	void VulkanRenderCommandBuffer::RetrieveQueryPoolResults()
@@ -141,6 +151,7 @@ namespace VulkanCore {
 		return m_TimestampQueryPoolBuffer[(index << 1) + 1] - m_TimestampQueryPoolBuffer[index << 1];
 	}
 
+	// TODO: Use RT_GetCurrentFrameIndex
 	void VulkanRenderCommandBuffer::SubmitCommandBuffersToQueue()
 	{
 		uint32_t currentFrameIndex = Renderer::GetCurrentFrameIndex();
