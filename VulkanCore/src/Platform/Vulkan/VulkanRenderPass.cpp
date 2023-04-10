@@ -193,6 +193,7 @@ namespace VulkanCore {
 
 		VK_CHECK_RESULT(vkCreateRenderPass(device->GetVulkanDevice(), &renderPassInfo, nullptr, &m_RenderPass), "Failed to Create Scene Render Pass!");
 
+		m_ClearValues.resize(attachmentDescriptions.size());
 		m_AttachmentDescriptions = attachmentDescriptions;
 		Framebuffer->CreateFramebuffer(m_RenderPass);
 	}
@@ -267,16 +268,13 @@ namespace VulkanCore {
 			beginPassInfo.renderArea.offset = { 0, 0 };
 			beginPassInfo.renderArea.extent = framebufferExtent;
 
-			// TODO: We may change this in future as there will be multiple allocation/deallocation in
-			// clearValues vector
-			std::vector<VkClearValue> clearValues{ m_AttachmentDescriptions.size() };
 			for (uint32_t i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
-				clearValues[i].color = { fbSpec.ClearColor.x, fbSpec.ClearColor.y, fbSpec.ClearColor.z, fbSpec.ClearColor.w };
+				m_ClearValues[i].color = { fbSpec.ClearColor.x, fbSpec.ClearColor.y, fbSpec.ClearColor.z, fbSpec.ClearColor.w };
 
-			clearValues[clearValues.size() - 1].depthStencil = { 1.0f, 0 };
+			m_ClearValues[m_ClearValues.size() - 1].depthStencil = { 1.0f, 0 };
 
-			beginPassInfo.clearValueCount = (uint32_t)clearValues.size();
-			beginPassInfo.pClearValues = clearValues.data();
+			beginPassInfo.clearValueCount = (uint32_t)m_ClearValues.size();
+			beginPassInfo.pClearValues = m_ClearValues.data();
 
 			vkCmdBeginRenderPass(vulkanCommandBuffer, &beginPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
