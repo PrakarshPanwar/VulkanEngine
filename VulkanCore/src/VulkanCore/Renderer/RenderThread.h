@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 
 namespace VulkanCore {
 
@@ -10,26 +11,29 @@ namespace VulkanCore {
 		template<typename FuncT>
 		static void SubmitToThread(FuncT&& func)
 		{
-			std::unique_lock<std::mutex> submitLock(m_RTMutex);
-
+			std::scoped_lock submitLock(m_ThreadMutex);
 			m_RenderCommandQueue.emplace_back(std::move(func));
-			m_RTCondVar.notify_one();
 		}
 
+		static void NextFrame();
 		static void Wait();
 		static void WaitAndSet();
-		static void WaitandDestroy();
-		static void NotifyMainThread();
+		static void WaitAndDestroy();
+		static void NotifyThread();
+		static void SetAtomicFlag(bool dispatchFlag) { m_RenderThreadAtomic.store(dispatchFlag); }
 
+		static int GetThreadFrameIndex() { return m_ThreadFrameIndex; }
 		bool CommandQueueEmpty() { return m_RenderCommandQueue.empty(); }
 	private:
 		static void ThreadEntryPoint();
+		static void ExecuteCommandQueue();
 	private:
-		static std::mutex m_RTMutex;
-		static std::condition_variable m_RTCondVar;
+		static std::mutex m_ThreadMutex;
+		static std::atomic<bool> m_RenderThreadAtomic;
 		static std::vector<std::function<void()>> m_RenderCommandQueue;
 		static std::jthread m_RenderThread;
-		static bool m_RTShutDown;
+		static int m_ThreadFrameIndex;
+		static bool m_Running;
 	};
 
 }

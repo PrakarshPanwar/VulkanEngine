@@ -18,7 +18,7 @@
 #include <glm/gtc/color_space.hpp>
 #include "optick.h"
 
-#define IMGUI_VIEWPORTS 1
+#define IMGUI_VIEWPORTS 0
 
 namespace VulkanCore {
 
@@ -51,7 +51,7 @@ namespace VulkanCore {
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000);
 
 		m_ImGuiGlobalPool = descriptorPoolBuilder.Build();
-		m_ImGuiCmdBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetRenderThreadCommandPool(), CommandBufferLevel::Secondary);
+		m_ImGuiCmdBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary);
 
 		ImGui::CreateContext();
 
@@ -112,23 +112,29 @@ namespace VulkanCore {
 	{
 	}
 
+	void ImGuiLayer::ImGuiNewFrame()
+	{
+		VK_CORE_PROFILE();
+
+		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
+	}
+
 	void ImGuiLayer::ImGuiBegin()
 	{
 		VK_CORE_PROFILE();
 
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-		ImGuizmo::BeginFrame();
 	}
 
 	void ImGuiLayer::ImGuiEnd()
 	{
 		VK_CORE_PROFILE();
 
-		int currentFrameIndex = Renderer::GetCurrentFrameIndex();
 		auto swapChain = VulkanSwapChain::GetSwapChain();
-		auto commandBuffer = m_ImGuiCmdBuffer->GetActiveCommandBuffer();
+		auto cmdBuffer = VulkanRenderer::Get()->GetRendererCommandBuffer();
+		VkCommandBuffer vulkanCmdBuffer = cmdBuffer->RT_GetActiveCommandBuffer();
 
 #if IMGUI_VIEWPORTS
 		ImGuiIO& io = ImGui::GetIO();
@@ -136,20 +142,8 @@ namespace VulkanCore {
 		io.DisplaySize = ImVec2{ (float)app->GetWindow()->GetWidth(), (float)app->GetWindow()->GetHeight() };
 #endif
 
-		VkCommandBufferInheritanceInfo inheritanceInfo{};
-		inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-		inheritanceInfo.renderPass = swapChain->GetRenderPass();
-		inheritanceInfo.framebuffer = swapChain->GetFramebuffer(currentFrameIndex);
-
-		VkCommandBufferBeginInfo cmdBufInfo{};
-		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		cmdBufInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-		cmdBufInfo.pInheritanceInfo = &inheritanceInfo;
-
-		VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &cmdBufInfo), "Failed to Begin Command Buffer!");
-
 		ImGui::Render();
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vulkanCmdBuffer);
 
 #if IMGUI_VIEWPORTS
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -160,8 +154,6 @@ namespace VulkanCore {
 			glfwMakeContextCurrent(backup_current_context);
 		}
 #endif
-
-		vkEndCommandBuffer(commandBuffer);
 	}
 
 	void ImGuiLayer::ShutDown()

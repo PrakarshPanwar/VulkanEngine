@@ -83,8 +83,11 @@ namespace VulkanCore {
 
 	void VulkanVertexBuffer::WriteData(void* data, VkDeviceSize offset)
 	{
-		memcpy(m_MappedPtr, data, m_Size);
-		vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, offset, (VkDeviceSize)m_Size);
+		if (data)
+		{
+			memcpy(m_MappedPtr, data, m_Size);
+			vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, offset, (VkDeviceSize)m_Size);
+		}
 	}
 
 }
