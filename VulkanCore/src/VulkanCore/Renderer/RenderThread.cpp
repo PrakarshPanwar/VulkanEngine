@@ -59,8 +59,6 @@ namespace VulkanCore {
 		};
 
 		SubmitToThread(nextFrame);
-		m_RenderThreadAtomic.store(true);
-		m_RenderThreadAtomic.notify_one();
 	}
 
 	void RenderThread::Wait()
@@ -70,6 +68,9 @@ namespace VulkanCore {
 
 	void RenderThread::WaitAndSet()
 	{
+		m_RenderThreadAtomic.store(true);
+		m_RenderThreadAtomic.notify_one();
+
 		int mainFrameIndex = Renderer::GetCurrentFrameIndex();
 		int renderFrameIndex = Renderer::RT_GetCurrentFrameIndex();
 
