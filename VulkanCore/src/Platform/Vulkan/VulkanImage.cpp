@@ -275,7 +275,7 @@ namespace VulkanCore {
 		return result;
 	}
 
-	glm::uvec2 VulkanImage::GetMipSize(uint32_t mipLevel)
+	glm::uvec2 VulkanImage::GetMipSize(uint32_t mipLevel) const
 	{
 		uint32_t width = m_Specification.Width, height = m_Specification.Height;
 		while (mipLevel != 0)

@@ -36,14 +36,14 @@ namespace VulkanCore {
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
-		inline std::shared_ptr<VulkanRenderCommandBuffer> GetCommandBuffer() { return m_SceneCommandBuffer; }
+		inline std::shared_ptr<VulkanRenderCommandBuffer> GetCommandBuffer() const { return m_SceneCommandBuffer; }
 		inline std::shared_ptr<VulkanFramebuffer> GetFramebuffer() { return m_SceneFramebuffer; }
-		inline std::shared_ptr<VulkanRenderPass> GetRenderPass() { return m_SceneRenderPass; }
-		inline VkFramebuffer GetFinalVulkanFramebuffer(uint32_t index) { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
-		inline VkRenderPass GetVulkanRenderPass() { return m_SceneRenderPass->GetRenderPass(); }
+		//inline std::shared_ptr<VulkanRenderPass> GetRenderPass() { return m_SceneRenderPass; }
+		inline VkFramebuffer GetFinalVulkanFramebuffer(uint32_t index) const { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
+		//inline VkRenderPass GetVulkanRenderPass() { return m_SceneRenderPass->GetRenderPass(); }
 		inline std::shared_ptr<Shader> GetGeometryPipelineShader() const { return m_GeometryPipeline->GetSpecification().pShader; }
-		inline const VulkanImage& GetFinalPassImage(uint32_t index) { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
-		inline VkDescriptorSet GetSceneImage(uint32_t index) { return m_SceneImages[index]; }
+		inline const VulkanImage& GetFinalPassImage(uint32_t index) const { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
+		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
 
 		struct MeshKey
 		{
@@ -119,7 +119,7 @@ namespace VulkanCore {
 
 		std::shared_ptr<VulkanRenderCommandBuffer> m_SceneCommandBuffer;
 		std::shared_ptr<VulkanFramebuffer> m_SceneFramebuffer;
-		std::shared_ptr<VulkanRenderPass> m_SceneRenderPass;
+		//std::shared_ptr<VulkanRenderPass> m_SceneRenderPass;
 		std::vector<VkDescriptorSet> m_SceneImages;
 
 		// Pipelines
