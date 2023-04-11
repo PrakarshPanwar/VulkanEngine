@@ -199,7 +199,7 @@ namespace VulkanCore {
 	}
 
 	void VulkanRenderPass::RecreateFramebuffers(uint32_t width, uint32_t height)
-{
+	{
 		auto Framebuffer = m_Specification.TargetFramebuffer;
 		Framebuffer->Resize(width, height);
 		Framebuffer->CreateFramebuffer(m_RenderPass);
