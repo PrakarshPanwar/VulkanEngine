@@ -540,7 +540,6 @@ namespace VulkanCore {
 				VK_CORE_ERROR("Failed to Present Swap Chain Image!");
 		});
 
-		RenderThread::NextFrame();
 		Renderer::WaitAndRender();
 
 		IsFrameStarted = false;

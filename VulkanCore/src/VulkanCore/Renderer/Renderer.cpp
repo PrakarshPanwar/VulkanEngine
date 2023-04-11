@@ -182,8 +182,7 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
-		RenderThread::SetAtomicFlag(true);
-		RenderThread::NotifyThread();
+		RenderThread::NextFrame();
 		RenderThread::WaitAndSet();
 	}
 
