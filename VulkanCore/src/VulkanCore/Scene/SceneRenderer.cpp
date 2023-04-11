@@ -536,6 +536,14 @@ namespace VulkanCore {
 		m_Scene = scene;
 	}
 
+	void SceneRenderer::SetViewportSize(uint32_t width, uint32_t height)
+	{
+		m_ViewportSize.x = width;
+		m_ViewportSize.y = height;
+
+		RecreateScene();
+	}
+
 	void SceneRenderer::RenderScene(EditorCamera& camera)
 	{
 		VK_CORE_PROFILE_FN("Submit-SceneRenderer");
