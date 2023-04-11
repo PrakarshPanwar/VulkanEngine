@@ -24,7 +24,7 @@ namespace VulkanCore {
 		VkCommandBuffer RT_GetActiveCommandBuffer() const;
 
 		void RetrieveQueryPoolResults();
-		uint64_t GetQueryTime(uint32_t index);
+		uint64_t GetQueryTime(uint32_t index) const;
 
 		static void SubmitCommandBuffersToQueue();
 	private:

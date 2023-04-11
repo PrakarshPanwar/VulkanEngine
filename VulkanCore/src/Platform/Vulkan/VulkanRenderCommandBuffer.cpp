@@ -146,7 +146,7 @@ namespace VulkanCore {
 			VK_QUERY_RESULT_64_BIT);
 	}
 
-	uint64_t VulkanRenderCommandBuffer::GetQueryTime(uint32_t index)
+	uint64_t VulkanRenderCommandBuffer::GetQueryTime(uint32_t index) const
 	{
 		return m_TimestampQueryPoolBuffer[(index << 1) + 1] - m_TimestampQueryPoolBuffer[index << 1];
 	}

@@ -480,7 +480,7 @@ namespace VulkanCore {
 	void SceneRenderer::RecreateScene()
 {
 		VK_CORE_INFO("Scene has been Recreated!");
-		m_SceneRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
+		m_GeometryPipeline->GetSpecification().RenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 	}
 
 	void SceneRenderer::OnImGuiRender()
