@@ -28,7 +28,7 @@ namespace VulkanCore {
 		void OnImGuiRender();
 
 		void SetActiveScene(std::shared_ptr<Scene> scene);
-		void SetViewportSize(uint32_t width, uint32_t height) { m_ViewportSize.x = width; m_ViewportSize.y = height; }
+		void SetViewportSize(uint32_t width, uint32_t height);
 		void RenderScene(EditorCamera& camera);
 		void RenderLights();
 		void SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, const glm::mat4& transform);
