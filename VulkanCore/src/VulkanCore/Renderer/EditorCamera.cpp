@@ -28,7 +28,7 @@ namespace VulkanCore {
 		m_Position = CalculatePosition();
 
 		glm::quat orientation = GetOrientation();
-		m_ViewMatrix = glm::translate(glm::mat4(1.0f), m_Position) * glm::toMat4(orientation);
+		m_ViewMatrix = glm::translate(glm::mat4(1.0f), m_Position) * glm::toMat4<float, glm::aligned>(orientation);
 		m_ViewMatrix = glm::inverse(m_ViewMatrix);
 	}
 

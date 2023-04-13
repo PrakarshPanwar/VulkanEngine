@@ -38,6 +38,7 @@ layout(push_constant) uniform Material
     float Roughness;
     float Metallic;
     uint UseNormalMap;
+    uint Padding; // Note: Not to use this variable at any cost
 } u_Material;
 
 // Buffer Data
