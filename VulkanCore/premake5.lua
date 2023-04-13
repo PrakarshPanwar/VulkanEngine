@@ -49,7 +49,7 @@ project "VulkanCore"
 
 	filter "system:windows"
 		systemversion "latest"
-		defines { "VK_PLATFORM_WINDOWS" }
+		defines { "VK_PLATFORM_WINDOWS", "GLM_FORCE_INTRINSICS" }
 
 	filter "configurations:Debug"
 		defines { "VK_DEBUG" }

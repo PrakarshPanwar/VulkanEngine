@@ -423,7 +423,7 @@ namespace glm
 	typedef vec<1, float, defaultp>		vec1;
 	typedef vec<2, float, defaultp>		vec2;
 	typedef vec<3, float, defaultp>		vec3;
-	typedef vec<4, float, defaultp>		vec4;
+	typedef vec<4, float, aligned>		vec4;
 
 	typedef vec<1, float, lowp>			lowp_fvec1;
 	typedef vec<2, float, lowp>			lowp_fvec2;
