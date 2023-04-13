@@ -191,9 +191,9 @@ namespace detail
 	}
 
 	template<typename T, qualifier Q1, qualifier Q2>
-	GLM_FUNC_QUALIFIER bool decompose(mat<4, 4, T, Q1> const& ModelMatrix, vec<3, T, Q1>& Scale, qua<T, Q1>& Orientation, vec<3, T, Q1>& Translation, vec<3, T, Q1>& Skew, vec<4, T, Q2>& Perspective)
+	GLM_FUNC_QUALIFIER bool decompose(mat<4, 4, T, Q2> const& ModelMatrix, vec<3, T, Q1>& Scale, qua<T, Q1>& Orientation, vec<3, T, Q1>& Translation, vec<3, T, Q1>& Skew, vec<4, T, Q2>& Perspective)
 	{
-		mat<4, 4, T, Q1> LocalMatrix(ModelMatrix);
+		mat<4, 4, T, Q2> LocalMatrix(ModelMatrix);
 
 		// Normalize the matrix.
 		if (epsilonEqual(LocalMatrix[3][3], static_cast<T>(0), epsilon<T>()))
@@ -205,7 +205,7 @@ namespace detail
 
 		// perspectiveMatrix is used to solve for perspective, but it also provides
 		// an easy way to test for singularity of the upper 3x3 component.
-		mat<4, 4, T, Q1> PerspectiveMatrix(LocalMatrix);
+		mat<4, 4, T, Q2> PerspectiveMatrix(LocalMatrix);
 
 		for (length_t i = 0; i < 3; i++)
 			PerspectiveMatrix[i][3] = static_cast<T>(0);
@@ -231,8 +231,8 @@ namespace detail
 			// Solve the equation by inverting PerspectiveMatrix and multiplying
 			// rightHandSide by the inverse.  (This is the easiest way, not
 			// necessarily the best.)
-			mat<4, 4, T, Q1> InversePerspectiveMatrix = glm::inverse(PerspectiveMatrix);//   inverse(PerspectiveMatrix, inversePerspectiveMatrix);
-			mat<4, 4, T, Q1> TransposedInversePerspectiveMatrix = glm::transpose(InversePerspectiveMatrix);//   transposeMatrix4(inversePerspectiveMatrix, transposedInversePerspectiveMatrix);
+			mat<4, 4, T, Q2> InversePerspectiveMatrix = glm::inverse(PerspectiveMatrix);//   inverse(PerspectiveMatrix, inversePerspectiveMatrix);
+			mat<4, 4, T, Q2> TransposedInversePerspectiveMatrix = glm::transpose(InversePerspectiveMatrix);//   transposeMatrix4(inversePerspectiveMatrix, transposedInversePerspectiveMatrix);
 
 			Perspective = TransposedInversePerspectiveMatrix * RightHandSide;
 			//  v4MulPointByMatrix(rightHandSide, transposedInversePerspectiveMatrix, perspectivePoint);
