@@ -10,8 +10,6 @@
 #include "Platform/Vulkan/VulkanUniformBuffer.h"
 #include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
-
-#include <glm/glm.hpp>
 #include "Scene.h"
 
 namespace VulkanCore {
