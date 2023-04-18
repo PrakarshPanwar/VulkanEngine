@@ -42,7 +42,7 @@ namespace VulkanCore {
 		inline VkFramebuffer GetFinalVulkanFramebuffer(uint32_t index) const { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
 		//inline VkRenderPass GetVulkanRenderPass() { return m_SceneRenderPass->GetRenderPass(); }
 		inline std::shared_ptr<Shader> GetGeometryPipelineShader() const { return m_GeometryPipeline->GetSpecification().pShader; }
-		inline const VulkanImage& GetFinalPassImage(uint32_t index) const { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
+		inline std::shared_ptr<VulkanImage> GetFinalPassImage(uint32_t index) const { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
 		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
 
 		struct MeshKey
@@ -153,8 +153,8 @@ namespace VulkanCore {
 
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 
-		std::vector<VulkanImage> m_BloomTextures;
-		std::vector<VulkanImage> m_SceneRenderTextures;
+		std::vector<std::shared_ptr<VulkanImage>> m_BloomTextures;
+		std::vector<std::shared_ptr<VulkanImage>> m_SceneRenderTextures;
 
 		std::shared_ptr<VulkanTexture> m_BloomDirtTexture;
 		std::shared_ptr<VulkanTexture> m_PointLightTextureIcon, m_SpotLightTextureIcon;

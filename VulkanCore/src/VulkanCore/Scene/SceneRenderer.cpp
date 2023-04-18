@@ -189,7 +189,7 @@ namespace VulkanCore {
 		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
 
 		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-			m_SceneImages[i] = ImGuiLayer::AddTexture(GetFinalPassImage(i));
+			m_SceneImages[i] = ImGuiLayer::AddTexture(*GetFinalPassImage(i));
 
 		m_UBCamera.reserve(VulkanSwapChain::MaxFramesInFlight);
 		m_UBPointLight.reserve(VulkanSwapChain::MaxFramesInFlight);
@@ -221,14 +221,14 @@ namespace VulkanCore {
 
 		for (int i = 0; i < 3; i++)
 		{
-			VulkanImage& BloomTexture = m_BloomTextures.emplace_back(bloomRTSpec);
-			BloomTexture.Invalidate();
+			auto BloomTexture = m_BloomTextures.emplace_back(std::make_shared<VulkanImage>(bloomRTSpec));
+			BloomTexture->Invalidate();
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, BloomTexture.GetVulkanImageInfo().Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd, BloomTexture->GetVulkanImageInfo().Image,
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, BloomTexture.GetSpecification().MipLevels, 0, 1 });
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, BloomTexture->GetSpecification().MipLevels, 0, 1 });
 		}
 
 		ImageSpecification sceneRTSpec = {};
@@ -241,14 +241,14 @@ namespace VulkanCore {
 
 		for (int i = 0; i < 3; i++)
 		{
-			VulkanImage& SceneTexture = m_SceneRenderTextures.emplace_back(sceneRTSpec);
-			SceneTexture.Invalidate();
+			auto SceneTexture = m_SceneRenderTextures.emplace_back(std::make_shared<VulkanImage>(sceneRTSpec));
+			SceneTexture->Invalidate();
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, SceneTexture.GetVulkanImageInfo().Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd, SceneTexture->GetVulkanImageInfo().Image,
 				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneTexture.GetSpecification().MipLevels, 0, 1 });
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneTexture->GetSpecification().MipLevels, 0, 1 });
 		}
 
 		device->FlushCommandBuffer(barrierCmd);
@@ -344,7 +344,7 @@ namespace VulkanCore {
 			VulkanSwapChain::MaxFramesInFlight,
 			{ *m_BloomPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
-		const uint32_t mipCount = m_BloomTextures[0].GetSpecification().MipLevels;
+		const uint32_t mipCount = m_BloomTextures[0]->GetSpecification().MipLevels;
 		for (int i = 0; i < m_BloomPrefilterSets.size(); i++)
 		{
 			// Set A : Prefiltered Sets
@@ -352,10 +352,10 @@ namespace VulkanCore {
 			// Binding 1(u_Texture): RenderTex
 			// Binding 2(u_BloomTexture): RenderTex
 
-			VkDescriptorImageInfo outputImageInfo = m_BloomTextures[0].GetDescriptorInfo();
+			VkDescriptorImageInfo outputImageInfo = m_BloomTextures[0]->GetDescriptorInfo();
 			bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
 
-			VkDescriptorImageInfo texInfo = m_SceneRenderTextures[i].GetDescriptorInfo();
+			VkDescriptorImageInfo texInfo = m_SceneRenderTextures[i]->GetDescriptorInfo();
 			bloomDescriptorWriter[i].WriteImage(1, &texInfo);
 			bloomDescriptorWriter[i].WriteImage(2, &texInfo);
 
@@ -372,11 +372,11 @@ namespace VulkanCore {
 				// Binding 2(u_BloomTexture): RenderTex
 				int currentIdx = j - 1;
 
-				outputImageInfo = m_BloomTextures[1].GetDescriptorInfo();
-				outputImageInfo.imageView = m_BloomTextures[1].CreateImageViewSingleMip(j);
+				outputImageInfo = m_BloomTextures[1]->GetDescriptorInfo();
+				outputImageInfo.imageView = m_BloomTextures[1]->CreateImageViewSingleMip(j);
 				bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
 
-				texInfo = m_BloomTextures[0].GetDescriptorInfo();
+				texInfo = m_BloomTextures[0]->GetDescriptorInfo();
 				bloomDescriptorWriter[i].WriteImage(1, &texInfo);
 
 				success = bloomDescriptorWriter[i].Build(m_BloomPingSets[i][currentIdx]);
@@ -387,11 +387,11 @@ namespace VulkanCore {
 				// Binding 1(u_Texture): BloomTex[1]
 				// Binding 2(u_BloomTexture): RenderTex
 
-				outputImageInfo = m_BloomTextures[0].GetDescriptorInfo();
-				outputImageInfo.imageView = m_BloomTextures[0].CreateImageViewSingleMip(j);
+				outputImageInfo = m_BloomTextures[0]->GetDescriptorInfo();
+				outputImageInfo.imageView = m_BloomTextures[0]->CreateImageViewSingleMip(j);
 				bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
 
-				texInfo = m_BloomTextures[1].GetDescriptorInfo();
+				texInfo = m_BloomTextures[1]->GetDescriptorInfo();
 				bloomDescriptorWriter[i].WriteImage(1, &texInfo);
 
 				success = bloomDescriptorWriter[i].Build(m_BloomPongSets[i][currentIdx]);
@@ -403,11 +403,11 @@ namespace VulkanCore {
 			// Binding 1(u_Texture): BloomTex[0]
 			// Binding 2(u_BloomTexture): RenderTex
 
-			outputImageInfo = m_BloomTextures[2].GetDescriptorInfo();
-			outputImageInfo.imageView = m_BloomTextures[2].CreateImageViewSingleMip(mipCount - 1);
+			outputImageInfo = m_BloomTextures[2]->GetDescriptorInfo();
+			outputImageInfo.imageView = m_BloomTextures[2]->CreateImageViewSingleMip(mipCount - 1);
 			bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
 
-			texInfo = m_BloomTextures[0].GetDescriptorInfo();
+			texInfo = m_BloomTextures[0]->GetDescriptorInfo();
 			bloomDescriptorWriter[i].WriteImage(1, &texInfo);
 
 			success = bloomDescriptorWriter[i].Build(m_BloomUpsampleFirstSets[i]);
@@ -421,10 +421,10 @@ namespace VulkanCore {
 			m_BloomUpsampleSets[i].resize(mipCount - 1);
 			for (int j = mipCount - 2; j >= 0; --j)
 			{
-				outputImageInfo.imageView = m_BloomTextures[2].CreateImageViewSingleMip(j);
+				outputImageInfo.imageView = m_BloomTextures[2]->CreateImageViewSingleMip(j);
 				bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
 
-				VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2].GetDescriptorInfo();
+				VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2]->GetDescriptorInfo();
 				bloomDescriptorWriter[i].WriteImage(2, &bloomTexInfo);
 
 				success = bloomDescriptorWriter[i].Build(m_BloomUpsampleSets[i][j]);
@@ -439,8 +439,8 @@ namespace VulkanCore {
 
 		for (int i = 0; i < m_CompositeDescriptorSets.size(); ++i)
 		{
-			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
-			VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2].GetDescriptorInfo();
+			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i]->GetDescriptorInfo();
+			VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2]->GetDescriptorInfo();
 			VkDescriptorImageInfo bloomDirtTexInfo = m_BloomDirtTexture->GetDescriptorImageInfo();
 
 			compDescriptorWriter[i].WriteImage(0, &imagesInfo);
@@ -468,7 +468,7 @@ namespace VulkanCore {
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 		}
 		
-		m_BloomDebugImage = ImGuiLayer::AddTexture(m_BloomTextures[2]);
+		//m_BloomDebugImage = ImGuiLayer::AddTexture(m_BloomTextures[2]);
 	}
 
 	void SceneRenderer::Release()
@@ -541,7 +541,7 @@ namespace VulkanCore {
 		m_ViewportSize.x = width;
 		m_ViewportSize.y = height;
 
-		RecreateScene();
+		//RecreateScene();
 	}
 
 	void SceneRenderer::RenderScene(EditorCamera& camera)
@@ -728,10 +728,10 @@ namespace VulkanCore {
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
 		VulkanRenderer::CopyVulkanImage(m_SceneCommandBuffer,
-			&m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[frameIndex],
-			&m_SceneRenderTextures[frameIndex]);
+			m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[frameIndex],
+			m_SceneRenderTextures[frameIndex]);
 
-		VulkanRenderer::BlitVulkanImage(m_SceneCommandBuffer, &m_SceneRenderTextures[frameIndex]);
+		VulkanRenderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
 	}
 
 	void SceneRenderer::BloomCompute()
@@ -756,7 +756,7 @@ namespace VulkanCore {
 				m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
 				&m_BloomPrefilterSets[frameIndex], 0, nullptr);
 
-			const uint32_t mips = m_BloomTextures[0].GetSpecification().MipLevels;
+			const uint32_t mips = m_BloomTextures[0]->GetSpecification().MipLevels;
 			glm::uvec2 bloomMipSize = m_BloomMipSize;
 
 			m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
@@ -775,7 +775,7 @@ namespace VulkanCore {
 					m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
 					&m_BloomPingSets[frameIndex][currentIdx], 0, nullptr);
 
-				bloomMipSize = m_BloomTextures[0].GetMipSize(i);
+				bloomMipSize = m_BloomTextures[0]->GetMipSize(i);
 
 				m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 				m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
@@ -800,7 +800,7 @@ namespace VulkanCore {
 				m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
 				&m_BloomUpsampleFirstSets[frameIndex], 0, nullptr);
 
-			bloomMipSize = m_BloomTextures[2].GetMipSize(mips - 1);
+			bloomMipSize = m_BloomTextures[2]->GetMipSize(mips - 1);
 
 			m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
@@ -815,7 +815,7 @@ namespace VulkanCore {
 					m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
 					&m_BloomUpsampleSets[frameIndex][i], 0, nullptr);
 
-				bloomMipSize = m_BloomTextures[2].GetMipSize(i);
+				bloomMipSize = m_BloomTextures[2]->GetMipSize(i);
 
 				m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 				m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);

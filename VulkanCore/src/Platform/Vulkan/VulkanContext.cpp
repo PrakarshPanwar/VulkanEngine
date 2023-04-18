@@ -65,6 +65,9 @@ namespace VulkanCore {
 
 		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName)
 		{
+			if (vkCmdDebugMarkerBeginEXT == nullptr)
+				return;
+
 			VkDebugMarkerMarkerInfoEXT markerInfoExt{};
 			markerInfoExt.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 			markerInfoExt.pMarkerName = labelName;
@@ -78,6 +81,9 @@ namespace VulkanCore {
 
 		void EndCommandBufferLabel(VkCommandBuffer cmdBuffer)
 		{
+			if (vkCmdDebugMarkerEndEXT == nullptr)
+				return;
+
 			vkCmdDebugMarkerEndEXT(cmdBuffer);
 		}
 
