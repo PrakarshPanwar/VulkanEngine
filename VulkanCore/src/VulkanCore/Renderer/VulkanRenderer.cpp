@@ -47,7 +47,7 @@ namespace VulkanCore {
 			if (result == VK_ERROR_OUT_OF_DATE_KHR)
 			{
 				RecreateSwapChain();
-				return nullptr;
+				return;
 			}
 
 			VK_CORE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to Acquire Swap Chain!");
@@ -252,7 +252,7 @@ namespace VulkanCore {
 		return { envFiltered, irradianceMap };
 	}
 
-	void VulkanRenderer::CopyVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const VulkanImage* sourceImage, const VulkanImage* destImage)
+	void VulkanRenderer::CopyVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage> sourceImage, const std::shared_ptr<VulkanImage> destImage)
 	{
 		Renderer::Submit([commandBuffer, sourceImage, destImage]
 		{
@@ -302,7 +302,7 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::BlitVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const VulkanImage* image)
+	void VulkanRenderer::BlitVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage> image)
 	{
 		Renderer::Submit([commandBuffer, image]
 		{
