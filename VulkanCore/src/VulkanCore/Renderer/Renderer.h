@@ -24,7 +24,7 @@ namespace VulkanCore {
 		static void RenderSkybox(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData = nullptr);
 		static void BeginTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
 		static void EndTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
-		static void BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
+		static void BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::string& name);
 		static void EndGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
 
 		static std::shared_ptr<VulkanTexture> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);

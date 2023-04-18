@@ -662,6 +662,7 @@ namespace VulkanCore {
 	void SceneRenderer::CompositePass()
 	{
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Composite-Pass");
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
@@ -669,6 +670,7 @@ namespace VulkanCore {
 		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_CompositePipeline, m_CompositeDescriptorSets);
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 	}
 
@@ -681,6 +683,7 @@ namespace VulkanCore {
 
 		// Rendering Geometry
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Geometry-Pass");
 
 		Renderer::Submit([this]
 		{
@@ -700,9 +703,11 @@ namespace VulkanCore {
 		for (auto& [mk, dc] : m_MeshDrawList)
 			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
 
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Skybox");
 
 		// Rendering Skybox
 		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxDescriptorSets, &m_SkyboxSettings);
@@ -710,7 +715,11 @@ namespace VulkanCore {
 
 		// Rendering Point Lights
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Lights");
+
 		RenderLights();
+
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().RenderPass);
@@ -728,6 +737,7 @@ namespace VulkanCore {
 	void SceneRenderer::BloomCompute()
 	{
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Bloom");
 
 		Renderer::Submit([this]
 		{
@@ -813,6 +823,7 @@ namespace VulkanCore {
 
 		});
 
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 	}
 

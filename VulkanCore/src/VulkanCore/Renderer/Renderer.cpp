@@ -126,12 +126,22 @@ namespace VulkanCore {
 		});
 	}
 
-	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
+	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::string& name)
 	{
+		Renderer::Submit([cmdBuffer, name]
+		{
+			VkCommandBuffer vulkanCmdBuffer = cmdBuffer->RT_GetActiveCommandBuffer();
+			VKUtils::SetCommandBufferLabel(vulkanCmdBuffer, name.c_str());
+		});
 	}
 
 	void Renderer::EndGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
 	{
+		Renderer::Submit([cmdBuffer]
+		{
+			VkCommandBuffer vulkanCmdBuffer = cmdBuffer->RT_GetActiveCommandBuffer();
+			VKUtils::EndCommandBufferLabel(vulkanCmdBuffer);
+		});
 	}
 
 	std::shared_ptr<VulkanTexture> Renderer::GetWhiteTexture(ImageFormat format)
