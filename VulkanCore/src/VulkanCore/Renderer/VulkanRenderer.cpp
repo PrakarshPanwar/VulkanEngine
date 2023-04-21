@@ -252,7 +252,7 @@ namespace VulkanCore {
 		return { envFiltered, irradianceMap };
 	}
 
-	void VulkanRenderer::CopyVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage> sourceImage, const std::shared_ptr<VulkanImage> destImage)
+	void VulkanRenderer::CopyVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage>& sourceImage, const std::shared_ptr<VulkanImage>& destImage)
 	{
 		Renderer::Submit([commandBuffer, sourceImage, destImage]
 		{
@@ -302,7 +302,7 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::BlitVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage> image)
+	void VulkanRenderer::BlitVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage>& image)
 	{
 		Renderer::Submit([commandBuffer, image]
 		{
