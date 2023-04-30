@@ -3,6 +3,7 @@
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanAllocator.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 namespace VulkanCore {
 
@@ -303,15 +304,18 @@ namespace VulkanCore {
 
 	void VulkanImage::Release()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-		VulkanAllocator allocator("Image2D");
+		Renderer::SubmitResourceFree([mipReferences = m_MipReferences, info = m_Info]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			VulkanAllocator allocator("Image2D");
 
-		vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
-		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
-		allocator.DestroyImage(m_Info.Image, m_Info.MemoryAlloc);
+			vkDestroyImageView(device->GetVulkanDevice(), info.ImageView, nullptr);
+			vkDestroySampler(device->GetVulkanDevice(), info.Sampler, nullptr);
+			allocator.DestroyImage((VkImage&)info.Image, info.MemoryAlloc);
 
-		for (auto& MipReference : m_MipReferences)
-			vkDestroyImageView(device->GetVulkanDevice(), MipReference, nullptr);
+			for (auto& MipReference : mipReferences)
+				vkDestroyImageView(device->GetVulkanDevice(), MipReference, nullptr);
+		});
 	}
 
 }

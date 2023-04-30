@@ -541,7 +541,7 @@ namespace VulkanCore {
 		m_ViewportSize.x = width;
 		m_ViewportSize.y = height;
 
-		//RecreateScene();
+		RecreateScene();
 	}
 
 	void SceneRenderer::RenderScene(EditorCamera& camera)
