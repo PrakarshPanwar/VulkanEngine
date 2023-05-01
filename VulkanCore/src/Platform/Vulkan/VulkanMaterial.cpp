@@ -9,21 +9,26 @@
 namespace VulkanCore {
 
 	VulkanMaterial::VulkanMaterial(const std::string& debugName)
-		: m_DebugName(debugName)
+		: m_DebugName(debugName), m_Shader(SceneRenderer::GetSceneRenderer()->GetGeometryPipelineShader())
 	{
-		Invalidate();
-		InvalidateDescriptorSets();
+		InvalidateMaterial();
+		InvalidateMaterialDescriptorSets();
+	}
+
+	VulkanMaterial::VulkanMaterial(std::shared_ptr<Shader> shader, const std::string& debugName)
+		: m_DebugName(debugName), m_Shader(shader)
+	{
 	}
 
 	VulkanMaterial::~VulkanMaterial()
 	{
 	}
 
-	void VulkanMaterial::Invalidate()
+	void VulkanMaterial::InvalidateMaterial()
 	{
 		auto descriptorSetPool = Application::Get()->GetDescriptorPool();
 
-		auto shader = SceneRenderer::GetSceneRenderer()->GetGeometryPipelineShader();
+		auto shader = m_Shader;
 		auto materialSetLayout = shader->GetDescriptorSetLayout(1);
 		VkDescriptorSetLayout vulkanMaterialSetLayout = materialSetLayout->GetVulkanDescriptorSetLayout();
 		for (uint32_t i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
@@ -37,7 +42,7 @@ namespace VulkanCore {
 		InitializeMaterialTextures();
 	}
 
-	void VulkanMaterial::InvalidateDescriptorSets()
+	void VulkanMaterial::InvalidateMaterialDescriptorSets()
 	{
 		for (uint32_t i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
 		{
@@ -47,6 +52,22 @@ namespace VulkanCore {
 
 			m_MaterialDescriptorWriter[i].Build(m_MaterialDescriptorSets[i]);
 		}
+	}
+
+	void VulkanMaterial::Invalidate()
+	{
+		auto shader = m_Shader;
+		auto pipelineSetLayouts = shader->CreateAllDescriptorSetsLayout();
+
+		/*for (auto pipelineSetLayout : pipelineSetLayouts)
+		{
+			pipelineSetLayout->
+		}*/
+	}
+
+	void VulkanMaterial::InvalidateDescriptorSets()
+	{
+
 	}
 
 	void VulkanMaterial::InitializeMaterialTextures()
@@ -61,6 +82,24 @@ namespace VulkanCore {
 		m_ARMDstID = ImGuiLayer::AddTexture(*m_ARMTexture);
 	}
 
+	void VulkanMaterial::SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture)
+	{
+		m_DiffuseTexture = texture;
+		UpdateDiffuseMap(m_DiffuseTexture);
+	}
+
+	void VulkanMaterial::SetNormalTexture(std::shared_ptr<VulkanTexture> texture)
+	{
+		m_NormalTexture = texture;
+		UpdateNormalMap(m_NormalTexture);
+	}
+
+	void VulkanMaterial::SetARMTexture(std::shared_ptr<VulkanTexture> texture)
+	{
+		m_ARMTexture = texture;
+		UpdateARMMap(m_ARMTexture);
+	}
+
 	void VulkanMaterial::UpdateMaterials(const std::string& albedo, const std::string& normal, const std::string& arm)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
@@ -69,7 +108,7 @@ namespace VulkanCore {
 		if (!albedo.empty())
 		{
 			std::shared_ptr<VulkanTexture> diffuseTexture = std::make_shared<VulkanTexture>(albedo, ImageFormat::RGBA8_SRGB);
-			SetDiffuseTexture(diffuseTexture);
+			m_DiffuseTexture = diffuseTexture;
 
 			// Update Material Texture
 			for (uint32_t i = 0; i < 3; ++i)
@@ -104,7 +143,7 @@ namespace VulkanCore {
 		if (!normal.empty())
 		{
 			std::shared_ptr<VulkanTexture> normalTexture = std::make_shared<VulkanTexture>(normal, ImageFormat::RGBA8_UNORM);
-			SetNormalTexture(normalTexture);
+			m_NormalTexture = normalTexture;
 
 			// Update Material Texture
 			for (uint32_t i = 0; i < 3; ++i)
@@ -139,7 +178,7 @@ namespace VulkanCore {
 		if (!arm.empty())
 		{
 			std::shared_ptr<VulkanTexture> armTexture = std::make_shared<VulkanTexture>(arm, ImageFormat::RGBA8_UNORM);
-			SetARMTexture(armTexture);
+			m_ARMTexture = armTexture;
 
 			// Update Material Texture
 			for (uint32_t i = 0; i < 3; ++i)
@@ -177,7 +216,6 @@ namespace VulkanCore {
 	void VulkanMaterial::UpdateDiffuseMap(std::shared_ptr<VulkanTexture> diffuse)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-		SetDiffuseTexture(diffuse);
 
 		std::vector<VkWriteDescriptorSet> writeDescriptors{};
 		for (uint32_t i = 0; i < 3; ++i)
@@ -214,7 +252,6 @@ namespace VulkanCore {
 	void VulkanMaterial::UpdateNormalMap(std::shared_ptr<VulkanTexture> normal)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-		SetNormalTexture(normal);
 
 		std::vector<VkWriteDescriptorSet> writeDescriptors{};
 		for (uint32_t i = 0; i < 3; ++i)
@@ -251,7 +288,6 @@ namespace VulkanCore {
 	void VulkanMaterial::UpdateARMMap(std::shared_ptr<VulkanTexture> arm)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-		SetARMTexture(arm);
 
 		std::vector<VkWriteDescriptorSet> writeDescriptors{};
 		for (uint32_t i = 0; i < 3; ++i)
