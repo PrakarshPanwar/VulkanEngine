@@ -304,7 +304,8 @@ namespace VulkanCore {
 
 	void VulkanImage::Release()
 	{
-		Renderer::SubmitResourceFree([mipReferences = m_MipReferences, info = m_Info]
+#if USE_DELETION_QUEUE
+		Renderer::SubmitResourceFree([mipRefs = m_MipReferences, info = m_Info]
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 			VulkanAllocator allocator("Image2D");
@@ -313,9 +314,20 @@ namespace VulkanCore {
 			vkDestroySampler(device->GetVulkanDevice(), info.Sampler, nullptr);
 			allocator.DestroyImage((VkImage&)info.Image, info.MemoryAlloc);
 
-			for (auto& MipReference : mipReferences)
+			for (auto& MipReference : mipRefs)
 				vkDestroyImageView(device->GetVulkanDevice(), MipReference, nullptr);
 		});
+#else
+		auto device = VulkanContext::GetCurrentDevice();
+		VulkanAllocator allocator("Image2D");
+
+		vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
+		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
+		allocator.DestroyImage(m_Info.Image, m_Info.MemoryAlloc);
+
+		for (auto& MipReference : m_MipReferences)
+			vkDestroyImageView(device->GetVulkanDevice(), MipReference, nullptr);
+#endif
 	}
 
 }

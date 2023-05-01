@@ -30,9 +30,9 @@ namespace VulkanCore {
 			return { m_DiffuseTexture->GetFilePath(), m_NormalTexture->GetFilePath(), m_ARMTexture->GetFilePath() };
 		}
 
-		void SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture);
-		void SetNormalTexture(std::shared_ptr<VulkanTexture> texture);
-		void SetARMTexture(std::shared_ptr<VulkanTexture> texture);
+		virtual void SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture);
+		virtual void SetNormalTexture(std::shared_ptr<VulkanTexture> texture);
+		virtual void SetARMTexture(std::shared_ptr<VulkanTexture> texture);
 
 		inline MaterialData& GetMaterialData() { return m_MaterialData; }
 	protected:

@@ -541,7 +541,9 @@ namespace VulkanCore {
 		m_ViewportSize.x = width;
 		m_ViewportSize.y = height;
 
+#if USE_DELETION_QUEUE
 		RecreateScene();
+#endif
 	}
 
 	void SceneRenderer::RenderScene(EditorCamera& camera)

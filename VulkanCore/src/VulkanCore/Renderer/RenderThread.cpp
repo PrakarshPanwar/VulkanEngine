@@ -44,6 +44,7 @@ namespace VulkanCore {
 			for (const auto& executeCommand : executeQueue)
 				executeCommand();
 
+#if USE_DELETION_QUEUE
 			// Swap Deletion Queues
 			std::vector<std::function<void()>> deletionQueue;
 			{
@@ -54,6 +55,7 @@ namespace VulkanCore {
 			// Execute Delete Commands
 			for (const auto& deletionCommand : deletionQueue)
 				deletionCommand();
+#endif
 
 			m_RenderThreadAtomic.notify_one();
 

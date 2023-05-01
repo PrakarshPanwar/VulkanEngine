@@ -45,11 +45,13 @@ namespace VulkanCore {
 			RenderThread::SubmitToThread(func);
 		}
 
+#if USE_DELETION_QUEUE
 		template<typename FuncT>
 		static void SubmitResourceFree(FuncT&& func)
 		{
 			RenderThread::SubmitToDeletion(func);
 		}
+#endif
 
 		static void Init();
 		static void WaitAndRender();
