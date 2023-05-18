@@ -47,7 +47,7 @@ namespace VulkanCore {
 			if (result == VK_ERROR_OUT_OF_DATE_KHR)
 			{
 				RecreateSwapChain();
-				return nullptr;
+				return;
 			}
 
 			VK_CORE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to Acquire Swap Chain!");
