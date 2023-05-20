@@ -115,9 +115,29 @@ namespace VulkanCore {
 			VkWriteDescriptorSet writeDescriptor{};
 			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
-			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptor.descriptorType = m_Shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
 			writeDescriptor.dstBinding = binding;
 			writeDescriptor.pImageInfo = &image->GetDescriptorInfo();
+			writeDescriptor.descriptorCount = 1;
+			writeDescriptor.dstArrayElement = 0;
+
+			writeDescriptors.push_back(writeDescriptor);
+		}
+
+		m_MaterialDescriptorWriter[binding] = writeDescriptors;
+	}
+
+	void VulkanMaterial::SetImage(uint32_t binding, std::shared_ptr<VulkanImage> image, uint32_t mipLevel)
+	{
+		std::vector<VkWriteDescriptorSet> writeDescriptors{};
+		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
+		{
+			VkWriteDescriptorSet writeDescriptor{};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
+			writeDescriptor.descriptorType = m_Shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
+			writeDescriptor.dstBinding = binding;
+			writeDescriptor.pImageInfo = &image->GetMipDescriptorInfo(mipLevel);
 			writeDescriptor.descriptorCount = 1;
 			writeDescriptor.dstArrayElement = 0;
 
@@ -196,7 +216,7 @@ namespace VulkanCore {
 			VkWriteDescriptorSet writeDescriptor{};
 			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
-			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptor.descriptorType = m_Shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
 			writeDescriptor.dstBinding = binding;
 			writeDescriptor.pImageInfo = &images[i]->GetDescriptorInfo();
 			writeDescriptor.descriptorCount = 1;

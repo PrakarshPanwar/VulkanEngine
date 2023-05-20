@@ -26,6 +26,7 @@ namespace VulkanCore {
 		void SetARMTexture(std::shared_ptr<VulkanTexture> texture) override;
 
 		void SetImage(uint32_t binding, std::shared_ptr<VulkanImage> image);
+		void SetImage(uint32_t binding, std::shared_ptr<VulkanImage> image, uint32_t mipLevel);
 		void SetImages(uint32_t binding, const std::vector<std::shared_ptr<VulkanImage>>& images);
 		void SetTexture(uint32_t binding, std::shared_ptr<VulkanTexture> texture);
 		void SetTexture(uint32_t binding, std::shared_ptr<VulkanTextureCube> textureCube);
@@ -50,16 +51,13 @@ namespace VulkanCore {
 		std::string m_DebugName;
 
 		std::shared_ptr<Shader> m_Shader;
-		// NOTE: Material Descriptor Set is Set 0, rest are Pending Descriptor Sets
-		// Or maybe we can use material per set, so if shader has 5 sets then 5 material objects are required
+		// NOTE: We are using material per shader set, so if shader has 5 sets then 5 material objects are required
 		std::vector<VkDescriptorSet> m_MaterialDescriptorSets;
-		
 		// Key: Binding ID, Value: 3-sized Descriptor Sets vector
 		std::unordered_map<uint32_t, std::vector<VkWriteDescriptorSet>> m_MaterialDescriptorWriter;
 
+		// NOTE: These are for ImGui Materials Panel
 		VkDescriptorSet m_DiffuseDstID, m_NormalDstID, m_ARMDstID;
-		// TODO: We will implement this in future for now this is enough
-		// Key: Binding ID, Value: 3-sized Descriptor Sets vector
 	};
 
 }

@@ -252,9 +252,12 @@ namespace VulkanCore {
 		UpdateImageDescriptor();
 	}
 
-	VkImageView VulkanImage::CreateImageViewSingleMip(uint32_t mip)
+	void VulkanImage::CreateImageViewSingleMip(uint32_t mip)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
+
+		if (m_DescriptorMipImagesInfo.contains(mip))
+			return;
 
 		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
 
@@ -272,8 +275,12 @@ namespace VulkanCore {
 		VkImageView result;
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &result), "Failed to Create Image View!");
 		m_MipReferences.push_back(result);
-
-		return result;
+		
+		VkDescriptorImageInfo mipImageInfo{};
+		mipImageInfo.imageView = result;
+		mipImageInfo.imageLayout = m_DescriptorImageInfo.imageLayout;
+		mipImageInfo.sampler = m_DescriptorImageInfo.sampler;
+		m_DescriptorMipImagesInfo[mip] = mipImageInfo;
 	}
 
 	glm::uvec2 VulkanImage::GetMipSize(uint32_t mipLevel) const
