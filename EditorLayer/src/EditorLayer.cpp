@@ -293,7 +293,7 @@ namespace VulkanCore {
 		return false;
 	}
 
-	void EditorLayer::RecreateSceneDescriptors()
+	void EditorLayer::UpdateSceneDescriptors()
 	{
 	}
 

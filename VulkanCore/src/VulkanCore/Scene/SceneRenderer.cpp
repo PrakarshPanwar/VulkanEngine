@@ -8,6 +8,7 @@
 
 #include "VulkanCore/Mesh/Mesh.h"
 #include "Platform/Vulkan/VulkanAllocator.h"
+#include "Platform/Vulkan/VulkanMaterial.h"
 
 #include <imgui.h>
 
@@ -184,19 +185,20 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		Renderer::WaitAndExecute();
 
-		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_SceneImages.resize(framesInFlight);
 
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
+		for (int i = 0; i < framesInFlight; i++)
 			m_SceneImages[i] = ImGuiLayer::AddTexture(*GetFinalPassImage(i));
 
-		m_UBCamera.reserve(VulkanSwapChain::MaxFramesInFlight);
-		m_UBPointLight.reserve(VulkanSwapChain::MaxFramesInFlight);
-		m_UBSpotLight.reserve(VulkanSwapChain::MaxFramesInFlight);
+		m_UBCamera.reserve(framesInFlight);
+		m_UBPointLight.reserve(framesInFlight);
+		m_UBSpotLight.reserve(framesInFlight);
 
 		// Uniform Buffers
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
+		for (int i = 0; i < framesInFlight; ++i)
 		{
 			m_UBCamera.emplace_back(sizeof(UBCamera));
 			m_UBPointLight.emplace_back(sizeof(UBPointLights));
@@ -269,15 +271,16 @@ namespace VulkanCore {
 		// Writing in Descriptors
 		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
 
-		m_GeometryDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_PointLightDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_SpotLightDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_CompositeDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_SkyboxDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_GeometryDescriptorSets.resize(framesInFlight);
+		m_PointLightDescriptorSets.resize(framesInFlight);
+		m_SpotLightDescriptorSets.resize(framesInFlight);
+		m_CompositeDescriptorSets.resize(framesInFlight);
+		m_SkyboxDescriptorSets.resize(framesInFlight);
 
 		// Geometry Descriptors
+#if 0
 		std::vector<VulkanDescriptorWriter> geomDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
+			framesInFlight,
 			{ *m_GeometryPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
 		for (int i = 0; i < m_GeometryDescriptorSets.size(); ++i)
@@ -305,14 +308,25 @@ namespace VulkanCore {
 
 			geomDescriptorWriter[i].Build(m_GeometryDescriptorSets[i]);
 		}
+#else
+		m_GeometryMaterial = std::make_shared<VulkanMaterial>(m_GeometryPipeline->GetSpecification().pShader, "Geometry Shader Material");
+		m_GeometryMaterial->SetBuffers(0, m_UBCamera);
+		m_GeometryMaterial->SetBuffers(1, m_UBPointLight);
+		m_GeometryMaterial->SetBuffers(2, m_UBSpotLight);
+		m_GeometryMaterial->SetTexture(6, m_IrradianceTexture);
+		m_GeometryMaterial->SetImage(7, m_BRDFTexture);
+		m_GeometryMaterial->SetTexture(8, m_PrefilteredTexture);
+
+		m_GeometryMaterial->InvalidateDescriptorSets();
+#endif
 
 		// Point Light Descriptors
 		std::vector<VulkanDescriptorWriter> pointLightDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
+			framesInFlight,
 			{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
 		std::vector<VulkanDescriptorWriter> spotLightDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
+			framesInFlight,
 			{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
 		for (int i = 0; i < m_PointLightDescriptorSets.size(); ++i)
@@ -333,15 +347,15 @@ namespace VulkanCore {
 			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
 		}
 
-		m_BloomPrefilterSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_BloomPingSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_BloomPongSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_BloomUpsampleFirstSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_BloomUpsampleSets.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_BloomPrefilterSets.resize(framesInFlight);
+		m_BloomPingSets.resize(framesInFlight);
+		m_BloomPongSets.resize(framesInFlight);
+		m_BloomUpsampleFirstSets.resize(framesInFlight);
+		m_BloomUpsampleSets.resize(framesInFlight);
 
 		// Bloom Compute Descriptors
 		std::vector<VulkanDescriptorWriter> bloomDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
+			framesInFlight,
 			{ *m_BloomPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
 		const uint32_t mipCount = m_BloomTextures[0]->GetSpecification().MipLevels;
@@ -434,7 +448,7 @@ namespace VulkanCore {
 
 		// Composite Descriptors
 		std::vector<VulkanDescriptorWriter> compDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
+			framesInFlight,
 			{ *m_CompositePipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
 		for (int i = 0; i < m_CompositeDescriptorSets.size(); ++i)
@@ -453,7 +467,7 @@ namespace VulkanCore {
 
 		// Skybox Descriptors
 		std::vector<VulkanDescriptorWriter> skyboxDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
+			framesInFlight,
 			{ *m_SkyboxPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
 
 		for (int i = 0; i < m_SkyboxDescriptorSets.size(); ++i)
@@ -690,6 +704,7 @@ namespace VulkanCore {
 		Renderer::Submit([this]
 		{
 			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
+			VkDescriptorSet geometryDstSet = m_GeometryMaterial->RT_GetVulkanMaterialDescriptorSet();
 			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 			m_GeometryPipeline->Bind(bindCmd);
@@ -698,7 +713,7 @@ namespace VulkanCore {
 			vkCmdBindDescriptorSets(bindCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				m_GeometryPipeline->GetVulkanPipelineLayout(),
-				0, 1, &m_GeometryDescriptorSets[frameIndex],
+				0, 1, &geometryDstSet,
 				0, nullptr);
 		});
 

@@ -82,14 +82,16 @@ namespace VulkanCore {
 		uint32_t attachmentSize = static_cast<uint32_t>(m_Specification.Samples > 1 ? (m_ColorAttachmentSpecifications.size() + 1) : m_ColorAttachmentSpecifications.size());
 		m_ColorAttachments.reserve(attachmentSize);
 
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+
 		// Image Creation for Color Attachments
 		for (auto& attachment : m_ColorAttachmentSpecifications)
 		{
 			std::vector<std::shared_ptr<VulkanImage>> AttachmentImages;
-			AttachmentImages.reserve(VulkanSwapChain::MaxFramesInFlight);
+			AttachmentImages.reserve(framesInFlight);
 
 			// Adding 3 Images in Flight(Only for this system)
-			for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
+			for (int i = 0; i < framesInFlight; ++i)
 			{
 				ImageSpecification spec;
 				spec.DebugName = "Framebuffer Color Attachment";
@@ -126,9 +128,9 @@ namespace VulkanCore {
 			for (auto& attachment : m_ColorAttachmentSpecifications)
 			{
 				std::vector<std::shared_ptr<VulkanImage>> ResolveImages;
-				ResolveImages.reserve(VulkanSwapChain::MaxFramesInFlight);
+				ResolveImages.reserve(framesInFlight);
 
-				for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
+				for (int i = 0; i < framesInFlight; i++)
 				{
 					ImageSpecification spec;
 					spec.DebugName = "Framebuffer Color Resolve";
@@ -161,9 +163,9 @@ namespace VulkanCore {
 		// Image Creation for Depth Attachment
 		if (m_DepthAttachmentSpecification)
 		{
-			m_DepthAttachment.reserve(VulkanSwapChain::MaxFramesInFlight);
+			m_DepthAttachment.reserve(framesInFlight);
 
-			for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
+			for (int i = 0; i < framesInFlight; i++)
 			{
 				ImageSpecification spec;
 				spec.DebugName = "Framebuffer Depth Attachment";
@@ -182,13 +184,14 @@ namespace VulkanCore {
 	void VulkanFramebuffer::CreateFramebuffer(VkRenderPass renderPass)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
 		if (!m_Framebuffers.empty())
 			Release();
 
-		m_Framebuffers.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_Framebuffers.resize(framesInFlight);
 
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
+		for (int i = 0; i < framesInFlight; i++)
 		{
 			std::vector<VkImageView> Attachments;
 
