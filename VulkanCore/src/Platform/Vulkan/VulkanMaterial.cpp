@@ -11,10 +11,11 @@ namespace VulkanCore {
 		: m_Shader(shader), m_DebugName(debugName), m_WhiteTexture(Renderer::GetWhiteTexture())
 	{
 		auto vulkanDstPool = Application::Get()->GetDescriptorPool();
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
 		auto vulkanSetLayout = shader->CreateDescriptorSetLayout(0);
 		VkDescriptorSetLayout materialSetLayout = vulkanSetLayout->GetDescriptorSetLayout();
-		for (uint32_t i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
+		for (uint32_t i = 0; i < framesInFlight; ++i)
 			vulkanDstPool->AllocateDescriptorSet(materialSetLayout, m_MaterialDescriptorSets[i]);
 
 		m_MaterialDescriptorWriter = std::vector<VulkanDescriptorWriter>(
@@ -22,7 +23,7 @@ namespace VulkanCore {
 			{ *vulkanSetLayout, *vulkanDstPool });
 
 		// Only Texture Bindings
-		for (uint32_t i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
+		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
 			for (auto&& [binding, setLayout] : vulkanSetLayout->m_Bindings)
 			{
@@ -54,7 +55,7 @@ namespace VulkanCore {
 
 	void VulkanMaterial::InvalidateDescriptorSets()
 	{
-		for (uint32_t i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
+		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
 			m_MaterialDescriptorWriter[i].Build(m_MaterialDescriptorSets[i]);
 	}
 

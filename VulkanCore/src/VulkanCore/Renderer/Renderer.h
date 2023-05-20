@@ -10,11 +10,17 @@ namespace VulkanCore {
 
 	class VulkanRenderer;
 
+	struct RendererConfig
+	{
+		static const int FramesInFlight = 3;
+	};
+
 	class Renderer
 	{
 	public:
 		static void SetRendererAPI(VulkanRenderer* vkRenderer);
 		static int GetCurrentFrameIndex();
+		static RendererConfig GetConfig();
 		static void BeginRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
 		static void EndRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
 		static void BuildShaders();
@@ -48,6 +54,7 @@ namespace VulkanCore {
 	private:
 		static std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
 		static VulkanRenderer* s_Renderer;
+		static RendererConfig s_RendererConfig;
 	};
 
 }

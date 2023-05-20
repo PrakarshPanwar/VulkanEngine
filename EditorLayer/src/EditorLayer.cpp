@@ -45,9 +45,10 @@ namespace VulkanCore {
 		m_Scene = std::make_shared<Scene>();
 		m_SceneRenderer = std::make_shared<SceneRenderer>(m_Scene);
 
-		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+		m_SceneImages.resize(framesInFlight);
 
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
+		for (int i = 0; i < framesInFlight; i++)
 			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
@@ -263,7 +264,7 @@ namespace VulkanCore {
 
 	void EditorLayer::UpdateSceneDescriptors()
 	{
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
+		for (int i = 0; i < Renderer::GetConfig().FramesInFlight; i++)
 			ImGuiLayer::UpdateDescriptor(m_SceneImages[i], m_SceneRenderer->GetFinalPassImage(i));
 	}
 

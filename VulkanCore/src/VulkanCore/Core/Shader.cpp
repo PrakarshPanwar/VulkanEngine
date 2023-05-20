@@ -1,6 +1,7 @@
 #include "vulkanpch.h"
 #include "Shader.h"
 
+#include "../Renderer/Renderer.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "Application.h"
@@ -271,7 +272,7 @@ namespace VulkanCore {
 		VkDescriptorSetLayout setLayout = CreateDescriptorSetLayout(index)->GetDescriptorSetLayout();
 
 		std::vector<VkDescriptorSet> descriptorSets(3);
-		for (uint32_t i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
+		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
 			vulkanDescriptorPool->AllocateDescriptorSet(setLayout, descriptorSets[i]);
 
 		return descriptorSets;
