@@ -14,12 +14,6 @@ namespace VulkanCore {
 		VulkanMaterial(std::shared_ptr<Shader> shader, const std::string& debugName);
 		~VulkanMaterial();
 
-		void InvalidateMaterial();
-		void InvalidateMaterialDescriptorSets();
-		void Invalidate();
-		void InvalidateDescriptorSets();
-		void InitializeMaterialTextures();
-
 		inline const VkDescriptorSet& GetVulkanMaterialDescriptorSet() const { return m_MaterialDescriptorSets[Renderer::GetCurrentFrameIndex()]; }
 		inline const VkDescriptorSet& RT_GetVulkanMaterialDescriptorSet() const { return m_MaterialDescriptorSets[Renderer::RT_GetCurrentFrameIndex()]; }
 		inline std::tuple<VkDescriptorSet, VkDescriptorSet, VkDescriptorSet> GetMaterialTextureIDs() const
@@ -41,7 +35,14 @@ namespace VulkanCore {
 		void SetBuffers(uint32_t binding, const std::vector<VulkanUniformBuffer>& uniformBuffers);
 
 		void UpdateMaterials(const std::string& albedo, const std::string& normal, const std::string& arm);
+		void PrepareShaderMaterial();
 	private:
+		void InvalidateMaterial();
+		void InvalidateMaterialDescriptorSets();
+		void Invalidate();
+		void InvalidateDescriptorSets();
+		void InitializeMaterialTextures();
+
 		void UpdateDiffuseMap(std::shared_ptr<VulkanTexture> diffuse);
 		void UpdateNormalMap(std::shared_ptr<VulkanTexture> normal);
 		void UpdateARMMap(std::shared_ptr<VulkanTexture> arm);

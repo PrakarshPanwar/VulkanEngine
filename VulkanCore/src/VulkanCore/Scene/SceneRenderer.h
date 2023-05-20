@@ -132,12 +132,6 @@ namespace VulkanCore {
 
 		// TODO: Setup VulkanMaterial to do this
 		// Descriptor Sets
-		std::vector<VkDescriptorSet> m_GeometryDescriptorSets;
-		std::vector<VkDescriptorSet> m_PointLightDescriptorSets;
-		std::vector<VkDescriptorSet> m_SpotLightDescriptorSets;
-		std::vector<VkDescriptorSet> m_CompositeDescriptorSets;
-		std::vector<VkDescriptorSet> m_SkyboxDescriptorSets;
-
 		std::vector<VkDescriptorSet> m_BloomPrefilterSets;
 		std::vector<std::vector<VkDescriptorSet>> m_BloomPingSets;
 		std::vector<std::vector<VkDescriptorSet>> m_BloomPongSets;
@@ -146,6 +140,10 @@ namespace VulkanCore {
 
 		// Material per Shader set
 		std::shared_ptr<VulkanMaterial> m_GeometryMaterial;
+		std::shared_ptr<VulkanMaterial> m_PointLightShaderMaterial;
+		std::shared_ptr<VulkanMaterial> m_SpotLightShaderMaterial;
+		std::shared_ptr<VulkanMaterial> m_CompositeShaderMaterial;
+		std::shared_ptr<VulkanMaterial> m_SkyboxMaterial;
 
 		VkDescriptorSet m_BloomDebugImage;
 
