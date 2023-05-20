@@ -195,7 +195,10 @@ namespace VulkanCore {
 			spvReflectDestroyShaderModule(&shaderModule);
 		}
 
-		return descriptorSetLayoutBuilder.Build();
+		auto descriptorSetLayout = descriptorSetLayoutBuilder.Build();
+		m_DescriptorSetLayouts.push_back(descriptorSetLayout);
+
+		return descriptorSetLayout;
 	}
 
 	std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> Shader::CreateAllDescriptorSetsLayout()

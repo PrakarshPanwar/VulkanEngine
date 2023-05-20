@@ -76,7 +76,7 @@ namespace VulkanCore {
 	private:
 		void CreateCommandBuffers();
 		void CreatePipelines();
-		void CreateDescriptorSets();
+		void CreateMaterials();
 
 		void GeometryPass();
 		void CompositePass();
@@ -130,20 +130,19 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanPipeline> m_SkyboxPipeline;
 		std::shared_ptr<VulkanComputePipeline> m_BloomPipeline;
 
-		// TODO: Setup VulkanMaterial to do this
-		// Descriptor Sets
-		std::vector<VkDescriptorSet> m_BloomPrefilterSets;
-		std::vector<std::vector<VkDescriptorSet>> m_BloomPingSets;
-		std::vector<std::vector<VkDescriptorSet>> m_BloomPongSets;
-		std::vector<VkDescriptorSet> m_BloomUpsampleFirstSets;
-		std::vector<std::vector<VkDescriptorSet>> m_BloomUpsampleSets;
-
 		// Material per Shader set
 		std::shared_ptr<VulkanMaterial> m_GeometryMaterial;
 		std::shared_ptr<VulkanMaterial> m_PointLightShaderMaterial;
 		std::shared_ptr<VulkanMaterial> m_SpotLightShaderMaterial;
 		std::shared_ptr<VulkanMaterial> m_CompositeShaderMaterial;
 		std::shared_ptr<VulkanMaterial> m_SkyboxMaterial;
+
+		// Bloom Materials
+		std::shared_ptr<VulkanMaterial> m_BloomPrefilterShaderMaterial;
+		std::vector<std::shared_ptr<VulkanMaterial>> m_BloomPingShaderMaterials;
+		std::vector<std::shared_ptr<VulkanMaterial>> m_BloomPongShaderMaterials;
+		std::shared_ptr<VulkanMaterial> m_BloomUpsampleFirstShaderMaterial;
+		std::vector<std::shared_ptr<VulkanMaterial>> m_BloomUpsampleShaderMaterials;
 
 		VkDescriptorSet m_BloomDebugImage;
 
