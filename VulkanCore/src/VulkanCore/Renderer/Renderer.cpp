@@ -3,11 +3,13 @@
 
 #include "VulkanCore/Core/Core.h"
 #include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
+#include "Platform/Vulkan/VulkanMaterial.h"
 
 namespace VulkanCore {
 
 	std::unordered_map<std::string, std::shared_ptr<Shader>> Renderer::m_Shaders;
 	VulkanRenderer* Renderer::s_Renderer = nullptr;
+	RendererConfig Renderer::s_RendererConfig = {};
 
 	namespace Utils {
 
@@ -46,6 +48,11 @@ namespace VulkanCore {
 		return RenderThread::GetThreadFrameIndex();
 	}
 
+	RendererConfig Renderer::GetConfig()
+	{
+		return s_RendererConfig;
+	}
+
 	void Renderer::BeginRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)
 	{
 		renderPass->Begin(cmdBuffer);
@@ -74,13 +81,11 @@ namespace VulkanCore {
 		m_Shaders.clear();
 	}
 
-	void Renderer::RenderSkybox(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::vector<VkDescriptorSet>& descriptorSet, void* pcData /*= nullptr*/)
+	void Renderer::RenderSkybox(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::shared_ptr<VulkanMaterial>& skyboxMaterial, void* pcData /*= nullptr*/)
 	{
-		Renderer::Submit([cmdBuffer, pipeline, descriptorSet, pcData, skyboxVB]
+		Renderer::Submit([cmdBuffer, pipeline, skyboxMaterial, pcData, skyboxVB]
 		{
 			VK_CORE_PROFILE_FN("Renderer::RenderSkybox");
-
-			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 			VkCommandBuffer vulkanDrawCmd = cmdBuffer->RT_GetActiveCommandBuffer();
 			pipeline->Bind(vulkanDrawCmd);
@@ -88,7 +93,7 @@ namespace VulkanCore {
 			vkCmdBindDescriptorSets(vulkanDrawCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				pipeline->GetVulkanPipelineLayout(),
-				0, 1, &descriptorSet[frameIndex],
+				0, 1, &skyboxMaterial->RT_GetVulkanMaterialDescriptorSet(),
 				0, nullptr);
 
 			vkCmdPushConstants(vulkanDrawCmd,
@@ -126,12 +131,22 @@ namespace VulkanCore {
 		});
 	}
 
-	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
+	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::string& name)
 	{
+		Renderer::Submit([cmdBuffer, name]
+		{
+			VkCommandBuffer vulkanCmdBuffer = cmdBuffer->RT_GetActiveCommandBuffer();
+			VKUtils::SetCommandBufferLabel(vulkanCmdBuffer, name.c_str());
+		});
 	}
 
 	void Renderer::EndGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
 	{
+		Renderer::Submit([cmdBuffer]
+		{
+			VkCommandBuffer vulkanCmdBuffer = cmdBuffer->RT_GetActiveCommandBuffer();
+			VKUtils::EndCommandBufferLabel(vulkanCmdBuffer);
+		});
 	}
 
 	std::shared_ptr<VulkanTexture> Renderer::GetWhiteTexture(ImageFormat format)
@@ -148,21 +163,20 @@ namespace VulkanCore {
 		return whiteTexture;
 	}
 
-	void Renderer::SubmitFullscreenQuad(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet)
+	void Renderer::SubmitFullscreenQuad(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanMaterial>& shaderMaterial)
 	{
-		Renderer::Submit([cmdBuffer, pipeline, descriptorSet]
+		Renderer::Submit([cmdBuffer, pipeline, shaderMaterial]
 		{
 			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad");
 
-			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
-			auto vulkanDrawCmd = cmdBuffer->RT_GetActiveCommandBuffer();
+			VkCommandBuffer vulkanDrawCmd = cmdBuffer->RT_GetActiveCommandBuffer();
 
 			pipeline->Bind(vulkanDrawCmd);
 
 			vkCmdBindDescriptorSets(vulkanDrawCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				pipeline->GetVulkanPipelineLayout(),
-				0, 1, &descriptorSet[frameIndex],
+				0, 1, &shaderMaterial->RT_GetVulkanMaterialDescriptorSet(),
 				0, nullptr);
 
 			vkCmdDraw(vulkanDrawCmd, 3, 1, 0, 0);

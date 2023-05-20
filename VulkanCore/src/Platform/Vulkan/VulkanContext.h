@@ -6,6 +6,8 @@ namespace VulkanCore {
 
 	namespace VKUtils {
 		void SetDebugUtilsObjectName(VkDevice device, VkObjectType objectType, const std::string& debugName, void* object);
+		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName);
+		void EndCommandBufferLabel(VkCommandBuffer cmdBuffer);
 	}
 
 	VkResult CreateDebugMarkerEXT(VkDevice device);

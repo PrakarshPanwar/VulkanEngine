@@ -3,6 +3,7 @@
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanAllocator.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 namespace VulkanCore {
 
@@ -251,9 +252,12 @@ namespace VulkanCore {
 		UpdateImageDescriptor();
 	}
 
-	VkImageView VulkanImage::CreateImageViewSingleMip(uint32_t mip)
+	void VulkanImage::CreateImageViewSingleMip(uint32_t mip)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
+
+		if (m_DescriptorMipImagesInfo.contains(mip))
+			return;
 
 		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
 
@@ -271,8 +275,12 @@ namespace VulkanCore {
 		VkImageView result;
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &result), "Failed to Create Image View!");
 		m_MipReferences.push_back(result);
-
-		return result;
+		
+		VkDescriptorImageInfo mipImageInfo{};
+		mipImageInfo.imageView = result;
+		mipImageInfo.imageLayout = m_DescriptorImageInfo.imageLayout;
+		mipImageInfo.sampler = m_DescriptorImageInfo.sampler;
+		m_DescriptorMipImagesInfo[mip] = mipImageInfo;
 	}
 
 	glm::uvec2 VulkanImage::GetMipSize(uint32_t mipLevel) const
@@ -303,6 +311,20 @@ namespace VulkanCore {
 
 	void VulkanImage::Release()
 	{
+#if USE_DELETION_QUEUE
+		Renderer::SubmitResourceFree([mipRefs = m_MipReferences, info = m_Info]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			VulkanAllocator allocator("Image2D");
+
+			vkDestroyImageView(device->GetVulkanDevice(), info.ImageView, nullptr);
+			vkDestroySampler(device->GetVulkanDevice(), info.Sampler, nullptr);
+			allocator.DestroyImage((VkImage&)info.Image, info.MemoryAlloc);
+
+			for (auto& MipReference : mipRefs)
+				vkDestroyImageView(device->GetVulkanDevice(), MipReference, nullptr);
+		});
+#else
 		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("Image2D");
 
@@ -312,6 +334,7 @@ namespace VulkanCore {
 
 		for (auto& MipReference : m_MipReferences)
 			vkDestroyImageView(device->GetVulkanDevice(), MipReference, nullptr);
+#endif
 	}
 
 }

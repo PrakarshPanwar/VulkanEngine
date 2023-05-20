@@ -1,6 +1,7 @@
 #include "vulkanpch.h"
 #include "Shader.h"
 
+#include "../Renderer/Renderer.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "Application.h"
@@ -194,7 +195,10 @@ namespace VulkanCore {
 			spvReflectDestroyShaderModule(&shaderModule);
 		}
 
-		return descriptorSetLayoutBuilder.Build();
+		auto descriptorSetLayout = descriptorSetLayoutBuilder.Build();
+		m_DescriptorSetLayouts.push_back(descriptorSetLayout);
+
+		return descriptorSetLayout;
 	}
 
 	std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> Shader::CreateAllDescriptorSetsLayout()
@@ -275,7 +279,7 @@ namespace VulkanCore {
 		VkDescriptorSetLayout setLayout = CreateDescriptorSetLayout(index)->GetVulkanDescriptorSetLayout();
 
 		std::vector<VkDescriptorSet> descriptorSets(3);
-		for (uint32_t i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
+		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
 			vulkanDescriptorPool->AllocateDescriptorSet(setLayout, descriptorSets[i]);
 
 		return descriptorSets;
