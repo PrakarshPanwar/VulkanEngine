@@ -3,6 +3,7 @@
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanRenderPass.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
+#include "Platform/Vulkan/VulkanMaterial.h"
 #include "Platform/Vulkan/VulkanComputePipeline.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanBuffer.h"
@@ -142,6 +143,9 @@ namespace VulkanCore {
 		std::vector<std::vector<VkDescriptorSet>> m_BloomPongSets;
 		std::vector<VkDescriptorSet> m_BloomUpsampleFirstSets;
 		std::vector<std::vector<VkDescriptorSet>> m_BloomUpsampleSets;
+
+		// Material per Shader set
+		std::shared_ptr<VulkanMaterial> m_GeometryMaterial;
 
 		VkDescriptorSet m_BloomDebugImage;
 
