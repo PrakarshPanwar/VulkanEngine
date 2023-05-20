@@ -405,9 +405,76 @@ namespace VulkanCore {
 	}
 
 	void SceneRenderer::RecreateScene()
-{
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+
 		VK_CORE_INFO("Scene has been Recreated!");
 		m_GeometryPipeline->GetSpecification().RenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
+		m_CompositePipeline->GetSpecification().RenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
+
+		// Recreate Resources
+		{
+			m_BloomMipSize = (glm::uvec2(m_ViewportSize.x, m_ViewportSize.y) + 1u) / 2u;
+			m_BloomMipSize += 16u - m_BloomMipSize % 16u;
+
+			ImageSpecification bloomRTSpec = {};
+			bloomRTSpec.DebugName = "Bloom Compute Texture";
+			bloomRTSpec.Width = m_BloomMipSize.x;
+			bloomRTSpec.Height = m_BloomMipSize.y;
+			bloomRTSpec.Format = ImageFormat::RGBA32F;
+			bloomRTSpec.Usage = ImageUsage::Storage;
+			bloomRTSpec.MipLevels = Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2;
+
+			m_BloomTextures.clear();
+			m_SceneRenderTextures.clear();
+
+			m_BloomTextures.reserve(framesInFlight);
+			m_SceneRenderTextures.reserve(framesInFlight);
+
+			VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+
+			for (int i = 0; i < framesInFlight; i++)
+			{
+				auto BloomTexture = m_BloomTextures.emplace_back(std::make_shared<VulkanImage>(bloomRTSpec));
+				BloomTexture->Invalidate();
+
+				Utils::InsertImageMemoryBarrier(barrierCmd, BloomTexture->GetVulkanImageInfo().Image,
+					VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+					VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, BloomTexture->GetSpecification().MipLevels, 0, 1 });
+			}
+
+			ImageSpecification sceneRTSpec = {};
+			sceneRTSpec.DebugName = "Scene Render Texture";
+			sceneRTSpec.Width = m_ViewportSize.x;
+			sceneRTSpec.Height = m_ViewportSize.y;
+			sceneRTSpec.Format = ImageFormat::RGBA32F;
+			sceneRTSpec.Usage = ImageUsage::Texture;
+			sceneRTSpec.MipLevels = Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y);
+
+			for (int i = 0; i < framesInFlight; i++)
+			{
+				auto SceneTexture = m_SceneRenderTextures.emplace_back(std::make_shared<VulkanImage>(sceneRTSpec));
+				SceneTexture->Invalidate();
+
+				Utils::InsertImageMemoryBarrier(barrierCmd, SceneTexture->GetVulkanImageInfo().Image,
+					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneTexture->GetSpecification().MipLevels, 0, 1 });
+			}
+
+			device->FlushCommandBuffer(barrierCmd);
+
+			// Update ImGui Viewport Image
+			for (uint32_t i = 0; i < framesInFlight; ++i)
+				ImGuiLayer::UpdateDescriptor(m_SceneImages[i], *GetFinalPassImage(i));
+		}
+
+		// Recreate Shader Materials
+		CreateMaterials();
 	}
 
 	void SceneRenderer::OnImGuiRender()
