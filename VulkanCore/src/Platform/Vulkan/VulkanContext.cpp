@@ -9,10 +9,14 @@ namespace VulkanCore {
 	// Debug Marker Function Pointers
 	PFN_vkDebugMarkerSetObjectNameEXT vkDebugMarkerSetObjectNameEXT = VK_NULL_HANDLE;
 	PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = VK_NULL_HANDLE;
+	PFN_vkCmdDebugMarkerBeginEXT vkCmdDebugMarkerBeginEXT = VK_NULL_HANDLE;
+	PFN_vkCmdDebugMarkerEndEXT vkCmdDebugMarkerEndEXT = VK_NULL_HANDLE;
 
 	VkResult CreateDebugMarkerEXT(VkDevice device)
 	{
 		vkDebugMarkerSetObjectNameEXT = (PFN_vkDebugMarkerSetObjectNameEXT)vkGetDeviceProcAddr(device, "vkDebugMarkerSetObjectNameEXT");
+		vkCmdDebugMarkerBeginEXT = (PFN_vkCmdDebugMarkerBeginEXT)vkGetDeviceProcAddr(device, "vkCmdDebugMarkerBeginEXT");
+		vkCmdDebugMarkerEndEXT = (PFN_vkCmdDebugMarkerEndEXT)vkGetDeviceProcAddr(device, "vkCmdDebugMarkerEndEXT");
 
 		if (vkDebugMarkerSetObjectNameEXT == nullptr)
 			return VK_ERROR_EXTENSION_NOT_PRESENT;
@@ -23,6 +27,8 @@ namespace VulkanCore {
 	VkResult CreateDebugUtilsEXT(VkInstance instance)
 	{
 		vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
+// 		vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdBeginDebugUtilsLabelEXT");
+// 		vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdEndDebugUtilsLabelEXT");
 
 		if (vkSetDebugUtilsObjectNameEXT == nullptr)
 			return VK_ERROR_EXTENSION_NOT_PRESENT;
@@ -55,6 +61,30 @@ namespace VulkanCore {
 			debugMarkerNameInfo.pObjectName = debugName.c_str();
 				
 			vkDebugMarkerSetObjectNameEXT(device, &debugMarkerNameInfo);
+		}
+
+		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName)
+		{
+			if (vkCmdDebugMarkerBeginEXT == nullptr)
+				return;
+
+			VkDebugMarkerMarkerInfoEXT markerInfoExt{};
+			markerInfoExt.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
+			markerInfoExt.pMarkerName = labelName;
+			markerInfoExt.color[0] = 0.1f;
+			markerInfoExt.color[1] = 0.1f; 
+			markerInfoExt.color[2] = 0.8f;
+			markerInfoExt.color[3] = 1.0f;
+
+			vkCmdDebugMarkerBeginEXT(cmdBuffer, &markerInfoExt);
+		}
+
+		void EndCommandBufferLabel(VkCommandBuffer cmdBuffer)
+		{
+			if (vkCmdDebugMarkerEndEXT == nullptr)
+				return;
+
+			vkCmdDebugMarkerEndEXT(cmdBuffer);
 		}
 
 	}

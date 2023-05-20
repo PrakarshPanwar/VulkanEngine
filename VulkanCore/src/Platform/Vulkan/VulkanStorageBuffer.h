@@ -13,7 +13,7 @@ namespace VulkanCore {
 
 		void WriteandFlushBuffer(void* data, VkDeviceSize offset = 0);
 
-		inline VkDescriptorBufferInfo GetDescriptorBufferInfo() const { return m_DescriptorBufferInfo; }
+		inline const VkDescriptorBufferInfo& GetDescriptorBufferInfo() const { return m_DescriptorBufferInfo; }
 	private:
 		VkBuffer m_VulkanBuffer = nullptr;
 		VmaAllocation m_MemoryAllocation;

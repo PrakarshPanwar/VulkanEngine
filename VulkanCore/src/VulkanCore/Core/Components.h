@@ -123,7 +123,7 @@ namespace VulkanCore {
 			InnerCutoff(innerCutoff), OuterCutoff(outerCutoff),
 			Radius(radius), Falloff(falloff) {}
 	private:
-		float Padding;
+		float Padding = 0.0f;
 	};
 
 	struct UBCamera

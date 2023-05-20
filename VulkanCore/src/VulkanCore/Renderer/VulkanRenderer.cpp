@@ -252,7 +252,7 @@ namespace VulkanCore {
 		return { envFiltered, irradianceMap };
 	}
 
-	void VulkanRenderer::CopyVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const VulkanImage* sourceImage, const VulkanImage* destImage)
+	void VulkanRenderer::CopyVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage>& sourceImage, const std::shared_ptr<VulkanImage>& destImage)
 	{
 		Renderer::Submit([commandBuffer, sourceImage, destImage]
 		{
@@ -302,7 +302,7 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::BlitVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const VulkanImage* image)
+	void VulkanRenderer::BlitVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage>& image)
 	{
 		Renderer::Submit([commandBuffer, image]
 		{
@@ -448,7 +448,7 @@ namespace VulkanCore {
 			vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
 			vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-			std::shared_ptr<VulkanMaterial> vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
+			std::shared_ptr<VulkanMaterial> vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
 			VkDescriptorSet descriptorSets[1] = { vulkanMaterial->RT_GetVulkanMaterialDescriptorSet() };
 	
 			vkCmdBindDescriptorSets(drawCmd,
@@ -543,7 +543,7 @@ namespace VulkanCore {
 		Renderer::WaitAndRender();
 
 		IsFrameStarted = false;
-		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;
+		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
 	}
 
 	void VulkanRenderer::FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers)
@@ -561,7 +561,7 @@ namespace VulkanCore {
 			VK_CORE_ERROR("Failed to Present Swap Chain Image!");
 
 		IsFrameStarted = false;
-		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;
+		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
 	}
 
 }

@@ -199,7 +199,7 @@ namespace VulkanCore {
 			{
 				auto meshSource = m_SelectionContext.GetComponent<MeshComponent>().MeshInstance->GetMeshSource();
 				auto material = meshSource->GetMaterial();
-				auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
+				auto vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
 
 				auto& materialData = material->GetMaterialData();
 				auto [diffuse, normal, arm] = vulkanMaterial->GetMaterialTextureIDs();
@@ -221,7 +221,7 @@ namespace VulkanCore {
 						if (ImGui::MenuItem("Remove Texture"))
 						{
 							auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_SRGB);
-							vulkanMaterial->UpdateDiffuseMap(whiteTexture);
+							vulkanMaterial->SetDiffuseTexture(whiteTexture);
 						}
 
 						ImGui::EndPopup();
@@ -235,7 +235,7 @@ namespace VulkanCore {
 							std::filesystem::path scenePath = g_AssetPath / path;
 
 							std::shared_ptr<VulkanTexture> diffuseTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_SRGB);
-							vulkanMaterial->UpdateDiffuseMap(diffuseTex);
+							vulkanMaterial->SetDiffuseTexture(diffuseTex);
 						}
 
 						ImGui::EndDragDropTarget();
@@ -263,7 +263,7 @@ namespace VulkanCore {
 						if (ImGui::MenuItem("Remove Texture"))
 						{
 							auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
-							vulkanMaterial->UpdateNormalMap(whiteTexture);
+							vulkanMaterial->SetNormalTexture(whiteTexture);
 						}
 
 						ImGui::EndPopup();
@@ -277,7 +277,7 @@ namespace VulkanCore {
 							std::filesystem::path scenePath = g_AssetPath / path;
 
 							std::shared_ptr<VulkanTexture> normalTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_UNORM);
-							vulkanMaterial->UpdateNormalMap(normalTex);
+							vulkanMaterial->SetNormalTexture(normalTex);
 						}
 
 						ImGui::EndDragDropTarget();
@@ -305,7 +305,7 @@ namespace VulkanCore {
 						if (ImGui::MenuItem("Remove Texture"))
 						{
 							auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
-							vulkanMaterial->UpdateARMMap(whiteTexture);
+							vulkanMaterial->SetARMTexture(whiteTexture);
 						}
 
 						ImGui::EndPopup();
@@ -319,7 +319,7 @@ namespace VulkanCore {
 							std::filesystem::path scenePath = g_AssetPath / path;
 
 							std::shared_ptr<VulkanTexture> armTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_UNORM);
-							vulkanMaterial->UpdateARMMap(armTex);
+							vulkanMaterial->SetARMTexture(armTex);
 						}
 
 						ImGui::EndDragDropTarget();

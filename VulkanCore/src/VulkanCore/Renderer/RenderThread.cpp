@@ -8,8 +8,10 @@
 namespace VulkanCore {
 
 	std::mutex RenderThread::m_ThreadMutex;
+	std::mutex RenderThread::m_DeletionMutex;
 	std::atomic<bool> RenderThread::m_RenderThreadAtomic;
 	std::vector<std::function<void()>> RenderThread::m_RenderCommandQueue;
+	std::vector<std::function<void()>> RenderThread::m_DeletionCommandQueue;
 	std::jthread RenderThread::m_RenderThread;
 	int RenderThread::m_ThreadFrameIndex = 0;
 	bool RenderThread::m_Running;
@@ -41,6 +43,19 @@ namespace VulkanCore {
 			// Execute Command Queue
 			for (const auto& executeCommand : executeQueue)
 				executeCommand();
+
+#if USE_DELETION_QUEUE
+			// Swap Deletion Queues
+			std::vector<std::function<void()>> deletionQueue;
+			{
+				std::scoped_lock swapLock(m_DeletionMutex);
+				deletionQueue.swap(m_DeletionCommandQueue);
+			}
+
+			// Execute Delete Commands
+			for (const auto& deletionCommand : deletionQueue)
+				deletionCommand();
+#endif
 
 			m_RenderThreadAtomic.notify_one();
 

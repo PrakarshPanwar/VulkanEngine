@@ -3,6 +3,7 @@
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanRenderPass.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
+#include "Platform/Vulkan/VulkanMaterial.h"
 #include "Platform/Vulkan/VulkanComputePipeline.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanBuffer.h"
@@ -40,7 +41,7 @@ namespace VulkanCore {
 		inline VkFramebuffer GetFinalVulkanFramebuffer(uint32_t index) const { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
 		//inline VkRenderPass GetVulkanRenderPass() { return m_SceneRenderPass->GetRenderPass(); }
 		inline std::shared_ptr<Shader> GetGeometryPipelineShader() const { return m_GeometryPipeline->GetSpecification().pShader; }
-		inline const VulkanImage& GetFinalPassImage(uint32_t index) const { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
+		inline std::shared_ptr<VulkanImage> GetFinalPassImage(uint32_t index) const { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
 		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
 
 		struct MeshKey
@@ -73,7 +74,7 @@ namespace VulkanCore {
 	private:
 		void CreateCommandBuffers();
 		void CreatePipelines();
-		void CreateDescriptorSets();
+		void CreateMaterials();
 
 		void GeometryPass();
 		void CompositePass();
@@ -127,19 +128,19 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanPipeline> m_SkyboxPipeline;
 		std::shared_ptr<VulkanComputePipeline> m_BloomPipeline;
 
-		// TODO: Setup VulkanMaterial to do this
-		// Descriptor Sets
-		std::vector<VkDescriptorSet> m_GeometryDescriptorSets;
-		std::vector<VkDescriptorSet> m_PointLightDescriptorSets;
-		std::vector<VkDescriptorSet> m_SpotLightDescriptorSets;
-		std::vector<VkDescriptorSet> m_CompositeDescriptorSets;
-		std::vector<VkDescriptorSet> m_SkyboxDescriptorSets;
+		// Material per Shader set
+		std::shared_ptr<VulkanMaterial> m_GeometryMaterial;
+		std::shared_ptr<VulkanMaterial> m_PointLightShaderMaterial;
+		std::shared_ptr<VulkanMaterial> m_SpotLightShaderMaterial;
+		std::shared_ptr<VulkanMaterial> m_CompositeShaderMaterial;
+		std::shared_ptr<VulkanMaterial> m_SkyboxMaterial;
 
-		std::vector<VkDescriptorSet> m_BloomPrefilterSets;
-		std::vector<std::vector<VkDescriptorSet>> m_BloomPingSets;
-		std::vector<std::vector<VkDescriptorSet>> m_BloomPongSets;
-		std::vector<VkDescriptorSet> m_BloomUpsampleFirstSets;
-		std::vector<std::vector<VkDescriptorSet>> m_BloomUpsampleSets;
+		// Bloom Materials
+		std::shared_ptr<VulkanMaterial> m_BloomPrefilterShaderMaterial;
+		std::vector<std::shared_ptr<VulkanMaterial>> m_BloomPingShaderMaterials;
+		std::vector<std::shared_ptr<VulkanMaterial>> m_BloomPongShaderMaterials;
+		std::shared_ptr<VulkanMaterial> m_BloomUpsampleFirstShaderMaterial;
+		std::vector<std::shared_ptr<VulkanMaterial>> m_BloomUpsampleShaderMaterials;
 
 		VkDescriptorSet m_BloomDebugImage;
 
@@ -151,8 +152,8 @@ namespace VulkanCore {
 
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 
-		std::vector<VulkanImage> m_BloomTextures;
-		std::vector<VulkanImage> m_SceneRenderTextures;
+		std::vector<std::shared_ptr<VulkanImage>> m_BloomTextures;
+		std::vector<std::shared_ptr<VulkanImage>> m_SceneRenderTextures;
 
 		std::shared_ptr<VulkanTexture> m_BloomDirtTexture;
 		std::shared_ptr<VulkanTexture> m_PointLightTextureIcon, m_SpotLightTextureIcon;

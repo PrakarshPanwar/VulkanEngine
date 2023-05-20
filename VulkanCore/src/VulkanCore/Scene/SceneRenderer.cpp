@@ -8,6 +8,7 @@
 
 #include "VulkanCore/Mesh/Mesh.h"
 #include "Platform/Vulkan/VulkanAllocator.h"
+#include "Platform/Vulkan/VulkanMaterial.h"
 
 #include <imgui.h>
 
@@ -89,7 +90,7 @@ namespace VulkanCore {
 	{
 		CreateCommandBuffers();
 		CreatePipelines();
-		CreateDescriptorSets();
+		CreateMaterials();
 	}
 
 	void SceneRenderer::CreatePipelines()
@@ -180,23 +181,24 @@ namespace VulkanCore {
 		}
 	}
 
-	void SceneRenderer::CreateDescriptorSets()
+	void SceneRenderer::CreateMaterials()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		Renderer::WaitAndExecute();
 
-		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
+		m_SceneImages.resize(framesInFlight);
 
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-			m_SceneImages[i] = ImGuiLayer::AddTexture(GetFinalPassImage(i));
+		for (int i = 0; i < framesInFlight; i++)
+			m_SceneImages[i] = ImGuiLayer::AddTexture(*GetFinalPassImage(i));
 
-		m_UBCamera.reserve(VulkanSwapChain::MaxFramesInFlight);
-		m_UBPointLight.reserve(VulkanSwapChain::MaxFramesInFlight);
-		m_UBSpotLight.reserve(VulkanSwapChain::MaxFramesInFlight);
+		m_UBCamera.reserve(framesInFlight);
+		m_UBPointLight.reserve(framesInFlight);
+		m_UBSpotLight.reserve(framesInFlight);
 
 		// Uniform Buffers
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
+		for (int i = 0; i < framesInFlight; ++i)
 		{
 			m_UBCamera.emplace_back(sizeof(UBCamera));
 			m_UBPointLight.emplace_back(sizeof(UBPointLights));
@@ -221,14 +223,14 @@ namespace VulkanCore {
 
 		for (int i = 0; i < 3; i++)
 		{
-			VulkanImage& BloomTexture = m_BloomTextures.emplace_back(bloomRTSpec);
-			BloomTexture.Invalidate();
+			auto BloomTexture = m_BloomTextures.emplace_back(std::make_shared<VulkanImage>(bloomRTSpec));
+			BloomTexture->Invalidate();
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, BloomTexture.GetVulkanImageInfo().Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd, BloomTexture->GetVulkanImageInfo().Image,
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, BloomTexture.GetSpecification().MipLevels, 0, 1 });
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, BloomTexture->GetSpecification().MipLevels, 0, 1 });
 		}
 
 		ImageSpecification sceneRTSpec = {};
@@ -241,14 +243,14 @@ namespace VulkanCore {
 
 		for (int i = 0; i < 3; i++)
 		{
-			VulkanImage& SceneTexture = m_SceneRenderTextures.emplace_back(sceneRTSpec);
-			SceneTexture.Invalidate();
+			auto SceneTexture = m_SceneRenderTextures.emplace_back(std::make_shared<VulkanImage>(sceneRTSpec));
+			SceneTexture->Invalidate();
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, SceneTexture.GetVulkanImageInfo().Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd, SceneTexture->GetVulkanImageInfo().Image,
 				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneTexture.GetSpecification().MipLevels, 0, 1 });
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneTexture->GetSpecification().MipLevels, 0, 1 });
 		}
 
 		device->FlushCommandBuffer(barrierCmd);
@@ -266,209 +268,132 @@ namespace VulkanCore {
 
 		m_SkyboxVBData = Utils::CreateCubeModel();
 
-		// Writing in Descriptors
-		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
-
-		m_GeometryDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_PointLightDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_SpotLightDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_CompositeDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_SkyboxDescriptorSets.resize(VulkanSwapChain::MaxFramesInFlight);
-
-		// Geometry Descriptors
-		std::vector<VulkanDescriptorWriter> geomDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_GeometryPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		for (int i = 0; i < m_GeometryDescriptorSets.size(); ++i)
+		// Geometry Material
 		{
-			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
-			geomDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+			m_GeometryMaterial = std::make_shared<VulkanMaterial>(m_GeometryPipeline->GetSpecification().pShader, "Geometry Shader Material");
 
-			auto pointLightUBInfo = m_UBPointLight[i].GetDescriptorBufferInfo();
-			geomDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
-
-			auto spotLightUBInfo = m_UBSpotLight[i].GetDescriptorBufferInfo();
-			geomDescriptorWriter[i].WriteBuffer(2, &spotLightUBInfo);
-			
-			// Irradiance Map
-			VkDescriptorImageInfo irradianceMapInfo = m_IrradianceTexture->GetDescriptorImageInfo();
-			geomDescriptorWriter[i].WriteImage(6, &irradianceMapInfo);
-
-			// BRDF LUT Texture
-			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorInfo();
-			geomDescriptorWriter[i].WriteImage(7, &brdfTextureInfo);
-
-			// Prefiltered Map
-			VkDescriptorImageInfo prefilteredMapInfo = m_PrefilteredTexture->GetDescriptorImageInfo();
-			geomDescriptorWriter[i].WriteImage(8, &prefilteredMapInfo);
-
-			geomDescriptorWriter[i].Build(m_GeometryDescriptorSets[i]);
+			m_GeometryMaterial->SetBuffers(0, m_UBCamera);
+			m_GeometryMaterial->SetBuffers(1, m_UBPointLight);
+			m_GeometryMaterial->SetBuffers(2, m_UBSpotLight);
+			m_GeometryMaterial->SetTexture(6, m_IrradianceTexture);
+			m_GeometryMaterial->SetImage(7, m_BRDFTexture);
+			m_GeometryMaterial->SetTexture(8, m_PrefilteredTexture);
+			m_GeometryMaterial->PrepareShaderMaterial();
 		}
 
-		// Point Light Descriptors
-		std::vector<VulkanDescriptorWriter> pointLightDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		std::vector<VulkanDescriptorWriter> spotLightDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		for (int i = 0; i < m_PointLightDescriptorSets.size(); ++i)
+		// Light Materials
 		{
-			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
-			pointLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
-			spotLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+			m_PointLightShaderMaterial = std::make_shared<VulkanMaterial>(m_LightPipeline->GetSpecification().pShader, "Point Light Shader Material");
+			m_SpotLightShaderMaterial = std::make_shared<VulkanMaterial>(m_LightPipeline->GetSpecification().pShader, "Spot Light Shader Material");
 
-			auto pointLightTextureInfo = m_PointLightTextureIcon->GetDescriptorImageInfo();
-			pointLightDescriptorWriter[i].WriteImage(1, &pointLightTextureInfo);
+			m_PointLightShaderMaterial->SetBuffers(0, m_UBCamera);
+			m_PointLightShaderMaterial->SetTexture(1, m_PointLightTextureIcon);
+			m_PointLightShaderMaterial->PrepareShaderMaterial();
 
-			auto spotLightTextureInfo = m_SpotLightTextureIcon->GetDescriptorImageInfo();
-			spotLightDescriptorWriter[i].WriteImage(1, &spotLightTextureInfo);
-
-			bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i])
-				&& spotLightDescriptorWriter[i].Build(m_SpotLightDescriptorSets[i]);
-
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+			m_SpotLightShaderMaterial->SetBuffers(0, m_UBCamera);
+			m_SpotLightShaderMaterial->SetTexture(1, m_SpotLightTextureIcon);
+			m_SpotLightShaderMaterial->PrepareShaderMaterial();
 		}
 
-		m_BloomPrefilterSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_BloomPingSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_BloomPongSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_BloomUpsampleFirstSets.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_BloomUpsampleSets.resize(VulkanSwapChain::MaxFramesInFlight);
-
-		// Bloom Compute Descriptors
-		std::vector<VulkanDescriptorWriter> bloomDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_BloomPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		const uint32_t mipCount = m_BloomTextures[0].GetSpecification().MipLevels;
-		for (int i = 0; i < m_BloomPrefilterSets.size(); i++)
+		// Bloom Materials
 		{
-			// Set A : Prefiltered Sets
+			const uint32_t mipCount = m_BloomTextures[0]->GetSpecification().MipLevels;
+
+			// Set A : Prefiltering
 			// Binding 0(o_Image): BloomTex[0]
 			// Binding 1(u_Texture): RenderTex
 			// Binding 2(u_BloomTexture): RenderTex
+			m_BloomPrefilterShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Prefilter Shader Material");
 
-			VkDescriptorImageInfo outputImageInfo = m_BloomTextures[0].GetDescriptorInfo();
-			bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
+			m_BloomPrefilterShaderMaterial->SetImage(0, m_BloomTextures[0]);
+			m_BloomPrefilterShaderMaterial->SetImages(1, m_SceneRenderTextures);
+			m_BloomPrefilterShaderMaterial->SetImages(2, m_SceneRenderTextures);
+			m_BloomPrefilterShaderMaterial->PrepareShaderMaterial();
 
-			VkDescriptorImageInfo texInfo = m_SceneRenderTextures[i].GetDescriptorInfo();
-			bloomDescriptorWriter[i].WriteImage(1, &texInfo);
-			bloomDescriptorWriter[i].WriteImage(2, &texInfo);
-
-			bool success = bloomDescriptorWriter[i].Build(m_BloomPrefilterSets[i]);
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
-
-			m_BloomPingSets[i].resize(mipCount - 1);
-			m_BloomPongSets[i].resize(mipCount - 1);
-			for (uint32_t j = 1; j < mipCount; ++j)
+			m_BloomPingShaderMaterials.resize(mipCount - 1);
+			m_BloomPongShaderMaterials.resize(mipCount - 1);
+			for (uint32_t i = 1; i < mipCount; ++i)
 			{
 				// Set B: Downsampling(Ping)
 				// Binding 0(o_Image): BloomTex[1]
 				// Binding 1(u_Texture): BloomTex[0]
 				// Binding 2(u_BloomTexture): RenderTex
-				int currentIdx = j - 1;
+				auto bloomPingShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Ping Shader Material");
 
-				outputImageInfo = m_BloomTextures[1].GetDescriptorInfo();
-				outputImageInfo.imageView = m_BloomTextures[1].CreateImageViewSingleMip(j);
-				bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
+				m_BloomTextures[1]->CreateImageViewSingleMip(i);
+				bloomPingShaderMaterial->SetImage(0, m_BloomTextures[1], i);
+				bloomPingShaderMaterial->SetImage(1, m_BloomTextures[0]);
+				bloomPingShaderMaterial->SetImages(2, m_SceneRenderTextures);
+				bloomPingShaderMaterial->PrepareShaderMaterial();
 
-				texInfo = m_BloomTextures[0].GetDescriptorInfo();
-				bloomDescriptorWriter[i].WriteImage(1, &texInfo);
-
-				success = bloomDescriptorWriter[i].Build(m_BloomPingSets[i][currentIdx]);
-				VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+				m_BloomPingShaderMaterials[i - 1] = bloomPingShaderMaterial;
 
 				// Set C: Downsampling(Pong)
 				// Binding 0(o_Image): BloomTex[0]
 				// Binding 1(u_Texture): BloomTex[1]
 				// Binding 2(u_BloomTexture): RenderTex
+				auto bloomPongShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Pong Shader Material");
+				
+				m_BloomTextures[0]->CreateImageViewSingleMip(i);
+				bloomPongShaderMaterial->SetImage(0, m_BloomTextures[0], i);
+				bloomPongShaderMaterial->SetImage(1, m_BloomTextures[1]);
+				bloomPongShaderMaterial->SetImages(2, m_SceneRenderTextures);
+				bloomPongShaderMaterial->PrepareShaderMaterial();
 
-				outputImageInfo = m_BloomTextures[0].GetDescriptorInfo();
-				outputImageInfo.imageView = m_BloomTextures[0].CreateImageViewSingleMip(j);
-				bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
-
-				texInfo = m_BloomTextures[1].GetDescriptorInfo();
-				bloomDescriptorWriter[i].WriteImage(1, &texInfo);
-
-				success = bloomDescriptorWriter[i].Build(m_BloomPongSets[i][currentIdx]);
-				VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+				m_BloomPongShaderMaterials[i - 1] = bloomPongShaderMaterial;
 			}
 
-			// Set D: Upsample First
+			// Set D: First Upsampling
 			// Binding 0(o_Image): BloomTex[2]
 			// Binding 1(u_Texture): BloomTex[0]
 			// Binding 2(u_BloomTexture): RenderTex
+			m_BloomUpsampleFirstShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample First Shader Material");
 
-			outputImageInfo = m_BloomTextures[2].GetDescriptorInfo();
-			outputImageInfo.imageView = m_BloomTextures[2].CreateImageViewSingleMip(mipCount - 1);
-			bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
+			m_BloomTextures[2]->CreateImageViewSingleMip(mipCount - 1);
+			m_BloomUpsampleFirstShaderMaterial->SetImage(0, m_BloomTextures[2], mipCount - 1);
+			m_BloomUpsampleFirstShaderMaterial->SetImage(1, m_BloomTextures[0]);
+			m_BloomUpsampleFirstShaderMaterial->SetImages(2, m_SceneRenderTextures);
+			m_BloomUpsampleFirstShaderMaterial->PrepareShaderMaterial();
 
-			texInfo = m_BloomTextures[0].GetDescriptorInfo();
-			bloomDescriptorWriter[i].WriteImage(1, &texInfo);
-
-			success = bloomDescriptorWriter[i].Build(m_BloomUpsampleFirstSets[i]);
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
-
-			// Set E: Upsample
+			// Set E: Final Upsampling
 			// Binding 0(o_Image): BloomTex[2]
 			// Binding 1(u_Texture): BloomTex[0]
 			// Binding 2(u_BloomTexture): BloomTex[2]
-
-			m_BloomUpsampleSets[i].resize(mipCount - 1);
-			for (int j = mipCount - 2; j >= 0; --j)
+			m_BloomUpsampleShaderMaterials.resize(mipCount - 1);
+			for (int i = mipCount - 2; i >= 0; --i)
 			{
-				outputImageInfo.imageView = m_BloomTextures[2].CreateImageViewSingleMip(j);
-				bloomDescriptorWriter[i].WriteImage(0, &outputImageInfo);
+				auto bloomUpsampleShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample Shader Material");
 
-				VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2].GetDescriptorInfo();
-				bloomDescriptorWriter[i].WriteImage(2, &bloomTexInfo);
+				m_BloomTextures[2]->CreateImageViewSingleMip(i);
+				bloomUpsampleShaderMaterial->SetImage(0, m_BloomTextures[2], i);
+				bloomUpsampleShaderMaterial->SetImage(1, m_BloomTextures[0]);
+				bloomUpsampleShaderMaterial->SetImage(2, m_BloomTextures[2]);
+				bloomUpsampleShaderMaterial->PrepareShaderMaterial();
 
-				success = bloomDescriptorWriter[i].Build(m_BloomUpsampleSets[i][j]);
-				VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+				m_BloomUpsampleShaderMaterials[i] = bloomUpsampleShaderMaterial;
 			}
 		}
 
-		// Composite Descriptors
-		std::vector<VulkanDescriptorWriter> compDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_CompositePipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		for (int i = 0; i < m_CompositeDescriptorSets.size(); ++i)
+		// Composite Material
 		{
-			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i].GetDescriptorInfo();
-			VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2].GetDescriptorInfo();
-			VkDescriptorImageInfo bloomDirtTexInfo = m_BloomDirtTexture->GetDescriptorImageInfo();
+			m_CompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_CompositePipeline->GetSpecification().pShader, "Composite Shader Material");
 
-			compDescriptorWriter[i].WriteImage(0, &imagesInfo);
-			compDescriptorWriter[i].WriteImage(1, &bloomTexInfo);
-			compDescriptorWriter[i].WriteImage(2, &bloomDirtTexInfo);
-
-			bool success = compDescriptorWriter[i].Build(m_CompositeDescriptorSets[i]);
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+			m_CompositeShaderMaterial->SetImages(0, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
+			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
+			m_CompositeShaderMaterial->SetTexture(2, m_BloomDirtTexture);
+			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
-		// Skybox Descriptors
-		std::vector<VulkanDescriptorWriter> skyboxDescriptorWriter(
-			VulkanSwapChain::MaxFramesInFlight,
-			{ *m_SkyboxPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		for (int i = 0; i < m_SkyboxDescriptorSets.size(); ++i)
+		// Skybox Material
 		{
-			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
-			skyboxDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+			m_SkyboxMaterial = std::make_shared<VulkanMaterial>(m_SkyboxPipeline->GetSpecification().pShader, "Skybox Shader Material");
 
-			VkDescriptorImageInfo imageInfo = m_CubemapTexture->GetDescriptorImageInfo();
-			skyboxDescriptorWriter[i].WriteImage(1, &imageInfo);
-
-			bool success = skyboxDescriptorWriter[i].Build(m_SkyboxDescriptorSets[i]);
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+			m_SkyboxMaterial->SetBuffers(0, m_UBCamera);
+			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
+			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
 		
-		m_BloomDebugImage = ImGuiLayer::AddTexture(m_BloomTextures[2]);
+		//m_BloomDebugImage = ImGuiLayer::AddTexture(m_BloomTextures[2]);
 	}
 
 	void SceneRenderer::Release()
@@ -541,7 +466,9 @@ namespace VulkanCore {
 		m_ViewportSize.x = width;
 		m_ViewportSize.y = height;
 
-		//RecreateScene();
+#if USE_DELETION_QUEUE
+		RecreateScene();
+#endif
 	}
 
 	void SceneRenderer::RenderScene(EditorCamera& camera)
@@ -578,15 +505,13 @@ namespace VulkanCore {
 		Renderer::Submit([this]
 		{
 			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
-			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
-
 			m_LightPipeline->Bind(bindCmd);
 
 			// Binding Point Light Descriptor Set
 			vkCmdBindDescriptorSets(bindCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				m_LightPipeline->GetVulkanPipelineLayout(),
-				0, 1, &m_PointLightDescriptorSets[frameIndex],
+				0, 1, &m_PointLightShaderMaterial->RT_GetVulkanMaterialDescriptorSet(),
 				0, nullptr);
 		});
 
@@ -607,13 +532,12 @@ namespace VulkanCore {
 		Renderer::Submit([this]
 		{
 			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
-			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 			// Binding Spot Light Descriptor Set
 			vkCmdBindDescriptorSets(bindCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				m_LightPipeline->GetVulkanPipelineLayout(),
-				0, 1, &m_SpotLightDescriptorSets[frameIndex],
+				0, 1, &m_SpotLightShaderMaterial->RT_GetVulkanMaterialDescriptorSet(),
 				0, nullptr);
 		});
 
@@ -662,13 +586,15 @@ namespace VulkanCore {
 	void SceneRenderer::CompositePass()
 	{
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Composite-Pass");
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
 		Renderer::Submit([this] { m_CompositePipeline->SetPushConstants(m_SceneCommandBuffer->RT_GetActiveCommandBuffer(), &m_SceneSettings, sizeof(SceneSettings)); });
-		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_CompositePipeline, m_CompositeDescriptorSets);
+		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_CompositePipeline, m_CompositeShaderMaterial);
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 	}
 
@@ -681,11 +607,12 @@ namespace VulkanCore {
 
 		// Rendering Geometry
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Geometry-Pass");
 
 		Renderer::Submit([this]
 		{
 			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
-			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
+			VkDescriptorSet geometryDstSet = m_GeometryMaterial->RT_GetVulkanMaterialDescriptorSet();
 
 			m_GeometryPipeline->Bind(bindCmd);
 
@@ -693,24 +620,30 @@ namespace VulkanCore {
 			vkCmdBindDescriptorSets(bindCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				m_GeometryPipeline->GetVulkanPipelineLayout(),
-				0, 1, &m_GeometryDescriptorSets[frameIndex],
+				0, 1, &geometryDstSet,
 				0, nullptr);
 		});
 
 		for (auto& [mk, dc] : m_MeshDrawList)
 			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
 
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Skybox");
 
 		// Rendering Skybox
-		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxDescriptorSets, &m_SkyboxSettings);
+		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxMaterial, &m_SkyboxSettings);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
 		// Rendering Point Lights
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Lights");
+
 		RenderLights();
+
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().RenderPass);
@@ -719,21 +652,20 @@ namespace VulkanCore {
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
 		VulkanRenderer::CopyVulkanImage(m_SceneCommandBuffer,
-			&m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[frameIndex],
-			&m_SceneRenderTextures[frameIndex]);
+			m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[frameIndex],
+			m_SceneRenderTextures[frameIndex]);
 
-		VulkanRenderer::BlitVulkanImage(m_SceneCommandBuffer, &m_SceneRenderTextures[frameIndex]);
+		VulkanRenderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
 	}
 
 	void SceneRenderer::BloomCompute()
 	{
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Bloom");
 
 		Renderer::Submit([this]
 		{
 			VK_CORE_PROFILE_FN("SceneRenderer::BloomCompute");
-
-			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 			VkCommandBuffer dispatchCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
 			m_BloomPipeline->Bind(dispatchCmd);
@@ -744,9 +676,9 @@ namespace VulkanCore {
 
 			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 				m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-				&m_BloomPrefilterSets[frameIndex], 0, nullptr);
+				&m_BloomPrefilterShaderMaterial->RT_GetVulkanMaterialDescriptorSet(), 0, nullptr);
 
-			const uint32_t mips = m_BloomTextures[0].GetSpecification().MipLevels;
+			const uint32_t mips = m_BloomTextures[0]->GetSpecification().MipLevels;
 			glm::uvec2 bloomMipSize = m_BloomMipSize;
 
 			m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
@@ -763,9 +695,9 @@ namespace VulkanCore {
 				// Downsample(Ping)
 				vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 					m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-					&m_BloomPingSets[frameIndex][currentIdx], 0, nullptr);
+					&m_BloomPingShaderMaterials[currentIdx]->RT_GetVulkanMaterialDescriptorSet(), 0, nullptr);
 
-				bloomMipSize = m_BloomTextures[0].GetMipSize(i);
+				bloomMipSize = m_BloomTextures[0]->GetMipSize(i);
 
 				m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 				m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
@@ -775,7 +707,7 @@ namespace VulkanCore {
 				// Downsample(Pong)
 				vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 					m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-					&m_BloomPongSets[frameIndex][currentIdx], 0, nullptr);
+					&m_BloomPongShaderMaterials[currentIdx]->RT_GetVulkanMaterialDescriptorSet(), 0, nullptr);
 
 				m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 				m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
@@ -788,9 +720,9 @@ namespace VulkanCore {
 
 			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 				m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-				&m_BloomUpsampleFirstSets[frameIndex], 0, nullptr);
+				&m_BloomUpsampleFirstShaderMaterial->RT_GetVulkanMaterialDescriptorSet(), 0, nullptr);
 
-			bloomMipSize = m_BloomTextures[2].GetMipSize(mips - 1);
+			bloomMipSize = m_BloomTextures[2]->GetMipSize(mips - 1);
 
 			m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
@@ -803,9 +735,9 @@ namespace VulkanCore {
 
 				vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
 					m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-					&m_BloomUpsampleSets[frameIndex][i], 0, nullptr);
+					&m_BloomUpsampleShaderMaterials[i]->RT_GetVulkanMaterialDescriptorSet(), 0, nullptr);
 
-				bloomMipSize = m_BloomTextures[2].GetMipSize(i);
+				bloomMipSize = m_BloomTextures[2]->GetMipSize(i);
 
 				m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 				m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
@@ -813,6 +745,7 @@ namespace VulkanCore {
 
 		});
 
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 	}
 

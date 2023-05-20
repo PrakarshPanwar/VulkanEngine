@@ -46,6 +46,7 @@ namespace VulkanCore {
 		VulkanDescriptorSetLayout& operator=(const VulkanDescriptorSetLayout&) = delete;
 
 		VkDescriptorSetLayout GetVulkanDescriptorSetLayout() const { return m_DescriptorSetLayout; }
+		VkDescriptorType GetVulkanDescriptorType(uint32_t binding) const { return m_Bindings.at(binding).descriptorType; }
 	private:
 		VkDescriptorSetLayout m_DescriptorSetLayout;
 		std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> m_Bindings;

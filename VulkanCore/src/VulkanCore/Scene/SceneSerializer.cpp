@@ -337,7 +337,7 @@ namespace VulkanCore {
 					auto materialTuple = std::make_tuple(albedoPath, normalPath, armPath);
 					if (!materialsData.contains(materialTuple))
 					{
-						auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
+						auto vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
 						vulkanMaterial->UpdateMaterials(albedoPath, normalPath, armPath);
 
 						materialsData.emplace(materialTuple);
