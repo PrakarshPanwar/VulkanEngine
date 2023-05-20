@@ -8,6 +8,7 @@ namespace VulkanCore {
 
 	std::unordered_map<std::string, std::shared_ptr<Shader>> Renderer::m_Shaders;
 	VulkanRenderer* Renderer::s_Renderer = nullptr;
+	RendererConfig Renderer::s_RendererConfig = {};
 
 	namespace Utils {
 
@@ -39,6 +40,11 @@ namespace VulkanCore {
 	int Renderer::GetCurrentFrameIndex()
 	{
 		return VulkanRenderer::Get()->GetCurrentFrameIndex();
+	}
+
+	RendererConfig Renderer::GetConfig()
+	{
+		return s_RendererConfig;
 	}
 
 	void Renderer::BeginRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)

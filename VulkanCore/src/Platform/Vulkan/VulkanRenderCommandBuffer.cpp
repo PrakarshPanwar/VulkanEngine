@@ -52,7 +52,7 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		uint32_t framesInFlight = VulkanSwapChain::MaxFramesInFlight;
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		m_CommandBuffers.resize(framesInFlight);
 
 		// Allocating Command Buffers

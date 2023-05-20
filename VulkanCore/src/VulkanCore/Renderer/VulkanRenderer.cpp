@@ -499,7 +499,7 @@ namespace VulkanCore {
 			VK_CORE_ERROR("Failed to Present Swap Chain Image!");
 
 		IsFrameStarted = false;
-		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;
+		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
 	}
 
 	void VulkanRenderer::FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers)
@@ -517,7 +517,7 @@ namespace VulkanCore {
 			VK_CORE_ERROR("Failed to Present Swap Chain Image!");
 
 		IsFrameStarted = false;
-		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;
+		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
 	}
 
 }
