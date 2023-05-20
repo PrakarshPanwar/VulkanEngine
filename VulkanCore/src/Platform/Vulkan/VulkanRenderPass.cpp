@@ -414,12 +414,13 @@ namespace VulkanCore {
 	void VulkanRenderPass::Begin(std::shared_ptr<VulkanRenderCommandBuffer> beginCmd)
 	{
 		auto Framebuffer = m_Specification.TargetFramebuffer;
-		const FramebufferSpecification fbSpec = Framebuffer->GetSpecification();
-		const VkExtent2D framebufferExtent = { fbSpec.Width, fbSpec.Height };
 
-		Renderer::Submit([this, beginCmd, Framebuffer, framebufferExtent, fbSpec]
+		Renderer::Submit([this, beginCmd, Framebuffer]
 		{
 			VK_CORE_PROFILE_FN("VulkanRenderPass::Begin");
+
+			const FramebufferSpecification fbSpec = Framebuffer->GetSpecification();
+			const VkExtent2D framebufferExtent = { fbSpec.Width, fbSpec.Height };
 
 			VkCommandBuffer vulkanCommandBuffer = beginCmd->RT_GetActiveCommandBuffer();
 
