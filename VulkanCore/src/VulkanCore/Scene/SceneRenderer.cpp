@@ -90,6 +90,7 @@ namespace VulkanCore {
 	{
 		CreateCommandBuffers();
 		CreatePipelines();
+		CreateResources();
 		CreateMaterials();
 	}
 
@@ -183,91 +184,6 @@ namespace VulkanCore {
 
 	void SceneRenderer::CreateMaterials()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-
-		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
-		Renderer::WaitAndExecute();
-
-		m_SceneImages.resize(framesInFlight);
-
-		for (int i = 0; i < framesInFlight; i++)
-			m_SceneImages[i] = ImGuiLayer::AddTexture(*GetFinalPassImage(i));
-
-		m_UBCamera.reserve(framesInFlight);
-		m_UBPointLight.reserve(framesInFlight);
-		m_UBSpotLight.reserve(framesInFlight);
-
-		// Uniform Buffers
-		for (int i = 0; i < framesInFlight; ++i)
-		{
-			m_UBCamera.emplace_back(sizeof(UBCamera));
-			m_UBPointLight.emplace_back(sizeof(UBPointLights));
-			m_UBSpotLight.emplace_back(sizeof(UBSpotLights));
-		}
-
-		m_BloomMipSize = (glm::uvec2(1920, 1080) + 1u) / 2u;
-		m_BloomMipSize += 16u - m_BloomMipSize % 16u;
-
-		ImageSpecification bloomRTSpec = {};
-		bloomRTSpec.DebugName = "Bloom Compute Texture";
-		bloomRTSpec.Width = m_BloomMipSize.x;
-		bloomRTSpec.Height = m_BloomMipSize.y;
-		bloomRTSpec.Format = ImageFormat::RGBA32F;
-		bloomRTSpec.Usage = ImageUsage::Storage;
-		bloomRTSpec.MipLevels = Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2;
-		
-		m_BloomTextures.reserve(3);
-		m_SceneRenderTextures.reserve(3);
-
-		VkCommandBuffer barrierCmd = device->GetCommandBuffer();
-
-		for (int i = 0; i < 3; i++)
-		{
-			auto BloomTexture = m_BloomTextures.emplace_back(std::make_shared<VulkanImage>(bloomRTSpec));
-			BloomTexture->Invalidate();
-
-			Utils::InsertImageMemoryBarrier(barrierCmd, BloomTexture->GetVulkanImageInfo().Image,
-				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, BloomTexture->GetSpecification().MipLevels, 0, 1 });
-		}
-
-		ImageSpecification sceneRTSpec = {};
-		sceneRTSpec.DebugName = "Scene Render Texture";
-		sceneRTSpec.Width = 1920;
-		sceneRTSpec.Height = 1080;
-		sceneRTSpec.Format = ImageFormat::RGBA32F;
-		sceneRTSpec.Usage = ImageUsage::Texture;
-		sceneRTSpec.MipLevels = Utils::CalculateMipCount(1920, 1080);
-
-		for (int i = 0; i < 3; i++)
-		{
-			auto SceneTexture = m_SceneRenderTextures.emplace_back(std::make_shared<VulkanImage>(sceneRTSpec));
-			SceneTexture->Invalidate();
-
-			Utils::InsertImageMemoryBarrier(barrierCmd, SceneTexture->GetVulkanImageInfo().Image,
-				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneTexture->GetSpecification().MipLevels, 0, 1 });
-		}
-
-		device->FlushCommandBuffer(barrierCmd);
-
-		m_BloomDirtTexture = std::make_shared<VulkanTexture>("assets/textures/LensDirt.png");
-
-		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
-		m_CubemapTexture = filteredMap;
-		m_PrefilteredTexture = filteredMap;
-		m_IrradianceTexture = irradianceMap;
-
-		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
-		m_PointLightTextureIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/PointLightIcon.png");
-		m_SpotLightTextureIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/SpotLightIcon.png");
-
-		m_SkyboxVBData = Utils::CreateCubeModel();
-
 		// Geometry Material
 		{
 			m_GeometryMaterial = std::make_shared<VulkanMaterial>(m_GeometryPipeline->GetSpecification().pShader, "Geometry Shader Material");
@@ -392,8 +308,94 @@ namespace VulkanCore {
 			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
 			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
-		
-		//m_BloomDebugImage = ImGuiLayer::AddTexture(m_BloomTextures[2]);
+	}
+
+	void SceneRenderer::CreateResources()
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+		Renderer::WaitAndExecute();
+
+		m_SceneImages.resize(framesInFlight);
+
+		for (int i = 0; i < framesInFlight; i++)
+			m_SceneImages[i] = ImGuiLayer::AddTexture(*GetFinalPassImage(i));
+
+		m_UBCamera.reserve(framesInFlight);
+		m_UBPointLight.reserve(framesInFlight);
+		m_UBSpotLight.reserve(framesInFlight);
+
+		// Uniform Buffers
+		for (int i = 0; i < framesInFlight; ++i)
+		{
+			m_UBCamera.emplace_back(sizeof(UBCamera));
+			m_UBPointLight.emplace_back(sizeof(UBPointLights));
+			m_UBSpotLight.emplace_back(sizeof(UBSpotLights));
+		}
+
+		m_BloomMipSize = (glm::uvec2(m_ViewportSize.x, m_ViewportSize.y) + 1u) / 2u;
+		m_BloomMipSize += 16u - m_BloomMipSize % 16u;
+
+		ImageSpecification bloomRTSpec = {};
+		bloomRTSpec.DebugName = "Bloom Compute Texture";
+		bloomRTSpec.Width = m_BloomMipSize.x;
+		bloomRTSpec.Height = m_BloomMipSize.y;
+		bloomRTSpec.Format = ImageFormat::RGBA32F;
+		bloomRTSpec.Usage = ImageUsage::Storage;
+		bloomRTSpec.MipLevels = Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2;
+
+		m_BloomTextures.reserve(framesInFlight);
+		m_SceneRenderTextures.reserve(framesInFlight);
+
+		VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+
+		for (int i = 0; i < framesInFlight; i++)
+		{
+			auto BloomTexture = m_BloomTextures.emplace_back(std::make_shared<VulkanImage>(bloomRTSpec));
+			BloomTexture->Invalidate();
+
+			Utils::InsertImageMemoryBarrier(barrierCmd, BloomTexture->GetVulkanImageInfo().Image,
+				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, BloomTexture->GetSpecification().MipLevels, 0, 1 });
+		}
+
+		ImageSpecification sceneRTSpec = {};
+		sceneRTSpec.DebugName = "Scene Render Texture";
+		sceneRTSpec.Width = m_ViewportSize.x;
+		sceneRTSpec.Height = m_ViewportSize.y;
+		sceneRTSpec.Format = ImageFormat::RGBA32F;
+		sceneRTSpec.Usage = ImageUsage::Texture;
+		sceneRTSpec.MipLevels = Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y);
+
+		for (int i = 0; i < framesInFlight; i++)
+		{
+			auto SceneTexture = m_SceneRenderTextures.emplace_back(std::make_shared<VulkanImage>(sceneRTSpec));
+			SceneTexture->Invalidate();
+
+			Utils::InsertImageMemoryBarrier(barrierCmd, SceneTexture->GetVulkanImageInfo().Image,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneTexture->GetSpecification().MipLevels, 0, 1 });
+		}
+
+		device->FlushCommandBuffer(barrierCmd);
+
+		m_BloomDirtTexture = std::make_shared<VulkanTexture>("assets/textures/LensDirt.png");
+
+		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
+		m_CubemapTexture = filteredMap;
+		m_PrefilteredTexture = filteredMap;
+		m_IrradianceTexture = irradianceMap;
+
+		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
+		m_PointLightTextureIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/PointLightIcon.png");
+		m_SpotLightTextureIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/SpotLightIcon.png");
+
+		m_SkyboxVBData = Utils::CreateCubeModel();
 	}
 
 	void SceneRenderer::Release()
@@ -613,7 +615,6 @@ namespace VulkanCore {
 		{
 			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
 			VkDescriptorSet geometryDstSet = m_GeometryMaterial->RT_GetVulkanMaterialDescriptorSet();
-			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 			m_GeometryPipeline->Bind(bindCmd);
 
