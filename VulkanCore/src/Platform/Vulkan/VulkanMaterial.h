@@ -43,7 +43,10 @@ namespace VulkanCore {
 		std::shared_ptr<Shader> m_Shader;
 		// NOTE: Material Descriptor Set is Set 0, rest are Pending Descriptor Sets
 		std::vector<VkDescriptorSet> m_MaterialDescriptorSets;
-		std::vector<VulkanDescriptorWriter> m_MaterialDescriptorWriter;
+		//std::vector<VulkanDescriptorWriter> m_MaterialDescriptorWriter;
+		
+		// Key: Binding ID, Value: 3-sized Descriptor Sets vector
+		std::unordered_map<uint32_t, std::vector<VkDescriptorSet>> m_MaterialDescriptorWriter;
 
 		VkDescriptorSet m_DiffuseDstID, m_NormalDstID, m_ARMDstID;
 		// TODO: We will implement this in future for now this is enough

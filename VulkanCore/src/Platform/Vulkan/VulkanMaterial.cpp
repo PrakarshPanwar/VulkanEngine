@@ -37,7 +37,7 @@ namespace VulkanCore {
 			descriptorSetPool->AllocateDescriptorSet(vulkanMaterialSetLayout, vulkanDescriptorSet);
 		}
 
-		m_MaterialDescriptorWriter = std::vector<VulkanDescriptorWriter>(3, { *materialSetLayout, *descriptorSetPool });
+		m_MaterialDescriptorWriter = ;
 
 		InitializeMaterialTextures();
 	}
@@ -51,6 +51,11 @@ namespace VulkanCore {
 			m_MaterialDescriptorWriter[i].WriteImage(2, &m_ARMTexture->GetDescriptorImageInfo());
 
 			m_MaterialDescriptorWriter[i].Build(m_MaterialDescriptorSets[i]);
+		}
+
+		for (uint32_t i = 0; i < VulkanSwapChain::MaxFramesInFlight; ++i)
+		{
+
 		}
 	}
 
