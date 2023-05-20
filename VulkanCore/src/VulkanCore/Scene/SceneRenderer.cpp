@@ -271,80 +271,31 @@ namespace VulkanCore {
 		// Writing in Descriptors
 		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
 
-		m_GeometryDescriptorSets.resize(framesInFlight);
-		m_PointLightDescriptorSets.resize(framesInFlight);
-		m_SpotLightDescriptorSets.resize(framesInFlight);
-		m_CompositeDescriptorSets.resize(framesInFlight);
-		m_SkyboxDescriptorSets.resize(framesInFlight);
-
-		// Geometry Descriptors
-#if 0
-		std::vector<VulkanDescriptorWriter> geomDescriptorWriter(
-			framesInFlight,
-			{ *m_GeometryPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		for (int i = 0; i < m_GeometryDescriptorSets.size(); ++i)
+		// Geometry Material
 		{
-			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
-			geomDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+			m_GeometryMaterial = std::make_shared<VulkanMaterial>(m_GeometryPipeline->GetSpecification().pShader, "Geometry Shader Material");
 
-			auto pointLightUBInfo = m_UBPointLight[i].GetDescriptorBufferInfo();
-			geomDescriptorWriter[i].WriteBuffer(1, &pointLightUBInfo);
-
-			auto spotLightUBInfo = m_UBSpotLight[i].GetDescriptorBufferInfo();
-			geomDescriptorWriter[i].WriteBuffer(2, &spotLightUBInfo);
-			
-			// Irradiance Map
-			VkDescriptorImageInfo irradianceMapInfo = m_IrradianceTexture->GetDescriptorImageInfo();
-			geomDescriptorWriter[i].WriteImage(6, &irradianceMapInfo);
-
-			// BRDF LUT Texture
-			VkDescriptorImageInfo brdfTextureInfo = m_BRDFTexture->GetDescriptorInfo();
-			geomDescriptorWriter[i].WriteImage(7, &brdfTextureInfo);
-
-			// Prefiltered Map
-			VkDescriptorImageInfo prefilteredMapInfo = m_PrefilteredTexture->GetDescriptorImageInfo();
-			geomDescriptorWriter[i].WriteImage(8, &prefilteredMapInfo);
-
-			geomDescriptorWriter[i].Build(m_GeometryDescriptorSets[i]);
+			m_GeometryMaterial->SetBuffers(0, m_UBCamera);
+			m_GeometryMaterial->SetBuffers(1, m_UBPointLight);
+			m_GeometryMaterial->SetBuffers(2, m_UBSpotLight);
+			m_GeometryMaterial->SetTexture(6, m_IrradianceTexture);
+			m_GeometryMaterial->SetImage(7, m_BRDFTexture);
+			m_GeometryMaterial->SetTexture(8, m_PrefilteredTexture);
+			m_GeometryMaterial->PrepareShaderMaterial();
 		}
-#else
-		m_GeometryMaterial = std::make_shared<VulkanMaterial>(m_GeometryPipeline->GetSpecification().pShader, "Geometry Shader Material");
-		m_GeometryMaterial->SetBuffers(0, m_UBCamera);
-		m_GeometryMaterial->SetBuffers(1, m_UBPointLight);
-		m_GeometryMaterial->SetBuffers(2, m_UBSpotLight);
-		m_GeometryMaterial->SetTexture(6, m_IrradianceTexture);
-		m_GeometryMaterial->SetImage(7, m_BRDFTexture);
-		m_GeometryMaterial->SetTexture(8, m_PrefilteredTexture);
 
-		m_GeometryMaterial->InvalidateDescriptorSets();
-#endif
-
-		// Point Light Descriptors
-		std::vector<VulkanDescriptorWriter> pointLightDescriptorWriter(
-			framesInFlight,
-			{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		std::vector<VulkanDescriptorWriter> spotLightDescriptorWriter(
-			framesInFlight,
-			{ *m_LightPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		for (int i = 0; i < m_PointLightDescriptorSets.size(); ++i)
+		// Light Materials
 		{
-			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
-			pointLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
-			spotLightDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+			m_PointLightShaderMaterial = std::make_shared<VulkanMaterial>(m_LightPipeline->GetSpecification().pShader, "Point Light Shader Material");
+			m_SpotLightShaderMaterial = std::make_shared<VulkanMaterial>(m_LightPipeline->GetSpecification().pShader, "Spot Light Shader Material");
 
-			auto pointLightTextureInfo = m_PointLightTextureIcon->GetDescriptorImageInfo();
-			pointLightDescriptorWriter[i].WriteImage(1, &pointLightTextureInfo);
+			m_PointLightShaderMaterial->SetBuffers(0, m_UBCamera);
+			m_PointLightShaderMaterial->SetTexture(1, m_PointLightTextureIcon);
+			m_PointLightShaderMaterial->PrepareShaderMaterial();
 
-			auto spotLightTextureInfo = m_SpotLightTextureIcon->GetDescriptorImageInfo();
-			spotLightDescriptorWriter[i].WriteImage(1, &spotLightTextureInfo);
-
-			bool success = pointLightDescriptorWriter[i].Build(m_PointLightDescriptorSets[i])
-				&& spotLightDescriptorWriter[i].Build(m_SpotLightDescriptorSets[i]);
-
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+			m_SpotLightShaderMaterial->SetBuffers(0, m_UBCamera);
+			m_SpotLightShaderMaterial->SetTexture(1, m_SpotLightTextureIcon);
+			m_SpotLightShaderMaterial->PrepareShaderMaterial();
 		}
 
 		m_BloomPrefilterSets.resize(framesInFlight);
@@ -446,40 +397,23 @@ namespace VulkanCore {
 			}
 		}
 
-		// Composite Descriptors
-		std::vector<VulkanDescriptorWriter> compDescriptorWriter(
-			framesInFlight,
-			{ *m_CompositePipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		for (int i = 0; i < m_CompositeDescriptorSets.size(); ++i)
+		// Composite Material
 		{
-			VkDescriptorImageInfo imagesInfo = m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[i]->GetDescriptorInfo();
-			VkDescriptorImageInfo bloomTexInfo = m_BloomTextures[2]->GetDescriptorInfo();
-			VkDescriptorImageInfo bloomDirtTexInfo = m_BloomDirtTexture->GetDescriptorImageInfo();
+			m_CompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_CompositePipeline->GetSpecification().pShader, "Composite Shader Material");
 
-			compDescriptorWriter[i].WriteImage(0, &imagesInfo);
-			compDescriptorWriter[i].WriteImage(1, &bloomTexInfo);
-			compDescriptorWriter[i].WriteImage(2, &bloomDirtTexInfo);
-
-			bool success = compDescriptorWriter[i].Build(m_CompositeDescriptorSets[i]);
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+			m_CompositeShaderMaterial->SetImages(0, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
+			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
+			m_CompositeShaderMaterial->SetTexture(2, m_BloomDirtTexture);
+			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
-		// Skybox Descriptors
-		std::vector<VulkanDescriptorWriter> skyboxDescriptorWriter(
-			framesInFlight,
-			{ *m_SkyboxPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool });
-
-		for (int i = 0; i < m_SkyboxDescriptorSets.size(); ++i)
+		// Skybox Material
 		{
-			auto cameraUBInfo = m_UBCamera[i].GetDescriptorBufferInfo();
-			skyboxDescriptorWriter[i].WriteBuffer(0, &cameraUBInfo);
+			m_SkyboxMaterial = std::make_shared<VulkanMaterial>(m_SkyboxPipeline->GetSpecification().pShader, "Skybox Shader Material");
 
-			VkDescriptorImageInfo imageInfo = m_CubemapTexture->GetDescriptorImageInfo();
-			skyboxDescriptorWriter[i].WriteImage(1, &imageInfo);
-
-			bool success = skyboxDescriptorWriter[i].Build(m_SkyboxDescriptorSets[i]);
-			VK_CORE_ASSERT(success, "Failed to Write to Descriptor Set!");
+			m_SkyboxMaterial->SetBuffers(0, m_UBCamera);
+			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
+			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
 		
 		//m_BloomDebugImage = ImGuiLayer::AddTexture(m_BloomTextures[2]);
@@ -594,15 +528,13 @@ namespace VulkanCore {
 		Renderer::Submit([this]
 		{
 			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
-			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
-
 			m_LightPipeline->Bind(bindCmd);
 
 			// Binding Point Light Descriptor Set
 			vkCmdBindDescriptorSets(bindCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				m_LightPipeline->GetVulkanPipelineLayout(),
-				0, 1, &m_PointLightDescriptorSets[frameIndex],
+				0, 1, &m_PointLightShaderMaterial->RT_GetVulkanMaterialDescriptorSet(),
 				0, nullptr);
 		});
 
@@ -623,13 +555,12 @@ namespace VulkanCore {
 		Renderer::Submit([this]
 		{
 			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
-			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
 
 			// Binding Spot Light Descriptor Set
 			vkCmdBindDescriptorSets(bindCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				m_LightPipeline->GetVulkanPipelineLayout(),
-				0, 1, &m_SpotLightDescriptorSets[frameIndex],
+				0, 1, &m_SpotLightShaderMaterial->RT_GetVulkanMaterialDescriptorSet(),
 				0, nullptr);
 		});
 
@@ -683,7 +614,7 @@ namespace VulkanCore {
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
 		Renderer::Submit([this] { m_CompositePipeline->SetPushConstants(m_SceneCommandBuffer->RT_GetActiveCommandBuffer(), &m_SceneSettings, sizeof(SceneSettings)); });
-		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_CompositePipeline, m_CompositeDescriptorSets);
+		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_CompositePipeline, m_CompositeShaderMaterial);
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
@@ -727,7 +658,7 @@ namespace VulkanCore {
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Skybox");
 
 		// Rendering Skybox
-		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxDescriptorSets, &m_SkyboxSettings);
+		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxMaterial, &m_SkyboxSettings);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
 		// Rendering Point Lights

@@ -383,6 +383,11 @@ namespace VulkanCore {
 		vkUpdateDescriptorSets(device->GetVulkanDevice(), (uint32_t)writeDescriptors.size(), writeDescriptors.data(), 0, nullptr);
 	}
 
+	void VulkanMaterial::PrepareShaderMaterial()
+	{
+		InvalidateDescriptorSets();
+	}
+
 	void VulkanMaterial::UpdateDiffuseMap(std::shared_ptr<VulkanTexture> diffuse)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
