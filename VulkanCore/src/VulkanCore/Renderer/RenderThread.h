@@ -1,7 +1,7 @@
 #pragma once
 #include <atomic>
 
-#define USE_DELETION_QUEUE 0
+#define USE_DELETION_QUEUE 1
 
 namespace VulkanCore {
 

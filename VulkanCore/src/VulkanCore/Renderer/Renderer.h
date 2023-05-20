@@ -36,7 +36,6 @@ namespace VulkanCore {
 
 		static std::shared_ptr<VulkanTexture> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
 		static void SubmitFullscreenQuad(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanMaterial>& shaderMaterial);
-		static void RenderMesh(std::shared_ptr<Mesh> mesh);
 
 		static std::shared_ptr<Shader> GetShader(const std::string& name)
 		{
