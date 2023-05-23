@@ -534,9 +534,10 @@ namespace VulkanCore {
 	{
 		m_ViewportSize.x = width;
 		m_ViewportSize.y = height;
+		m_ResizeViewport = true;
 
 #if USE_DELETION_QUEUE
-		RecreateScene();
+		//RecreateScene();
 #endif
 	}
 
