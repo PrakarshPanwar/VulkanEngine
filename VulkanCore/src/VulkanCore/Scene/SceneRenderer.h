@@ -30,6 +30,7 @@ namespace VulkanCore {
 
 		void SetActiveScene(std::shared_ptr<Scene> scene);
 		void SetViewportSize(uint32_t width, uint32_t height);
+		void ResetResizeViewportFlag() { m_ResizeViewport = false; }
 		void RenderScene(EditorCamera& camera);
 		void RenderLights();
 		void SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, const glm::mat4& transform);
@@ -37,6 +38,7 @@ namespace VulkanCore {
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
+		inline bool GetResizeViewportFlag() const { return m_ResizeViewport; }
 		inline std::shared_ptr<VulkanRenderCommandBuffer> GetCommandBuffer() const { return m_SceneCommandBuffer; }
 		inline std::shared_ptr<VulkanFramebuffer> GetFramebuffer() { return m_SceneFramebuffer; }
 		inline VkFramebuffer GetFinalVulkanFramebuffer(uint32_t index) const { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
@@ -169,6 +171,7 @@ namespace VulkanCore {
 
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
+		bool m_ResizeViewport = false;
 
 		SceneSettings m_SceneSettings;
 		LodAndMode m_LodAndMode;

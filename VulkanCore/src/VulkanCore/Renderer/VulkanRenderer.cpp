@@ -536,6 +536,12 @@ namespace VulkanCore {
 				sceneRenderer->RecreateScene();
 			}
 
+			if (sceneRenderer->GetResizeViewportFlag())
+			{
+				sceneRenderer->RecreateScene();
+				sceneRenderer->ResetResizeViewportFlag();
+			}
+
 			else if (result != VK_SUCCESS)
 				VK_CORE_ERROR("Failed to Present Swap Chain Image!");
 		});
