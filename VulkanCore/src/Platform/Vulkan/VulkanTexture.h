@@ -11,7 +11,7 @@ namespace VulkanCore {
 		uint32_t Width = 0;
 		uint32_t Height = 0;
 		ImageFormat Format = ImageFormat::RGBA8_SRGB;
-		TextureWrap SamplerWrap = TextureWrap::Clamp;
+		TextureWrap SamplerWrap = TextureWrap::Repeat;
 		bool GenerateMips = true;
 	};
 
@@ -25,6 +25,7 @@ namespace VulkanCore {
 		VulkanTexture(uint32_t width, uint32_t height, ImageFormat format);
 		~VulkanTexture();
 
+		inline std::string GetFilePath() const { return m_FilePath; }
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_Image->GetDescriptorInfo(); }
 	private:

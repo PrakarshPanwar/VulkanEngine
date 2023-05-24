@@ -3,10 +3,10 @@
 layout(binding = 0, rgba32f) writeonly uniform imageCube o_CubeMap;
 layout(binding = 1) uniform samplerCube u_RadianceMap;
 
-layout(push_constant) uniform RoughnessData
+layout(push_constant) uniform Params
 {
-    float RoughnessVal;
-} u_Roughness;
+    float Roughness;
+} u_Params;
 
 const float PI = 3.14159265359;
 
@@ -86,7 +86,7 @@ void main()
     vec3 R = N;
     vec3 V = N;
 
-    float roughness = u_Roughness.RoughnessVal;
+    float roughness = u_Params.Roughness;
     float totalWeight = 0.0;
     vec3 prefilteredColor = vec3(0.0);
 

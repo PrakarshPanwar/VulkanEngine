@@ -1,19 +1,15 @@
 #version 460 core
 
-layout(binding = 0, rgba16f) writeonly uniform image2D o_Image;
+layout(binding = 0, rgba32f) restrict writeonly uniform image2D o_Image;
 
-layout(binding = 1) uniform sampler2D u_BloomTexture;
-layout(binding = 2) uniform sampler2D u_Texture;
+layout(binding = 1) uniform sampler2D u_Texture;
+layout(binding = 2) uniform sampler2D u_BloomTexture;
 
-layout(binding = 3) uniform LodAndMode
+layout(push_constant) uniform BloomParams
 {
-	vec2 lodAndMode;
-} u_LodAndMode;
-
-layout(binding = 4) uniform Params
-{
-	float Threshold;
-	float Knee;
+	vec2 LodAndMode;
+	layout (offset = 8)  float Threshold;
+	layout (offset = 12) float Knee;
 } u_Params;
 
 #define BLOOM_MODE_PREFILTER      0
@@ -27,6 +23,8 @@ vec3 DownsampleBox13(sampler2D tex, float lod, vec2 uv, vec2 texelSize)
 {
 	// Center
 	vec3 A = textureLod(tex, uv, lod).rgb;
+
+	texelSize *= 0.5; // Sample from center of texels
 
 	// Inner Box
 	vec3 B = textureLod(tex, uv + texelSize * vec2(-1.0, -1.0), lod).rgb;
@@ -107,43 +105,40 @@ layout(local_size_x = 16, local_size_y = 16) in;
 void main()
 {
 	vec2 imgSize = vec2(imageSize(o_Image));
+	vec2 texCoords = (gl_GlobalInvocationID.xy + vec2(0.5)) / imgSize;
 
-	ivec2 invocID = ivec2(gl_GlobalInvocationID);
-	vec2 texCoords = vec2(float(invocID.x) / imgSize.x, float(invocID.y) / imgSize.y);
-	texCoords += (1.0 / imgSize) * 0.5;
-
-	vec2 texSize = vec2(textureSize(u_Texture, int(u_LodAndMode.lodAndMode.x)));
+	vec2 texSize = vec2(textureSize(u_Texture, int(u_Params.LodAndMode.x)));
 	vec4 color = vec4(1, 0, 1, 1);
-	if (uint(u_LodAndMode.lodAndMode.y) == BLOOM_MODE_PREFILTER)
+	if (uint(u_Params.LodAndMode.y) == BLOOM_MODE_PREFILTER)
 	{
 		color.rgb = DownsampleBox13(u_Texture, 0, texCoords, 1.0 / texSize);
 		color = Prefilter(color, texCoords);
 		color.a = 1.0;
 	}
 
-	if (uint(u_LodAndMode.lodAndMode.y) == BLOOM_MODE_UPSAMPLE_FIRST)
+	else if (uint(u_Params.LodAndMode.y) == BLOOM_MODE_UPSAMPLE_FIRST)
 	{
-		vec2 bloomTexSize = vec2(textureSize(u_Texture, int(u_LodAndMode.lodAndMode.x + 1.0)));
+		vec2 bloomTexSize = vec2(textureSize(u_Texture, int(u_Params.LodAndMode.x + 1.0)));
 		float sampleScale = 1.0;
-		vec3 upsampledTexture = UpsampleTent9(u_Texture, u_LodAndMode.lodAndMode.x + 1.0, texCoords, 1.0 / bloomTexSize, sampleScale);
+		vec3 upsampledTexture = UpsampleTent9(u_Texture, u_Params.LodAndMode.x + 1.0, texCoords, 1.0 / bloomTexSize, sampleScale);
 
-		vec3 existing = textureLod(u_Texture, texCoords, u_LodAndMode.lodAndMode.x).rgb;
+		vec3 existing = textureLod(u_Texture, texCoords, u_Params.LodAndMode.x).rgb;
 		color.rgb = existing + upsampledTexture;
 	}
 
-	if (uint(u_LodAndMode.lodAndMode.y) == BLOOM_MODE_UPSAMPLE)
+	else if (uint(u_Params.LodAndMode.y) == BLOOM_MODE_UPSAMPLE)
 	{
-		vec2 bloomTexSize = vec2(textureSize(u_BloomTexture, int(u_LodAndMode.lodAndMode.x + 1.0)));
+		vec2 bloomTexSize = vec2(textureSize(u_BloomTexture, int(u_Params.LodAndMode.x + 1.0)));
 		float sampleScale = 1.0;
-		vec3 upsampledTexture = UpsampleTent9(u_BloomTexture, u_LodAndMode.lodAndMode.x + 1.0, texCoords, 1.0 / bloomTexSize, sampleScale);
+		vec3 upsampledTexture = UpsampleTent9(u_BloomTexture, u_Params.LodAndMode.x + 1.0, texCoords, 1.0 / bloomTexSize, sampleScale);
 
-		vec3 existing = textureLod(u_Texture, texCoords, u_LodAndMode.lodAndMode.x).rgb;
+		vec3 existing = textureLod(u_Texture, texCoords, u_Params.LodAndMode.x).rgb;
 		color.rgb = existing + upsampledTexture;
 	}
 
-	if (uint(u_LodAndMode.lodAndMode.y) == BLOOM_MODE_DOWNSAMPLE)
+	else if (uint(u_Params.LodAndMode.y) == BLOOM_MODE_DOWNSAMPLE)
 	{
-		color.rgb = DownsampleBox13(u_Texture, u_LodAndMode.lodAndMode.x, texCoords, 1.0 / texSize);
+		color.rgb = DownsampleBox13(u_Texture, u_Params.LodAndMode.x, texCoords, 1.0 / texSize);
 	}
 
 	imageStore(o_Image, ivec2(gl_GlobalInvocationID), color);

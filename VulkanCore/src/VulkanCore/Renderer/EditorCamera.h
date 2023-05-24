@@ -28,6 +28,12 @@ namespace VulkanCore {
 		inline float GetAspectRatio() { return m_AspectRatio; }
 		inline void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; UpdateProjection(); }
 
+		inline void SetFieldOfView(float fov)
+		{
+			m_FOV = fov;
+			UpdateProjection();
+		}
+
 		const glm::mat4& GetViewMatrix() const { return m_ViewMatrix; }
 		const glm::mat4& GetProjectionMatrix() const { return m_Projection; }
 		glm::mat4 GetViewProjection() const { return m_Projection * m_ViewMatrix; }
@@ -49,12 +55,14 @@ namespace VulkanCore {
 
 		void MousePan(const glm::vec2& delta);
 		void MouseRotate(const glm::vec2& delta);
+		void MouseDrag(const glm::vec2& delta);
 		void MouseZoom(float delta);
 
 		glm::vec3 CalculatePosition() const;
 
 		std::pair<float, float> PanSpeed() const;
 		float RotationSpeed() const;
+		float DragSpeed() const;
 		float ZoomSpeed() const;
 	private:
 		float m_FOV = 45.0f, m_AspectRatio = 1.778f, m_NearClip = 0.1f, m_FarClip = 1000.0f;

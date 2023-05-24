@@ -1,7 +1,6 @@
 #pragma once
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Scene/Scene.h"
-#include <memory>
 
 namespace VulkanCore {
 
@@ -17,11 +16,13 @@ namespace VulkanCore {
 
 		Entity GetSelectedEntity() const { return m_SelectionContext; }
 		void SetSelectedEntity(Entity entity);
+		void SetContext(std::shared_ptr<Scene> context);
 	private:
 		template<typename T>
 		void DisplayAddComponentEntry(const std::string& entryName);
 
 		void DrawEntityNode(Entity entity);
+		void DrawMaterialsPanel();
 		void DrawComponents(Entity entity);
 	private:
 		std::shared_ptr<Scene> m_Context;

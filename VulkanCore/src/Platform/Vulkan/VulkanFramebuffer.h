@@ -31,6 +31,7 @@ namespace VulkanCore {
 		FramebufferAttachmentSpecification Attachments;
 		uint32_t Samples = 1;
 		glm::vec4 ClearColor = { 0.01f, 0.01f, 0.01f, 1.0f };
+		bool Transfer = false;
 		bool ReadDepthTexture = false;
 	};
 
@@ -44,8 +45,8 @@ namespace VulkanCore {
 		inline const FramebufferSpecification& GetSpecification() const { return m_Specification; }
 		inline const std::vector<FramebufferTextureSpecification>& GetColorAttachmentsTextureSpec() const { return m_ColorAttachmentSpecifications; }
 		inline const FramebufferTextureSpecification& GetDepthAttachmentTextureSpec() const { return m_DepthAttachmentSpecification; }
-		inline bool HasDepthAttachment() { return m_DepthAttachmentSpecification; }
-		const std::vector<VulkanImage>& GetResolveAttachment() const;
+		inline bool HasDepthAttachment() const { return m_DepthAttachmentSpecification; }
+		const std::vector<std::shared_ptr<VulkanImage>>& GetResolveAttachment() const;
 
 		void Invalidate();
 		void CreateFramebuffer(VkRenderPass renderPass);
@@ -57,8 +58,8 @@ namespace VulkanCore {
 		std::vector<FramebufferTextureSpecification> m_ColorAttachmentSpecifications;
 		FramebufferTextureSpecification m_DepthAttachmentSpecification;
 
-		std::vector<std::vector<VulkanImage>> m_ColorAttachments;
-		std::vector<VulkanImage> m_DepthAttachment;
+		std::vector<std::vector<std::shared_ptr<VulkanImage>>> m_ColorAttachments;
+		std::vector<std::shared_ptr<VulkanImage>> m_DepthAttachment;
 
 		std::vector<VkFramebuffer> m_Framebuffers;
 

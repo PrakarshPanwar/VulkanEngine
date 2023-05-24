@@ -14,6 +14,8 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanDescriptorSetLayout> Build() const;
 	private:
 		std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> m_Bindings;
+
+		friend class VulkanMaterial;
 	};
 
 	class VulkanDescriptorPool;
@@ -31,6 +33,8 @@ namespace VulkanCore {
 		std::vector<VkDescriptorPoolSize> m_PoolSizes;
 		uint32_t m_MaxSets = 1000;
 		VkDescriptorPoolCreateFlags m_PoolFlags = 0;
+
+		friend class VulkanMaterial;
 	};
 
 	class VulkanDescriptorSetLayout
@@ -41,12 +45,14 @@ namespace VulkanCore {
 		VulkanDescriptorSetLayout(const VulkanDescriptorSetLayout&) = delete;
 		VulkanDescriptorSetLayout& operator=(const VulkanDescriptorSetLayout&) = delete;
 
-		VkDescriptorSetLayout GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
+		VkDescriptorSetLayout GetVulkanDescriptorSetLayout() const { return m_DescriptorSetLayout; }
+		VkDescriptorType GetVulkanDescriptorType(uint32_t binding) const { return m_Bindings.at(binding).descriptorType; }
 	private:
 		VkDescriptorSetLayout m_DescriptorSetLayout;
 		std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> m_Bindings;
 
 		friend class VulkanDescriptorWriter;
+		friend class VulkanMaterial;
 	};
 
 	class VulkanDescriptorPool
@@ -57,7 +63,8 @@ namespace VulkanCore {
 		VulkanDescriptorPool(const VulkanDescriptorPool&) = delete;
 		VulkanDescriptorPool& operator=(const VulkanDescriptorPool&) = delete;
 
-		bool AllocateDescriptor(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const;
+		bool AllocateDescriptorSet(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const;
+		bool AllocateDescriptorSet(const std::vector<VkDescriptorSetLayout>& descriptorSetsLayout, const std::vector<VkDescriptorSet>& descriptorSets);
 		void FreeDescriptors(std::vector<VkDescriptorSet>& descriptors) const;
 		void ResetPool();
 
@@ -74,7 +81,7 @@ namespace VulkanCore {
 		VulkanDescriptorWriter(VulkanDescriptorSetLayout& setLayout, VulkanDescriptorPool& pool);
 
 		VulkanDescriptorWriter& WriteBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
-		VulkanDescriptorWriter& WriteImage(uint32_t binding, VkDescriptorImageInfo* imageInfo);
+		VulkanDescriptorWriter& WriteImage(uint32_t binding, const VkDescriptorImageInfo* imageInfo);
 		VulkanDescriptorWriter& WriteImage(uint32_t binding, const std::vector<VkDescriptorImageInfo>& imagesInfo);
 
 		bool Build(VkDescriptorSet& set);
@@ -83,6 +90,8 @@ namespace VulkanCore {
 		VulkanDescriptorSetLayout& m_SetLayout;
 		VulkanDescriptorPool& m_Pool;
 		std::vector<VkWriteDescriptorSet> m_Writes;
+
+		friend class VulkanMaterial;
 	};
 
 }

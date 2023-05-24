@@ -8,14 +8,14 @@ namespace VulkanCore {
 	{
 	public:
 		VulkanComputePipeline() = default;
-		VulkanComputePipeline(std::shared_ptr<Shader> shader);
+		VulkanComputePipeline(std::shared_ptr<Shader> shader, const std::string& debugName = {});
 
 		~VulkanComputePipeline();
 
 		void Bind(VkCommandBuffer commandBuffer);
 		void Dispatch(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
 		void Execute(VkCommandBuffer cmdBuf, VkDescriptorSet dstSet, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
-		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size);
+		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size, size_t offset = 0);
 
 		inline std::shared_ptr<Shader> GetShader() const { return m_Shader; }
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
@@ -23,6 +23,8 @@ namespace VulkanCore {
 	private:
 		void CreateComputePipeline();
 	private:
+		std::string m_DebugName;
+
 		VkPipeline m_ComputePipeline;
 		VkPipelineLayout m_PipelineLayout = nullptr;
 		VkShaderModule m_compShaderModule = nullptr;

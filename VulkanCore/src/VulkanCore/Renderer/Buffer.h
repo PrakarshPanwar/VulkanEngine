@@ -37,7 +37,7 @@ namespace VulkanCore {
 		uint32_t Offset;
 
 		BufferElement() = default;
-		
+
 		BufferElement(ShaderDataType type, const std::string& name, uint32_t offset = 0)
 			: Name(name), Type(type), Size(ShaderDataTypeSize(type)), Offset(offset)
 		{

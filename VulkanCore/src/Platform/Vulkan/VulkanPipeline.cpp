@@ -31,14 +31,39 @@ namespace VulkanCore {
 			VkPushConstantRange pushConstantRange{};
 			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 			pushConstantRange.offset = 0;
-			pushConstantRange.size = pushConstantSize;
+			pushConstantRange.size = (uint32_t)pushConstantSize;
 
-			std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ descriptorLayout.GetDescriptorSetLayout() };
+			std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ descriptorLayout.GetVulkanDescriptorSetLayout() };
 
 			VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 			pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 			pipelineLayoutInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
 			pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+			pipelineLayoutInfo.pushConstantRangeCount = pushConstantSize == 0 ? 0 : 1;
+			pipelineLayoutInfo.pPushConstantRanges = pushConstantSize == 0 ? nullptr : &pushConstantRange;
+
+			VkPipelineLayout pipelineLayout;
+			VK_CHECK_RESULT(vkCreatePipelineLayout(device->GetVulkanDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout), "Failed to Create Pipeline Layout!");
+			return pipelineLayout;
+		}
+
+		static VkPipelineLayout CreatePipelineLayout(std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> descriptorSetLayouts, size_t pushConstantSize = 0)
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+
+			VkPushConstantRange pushConstantRange{};
+			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			pushConstantRange.offset = 0;
+			pushConstantRange.size = (uint32_t)pushConstantSize;
+
+			std::vector<VkDescriptorSetLayout> vulkanDescriptorSetsLayout;
+			for (auto& descriptorSetLayout : descriptorSetLayouts)
+				vulkanDescriptorSetsLayout.push_back(descriptorSetLayout->GetVulkanDescriptorSetLayout());
+
+			VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+			pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+			pipelineLayoutInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
+			pipelineLayoutInfo.pSetLayouts = vulkanDescriptorSetsLayout.data();
 			pipelineLayoutInfo.pushConstantRangeCount = pushConstantSize == 0 ? 0 : 1;
 			pipelineLayoutInfo.pPushConstantRanges = pushConstantSize == 0 ? nullptr : &pushConstantRange;
 
@@ -211,9 +236,9 @@ namespace VulkanCore {
 		static std::vector<VkVertexInputAttributeDescription> GetVulkanAttributeDescription(const PipelineSpecification& spec)
 		{
 			std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-			auto& bufferElements = spec.Layout.GetElements();
 
 			uint32_t index = 0;
+			auto& bufferElements = spec.Layout.GetElements();
 			for (auto& bufferElement : bufferElements)
 			{
 				auto& attribElement = attributeDescriptions.emplace_back();
@@ -223,9 +248,7 @@ namespace VulkanCore {
 				attribElement.format = GetVulkanFormat(bufferElement.Type);
 			}
 
-			index = 0;
 			auto& instanceBufferElements = spec.InstanceLayout.GetElements();
-
 			for (auto& bufferElement : instanceBufferElements)
 			{
 				auto& attribElement = attributeDescriptions.emplace_back();
@@ -417,9 +440,6 @@ namespace VulkanCore {
 			auto bindingDescriptions = Utils::GetVulkanBindingDescription(m_Specification);
 			auto attributeDescriptions = Utils::GetVulkanAttributeDescription(m_Specification);
 
-			VK_CORE_WARN("Size of Vertex struct: {}", sizeof(Vertex));
-			VK_CORE_WARN("Size of Layout Stride: {}", m_Specification.Layout.GetStride());
-
 			VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 			vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 			vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
@@ -427,8 +447,8 @@ namespace VulkanCore {
 			vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 			vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 
-			m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
-			m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());
+			m_DescriptorSetLayout = shader->CreateAllDescriptorSetsLayout();
+			m_PipelineLayout = Utils::CreatePipelineLayout(m_DescriptorSetLayout, shader->GetPushConstantSize());
 
 			auto pipelineInfo = Utils::GetPipelineConfiguration(m_Specification);
 
@@ -461,6 +481,7 @@ namespace VulkanCore {
 				&m_GraphicsPipeline),
 				"Failed to Create Graphics Pipeline!");
 
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_Specification.DebugName, m_GraphicsPipeline);
 			delete[] shaderStages;
 		});
 	}
@@ -497,81 +518,6 @@ namespace VulkanCore {
 		cacheInfo.initialDataSize = 0;
 		cacheInfo.pNext = nullptr;
 		cacheInfo.pInitialData = nullptr;
-	}
-
-	void VulkanPipeline::SetDefaultPipelineConfiguration(PipelineConfigInfo& pipelineConfigInfo)
-	{
-		pipelineConfigInfo.InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		pipelineConfigInfo.InputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		pipelineConfigInfo.InputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
-
-		pipelineConfigInfo.ViewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		pipelineConfigInfo.ViewportInfo.viewportCount = 1;
-		pipelineConfigInfo.ViewportInfo.pViewports = nullptr;
-		pipelineConfigInfo.ViewportInfo.scissorCount = 1;
-		pipelineConfigInfo.ViewportInfo.pScissors = nullptr;
-
-		pipelineConfigInfo.RasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		pipelineConfigInfo.RasterizationInfo.depthClampEnable = VK_FALSE;
-		pipelineConfigInfo.RasterizationInfo.rasterizerDiscardEnable = VK_FALSE;
-		pipelineConfigInfo.RasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;
-		pipelineConfigInfo.RasterizationInfo.lineWidth = 1.0f;
-		pipelineConfigInfo.RasterizationInfo.cullMode = VK_CULL_MODE_NONE;
-		pipelineConfigInfo.RasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-		pipelineConfigInfo.RasterizationInfo.depthBiasEnable = VK_FALSE;
-		pipelineConfigInfo.RasterizationInfo.depthBiasConstantFactor = 0.0f;
-		pipelineConfigInfo.RasterizationInfo.depthBiasClamp = 0.0f;
-		pipelineConfigInfo.RasterizationInfo.depthBiasSlopeFactor = 0.0f;
-
-		auto Framebuffer = pipelineConfigInfo.RenderPass->GetSpecification().TargetFramebuffer;
-		const auto sampleCount = Utils::VulkanSampleCount(Framebuffer->GetSpecification().Samples);
-		pipelineConfigInfo.MultisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		pipelineConfigInfo.MultisampleInfo.sampleShadingEnable = VK_FALSE;
-		pipelineConfigInfo.MultisampleInfo.rasterizationSamples = sampleCount;
-		pipelineConfigInfo.MultisampleInfo.minSampleShading = 1.0f;
-		pipelineConfigInfo.MultisampleInfo.pSampleMask = nullptr;
-		pipelineConfigInfo.MultisampleInfo.alphaToCoverageEnable = VK_FALSE;
-		pipelineConfigInfo.MultisampleInfo.alphaToOneEnable = VK_FALSE;
-
-		pipelineConfigInfo.ColorBlendAttachment.colorWriteMask =
-			VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		pipelineConfigInfo.ColorBlendAttachment.blendEnable = VK_FALSE;
-		pipelineConfigInfo.ColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-		pipelineConfigInfo.ColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-		pipelineConfigInfo.ColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;              // Optional
-		pipelineConfigInfo.ColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-		pipelineConfigInfo.ColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-		pipelineConfigInfo.ColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
-
-		pipelineConfigInfo.ColorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		pipelineConfigInfo.ColorBlendInfo.logicOpEnable = VK_FALSE;
-		pipelineConfigInfo.ColorBlendInfo.logicOp = VK_LOGIC_OP_COPY;  // Optional
-		pipelineConfigInfo.ColorBlendInfo.attachmentCount = 1;
-		pipelineConfigInfo.ColorBlendInfo.pAttachments = &pipelineConfigInfo.ColorBlendAttachment;
-		pipelineConfigInfo.ColorBlendInfo.blendConstants[0] = 0.0f;  // Optional
-		pipelineConfigInfo.ColorBlendInfo.blendConstants[1] = 0.0f;  // Optional
-		pipelineConfigInfo.ColorBlendInfo.blendConstants[2] = 0.0f;  // Optional
-		pipelineConfigInfo.ColorBlendInfo.blendConstants[3] = 0.0f;  // Optional
-
-		pipelineConfigInfo.DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-		pipelineConfigInfo.DepthStencilInfo.depthTestEnable = VK_TRUE;
-		pipelineConfigInfo.DepthStencilInfo.depthWriteEnable = VK_TRUE;
-		pipelineConfigInfo.DepthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
-		pipelineConfigInfo.DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
-		pipelineConfigInfo.DepthStencilInfo.minDepthBounds = 0.0f;  // Optional
-		pipelineConfigInfo.DepthStencilInfo.maxDepthBounds = 1.0f;  // Optional
-		pipelineConfigInfo.DepthStencilInfo.stencilTestEnable = VK_FALSE;
-		pipelineConfigInfo.DepthStencilInfo.front = {};  // Optional
-		pipelineConfigInfo.DepthStencilInfo.back = {};   // Optional
-
-		pipelineConfigInfo.DynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-		pipelineConfigInfo.DynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		pipelineConfigInfo.DynamicStateInfo.pDynamicStates = pipelineConfigInfo.DynamicStateEnables.data();
-		pipelineConfigInfo.DynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(pipelineConfigInfo.DynamicStateEnables.size());
-		pipelineConfigInfo.DynamicStateInfo.flags = 0;
-
-		pipelineConfigInfo.BindingDescriptions = Vertex::GetBindingDescriptions();
-		pipelineConfigInfo.AttributeDescriptions = Vertex::GetAttributeDescriptions();
 	}
 
 	void VulkanPipeline::EnableAlphaBlending(PipelineConfigInfo& pipelineConfigInfo)
