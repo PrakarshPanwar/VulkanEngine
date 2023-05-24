@@ -39,9 +39,7 @@ namespace VulkanCore {
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		inline std::shared_ptr<VulkanRenderCommandBuffer> GetCommandBuffer() const { return m_SceneCommandBuffer; }
 		inline std::shared_ptr<VulkanFramebuffer> GetFramebuffer() { return m_SceneFramebuffer; }
-		//inline std::shared_ptr<VulkanRenderPass> GetRenderPass() { return m_SceneRenderPass; }
 		inline VkFramebuffer GetFinalVulkanFramebuffer(uint32_t index) const { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
-		//inline VkRenderPass GetVulkanRenderPass() { return m_SceneRenderPass->GetRenderPass(); }
 		inline std::shared_ptr<Shader> GetGeometryPipelineShader() const { return m_GeometryPipeline->GetSpecification().pShader; }
 		inline std::shared_ptr<VulkanImage> GetFinalPassImage(uint32_t index) const { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
 		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
@@ -76,6 +74,7 @@ namespace VulkanCore {
 	private:
 		void CreateCommandBuffers();
 		void CreatePipelines();
+		void CreateResources();
 		void CreateMaterials();
 
 		void GeometryPass();
@@ -126,7 +125,6 @@ namespace VulkanCore {
 
 		std::shared_ptr<VulkanRenderCommandBuffer> m_SceneCommandBuffer;
 		std::shared_ptr<VulkanFramebuffer> m_SceneFramebuffer;
-		//std::shared_ptr<VulkanRenderPass> m_SceneRenderPass;
 		std::vector<VkDescriptorSet> m_SceneImages;
 
 		// Pipelines
@@ -181,7 +179,7 @@ namespace VulkanCore {
 		std::map<MeshKey, DrawCommand> m_MeshDrawList;
 		std::map<MeshKey, std::vector<TransformData>> m_MeshTransformMap;
 
-		glm::ivec2 m_ViewportSize;
+		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
 
 		SceneSettings m_SceneSettings;
