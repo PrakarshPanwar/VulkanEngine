@@ -16,8 +16,9 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/color_space.hpp>
+#include "optick.h"
 
-#define IMGUI_VIEWPORTS 1
+#define IMGUI_VIEWPORTS 0
 
 namespace VulkanCore {
 
@@ -50,15 +51,7 @@ namespace VulkanCore {
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000);
 
 		m_ImGuiGlobalPool = descriptorPoolBuilder.Build();
-
-		m_ImGuiCmdBuffers.resize(VulkanSwapChain::MaxFramesInFlight);
-
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		allocInfo.commandPool = device->GetCommandPool();
-		allocInfo.commandBufferCount = (uint32_t)m_ImGuiCmdBuffers.size();
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_ImGuiCmdBuffers.data()), "Failed to Allocate ImGui Secondary Command Buffers!");
+		m_ImGuiCmdBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary);
 
 		ImGui::CreateContext();
 
@@ -119,19 +112,29 @@ namespace VulkanCore {
 	{
 	}
 
-	void ImGuiLayer::ImGuiBegin()
+	void ImGuiLayer::ImGuiNewFrame()
 	{
-		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
+		VK_CORE_PROFILE();
+
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 	}
 
+	void ImGuiLayer::ImGuiBegin()
+	{
+		VK_CORE_PROFILE();
+
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+	}
+
 	void ImGuiLayer::ImGuiEnd()
 	{
-		int currentFrameIndex = Renderer::GetCurrentFrameIndex();
+		VK_CORE_PROFILE();
+
 		auto swapChain = VulkanSwapChain::GetSwapChain();
-		auto commandBuffer = m_ImGuiCmdBuffers[currentFrameIndex];
+		auto cmdBuffer = VulkanRenderer::Get()->GetRendererCommandBuffer();
+		VkCommandBuffer vulkanCmdBuffer = cmdBuffer->RT_GetActiveCommandBuffer();
 
 #if IMGUI_VIEWPORTS
 		ImGuiIO& io = ImGui::GetIO();
@@ -139,20 +142,8 @@ namespace VulkanCore {
 		io.DisplaySize = ImVec2{ (float)app->GetWindow()->GetWidth(), (float)app->GetWindow()->GetHeight() };
 #endif
 
-		VkCommandBufferInheritanceInfo inheritanceInfo{};
-		inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-		inheritanceInfo.renderPass = swapChain->GetRenderPass();
-		inheritanceInfo.framebuffer = swapChain->GetFramebuffer(currentFrameIndex);
-
-		VkCommandBufferBeginInfo cmdBufInfo{};
-		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		cmdBufInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-		cmdBufInfo.pInheritanceInfo = &inheritanceInfo;
-
-		VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &cmdBufInfo), "Failed to Begin Command Buffer!");
-
 		ImGui::Render();
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vulkanCmdBuffer);
 
 #if IMGUI_VIEWPORTS
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -163,28 +154,62 @@ namespace VulkanCore {
 			glfwMakeContextCurrent(backup_current_context);
 		}
 #endif
-
-		vkEndCommandBuffer(commandBuffer);
-
-		RenderThread::NotifyMainThread();
 	}
 
 	void ImGuiLayer::ShutDown()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 		ImGui_ImplVulkan_Shutdown();
-
-		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(),
-			static_cast<uint32_t>(m_ImGuiCmdBuffers.size()), m_ImGuiCmdBuffers.data());
 	}
 
-	VkDescriptorSet ImGuiLayer::AddTexture(const VulkanImage& Image)
+	VkDescriptorSet ImGuiLayer::AddTexture(const VulkanImage& image)
 	{
-		auto imageDescriptor = Image.GetDescriptorInfo();
+		auto imageDescriptor = image.GetDescriptorInfo();
 
 		return ImGui_ImplVulkan_AddTexture(imageDescriptor.sampler,
 			imageDescriptor.imageView,
 			imageDescriptor.imageLayout);
+	}
+
+	VkDescriptorSet ImGuiLayer::AddTexture(const VulkanTexture& texture)
+	{
+		auto imageDescriptor = texture.GetDescriptorImageInfo();
+
+		return ImGui_ImplVulkan_AddTexture(imageDescriptor.sampler,
+			imageDescriptor.imageView,
+			imageDescriptor.imageLayout);
+	}
+
+	void ImGuiLayer::UpdateDescriptor(VkDescriptorSet descriptorSet, const VulkanImage& image)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		VkWriteDescriptorSet writeDescriptor{};
+		writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptor.dstSet = descriptorSet;
+		writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptor.dstBinding = 0;
+		writeDescriptor.pImageInfo = &image.GetDescriptorInfo();
+		writeDescriptor.descriptorCount = 1;
+		writeDescriptor.dstArrayElement = 0;
+
+		vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
+	}
+
+	void ImGuiLayer::UpdateDescriptor(VkDescriptorSet descriptorSet, const VulkanTexture& texture)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		VkWriteDescriptorSet writeDescriptor{};
+		writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptor.dstSet = descriptorSet;
+		writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptor.dstBinding = 0;
+		writeDescriptor.pImageInfo = &texture.GetDescriptorImageInfo();
+		writeDescriptor.descriptorCount = 1;
+		writeDescriptor.dstArrayElement = 0;
+
+		vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
 	}
 
 	void ImGuiLayer::CheckVkResult(VkResult error)

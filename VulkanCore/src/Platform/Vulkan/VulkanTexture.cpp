@@ -20,6 +20,8 @@ namespace VulkanCore {
 			case ImageFormat::RGBA8_SRGB:	   return VK_FORMAT_R8G8B8A8_SRGB;
 			case ImageFormat::RGBA8_NORM:	   return VK_FORMAT_R8G8B8A8_SNORM;
 			case ImageFormat::RGBA8_UNORM:	   return VK_FORMAT_R8G8B8A8_UNORM;
+			case ImageFormat::RGBA16_NORM:	   return VK_FORMAT_R16G16B16A16_SNORM;
+			case ImageFormat::RGBA16_UNORM:	   return VK_FORMAT_R16G16B16A16_UNORM;
 			case ImageFormat::RGBA16F:		   return VK_FORMAT_R16G16B16A16_SFLOAT;
 			case ImageFormat::RGBA32F:		   return VK_FORMAT_R32G32B32A32_SFLOAT;
 			case ImageFormat::DEPTH24STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
@@ -139,6 +141,7 @@ namespace VulkanCore {
 		VK_CORE_ASSERT(m_LocalStorage, "Failed to Load Image {0}", m_FilePath);
 
 		ImageSpecification spec;
+		spec.DebugName = std::filesystem::path(m_FilePath).stem().string();
 		spec.Width = m_Specification.Width;
 		spec.Height = m_Specification.Height;
 		spec.Usage = ImageUsage::Texture;
@@ -284,6 +287,7 @@ namespace VulkanCore {
 		m_Specification.Width = width;
 		m_Specification.Height = height;
 		m_Specification.Format = format;
+		m_Specification.SamplerWrap = TextureWrap::Clamp;
 		m_Specification.GenerateMips = true;
 	}
 

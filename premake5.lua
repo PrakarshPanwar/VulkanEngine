@@ -12,6 +12,7 @@ include "Dependencies.lua"
 group "Dependencies"
 	include "VulkanCore/vendor/glfw"
 	include "VulkanCore/vendor/imgui"
+	include "VulkanCore/vendor/yaml-cpp"
 group ""
 
 include "VulkanCore"

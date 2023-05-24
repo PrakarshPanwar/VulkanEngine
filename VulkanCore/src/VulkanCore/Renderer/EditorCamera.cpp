@@ -48,6 +48,11 @@ namespace VulkanCore {
 		return 0.8f;
 	}
 
+	float EditorCamera::DragSpeed() const
+	{
+		return 5.0f;
+	}
+
 	float EditorCamera::ZoomSpeed() const
 	{
 		float distance = m_Distance * 0.2f;
@@ -55,6 +60,19 @@ namespace VulkanCore {
 		float speed = distance * distance;
 		speed = std::min(speed, 100.0f); // max speed = 100
 		return speed;
+	}
+
+	void EditorCamera::MouseDrag(const glm::vec2& delta)
+	{
+		glm::vec2 abs_delta = glm::abs(delta);
+		if (abs_delta.x < abs_delta.y)
+			m_FocalPoint += -GetForwardDirection() * delta.y * DragSpeed() * m_Distance;
+
+		else
+		{
+			float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
+			m_Yaw += yawSign * delta.x * RotationSpeed();
+		}
 	}
 
 	void EditorCamera::OnUpdate()
@@ -80,6 +98,18 @@ namespace VulkanCore {
 				MouseRotate(delta);
 			else if (Input::IsMouseButtonPressed(Mouse::ButtonRight))
 				MousePan(delta);
+		}
+
+		else
+		{
+			auto mousePosition = Input::GetMousePosition();
+
+			const glm::vec2& mouse{ mousePosition.first, mousePosition.second };
+			glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
+			m_InitialMousePosition = mouse;
+
+			if (Input::IsMouseButtonPressed(Mouse::ButtonLeft))
+				MouseDrag(delta);
 		}
 
 		UpdateView();

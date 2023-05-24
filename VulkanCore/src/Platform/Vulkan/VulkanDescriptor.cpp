@@ -88,7 +88,7 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkCreateDescriptorPool(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), &descriptorPoolInfo, nullptr, &m_DescriptorPool), "Failed to Create Descriptor Pool!");
 	}
 
-	bool VulkanDescriptorPool::AllocateDescriptor(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const
+	bool VulkanDescriptorPool::AllocateDescriptorSet(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
@@ -101,6 +101,28 @@ namespace VulkanCore {
 		// TODO: Might want to create a "DescriptorPoolManager" class that handles this case, and builds
 		// a new pool whenever an old pool fills up. But this is beyond our current scope
 		auto allocResult = vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, &descriptor);
+		if (allocResult != VK_SUCCESS)
+		{
+			VK_CORE_ERROR("Error occured in allocating Descriptors!");
+			return false;
+		}
+
+		return true;
+	}
+
+	bool VulkanDescriptorPool::AllocateDescriptorSet(const std::vector<VkDescriptorSetLayout>& descriptorSetsLayout, const std::vector<VkDescriptorSet>& descriptorSets)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = m_DescriptorPool;
+		allocInfo.pSetLayouts = descriptorSetsLayout.data();
+		allocInfo.descriptorSetCount = descriptorSetsLayout.size();
+
+		// TODO: Might want to create a "DescriptorPoolManager" class that handles this case, and builds
+		// a new pool whenever an old pool fills up. But this is beyond our current scope
+		auto allocResult = vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, (VkDescriptorSet*)descriptorSets.data());
 		if (allocResult != VK_SUCCESS)
 		{
 			VK_CORE_ERROR("Error occured in allocating Descriptors!");
@@ -149,7 +171,7 @@ namespace VulkanCore {
 		return *this;
 	}
 
-	VulkanDescriptorWriter& VulkanDescriptorWriter::WriteImage(uint32_t binding, VkDescriptorImageInfo* imageInfo)
+	VulkanDescriptorWriter& VulkanDescriptorWriter::WriteImage(uint32_t binding, const VkDescriptorImageInfo* imageInfo)
 	{
 		VK_CORE_ASSERT(m_SetLayout.m_Bindings.count(binding) == 1, "Layout does not contain specified Binding!");
 		auto& bindingDescription = m_SetLayout.m_Bindings[binding];
@@ -186,7 +208,7 @@ namespace VulkanCore {
 
 	bool VulkanDescriptorWriter::Build(VkDescriptorSet& set)
 	{
-		bool success = m_Pool.AllocateDescriptor(m_SetLayout.GetDescriptorSetLayout(), set);
+		bool success = m_Pool.AllocateDescriptorSet(m_SetLayout.GetVulkanDescriptorSetLayout(), set);
 
 		if (!success)
 			return false;

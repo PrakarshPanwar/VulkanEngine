@@ -4,18 +4,12 @@
 #include "Platform/Vulkan/VulkanPipeline.h"
 #include "VulkanCore/Core/Components.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
+#include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 
 namespace VulkanCore {
 
 	class Entity;
-
-	struct SceneInfo
-	{
-		VkCommandBuffer CommandBuffer;
-		VulkanPipeline* ScenePipeline;
-		VkPipelineLayout PipelineLayout;
-		VkDescriptorSet DescriptorSet;
-	};
+	class SceneRenderer;
 
 	class Scene
 	{
@@ -24,17 +18,17 @@ namespace VulkanCore {
 		~Scene();
 
 		Entity CreateEntity(const std::string& name);
-		void OnUpdate(SceneInfo& sceneInfo);
-		void OnUpdateLights(SceneInfo& sceneInfo);
-		void OnUpdateGeometry(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
-		void OnUpdateLights(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
+		void OnUpdateGeometry(SceneRenderer* renderer);
+		void OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions);
 		void UpdatePointLightUB(UBPointLights& ubo);
+		void UpdateSpotLightUB(UBSpotLights& ubo);
 		void DestroyEntity(Entity entity);
 	private:
 		entt::registry m_Registry;
 
 		friend class Entity;
 		friend class SceneHierarchyPanel;
+		friend class SceneSerializer;
 		friend class SceneRenderer;
 	};
 

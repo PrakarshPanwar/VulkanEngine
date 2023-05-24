@@ -2,9 +2,14 @@
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Platform/Vulkan/VulkanVertexBuffer.h"
 #include "Platform/Vulkan/VulkanIndexBuffer.h"
+#include "VulkanCore/Renderer/Material.h"
 
+// TODO: This include should be in PCH
+#include <map>
 #include <glm/glm.hpp>
+#include <assimp/Importer.hpp>
 #include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 namespace VulkanCore {
 
@@ -16,10 +21,7 @@ namespace VulkanCore {
 		glm::vec3 Binormal;
 		glm::vec3 Color;
 		glm::vec2 TexCoord;
-		int TexID;
-
-		static std::vector<VkVertexInputBindingDescription> GetBindingDescriptions();
-		static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
+		//int TexID;
 
 		bool operator==(const Vertex& other) const
 		{
@@ -28,61 +30,100 @@ namespace VulkanCore {
 		}
 	};
 
-	struct QuadVertex
+	struct MeshNode
 	{
-		glm::vec3 Position;
-		glm::vec2 TexCoord;
-
-		static std::vector<VkVertexInputBindingDescription> GetBindingDescriptions();
-		static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
+		std::string Name;
+		uint32_t Parent;
+		std::vector<uint32_t> Submeshes;
+		std::vector<uint32_t> Children;
+		glm::mat4 LocalTransform;
 	};
 
-	struct MeshBuilder
+	// TODO: Add MaterialIndex member
+	struct Submesh
 	{
-		std::vector<Vertex> Vertices{};
-		std::vector<uint32_t> Indices{};
-		int TextureID;
+		std::string MeshName, NodeName;
+		uint32_t BaseVertex, BaseIndex;
+		uint32_t VertexCount, IndexCount;
+		glm::mat4 LocalTransform;
+	};
 
-		void LoadMesh(const std::string& filepath);
-		void LoadMesh(const std::string& filepath, int texID);
-		void LoadMeshFromAssimp(const std::string& filepath, int texID);
-		void ProcessNode(aiNode* node, const aiScene* scene);
-		void ProcessMesh(aiMesh* mesh, const aiScene* scene);
+	class MeshSource
+	{
+	public:
+		MeshSource();
+		MeshSource(const std::string& filepath);
+		~MeshSource();
+
+		const aiScene* GetAssimpScene() const { return m_Scene; }
+		inline const std::vector<MeshNode>& GetMeshNodes() const { return m_Nodes; }
+		inline const std::vector<Submesh>& GetSubmeshes() const { return m_Submeshes; }
+
+		inline std::shared_ptr<Material> GetMaterial() const { return m_Material; }
+		// TODO: This method is temporary for now
+		inline void SetMaterial(std::shared_ptr<Material> material) { m_Material = material; }
+
+		inline std::shared_ptr<VulkanVertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
+		inline std::shared_ptr<VulkanIndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
+		inline uint32_t GetVertexCount() const { return (uint32_t)m_Vertices.size(); }
+		inline uint32_t GetIndexCount() const { return (uint32_t)m_Indices.size(); }
+
+		uint64_t GetMeshHandle() const { return m_MeshHandle; }
+		std::string& GetFilePath() { return m_FilePath; }
+	private:
+		std::string m_FilePath;
+		uint64_t m_MeshHandle;
+
+		aiScene* m_Scene;
+		std::unique_ptr<Assimp::Importer> m_Importer;
+
+		std::vector<Submesh> m_Submeshes{};
+		std::vector<MeshNode> m_Nodes{};
+
+		std::vector<Vertex> m_Vertices{};
+		std::vector<uint32_t> m_Indices{};
+
+		// TODO: In future we will support separate material for each submesh
+		std::shared_ptr<Material> m_Material;
+
+		std::shared_ptr<VulkanVertexBuffer> m_VertexBuffer;
+		std::shared_ptr<VulkanIndexBuffer> m_IndexBuffer;
+
+		friend class Mesh;
+		friend class AssimpMeshImporter;
+	};
+
+	class AssimpMeshImporter
+	{
+	public:
+		static void InvalidateMesh(std::shared_ptr<MeshSource> meshSource);
+		static void TraverseNodes(std::shared_ptr<MeshSource> meshSource, aiNode* aNode, uint32_t nodeIndex);
+		static void ProcessMesh(std::shared_ptr<MeshSource> meshSource, aiMesh* mesh, const aiScene* scene);
 	};
 
 	class Mesh
 	{
 	public:
-		Mesh() = default;
-		Mesh(const MeshBuilder& builder);
+		Mesh();
+		Mesh(std::shared_ptr<MeshSource> meshSource);
 		~Mesh();
 
-		Mesh(const Mesh&) = default;
+		void InvalidateSubmeshes();
+		inline std::shared_ptr<MeshSource> GetMeshSource() const { return m_MeshSource; }
+		inline const std::vector<uint32_t>& GetSubmeshes() const { return m_Submeshes; }
 
-		void Bind(VkCommandBuffer commandBuffer);
-		void Draw(VkCommandBuffer commandBuffer);
+		static std::shared_ptr<Mesh> LoadMesh(const char* filepath);
+		static std::shared_ptr<VulkanVertexBuffer> GetTransformBuffer(uint64_t meshKey) { return s_MeshTransformBuffer[meshKey]; }
 
-		void SetFilePath(const std::string& filepath) { m_FilePath = filepath; }
-
-		inline std::string& GetFilePath() { return m_FilePath; }
-		inline int GetMaterialID() { return m_MaterialID; }
-		inline uint32_t GetVertexCount() const { return m_VertexCount; }
-		inline uint32_t GetIndexCount() const { return m_IndexCount; }
-
-		static std::shared_ptr<Mesh> CreateMeshFromFile(const std::string& filepath);
-		static std::shared_ptr<Mesh> CreateMeshFromFile(const std::string& filepath, const glm::vec3& modelColor);
-		static std::shared_ptr<Mesh> CreateMeshFromFile(const std::string& filepath, int texID);
-		static std::shared_ptr<Mesh> CreateMeshFromAssimp(const std::string& filepath, int texID);
+		static void ClearAllMeshes();
 	private:
-		void CreateVertexBuffers(const std::vector<Vertex>& vertices);
-		void CreateIndexBuffers(const std::vector<uint32_t>& indices);
-	private:
-		std::string m_FilePath;
-		std::unique_ptr<VulkanVertexBuffer> m_VertexBuffer;
-		std::unique_ptr<VulkanIndexBuffer> m_IndexBuffer;
-		uint32_t m_VertexCount, m_IndexCount;
-		int m_MaterialID;
-		bool m_HasIndexBuffer = false;
+		std::shared_ptr<MeshSource> m_MeshSource;
+		std::vector<uint32_t> m_Submeshes;
+		// TODO: We will not need this once we have VulkanMaterial and MaterialTable
+
+		// Hash => Filepath Hash Value, Value => Transform Storage Buffer Set
+		static std::map<uint64_t, std::shared_ptr<MeshSource>> s_MeshSourcesMap;
+		static std::map<uint64_t, std::shared_ptr<VulkanVertexBuffer>> s_MeshTransformBuffer;
 	};
 
 }

@@ -2,6 +2,7 @@
 #include "VulkanDevice.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Core/Application.h"
 #include "VulkanContext.h"
 
 namespace VulkanCore {
@@ -89,11 +90,13 @@ namespace VulkanCore {
 		PickPhysicalDevice();
 		CreateLogicalDevice();
 		CreateCommandPools();
+		SetupDebugMarkers();
 	}
 
 	void VulkanDevice::Destroy()
 	{
 		vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
+		vkDestroyCommandPool(m_LogicalDevice, m_RTCommandPool, nullptr);
 		vkDestroyCommandPool(m_LogicalDevice, m_ComputeCommandPool, nullptr);
 		vkDestroyDevice(m_LogicalDevice, nullptr);
 	}
@@ -113,6 +116,7 @@ namespace VulkanCore {
 		}
 
 		VK_CORE_ASSERT(false, "Failed to find suitable Memory Type!");
+		return 0;
 	}
 
 	VkFormat VulkanDevice::FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
@@ -130,6 +134,23 @@ namespace VulkanCore {
 		}
 
 		VK_CORE_ASSERT(false, "Failed to find Supported Format!");
+		return (VkFormat)0;
+	}
+
+	bool VulkanDevice::IsExtensionSupported(const char* extensionName)
+	{
+		uint32_t extensionCount;
+		vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, &extensionCount, nullptr);
+
+		std::vector<VkExtensionProperties> extensions(extensionCount);
+		vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, &extensionCount, extensions.data());
+
+		for (auto extension : extensions) {
+			if (strcmp(extension.extensionName, extensionName) == 0)
+				return true;
+		}
+
+		return false;
 	}
 
 	VkCommandBuffer VulkanDevice::GetCommandBuffer(bool compute)
@@ -272,7 +293,7 @@ namespace VulkanCore {
 		QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-		std::set<uint32_t> uniqueQueueFamilies = { indices.GraphicsFamily, indices.PresentFamily };
+		std::set<uint32_t> uniqueQueueFamilies = { indices.GraphicsFamily, indices.ComputeFamily, indices.PresentFamily };
 
 		float queuePriority = 1.0f;
 		for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -298,8 +319,14 @@ namespace VulkanCore {
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-		const auto& deviceExtensions = VulkanContext::GetCurrentContext()->m_DeviceExtensions;
+		auto& deviceExtensions = VulkanContext::GetCurrentContext()->m_DeviceExtensions;
 		const auto& validationLayers = VulkanContext::GetCurrentContext()->m_ValidationLayers;
+
+		if (IsExtensionSupported(VK_EXT_DEBUG_MARKER_EXTENSION_NAME))
+		{
+			deviceExtensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+			m_EnableDebugMarkers = true;
+		}
 
 		createInfo.pEnabledFeatures = &deviceFeatures;
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
@@ -332,12 +359,21 @@ namespace VulkanCore {
 		poolInfo.queueFamilyIndex = queueFamilyIndices.GraphicsFamily;
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-		// Graphics Command Pool 
+		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_RTCommandPool), "Failed to Create Command Pool!");
 		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_CommandPool), "Failed to Create Command Pool!");
 
-		// Compute Command Pool
 		poolInfo.queueFamilyIndex = queueFamilyIndices.ComputeFamily;
 		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_ComputeCommandPool), "Failed to Create Compute Command Pool!");
+
+		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_COMMAND_POOL, "Default Command Pool", m_CommandPool);
+		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_COMMAND_POOL, "Render Thread Command Pool", m_RTCommandPool);
+		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_COMMAND_POOL, "Compute Command Pool", m_ComputeCommandPool);
+	}
+
+	void VulkanDevice::SetupDebugMarkers()
+	{
+		if (m_EnableDebugMarkers)
+			VK_CHECK_RESULT(CreateDebugMarkerEXT(m_LogicalDevice), "Failed to Set Debug Markers");
 	}
 
 	QueueFamilyIndices VulkanDevice::FindQueueFamilies(VkPhysicalDevice device)
@@ -364,7 +400,7 @@ namespace VulkanCore {
 			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
 			{
 				indices.ComputeFamily = i;
-				indices.ComputeFamilyHasValue = indices.ComputeFamily != indices.GraphicsFamily;
+				indices.ComputeFamilyHasValue = indices.GraphicsFamily != indices.ComputeFamily;
 			}
 
 			VkBool32 presentSupport = false;

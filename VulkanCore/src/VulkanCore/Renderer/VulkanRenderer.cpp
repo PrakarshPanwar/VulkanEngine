@@ -1,18 +1,21 @@
 #include "vulkanpch.h"
 #include "VulkanRenderer.h"
 
-#include "../Core/ImGuiLayer.h"
-#include "../Core/Application.h"
-#include "../Scene/SceneRenderer.h"
+#include "VulkanCore/Core/ImGuiLayer.h"
+#include "VulkanCore/Core/Application.h"
+#include "VulkanCore/Scene/SceneRenderer.h"
 #include "Renderer.h"
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
+#include "Platform/Vulkan/VulkanMaterial.h"
 
 #include <glm/gtx/integer.hpp>
+#include "optick.h"
 
 namespace VulkanCore {
 
 	VulkanRenderer* VulkanRenderer::s_Instance;
+	RendererStats VulkanRenderer::s_Data;
 
 	VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowsWindow> window)
 		: m_Window(window)
@@ -23,139 +26,105 @@ namespace VulkanCore {
 
 	VulkanRenderer::~VulkanRenderer()
 	{
-		FreeQueryPool();
-		FreeCommandBuffers();
 	}
 
 	void VulkanRenderer::Init()
 	{
 		RecreateSwapChain();
 		CreateCommandBuffers();
-		CreateQueryPool();
 	}
 
-	VkCommandBuffer VulkanRenderer::BeginFrame()
+	void VulkanRenderer::BeginFrame()
 	{
+		VK_CORE_PROFILE();
+
 		VK_CORE_ASSERT(!IsFrameStarted, "Cannot call BeginFrame() while frame being already in progress!");
 
-		auto result = m_SwapChain->AcquireNextImage(&m_CurrentImageIndex);
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		Renderer::Submit([this]
 		{
-			RecreateSwapChain();
-			return nullptr;
-		}
+			auto result = m_SwapChain->AcquireNextImage(&m_CurrentImageIndex);
 
-		VK_CORE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to Acquire Swap Chain!");
+			if (result == VK_ERROR_OUT_OF_DATE_KHR)
+			{
+				RecreateSwapChain();
+				return;
+			}
+
+			VK_CORE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to Acquire Swap Chain!");
+		});
 
 		IsFrameStarted = true;
 
-		auto commandBuffer = GetCurrentCommandBuffer();
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-		VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo), "Failed to Begin Recording Command Buffer!");
-		vkCmdResetQueryPool(commandBuffer, m_QueryPool, 0, m_QueryCount);
-
-		return commandBuffer;
+		m_CommandBuffer->Begin();
 	}
 
 	void VulkanRenderer::EndFrame()
 	{
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndFrame() while frame is not in progress!");
-
-		auto commandBuffer = GetCurrentCommandBuffer();
-		VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer), "Failed to Record Command Buffer!");
+		m_CommandBuffer->End();
 	}
 
-	VkCommandBuffer VulkanRenderer::BeginScene()
+	void VulkanRenderer::BeginScene()
 	{
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer(m_CurrentFrameIndex);
-
-		VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo), "Failed to Begin Recording Command Buffer!");
-		return commandBuffer;
+		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer();
+		commandBuffer->Begin();
 	}
 
 	void VulkanRenderer::EndScene()
 	{
-		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer(m_CurrentFrameIndex);
-		VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer), "Failed to Record Command Buffer!");
+		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer();
+		commandBuffer->End();
 	}
 
-	void VulkanRenderer::BeginSwapChainRenderPass(VkCommandBuffer commandBuffer)
+	void VulkanRenderer::BeginSwapChainRenderPass()
 	{
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call BeginSwapChainRenderPass() if frame is not in progress!");
-		VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot begin Render Pass on Command Buffer from a different frame!");
+		//VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot begin Render Pass on Command Buffer from a different frame!");
 	
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = m_SwapChain->GetRenderPass();
-		renderPassInfo.framebuffer = m_SwapChain->GetFramebuffer(m_CurrentImageIndex);
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = m_SwapChain->GetSwapChainExtent();
+		Renderer::Submit([this]
+		{
+			VkCommandBuffer commandBuffer = m_CommandBuffer->RT_GetActiveCommandBuffer();
 
-		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };
-		clearValues[1].depthStencil = { 1.0f, 0 };
+			VkRenderPassBeginInfo renderPassInfo{};
+			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			renderPassInfo.renderPass = m_SwapChain->GetRenderPass();
+			renderPassInfo.framebuffer = m_SwapChain->GetFramebuffer(m_CurrentImageIndex);
+			renderPassInfo.renderArea.offset = { 0, 0 };
+			renderPassInfo.renderArea.extent = m_SwapChain->GetSwapChainExtent();
 
-		renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
-		renderPassInfo.pClearValues = clearValues.data();
+			std::array<VkClearValue, 2> clearValues{};
+			clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };
+			clearValues[1].depthStencil = { 1.0f, 0 };
 
-		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+			renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
+			renderPassInfo.pClearValues = clearValues.data();
 
-		VkCommandBufferInheritanceInfo inheritanceInfo{};
-		inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-		inheritanceInfo.renderPass = m_SwapChain->GetRenderPass();
-		inheritanceInfo.framebuffer = m_SwapChain->GetFramebuffer(m_CurrentImageIndex);
+			vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		VkCommandBufferBeginInfo cmdBufInfo{};
-		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		cmdBufInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-		cmdBufInfo.pInheritanceInfo = &inheritanceInfo;
+			VkViewport viewport{};
+			viewport.x = 0.0f;
+			viewport.y = 0.0f;
+			viewport.width = static_cast<float>(m_SwapChain->GetSwapChainExtent().width);
+			viewport.height = static_cast<float>(m_SwapChain->GetSwapChainExtent().height);
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
 
-		VK_CHECK_RESULT(vkBeginCommandBuffer(m_SecondaryCommandBuffers[m_CurrentFrameIndex], &cmdBufInfo), "Failed to Begin Command Buffer!");
-
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(m_SwapChain->GetSwapChainExtent().width);
-		viewport.height = static_cast<float>(m_SwapChain->GetSwapChainExtent().height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor{ {0, 0}, m_SwapChain->GetSwapChainExtent() };
-		vkCmdSetViewport(m_SecondaryCommandBuffers[m_CurrentFrameIndex], 0, 1, &viewport);
-		vkCmdSetScissor(m_SecondaryCommandBuffers[m_CurrentFrameIndex], 0, 1, &scissor);
-
-		vkEndCommandBuffer(m_SecondaryCommandBuffers[m_CurrentFrameIndex]);
-
-		m_ExecuteCommandBuffers[0] = m_SecondaryCommandBuffers[m_CurrentFrameIndex];
+			VkRect2D scissor{ { 0, 0 }, m_SwapChain->GetSwapChainExtent() };
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+		});
 	}
 
-	void VulkanRenderer::EndSwapChainRenderPass(VkCommandBuffer commandBuffer)
+	void VulkanRenderer::EndSwapChainRenderPass()
 	{
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndSwapChainRenderPass() if frame is not in progress!");
-		VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot end Render Pass on Command Buffer from a different frame!");
-	
-		m_ExecuteCommandBuffers[1] = ImGuiLayer::Get()->m_ImGuiCmdBuffers[Renderer::GetCurrentFrameIndex()];
-		vkCmdExecuteCommands(commandBuffer, (uint32_t)m_ExecuteCommandBuffers.size(), m_ExecuteCommandBuffers.data());
-		vkCmdEndRenderPass(commandBuffer);
-	}
+		//VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot end Render Pass on Command Buffer from a different frame!");
 
-	void VulkanRenderer::BeginSceneRenderPass(VkCommandBuffer commandBuffer)
-	{
-		auto renderPass = SceneRenderer::GetSceneRenderer()->GetRenderPass();
-		Renderer::BeginRenderPass(renderPass);
-	}
-
-	void VulkanRenderer::EndSceneRenderPass(VkCommandBuffer commandBuffer)
-	{
-		auto renderPass = SceneRenderer::GetSceneRenderer()->GetRenderPass();
-		Renderer::EndRenderPass(renderPass);
+		Renderer::Submit([this]
+		{
+			VkCommandBuffer commandBuffer =	m_CommandBuffer->RT_GetActiveCommandBuffer();
+			vkCmdEndRenderPass(commandBuffer);
+		});
 	}
 
 	std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
@@ -270,12 +239,12 @@ namespace VulkanCore {
 			descriptorWriter.Build(descriptorSet);
 
 			// Dispatch Pipeline
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer();
+			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
 
 			environmentIrradiancePipeline->Bind(dispatchCmd);
 			environmentIrradiancePipeline->Execute(dispatchCmd, descriptorSet, irradianceMapSize / 16, irradianceMapSize / 16, 6);
 
-			device->FlushCommandBuffer(dispatchCmd);
+			device->FlushCommandBuffer(dispatchCmd, true);
 
 			irradianceMap->GenerateMipMaps(false);
 		});
@@ -283,6 +252,144 @@ namespace VulkanCore {
 		return { envFiltered, irradianceMap };
 	}
 
+	void VulkanRenderer::CopyVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage>& sourceImage, const std::shared_ptr<VulkanImage>& destImage)
+	{
+		Renderer::Submit([commandBuffer, sourceImage, destImage]
+		{
+			VK_CORE_PROFILE_FN("VulkanRenderer::CopyVulkanImage");
+			VkCommandBuffer vulkanCmdBuffer = commandBuffer->RT_GetActiveCommandBuffer();
+
+			VkImage srcImage = sourceImage->GetVulkanImageInfo().Image;
+			VkImage dstImage = destImage->GetVulkanImageInfo().Image;
+
+			// TODO: We cannot determine layout like this for image but we are doing this for now to get Bloom
+			// Changing Source Image Layout
+			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, srcImage,
+				VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+			// Changing Destination Image Layout
+			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, dstImage,
+				VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+			VkImageCopy region{};
+			region.srcOffset = { 0, 0, 0 };
+			region.dstOffset = { 0, 0, 0 };
+			region.extent = { sourceImage->GetSpecification().Width, sourceImage->GetSpecification().Height, 1 };
+			region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			region.srcSubresource.baseArrayLayer = 0;
+			region.srcSubresource.mipLevel = 0;
+			region.srcSubresource.layerCount = 1;
+			region.dstSubresource = region.srcSubresource;
+
+			vkCmdCopyImage(vulkanCmdBuffer,
+				srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1,
+				&region);
+
+			// Changing source image back to its previous layout
+			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, srcImage,
+				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+		});
+	}
+
+	void VulkanRenderer::BlitVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage>& image)
+	{
+		Renderer::Submit([commandBuffer, image]
+		{
+			VK_CORE_PROFILE_FN("VulkanRenderer::BlitVulkanImage");
+			VkCommandBuffer vulkanCmdBuffer = commandBuffer->RT_GetActiveCommandBuffer();
+
+			VkImage vulkanImage = image->GetVulkanImageInfo().Image;
+
+			const uint32_t mipLevels = image->GetSpecification().MipLevels;
+			const glm::uvec2 imgSize = { image->GetSpecification().Width, image->GetSpecification().Height };
+
+			// Setting Base Mip(Oth) to Source
+			VkImageSubresourceRange baseMipSubRange{};
+			baseMipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			baseMipSubRange.baseMipLevel = 0;
+			baseMipSubRange.baseArrayLayer = 0;
+			baseMipSubRange.levelCount = 1;
+			baseMipSubRange.layerCount = 1;
+
+			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, vulkanImage,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				baseMipSubRange);
+
+			// Starting at 1st Mip Level
+			for (uint32_t i = 1; i < mipLevels; ++i)
+			{
+				VkImageBlit imageBlit{};
+
+				// Source
+				imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imageBlit.srcSubresource.layerCount = 1;
+				imageBlit.srcSubresource.mipLevel = i - 1;
+				imageBlit.srcSubresource.baseArrayLayer = 0;
+				imageBlit.srcOffsets[1].x = int32_t(imgSize.x >> (i - 1));
+				imageBlit.srcOffsets[1].y = int32_t(imgSize.y >> (i - 1));
+				imageBlit.srcOffsets[1].z = 1;
+
+				// Destination
+				imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imageBlit.dstSubresource.layerCount = 1;
+				imageBlit.dstSubresource.mipLevel = i;
+				imageBlit.dstSubresource.baseArrayLayer = 0;
+				imageBlit.dstOffsets[1].x = int32_t(imgSize.x >> i);
+				imageBlit.dstOffsets[1].y = int32_t(imgSize.y >> i);
+				imageBlit.dstOffsets[1].z = 1;
+
+				VkImageSubresourceRange mipSubRange{};
+				mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				mipSubRange.baseMipLevel = i;
+				mipSubRange.baseArrayLayer = 0;
+				mipSubRange.levelCount = 1;
+				mipSubRange.layerCount = 1;
+
+				Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, vulkanImage,
+					VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					mipSubRange);
+
+				vkCmdBlitImage(vulkanCmdBuffer,
+					vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+					vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					1, &imageBlit,
+					VK_FILTER_LINEAR);
+
+				Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, vulkanImage,
+					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					mipSubRange);
+			}
+
+			VkImageSubresourceRange subresourceRange{};
+			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.layerCount = 1;
+			subresourceRange.levelCount = mipLevels;
+
+			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, vulkanImage,
+				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				subresourceRange);
+		});
+	}		
+	
 	std::shared_ptr<VulkanImage> VulkanRenderer::CreateBRDFTexture()
 	{
 		constexpr uint32_t textureSize = 512;
@@ -292,6 +399,7 @@ namespace VulkanCore {
 		brdfTextureSpec.Height = textureSize;
 		brdfTextureSpec.Usage = ImageUsage::Storage;
 		brdfTextureSpec.Format = ImageFormat::RGBA32F;
+		brdfTextureSpec.SamplerWrap = TextureWrap::Clamp;
 
 		auto generateBRDFShader = Renderer::GetShader("GenerateBRDF");
 		std::shared_ptr<VulkanComputePipeline> generateBRDFPipeline = std::make_shared<VulkanComputePipeline>(generateBRDFShader);
@@ -324,55 +432,58 @@ namespace VulkanCore {
 		return brdfTexture;
 	}
 
+	void VulkanRenderer::RenderMesh(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, uint32_t submeshIndex, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	{
+		Renderer::Submit([cmdBuffer, mesh, pipeline, material, transformBuffer, transformData, submeshIndex, instanceCount]
+		{
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMesh");
+
+			// Bind Vertex Buffer
+			auto drawCmd = cmdBuffer->RT_GetActiveCommandBuffer();
+
+			auto meshSource = mesh->GetMeshSource();
+			transformBuffer->WriteData((void*)transformData.data(), 0);
+			VkBuffer buffers[] = { meshSource->GetVertexBuffer()->GetVulkanBuffer(), transformBuffer->GetVulkanBuffer() };
+			VkDeviceSize offsets[] = { 0, 0 };
+			vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
+			vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+			std::shared_ptr<VulkanMaterial> vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
+			VkDescriptorSet descriptorSets[1] = { vulkanMaterial->RT_GetVulkanMaterialDescriptorSet() };
+	
+			vkCmdBindDescriptorSets(drawCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipeline->GetVulkanPipelineLayout(),
+				1, 1, descriptorSets,
+				0, nullptr);
+	
+			vkCmdPushConstants(drawCmd,
+				pipeline->GetVulkanPipelineLayout(),
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				sizeof(MaterialData),
+				&material->GetMaterialData());
+	
+			const auto& submeshes = mesh->GetMeshSource()->GetSubmeshes();
+			const Submesh& submesh = submeshes[submeshIndex];
+			vkCmdDrawIndexed(drawCmd, submesh.IndexCount, instanceCount, submesh.BaseIndex, submesh.BaseVertex, 0);
+
+			s_Data.DrawCalls++;
+			s_Data.InstanceCount += instanceCount;
+		});
+	}
+
+	void VulkanRenderer::ResetStats()
+	{
+		s_Data.DrawCalls = 0;
+		s_Data.InstanceCount = 0;
+	}
+
 	void VulkanRenderer::CreateCommandBuffers()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		m_CommandBuffers.resize(VulkanSwapChain::MaxFramesInFlight);
-		m_SecondaryCommandBuffers.resize(VulkanSwapChain::MaxFramesInFlight);
-
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = device->GetCommandPool();
-		allocInfo.commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size());
-
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_CommandBuffers.data()), "Failed to Allocate Command Buffers!");
-
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		//allocInfo.commandPool = device->GetRenderThreadCommandPool();
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_SecondaryCommandBuffers.data()), "Failed to Allocate Secondary Command Buffers!");
-	}
-
-	void VulkanRenderer::FreeCommandBuffers()
-	{
-		auto device = VulkanContext::GetCurrentDevice();
-
-		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(),
-			static_cast<uint32_t>(m_CommandBuffers.size()), m_CommandBuffers.data());
-
-		vkFreeCommandBuffers(device->GetVulkanDevice(), device->GetCommandPool(),
-			static_cast<uint32_t>(m_SecondaryCommandBuffers.size()), m_SecondaryCommandBuffers.data());
-
-		m_CommandBuffers.clear();
-		m_SecondaryCommandBuffers.clear();
-	}
-
-	void VulkanRenderer::CreateQueryPool()
-	{
-		auto device = VulkanContext::GetCurrentDevice();
-
-		VkQueryPoolCreateInfo queryPoolInfo{};
-		queryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-		queryPoolInfo.queryCount = m_QueryCount;
-		queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
-		
-		vkCreateQueryPool(device->GetVulkanDevice(), &queryPoolInfo, nullptr, &m_QueryPool);
-	}
-
-	void VulkanRenderer::FreeQueryPool()
-	{
-		vkDestroyQueryPool(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), m_QueryPool, nullptr);
+		m_CommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetRenderThreadCommandPool());
 	}
 
 	void VulkanRenderer::RecreateSwapChain()
@@ -409,23 +520,48 @@ namespace VulkanCore {
 
 	void VulkanRenderer::FinalQueueSubmit()
 	{
-		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
+		Renderer::Submit([this]
+		{
+			VK_CORE_PROFILE_FN("VulkanRenderer::FinalQueueSubmit");
 
-		const std::vector<VkCommandBuffer> cmdBuffers{ GetCurrentCommandBuffer(), sceneRenderer->GetCommandBuffer(m_CurrentFrameIndex)};
+			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
+
+			const std::vector<VkCommandBuffer> cmdBuffers{ m_CommandBuffer->RT_GetActiveCommandBuffer(), sceneRenderer->GetCommandBuffer()->RT_GetActiveCommandBuffer() };
+			auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
+
+			if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
+			{
+				m_Window->ResetWindowResizeFlag();
+				RecreateSwapChain();
+				sceneRenderer->RecreateScene();
+			}
+
+			else if (result != VK_SUCCESS)
+				VK_CORE_ERROR("Failed to Present Swap Chain Image!");
+		});
+
+		Renderer::WaitAndRender();
+
+		IsFrameStarted = false;
+		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
+	}
+
+	void VulkanRenderer::FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers)
+	{
 		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
 		{
 			m_Window->ResetWindowResizeFlag();
 			RecreateSwapChain();
-			sceneRenderer->RecreateScene();
+			SceneRenderer::GetSceneRenderer()->RecreateScene();
 		}
 
 		else if (result != VK_SUCCESS)
 			VK_CORE_ERROR("Failed to Present Swap Chain Image!");
 
 		IsFrameStarted = false;
-		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % VulkanSwapChain::MaxFramesInFlight;
+		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
 	}
 
 }

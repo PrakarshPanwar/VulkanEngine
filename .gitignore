@@ -12,8 +12,7 @@
 /VulkanCore/VulkanEngine.log
 /VulkanCore/assets/cache
 /VulkanCore/vendor/VulkanSDK
-/VulkanCore/vendor/Assimp
-/VulkanCore/vendor
+/VulkanCore/vendor/tinyobjloader
 /VulkanCore/dna.txt
 /VulkanCore/imgui.ini
 /EditorLayer/VulkanEngine.log
