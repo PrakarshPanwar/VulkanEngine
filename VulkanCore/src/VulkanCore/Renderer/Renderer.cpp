@@ -185,10 +185,6 @@ namespace VulkanCore {
 		});
 	}
 
-	void Renderer::RenderMesh(std::shared_ptr<Mesh> mesh)
-	{
-	}
-
 	void Renderer::Init()
 	{
 		RenderThread::Init();
