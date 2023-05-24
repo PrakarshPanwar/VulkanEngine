@@ -4,18 +4,7 @@ layout(location = 0) out vec4 o_Color;
 
 layout(location = 0) in vec2 v_TexCoord;
 
-layout(binding = 0) uniform Camera
-{
-	mat4 Projection;
-	mat4 View;
-	mat4 InverseView;
-	vec2 DepthUnpackConsts;
-	vec2 CameraTanHalfFOV;
-} u_Camera;
-
-layout(binding = 1) uniform sampler2D u_InputTexture;
-layout(binding = 2) uniform sampler2D u_BloomTexture;
-layout(binding = 3) uniform sampler2D u_BloomDirtTexture;
+layout(binding = 0) uniform sampler2D u_InputTexture;
 
 layout(push_constant) uniform SceneData
 {

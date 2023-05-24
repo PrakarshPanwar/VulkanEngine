@@ -322,26 +322,28 @@ namespace VulkanCore {
 			m_ExternalCompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_ExternalCompositePipeline->GetSpecification().pShader, "External Composite Shader Material");
 
 			m_ExternalCompositeShaderMaterial->SetImages(1, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
-			m_ExternalCompositeShaderMaterial->SetImages(2, m_BloomTextures);
+			m_ExternalCompositeShaderMaterial->SetImage(2, m_BloomTextures[2]);
 			m_ExternalCompositeShaderMaterial->SetTexture(3, m_BloomDirtTexture);
 			m_ExternalCompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
 		// DOF Material
 		{
+			m_DOFMaterial = std::make_shared<VulkanMaterial>(m_DOFPipeline->GetShader(), "DOF Shader Material");
 
+			m_DOFMaterial->SetImages(0, m_DOFOutputTextures);
+			m_DOFMaterial->SetBuffers(1, m_UBCamera);
+			m_DOFMaterial->SetImages(2, m_ExternalCompositePipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
+			m_DOFMaterial->SetImages(3, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetDepthResolveAttachment());
+			m_DOFMaterial->SetBuffers(4, m_UBDOFData);
+			m_DOFMaterial->PrepareShaderMaterial();
 		}
 
 		// Composite Material
 		{
 			m_CompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_CompositePipeline->GetSpecification().pShader, "Composite Shader Material");
 
-			m_CompositeShaderMaterial->SetBuffers(0, m_UBCamera);
-			m_CompositeShaderMaterial->SetImages(1, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
-			//m_CompositeShaderMaterial->SetImage(2, m_BloomTextures[2]);
-			//m_CompositeShaderMaterial->SetTexture(3, m_BloomDirtTexture);
-			m_CompositeShaderMaterial->SetImages(4, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetDepthResolveAttachment());
-			m_CompositeShaderMaterial->SetBuffers(5, m_UBDOFData);
+			m_CompositeShaderMaterial->SetImages(0, m_DOFOutputTextures);
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -370,6 +372,7 @@ namespace VulkanCore {
 		m_UBCamera.reserve(framesInFlight);
 		m_UBPointLight.reserve(framesInFlight);
 		m_UBSpotLight.reserve(framesInFlight);
+		m_UBDOFData.reserve(framesInFlight);
 
 		// Uniform Buffers
 		for (int i = 0; i < framesInFlight; ++i)
@@ -377,6 +380,7 @@ namespace VulkanCore {
 			m_UBCamera.emplace_back(sizeof(UBCamera));
 			m_UBPointLight.emplace_back(sizeof(UBPointLights));
 			m_UBSpotLight.emplace_back(sizeof(UBSpotLights));
+			m_UBDOFData.emplace_back(sizeof(DOFSettings));
 		}
 
 		m_BloomMipSize = (glm::uvec2(m_ViewportSize.x, m_ViewportSize.y) + 1u) / 2u;
@@ -425,6 +429,27 @@ namespace VulkanCore {
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneTexture->GetSpecification().MipLevels, 0, 1 });
+		}
+
+		ImageSpecification dofImageSpec;
+		dofImageSpec.DebugName = "DOF Output Textures";
+		dofImageSpec.Width = m_ViewportSize.x;
+		dofImageSpec.Height = m_ViewportSize.y;
+		dofImageSpec.Format = ImageFormat::RGBA32F;
+		dofImageSpec.Usage = ImageUsage::Storage;
+
+		m_DOFOutputTextures.reserve(framesInFlight);
+
+		for (int i = 0; i < framesInFlight; i++)
+		{
+			auto DOFTexture = m_DOFOutputTextures.emplace_back(std::make_shared<VulkanImage>(dofImageSpec));
+			DOFTexture->Invalidate();
+
+			Utils::InsertImageMemoryBarrier(barrierCmd, DOFTexture->GetVulkanImageInfo().Image,
+				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, DOFTexture->GetSpecification().MipLevels, 0, 1 });
 		}
 
 		device->FlushCommandBuffer(barrierCmd);
@@ -565,6 +590,8 @@ namespace VulkanCore {
 
 		GeometryPass();
 		BloomCompute();
+		ExternalCompositePass();
+		DOFCompute();
 		CompositePass();
 
 		ResetDrawCommands();
@@ -728,6 +755,20 @@ namespace VulkanCore {
 		VulkanRenderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
 	}
 
+
+	void SceneRenderer::ExternalCompositePass()
+	{
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "External-Composite-Pass");
+
+		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_ExternalCompositePipeline->GetSpecification().RenderPass);
+
+		Renderer::Submit([this] { m_ExternalCompositePipeline->SetPushConstants(m_SceneCommandBuffer->RT_GetActiveCommandBuffer(), &m_SceneSettings, sizeof(SceneSettings)); });
+		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_ExternalCompositePipeline, m_ExternalCompositeShaderMaterial);
+		Renderer::EndRenderPass(m_SceneCommandBuffer, m_ExternalCompositePipeline->GetSpecification().RenderPass);
+
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+	}
+
 	void SceneRenderer::BloomCompute()
 	{
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
@@ -817,6 +858,28 @@ namespace VulkanCore {
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+	}
+
+
+	void SceneRenderer::DOFCompute()
+	{
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "DOF");
+
+		Renderer::Submit([this]
+		{
+			VkCommandBuffer dispatchCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
+			m_DOFPipeline->Bind(dispatchCmd);
+
+			glm::uvec2 dofImageSize = { m_DOFOutputTextures[0]->GetSpecification().Width, m_DOFOutputTextures[0]->GetSpecification().Height };
+
+			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+				m_DOFPipeline->GetVulkanPipelineLayout(), 0, 1,
+				&m_DOFMaterial->RT_GetVulkanMaterialDescriptorSet(), 0, nullptr);
+
+			m_DOFPipeline->Dispatch(dispatchCmd, dofImageSize.x / 16, dofImageSize.y / 16, 1);
+		});
+
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 	}
 
 	void SceneRenderer::CreateCommandBuffers()

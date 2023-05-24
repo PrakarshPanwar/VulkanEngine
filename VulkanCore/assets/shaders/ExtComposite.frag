@@ -49,12 +49,14 @@ vec3 UpsampleTent9(sampler2D tex, float lod, vec2 uv, vec2 texelSize, float radi
 
 void main()
 {
-	vec3 color = texture(u_InputTexture, v_TexCoord).rgb;
+	vec2 texCoord = vec2(v_TexCoord.x, 1.0 - v_TexCoord.y);
+
+	vec3 color = texture(u_InputTexture, texCoord).rgb;
 
 	ivec2 texSize = textureSize(u_BloomTexture, 0);
 	vec2 fTexSize = vec2(float(texSize.x), float(texSize.y));
-	vec3 bloom = UpsampleTent9(u_BloomTexture, 0, v_TexCoord, 1.0 / fTexSize, 0.5);
-	vec3 bloomDirt = texture(u_BloomDirtTexture, v_TexCoord).rgb * u_SceneParams.DirtIntensity;
+	vec3 bloom = UpsampleTent9(u_BloomTexture, 0, texCoord, 1.0 / fTexSize, 0.5);
+	vec3 bloomDirt = texture(u_BloomDirtTexture, texCoord).rgb * u_SceneParams.DirtIntensity;
 	color += bloom;
 	color += bloom * bloomDirt;
 

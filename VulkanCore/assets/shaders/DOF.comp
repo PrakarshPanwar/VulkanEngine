@@ -47,7 +47,7 @@ vec3 DepthOfField(vec2 texCoord, float focusPoint, float focusScale, vec2 texelS
 {
 	float centerDepth = LinearizeDepth(texture(u_DepthTexture, texCoord).r);
 	float centerSize = GetBlurSize(centerDepth, focusPoint, focusScale);
-	vec3 color = texture(u_InputTexture, v_TexCoord).rgb;
+	vec3 color = texture(u_InputTexture, texCoord).rgb;
 	float tot = 1.0;
 	float radius = RAD_SCALE;
 	for (float ang = 0.0; radius < MAX_BLUR_SIZE; ang += GOLDEN_ANGLE)
@@ -100,9 +100,10 @@ vec3 UpsampleTent9(sampler2D tex, float lod, vec2 uv, vec2 texelSize, float radi
 	return result * (1.0 / 16.0);
 }
 
+layout(local_size_x = 16, local_size_y = 16) in;
 void main()
 {
-	vec3 color = vec3(1, 0, 1);
+	vec4 color = vec4(1, 0, 1, 1);
 	ivec2 texSize = textureSize(u_InputTexture, 0);
 	vec2 fTexSize = vec2(float(texSize.x), float(texSize.y));
 
@@ -114,7 +115,7 @@ void main()
 
 	vuv.x *= fTexSize.x / fTexSize.y;
     float vignette = pow(1.0 - length(vuv * vec2(1.0, 1.3)), 1.0);
-    color = mix(vec4(dofColor, 1.0), vec4(dofColor, 1.0) * vignette, 0.75).rgb;
+    color = vec4(mix(vec4(dofColor, 1.0), vec4(dofColor, 1.0) * vignette, 0.75).rgb, 1.0);
 
 //	color *= u_SceneParams.Exposure;
 //  color = ACESTonemap(color);

@@ -78,8 +78,10 @@ namespace VulkanCore {
 		void CreateMaterials();
 
 		void GeometryPass();
+		void ExternalCompositePass();
 		void CompositePass();
 		void BloomCompute();
+		void DOFCompute();
 		void ResetDrawCommands();
 
 		struct DrawCommand
