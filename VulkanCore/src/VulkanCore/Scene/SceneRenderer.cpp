@@ -140,6 +140,27 @@ namespace VulkanCore {
 			m_LightPipeline = std::make_shared<VulkanPipeline>(lightPipelineSpec);
 		}
 
+		// External Composite Pipeline
+		{
+			FramebufferSpecification extCompFramebufferSpec;
+			extCompFramebufferSpec.Width = 1920;
+			extCompFramebufferSpec.Height = 1080;
+			extCompFramebufferSpec.Attachments = { ImageFormat::RGBA32F };
+			extCompFramebufferSpec.Samples = 8;
+
+			RenderPassSpecification extCompRenderPassSpec;
+			extCompRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(extCompFramebufferSpec);
+
+			PipelineSpecification extCompPipelineSpec;
+			extCompPipelineSpec.DebugName = "External Composite Pipeline";
+			extCompPipelineSpec.pShader = Renderer::GetShader("ExtComposite");
+			extCompPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(extCompRenderPassSpec);
+			extCompPipelineSpec.DepthTest = false;
+			extCompPipelineSpec.DepthWrite = false;
+
+			m_ExternalCompositePipeline = std::make_shared<VulkanPipeline>(extCompPipelineSpec);
+		}
+
 		// Composite Pipeline
 		{
 			FramebufferSpecification compFramebufferSpec;
@@ -174,6 +195,11 @@ namespace VulkanCore {
 			skyboxPipelineSpec.RenderPass = m_GeometryPipeline->GetSpecification().RenderPass;
 
 			m_SkyboxPipeline = std::make_shared<VulkanPipeline>(skyboxPipelineSpec);
+		}
+
+		// DOF Pipeline
+		{
+			m_DOFPipeline = std::make_shared<VulkanComputePipeline>(Renderer::GetShader("DOF"), "DOF Pipeline");
 		}
 
 		// Bloom Pipeline
@@ -377,6 +403,21 @@ namespace VulkanCore {
 			}
 		}
 
+		// External Composite Material
+		{
+			m_ExternalCompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_ExternalCompositePipeline->GetSpecification().pShader, "External Composite Shader Material");
+
+			m_ExternalCompositeShaderMaterial->SetImages(1, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
+			m_ExternalCompositeShaderMaterial->SetImages(2, m_BloomTextures);
+			m_ExternalCompositeShaderMaterial->SetTexture(3, m_BloomDirtTexture);
+			m_ExternalCompositeShaderMaterial->PrepareShaderMaterial();
+		}
+
+		// DOF Material
+		{
+
+		}
+
 		// Composite Material
 		{
 			m_CompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_CompositePipeline->GetSpecification().pShader, "Composite Shader Material");
@@ -398,8 +439,6 @@ namespace VulkanCore {
 			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
 			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
-		
-		//m_BloomDebugImage = ImGuiLayer::AddTexture(m_BloomTextures[2]);
 	}
 
 	void SceneRenderer::Release()

@@ -67,8 +67,10 @@ namespace VulkanCore {
 	{
 		m_Shaders["CorePBR"] = Utils::MakeShader("CorePBR");
 		m_Shaders["LightShader"] = Utils::MakeShader("LightShader");
+		m_Shaders["ExtComposite"] = Utils::MakeShader("ExtComposite");
 		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
 		m_Shaders["Bloom"] = Utils::MakeShader("Bloom");
+		m_Shaders["DOF"] = Utils::MakeShader("DOF");
 		m_Shaders["Skybox"] = Utils::MakeShader("Skybox");
 		m_Shaders["EquirectangularToCubeMap"] = Utils::MakeShader("EquirectangularToCubeMap");
 		m_Shaders["EnvironmentMipFilter"] = Utils::MakeShader("EnvironmentMipFilter");

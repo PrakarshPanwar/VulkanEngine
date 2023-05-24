@@ -23,55 +23,6 @@ layout(push_constant) uniform SceneData
 	float DirtIntensity;
 } u_SceneParams;
 
-layout(binding = 4) uniform sampler2D u_DepthTexture;
-
-layout(binding = 5) uniform DOFData
-{
-	float FocusPoint;
-	float FocusScale;
-} u_DOF;
-
-const float GOLDEN_ANGLE = 2.39996323;
-const float MAX_BLUR_SIZE = 20.0; 
-const float RAD_SCALE = 0.5; // Smaller = nicer blur, larger = faster
-
-float LinearizeDepth(const float screenDepth)
-{
-	float depthLinearizeMul = u_Camera.DepthUnpackConsts.x;
-	float depthLinearizeAdd = u_Camera.DepthUnpackConsts.y;
-	return depthLinearizeMul / (depthLinearizeAdd - screenDepth);
-}
-
-float GetBlurSize(float depth, float focusPoint, float focusScale)
-{
-	float coc = clamp((1.0 / focusPoint - 1.0 / depth) * focusScale, -1.0, 1.0);
-	return abs(coc) * MAX_BLUR_SIZE;
-}
-
-vec3 DepthOfField(vec2 texCoord, float focusPoint, float focusScale, vec2 texelSize)
-{
-	float centerDepth = LinearizeDepth(texture(u_DepthTexture, texCoord).r);
-	float centerSize = GetBlurSize(centerDepth, focusPoint, focusScale);
-	vec3 color = texture(u_InputTexture, v_TexCoord).rgb;
-	float tot = 1.0;
-	float radius = RAD_SCALE;
-	for (float ang = 0.0; radius < MAX_BLUR_SIZE; ang += GOLDEN_ANGLE)
-	{
-		vec2 tc = texCoord + vec2(cos(ang), sin(ang)) * texelSize * radius;
-		vec3 sampleColor = texture(u_InputTexture, tc).rgb;
-		float sampleDepth = LinearizeDepth(texture(u_DepthTexture, tc).r);
-		float sampleSize = GetBlurSize(sampleDepth, focusPoint, focusScale);
-		if (sampleDepth > centerDepth)
-			sampleSize = clamp(sampleSize, 0.0, centerSize * 2.0);
-		float m = smoothstep(radius - 0.5, radius + 0.5, sampleSize);
-		color += mix(color / tot, sampleColor, m);
-		tot += 1.0;
-		radius += RAD_SCALE / radius;
-	}
-
-	return color /= tot;
-}
-
 vec3 ReinhardTonemap(vec3 hdrColor)
 {
 	vec3 mapped = vec3(1.0) - exp(-hdrColor);
@@ -88,38 +39,11 @@ vec3 ACESTonemap(vec3 hdrColor)
 	return clamp((hdrColor * (A * hdrColor + B)) / (hdrColor * (C * hdrColor + D) + E), 0.0, 1.0);
 }
 
-vec3 UpsampleTent9(sampler2D tex, float lod, vec2 uv, vec2 texelSize, float radius)
-{
-	vec4 offset = texelSize.xyxy * vec4(1.0, 1.0, -1.0, 0.0) * radius;
-	vec3 result = textureLod(tex, uv, lod).rgb * 4.0;
-
-	result += textureLod(tex, uv - offset.xy, lod).rgb;
-	result += textureLod(tex, uv - offset.wy, lod).rgb * 2.0;
-	result += textureLod(tex, uv - offset.zy, lod).rgb;
-	result += textureLod(tex, uv + offset.zw, lod).rgb * 2.0;
-	result += textureLod(tex, uv + offset.xw, lod).rgb * 2.0;
-	result += textureLod(tex, uv + offset.zy, lod).rgb;
-	result += textureLod(tex, uv + offset.wy, lod).rgb * 2.0;
-	result += textureLod(tex, uv + offset.xy, lod).rgb;
-
-	return result * (1.0 / 16.0);
-}
-
 void main()
 {
 	vec3 color = texture(u_InputTexture, v_TexCoord).rgb;
-	ivec2 texSize = textureSize(u_InputTexture, 0);
-	vec2 fTexSize = vec2(float(texSize.x), float(texSize.y));
 
-	// Depth of Field
-	vec2 uv = v_TexCoord;
-	vec3 dofColor = DepthOfField(uv, u_DOF.FocusPoint, u_DOF.FocusScale, 1.0 / fTexSize);
-	vec2 vuv = uv - vec2(0.5);
-
-	vuv.x *= fTexSize.x / fTexSize.y;
-    float vignette = pow(1.0 - length(vuv * vec2(1.0, 1.3)), 1.0);
-    color = mix(vec4(dofColor, 1.0), vec4(dofColor, 1.0) * vignette, 0.75).rgb;
-
+	// Tonemapping
 	color *= u_SceneParams.Exposure;
     color = ACESTonemap(color);
 

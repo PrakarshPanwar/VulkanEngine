@@ -132,15 +132,19 @@ namespace VulkanCore {
 		// Pipelines
 		std::shared_ptr<VulkanPipeline> m_GeometryPipeline;
 		std::shared_ptr<VulkanPipeline> m_LightPipeline;
-		std::shared_ptr<VulkanPipeline> m_CompositePipeline;
+		std::shared_ptr<VulkanPipeline> m_ExternalCompositePipeline; // To handle Bloom
+		std::shared_ptr<VulkanPipeline> m_CompositePipeline; // Final Compositing(along with Depth of Field)
 		std::shared_ptr<VulkanPipeline> m_SkyboxPipeline;
 		std::shared_ptr<VulkanComputePipeline> m_BloomPipeline;
+		std::shared_ptr<VulkanComputePipeline> m_DOFPipeline;
 
 		// Material per Shader set
 		std::shared_ptr<VulkanMaterial> m_GeometryMaterial;
 		std::shared_ptr<VulkanMaterial> m_PointLightShaderMaterial;
 		std::shared_ptr<VulkanMaterial> m_SpotLightShaderMaterial;
+		std::shared_ptr<VulkanMaterial> m_ExternalCompositeShaderMaterial;
 		std::shared_ptr<VulkanMaterial> m_CompositeShaderMaterial;
+		std::shared_ptr<VulkanMaterial> m_DOFMaterial;
 		std::shared_ptr<VulkanMaterial> m_SkyboxMaterial;
 
 		// Bloom Materials
@@ -163,6 +167,7 @@ namespace VulkanCore {
 
 		std::vector<std::shared_ptr<VulkanImage>> m_BloomTextures;
 		std::vector<std::shared_ptr<VulkanImage>> m_SceneRenderTextures;
+		std::vector<std::shared_ptr<VulkanImage>> m_DOFOutputTextures;
 
 		std::shared_ptr<VulkanTexture> m_BloomDirtTexture;
 		std::shared_ptr<VulkanTexture> m_PointLightTextureIcon, m_SpotLightTextureIcon;
