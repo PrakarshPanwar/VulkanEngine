@@ -3,6 +3,7 @@
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanAllocator.h"
+#include "VulkanCore/Renderer/Renderer.h"
 
 namespace VulkanCore {
 
@@ -137,10 +138,10 @@ namespace VulkanCore {
 			if (Utils::IsDepthFormat(m_Specification.Format))
 				usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 			else
-				usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+				usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		}
 
-		if (m_Specification.Usage == ImageUsage::Texture)
+		if (m_Specification.Transfer || m_Specification.Usage == ImageUsage::Texture)
 			usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 		if (m_Specification.Usage == ImageUsage::Storage)
@@ -165,6 +166,7 @@ namespace VulkanCore {
 		imageCreateInfo.mipLevels = Utils::IsMultisampled(m_Specification) ? 1 : m_Specification.MipLevels;
 
 		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE, m_Specification.DebugName, m_Info.Image);
 
 		// Create a view for Image
 		VkImageViewCreateInfo viewCreateInfo{};
@@ -179,6 +181,7 @@ namespace VulkanCore {
 		viewCreateInfo.subresourceRange.layerCount = 1;
 
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &m_Info.ImageView), "Failed to Create Image View!");
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE_VIEW, fmt::format("{} default image view", m_Specification.DebugName), m_Info.ImageView);
 
 		VkSamplerAddressMode addressMode = Utils::VulkanSamplerWrap(m_Specification.SamplerWrap);
 
@@ -205,7 +208,8 @@ namespace VulkanCore {
 		sampler.maxLod = (float)m_Specification.MipLevels;
 
 		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &sampler, nullptr, &m_Info.Sampler), "Failed to Create Image Sampler!");
-	
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_SAMPLER, fmt::format("{} default image sampler", m_Specification.DebugName), m_Info.Sampler);
+
 		if (m_Specification.Usage == ImageUsage::Storage)
 		{
 			auto barrierCmd = device->GetCommandBuffer();
@@ -248,9 +252,12 @@ namespace VulkanCore {
 		UpdateImageDescriptor();
 	}
 
-	VkImageView VulkanImage::CreateImageViewSingleMip(uint32_t mip)
+	void VulkanImage::CreateImageViewSingleMip(uint32_t mip)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
+
+		if (m_DescriptorMipImagesInfo.contains(mip))
+			return;
 
 		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
 
@@ -268,11 +275,15 @@ namespace VulkanCore {
 		VkImageView result;
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &result), "Failed to Create Image View!");
 		m_MipReferences.push_back(result);
-
-		return result;
+		
+		VkDescriptorImageInfo mipImageInfo{};
+		mipImageInfo.imageView = result;
+		mipImageInfo.imageLayout = m_DescriptorImageInfo.imageLayout;
+		mipImageInfo.sampler = m_DescriptorImageInfo.sampler;
+		m_DescriptorMipImagesInfo[mip] = mipImageInfo;
 	}
 
-	glm::uvec2 VulkanImage::GetMipSize(uint32_t mipLevel)
+	glm::uvec2 VulkanImage::GetMipSize(uint32_t mipLevel) const
 	{
 		uint32_t width = m_Specification.Width, height = m_Specification.Height;
 		while (mipLevel != 0)
@@ -300,6 +311,20 @@ namespace VulkanCore {
 
 	void VulkanImage::Release()
 	{
+#if USE_DELETION_QUEUE
+		Renderer::SubmitResourceFree([mipRefs = m_MipReferences, info = m_Info]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			VulkanAllocator allocator("Image2D");
+
+			vkDestroyImageView(device->GetVulkanDevice(), info.ImageView, nullptr);
+			vkDestroySampler(device->GetVulkanDevice(), info.Sampler, nullptr);
+			allocator.DestroyImage((VkImage&)info.Image, info.MemoryAlloc);
+
+			for (auto& MipReference : mipRefs)
+				vkDestroyImageView(device->GetVulkanDevice(), MipReference, nullptr);
+		});
+#else
 		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("Image2D");
 
@@ -309,6 +334,7 @@ namespace VulkanCore {
 
 		for (auto& MipReference : m_MipReferences)
 			vkDestroyImageView(device->GetVulkanDevice(), MipReference, nullptr);
+#endif
 	}
 
 }

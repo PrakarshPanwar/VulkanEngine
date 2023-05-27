@@ -31,14 +31,39 @@ namespace VulkanCore {
 			VkPushConstantRange pushConstantRange{};
 			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 			pushConstantRange.offset = 0;
-			pushConstantRange.size = pushConstantSize;
+			pushConstantRange.size = (uint32_t)pushConstantSize;
 
-			std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ descriptorLayout.GetDescriptorSetLayout() };
+			std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ descriptorLayout.GetVulkanDescriptorSetLayout() };
 
 			VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 			pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 			pipelineLayoutInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
 			pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+			pipelineLayoutInfo.pushConstantRangeCount = pushConstantSize == 0 ? 0 : 1;
+			pipelineLayoutInfo.pPushConstantRanges = pushConstantSize == 0 ? nullptr : &pushConstantRange;
+
+			VkPipelineLayout pipelineLayout;
+			VK_CHECK_RESULT(vkCreatePipelineLayout(device->GetVulkanDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout), "Failed to Create Pipeline Layout!");
+			return pipelineLayout;
+		}
+
+		static VkPipelineLayout CreatePipelineLayout(std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> descriptorSetLayouts, size_t pushConstantSize = 0)
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+
+			VkPushConstantRange pushConstantRange{};
+			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			pushConstantRange.offset = 0;
+			pushConstantRange.size = (uint32_t)pushConstantSize;
+
+			std::vector<VkDescriptorSetLayout> vulkanDescriptorSetsLayout;
+			for (auto& descriptorSetLayout : descriptorSetLayouts)
+				vulkanDescriptorSetsLayout.push_back(descriptorSetLayout->GetVulkanDescriptorSetLayout());
+
+			VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+			pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+			pipelineLayoutInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
+			pipelineLayoutInfo.pSetLayouts = vulkanDescriptorSetsLayout.data();
 			pipelineLayoutInfo.pushConstantRangeCount = pushConstantSize == 0 ? 0 : 1;
 			pipelineLayoutInfo.pPushConstantRanges = pushConstantSize == 0 ? nullptr : &pushConstantRange;
 
@@ -422,8 +447,8 @@ namespace VulkanCore {
 			vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 			vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 
-			m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
-			m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());
+			m_DescriptorSetLayout = shader->CreateAllDescriptorSetsLayout();
+			m_PipelineLayout = Utils::CreatePipelineLayout(m_DescriptorSetLayout, shader->GetPushConstantSize());
 
 			auto pipelineInfo = Utils::GetPipelineConfiguration(m_Specification);
 
@@ -456,6 +481,7 @@ namespace VulkanCore {
 				&m_GraphicsPipeline),
 				"Failed to Create Graphics Pipeline!");
 
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_Specification.DebugName, m_GraphicsPipeline);
 			delete[] shaderStages;
 		});
 	}

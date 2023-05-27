@@ -2,6 +2,7 @@
 #include "VulkanSwapChain.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanAllocator.h"
 
 namespace VulkanCore {
@@ -59,7 +60,7 @@ namespace VulkanCore {
 		vkDestroyRenderPass(device->GetVulkanDevice(), m_RenderPass, nullptr);
 
 		// Cleanup Synchronization Objects
-		for (size_t i = 0; i < MaxFramesInFlight; i++)
+		for (size_t i = 0; i < Renderer::GetConfig().FramesInFlight; i++)
 		{
 			vkDestroySemaphore(device->GetVulkanDevice(), m_RenderFinishedSemaphores[i], nullptr);
 			vkDestroySemaphore(device->GetVulkanDevice(), m_ImageAvailableSemaphores[i], nullptr);
@@ -128,7 +129,8 @@ namespace VulkanCore {
 
 		auto result = vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
 
-		m_CurrentFrame = (m_CurrentFrame + 1) % MaxFramesInFlight;
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+		m_CurrentFrame = (m_CurrentFrame + 1) % framesInFlight;
 
 		return result;
 	}
@@ -176,7 +178,8 @@ namespace VulkanCore {
 
 		auto result = vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
 
-		m_CurrentFrame = (m_CurrentFrame + 1) % MaxFramesInFlight;
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+		m_CurrentFrame = (m_CurrentFrame + 1) % framesInFlight;
 
 		return result;
 	}
@@ -484,9 +487,10 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		m_ImageAvailableSemaphores.resize(MaxFramesInFlight);
-		m_RenderFinishedSemaphores.resize(MaxFramesInFlight);
-		m_InFlightFences.resize(MaxFramesInFlight);
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+		m_ImageAvailableSemaphores.resize(framesInFlight);
+		m_RenderFinishedSemaphores.resize(framesInFlight);
+		m_InFlightFences.resize(framesInFlight);
 		m_ImagesInFlight.resize(GetImageCount(), VK_NULL_HANDLE);
 
 		VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -496,7 +500,7 @@ namespace VulkanCore {
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		for (size_t i = 0; i < MaxFramesInFlight; i++)
+		for (size_t i = 0; i < framesInFlight; i++)
 		{
 			VK_CORE_ASSERT(
 				vkCreateSemaphore(device->GetVulkanDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) == VK_SUCCESS &&

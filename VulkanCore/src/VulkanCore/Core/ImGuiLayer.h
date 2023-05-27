@@ -4,6 +4,7 @@
 
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "Platform/Vulkan/VulkanImage.h"
+#include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 
 namespace VulkanCore {
@@ -16,11 +17,16 @@ namespace VulkanCore {
 
 		void OnAttach() override;
 		void OnDetach() override;
+		void ImGuiNewFrame();
 		void ImGuiBegin();
 		void ImGuiEnd();
 		void ShutDown();
 
-		static VkDescriptorSet AddTexture(const VulkanImage& Image);
+		static VkDescriptorSet AddTexture(const VulkanImage& image);
+		static VkDescriptorSet AddTexture(const VulkanTexture& texture);
+		static void UpdateDescriptor(VkDescriptorSet descriptorSet, const VulkanImage& image);
+		static void UpdateDescriptor(VkDescriptorSet descriptorSet, const VulkanTexture& texture);
+
 		static void CheckVkResult(VkResult error);
 
 		void BlockEvents(bool block) { m_BlockEvents = block; }

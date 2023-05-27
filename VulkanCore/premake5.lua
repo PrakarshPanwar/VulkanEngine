@@ -37,13 +37,15 @@ project "VulkanCore"
 		"%{IncludeDir.VulkanSDK}",
 		"%{IncludeDir.TinyObjLoader}",
 		"%{IncludeDir.entt}",
+		"%{IncludeDir.optick}",
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.ImGuizmo}",
+		"%{IncludeDir.yaml_cpp}",
 		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.Assimp}"
 	}
 
-	links { "GLFW", "%{Library.Vulkan}", "ImGui" }
+	links { "GLFW", "%{Library.Vulkan}", "ImGui", "yaml-cpp", "%{Library.optick_Release}" }
 
 	filter "system:windows"
 		systemversion "latest"
@@ -55,6 +57,7 @@ project "VulkanCore"
 		symbols "On"
 
 		postbuildcommands { "{COPY} %{Library.AssimpDLLDebug} ../bin/" .. outputdir .. "/%{prj.name}" }
+		postbuildcommands { "{COPY} %{Library.optick_DLL_Release} ../bin/" .. outputdir .. "/%{prj.name}" }
 
 	filter "configurations:Release"
 		defines { "VK_RELEASE" }
@@ -62,3 +65,4 @@ project "VulkanCore"
 		optimize "On"
 
 		postbuildcommands { "{COPY} %{Library.AssimpDLLRelease} ../bin/" .. outputdir .. "/%{prj.name}" }
+		postbuildcommands { "{COPY} %{Library.optick_DLL_Release} ../bin/" .. outputdir .. "/%{prj.name}" }

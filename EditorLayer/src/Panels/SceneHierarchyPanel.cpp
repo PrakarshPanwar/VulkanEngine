@@ -1,6 +1,8 @@
 #include "SceneHierarchyPanel.h"
 
 #include "VulkanCore/Mesh/Mesh.h"
+#include "VulkanCore/Renderer/Renderer.h"
+#include "Platform/Vulkan/VulkanMaterial.h"
 
 #include <filesystem>
 
@@ -10,6 +12,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 namespace VulkanCore {
+
+	static const std::filesystem::path g_AssetPath = "assets";
 
 	static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f)
 	{
@@ -111,19 +115,27 @@ namespace VulkanCore {
 			}
 		}
 
-		ImGui::End();
+		ImGui::End(); // End of Scene Hierarchy Panel
 
 		ImGui::Begin("Properties");
 		if (m_SelectionContext)
 		{
 			DrawComponents(m_SelectionContext);
 		}
-		ImGui::End();
+
+		ImGui::End(); // End of Properties Panel
+
+		DrawMaterialsPanel();
 	}
 
 	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
 	{
 
+	}
+
+	void SceneHierarchyPanel::SetContext(std::shared_ptr<Scene> context)
+	{
+		m_Context = context;
 	}
 
 	void SceneHierarchyPanel::DrawEntityNode(Entity entity)
@@ -175,6 +187,154 @@ namespace VulkanCore {
 			if (m_SelectionContext == entity)
 				m_SelectionContext = {};
 		}
+	}
+
+	void SceneHierarchyPanel::DrawMaterialsPanel()
+	{
+		ImGui::Begin("Materials");
+
+		if (m_SelectionContext)
+		{
+			if (m_SelectionContext.HasComponent<MeshComponent>())
+			{
+				auto meshSource = m_SelectionContext.GetComponent<MeshComponent>().MeshInstance->GetMeshSource();
+				auto material = meshSource->GetMaterial();
+				auto vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
+
+				auto& materialData = material->GetMaterialData();
+				auto [diffuse, normal, arm] = vulkanMaterial->GetMaterialTextureIDs();
+
+				const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
+				bool albedoNode = ImGui::TreeNodeEx("ALBEDO", treeNodeFlags);
+				ImGui::PopStyleVar();
+
+				if (albedoNode)
+				{
+					ImGui::Image((ImTextureID)diffuse, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
+
+					if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+						ImGui::OpenPopup("RemoveTexture");
+
+					if (ImGui::BeginPopup("RemoveTexture"))
+					{
+						if (ImGui::MenuItem("Remove Texture"))
+						{
+							auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_SRGB);
+							vulkanMaterial->SetDiffuseTexture(whiteTexture);
+						}
+
+						ImGui::EndPopup();
+					}
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+						{
+							const wchar_t* path = (const wchar_t*)payload->Data;
+							std::filesystem::path scenePath = g_AssetPath / path;
+
+							std::shared_ptr<VulkanTexture> diffuseTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_SRGB);
+							vulkanMaterial->SetDiffuseTexture(diffuseTex);
+						}
+
+						ImGui::EndDragDropTarget();
+					}
+
+					ImGui::ColorEdit3("Color", glm::value_ptr(materialData.Albedo), ImGuiColorEditFlags_NoInputs);
+					ImGui::DragFloat("Emission", &materialData.Albedo.w, 0.01f, 0.0f, 10000.0f);
+
+					ImGui::TreePop();
+				}
+
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
+				bool normalNode = ImGui::TreeNodeEx("NORMAL", treeNodeFlags);
+				ImGui::PopStyleVar();
+
+				if (normalNode)
+				{
+					ImGui::Image((ImTextureID)normal, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
+
+					if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+						ImGui::OpenPopup("RemoveTexture");
+
+					if (ImGui::BeginPopup("RemoveTexture"))
+					{
+						if (ImGui::MenuItem("Remove Texture"))
+						{
+							auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
+							vulkanMaterial->SetNormalTexture(whiteTexture);
+						}
+
+						ImGui::EndPopup();
+					}
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+						{
+							const wchar_t* path = (const wchar_t*)payload->Data;
+							std::filesystem::path scenePath = g_AssetPath / path;
+
+							std::shared_ptr<VulkanTexture> normalTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_UNORM);
+							vulkanMaterial->SetNormalTexture(normalTex);
+						}
+
+						ImGui::EndDragDropTarget();
+					}
+
+					ImGui::SameLine();
+					ImGui::Checkbox("Use", (bool*)&materialData.UseNormalMap);
+
+					ImGui::TreePop();
+				}
+
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
+				bool armNode = ImGui::TreeNodeEx("ROUGHNESS/METALLIC", treeNodeFlags);
+				ImGui::PopStyleVar();
+
+				if (armNode)
+				{
+					ImGui::Image((ImTextureID)arm, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
+
+					if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+						ImGui::OpenPopup("RemoveTexture");
+
+					if (ImGui::BeginPopup("RemoveTexture"))
+					{
+						if (ImGui::MenuItem("Remove Texture"))
+						{
+							auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
+							vulkanMaterial->SetARMTexture(whiteTexture);
+						}
+
+						ImGui::EndPopup();
+					}
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+						{
+							const wchar_t* path = (const wchar_t*)payload->Data;
+							std::filesystem::path scenePath = g_AssetPath / path;
+
+							std::shared_ptr<VulkanTexture> armTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_UNORM);
+							vulkanMaterial->SetARMTexture(armTex);
+						}
+
+						ImGui::EndDragDropTarget();
+					}
+
+					ImGui::DragFloat("Roughness", &materialData.Roughness, 0.01f, 0.0f, 1.0f);
+					ImGui::DragFloat("Metallic", &materialData.Metallic, 0.01f, 0.0f, 1.0f);
+
+					ImGui::TreePop();
+				}
+
+			}
+		}
+
+		ImGui::End();
 	}
 
 	template<typename T, typename UIFunction>
@@ -242,6 +402,7 @@ namespace VulkanCore {
 		if (ImGui::BeginPopup("AddComponent"))
 		{
 			DisplayAddComponentEntry<PointLightComponent>("Point Light");
+			DisplayAddComponentEntry<SpotLightComponent>("Spot Light");
 			DisplayAddComponentEntry<MeshComponent>("Mesh");
 
 			ImGui::EndPopup();
@@ -260,8 +421,25 @@ namespace VulkanCore {
 
 		DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
 		{
-			ImGui::ColorEdit3("Color", glm::value_ptr(component.PointLightInstance->Color));
-			ImGui::DragFloat("Intensity", (float*)&component.PointLightInstance->Color.w, 0.01f, 0.0f, 10000.0f);
+			ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
+			ImGui::DragFloat("Intensity", (float*)&component.Color.w, 0.01f, 0.0f, 10000.0f);
+			ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 10000.0f);
+			ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.001f, 1000.0f);
+		});
+
+		DrawComponent<SpotLightComponent>("Spot Light", entity, [](auto& component)
+		{
+			ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
+			ImGui::DragFloat("Intensity", (float*)&component.Color.w, 0.01f, 0.0f, 10000.0f);
+			float innerCutoff = glm::degrees(component.InnerCutoff);
+			float outerCutoff = glm::degrees(component.OuterCutoff);
+			ImGui::DragFloat("Inner Cutoff", &innerCutoff, 0.01f, 0.01f, outerCutoff);
+			ImGui::DragFloat("Outer Cutoff", &outerCutoff, 0.01f, innerCutoff, 80.0f);
+			component.InnerCutoff = glm::radians(innerCutoff);
+			component.OuterCutoff = glm::radians(outerCutoff);
+
+			ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 10000.0f);
+			ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.001f, 1000.0f);
 		});
 
 		DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)
@@ -286,7 +464,7 @@ namespace VulkanCore {
 
 				else
 				{
-					std::shared_ptr<Mesh> mesh = Mesh::LoadMesh(meshFilePath.c_str(), 0);
+					std::shared_ptr<Mesh> mesh = Mesh::LoadMesh(meshFilePath.c_str());
 					component.MeshInstance = mesh;
 
 					s_ShowMessage = false;

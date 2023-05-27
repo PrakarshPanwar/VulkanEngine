@@ -1,0 +1,357 @@
+#include "vulkanpch.h"
+#include "SceneSerializer.h"
+
+#include "Platform/Vulkan/VulkanMaterial.h"
+
+#include <yaml-cpp/yaml.h>
+#include <unordered_set>
+
+#include "VulkanCore/Core/Components.h"
+#include "Entity.h"
+
+namespace std {
+
+	template<>
+	struct hash<tuple<string, string, string>>
+	{
+		size_t operator()(const tuple<string, string, string>& pTuple) const
+		{
+			return hash<string>()(get<0>(pTuple))
+				^ hash<string>()(get<1>(pTuple))
+				^ hash<string>()(get<2>(pTuple));
+		}
+	};
+
+}
+
+namespace YAML {
+
+	template<>
+	struct convert<glm::vec2>
+	{
+		static Node encode(const glm::vec2& rhs)
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			return node;
+		}
+
+		static bool decode(const Node& node, glm::vec2& rhs)
+		{
+			if (!node.IsSequence() || node.size() != 2)
+				return false;
+
+			rhs.x = node[0].as<float>();
+			rhs.y = node[1].as<float>();
+			return true;
+		}
+	};
+
+	template<>
+	struct convert<glm::vec3>
+	{
+		static Node encode(const glm::vec3& rhs)
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			node.push_back(rhs.z);
+			return node;
+		}
+
+		static bool decode(const Node& node, glm::vec3& rhs)
+		{
+			if (!node.IsSequence() || node.size() != 3)
+				return false;
+
+			rhs.x = node[0].as<float>();
+			rhs.y = node[1].as<float>();
+			rhs.z = node[2].as<float>();
+			return true;
+		}
+	};
+
+	template<>
+	struct convert<glm::vec4>
+	{
+		static Node encode(const glm::vec4& rhs)
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			node.push_back(rhs.z);
+			node.push_back(rhs.w);
+			return node;
+		}
+
+		static bool decode(const Node& node, glm::vec4& rhs)
+		{
+			if (!node.IsSequence() || node.size() != 4)
+				return false;
+
+			rhs.x = node[0].as<float>();
+			rhs.y = node[1].as<float>();
+			rhs.z = node[2].as<float>();
+			rhs.w = node[3].as<float>();
+			return true;
+		}
+	};
+
+}
+
+namespace VulkanCore {
+
+	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
+	{
+		out << YAML::Flow;
+		out << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
+		return out;
+	}
+
+	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec3& v)
+	{
+		out << YAML::Flow;
+		out << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
+		return out;
+	}
+
+	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec4& v)
+	{
+		out << YAML::Flow;
+		out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
+		return out;
+	}
+
+	static void SerializeEntity(YAML::Emitter& out, Entity entity)
+	{
+		out << YAML::BeginMap;
+		out << YAML::Key << "Entity" << YAML::Value << "64321564316"; // TODO: Here we will require UUID in near future
+
+		if (entity.HasComponent<TagComponent>())
+		{
+			out << YAML::Key << "TagComponent";
+			out << YAML::BeginMap;
+
+			auto& tag = entity.GetComponent<TagComponent>().Tag;
+			out << YAML::Key << "Tag" << YAML::Value << tag;
+
+			out << YAML::EndMap;
+		}
+
+		if (entity.HasComponent<TransformComponent>())
+		{
+			out << YAML::Key << "TransformComponent";
+			out << YAML::BeginMap;
+
+			auto& tc = entity.GetComponent<TransformComponent>();
+			out << YAML::Key << "Translation" << YAML::Value << tc.Translation;
+			out << YAML::Key << "Rotation" << YAML::Value << tc.Rotation;
+			out << YAML::Key << "Scale" << YAML::Value << tc.Scale;
+
+			out << YAML::EndMap;
+		}
+
+		if (entity.HasComponent<PointLightComponent>())
+		{
+			out << YAML::Key << "PointLightComponent";
+			out << YAML::BeginMap;
+
+			auto& plc = entity.GetComponent<PointLightComponent>();
+			out << YAML::Key << "Color" << YAML::Value << plc.Color;
+			out << YAML::Key << "Falloff" << YAML::Value << plc.Falloff;
+			out << YAML::Key << "Radius" << YAML::Value << plc.Radius;
+
+			out << YAML::EndMap;
+		}
+
+		if (entity.HasComponent<SpotLightComponent>())
+		{
+			out << YAML::Key << "SpotLightComponent";
+			out << YAML::BeginMap;
+
+			auto& slc = entity.GetComponent<SpotLightComponent>();
+			out << YAML::Key << "Color" << YAML::Value << slc.Color;
+			out << YAML::Key << "Direction" << YAML::Value << slc.Direction;
+			out << YAML::Key << "InnerCutoff" << YAML::Value << slc.InnerCutoff;
+			out << YAML::Key << "OuterCutoff" << YAML::Value << slc.OuterCutoff;
+			out << YAML::Key << "Falloff" << YAML::Value << slc.Falloff;
+			out << YAML::Key << "Radius" << YAML::Value << slc.Radius;
+
+			out << YAML::EndMap;
+		}
+
+		// TODO: Probably will create a separate mesh serializer when we will implement Asset system
+		if (entity.HasComponent<MeshComponent>())
+		{
+			out << YAML::Key << "MeshComponent";
+			out << YAML::BeginMap;
+
+			auto& mc = entity.GetComponent<MeshComponent>();
+			out << YAML::Key << "Filepath" << YAML::Value << mc.MeshInstance->GetMeshSource()->GetFilePath();
+
+			// Storing Material Data of Mesh
+			out << YAML::Key << "Material";
+			out << YAML::BeginMap;
+
+			// TODO: This will be removed when we will implement Material Assets
+			auto material = mc.MeshInstance->GetMeshSource()->GetMaterial();
+			MaterialData& materialData = mc.MeshInstance->GetMeshSource()->GetMaterial()->GetMaterialData();
+			out << YAML::Key << "Albedo" << YAML::Value << materialData.Albedo;
+			out << YAML::Key << "Metallic" << YAML::Value << materialData.Metallic;
+			out << YAML::Key << "Roughness" << YAML::Value << materialData.Roughness;
+			out << YAML::Key << "UseNormalMap" << YAML::Value << materialData.UseNormalMap;
+
+			// Setting Materials Path
+			auto [diffusePath, normalPath, armPath] = material->GetMaterialPaths();
+			out << YAML::Key << "AlbedoTexture" << YAML::Value << diffusePath;
+			out << YAML::Key << "NormalTexture" << YAML::Value << normalPath;
+			out << YAML::Key << "ARMTexture" << YAML::Value << armPath;
+
+			out << YAML::EndMap; // End Material Map
+
+			out << YAML::EndMap;
+		}
+
+		out << YAML::EndMap; // Entity
+	}
+
+	SceneSerializer::SceneSerializer(std::shared_ptr<Scene> scene)
+		: m_Scene(scene)
+	{
+	}
+
+	void SceneSerializer::Serialize(const std::string& filepath)
+	{
+		YAML::Emitter out;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Scene" << YAML::Value << std::filesystem::path(filepath).stem().string();
+		out << YAML::Key << "Entities";
+		out << YAML::Value << YAML::BeginSeq;
+		m_Scene->m_Registry.each([&](auto entityID)
+		{
+			Entity entity = { entityID, m_Scene.get() };
+			if (!entity)
+				return;
+
+			SerializeEntity(out, entity);
+		});
+		out << YAML::EndSeq;
+		out << YAML::EndMap;
+
+		std::ofstream fout(filepath);
+		fout << out.c_str();
+	}
+
+	void SceneSerializer::SerializeRuntime(const std::string& filepath)
+	{
+
+	}
+
+	bool SceneSerializer::Deserialize(const std::string& filepath)
+	{
+		std::ifstream stream(filepath);
+		std::stringstream strStream;
+		strStream << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(strStream.str());
+		if (!data["Scene"])
+			return false;
+
+		std::string sceneName = data["Scene"].as<std::string>();
+		VK_CORE_TRACE("Deserializing Scene: '{}'", sceneName);
+
+		auto entities = data["Entities"];
+
+		if (entities)
+		{
+			std::unordered_set<std::tuple<std::string, std::string, std::string>> materialsData;
+
+			for (auto entity : entities)
+			{
+				uint64_t uuid = entity["Entity"].as<uint64_t>(); // TODO: UUIDs
+
+				std::string name;
+				auto tagComponent = entity["TagComponent"];
+				if (tagComponent)
+					name = tagComponent["Tag"].as<std::string>();
+
+				VK_CORE_TRACE("Deserializing entity with ID = {0}, name = {1}", uuid, name);
+
+				Entity deserializedEntity = m_Scene->CreateEntity(name);
+
+				auto transformComponent = entity["TransformComponent"];
+				if (transformComponent)
+				{
+					auto& tc = deserializedEntity.GetComponent<TransformComponent>();
+					tc.Translation = transformComponent["Translation"].as<glm::vec3>();
+					tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
+					tc.Scale = transformComponent["Scale"].as<glm::vec3>();
+				}
+
+				auto pointLightComponent = entity["PointLightComponent"];
+				if (pointLightComponent)
+				{
+					auto& plc = deserializedEntity.AddComponent<PointLightComponent>();
+
+					plc.Color = pointLightComponent["Color"].as<glm::vec4>();
+					plc.Falloff = pointLightComponent["Falloff"].as<float>();
+					plc.Radius = pointLightComponent["Radius"].as<float>();
+				}
+
+				auto spotLightComponent = entity["SpotLightComponent"];
+				if (spotLightComponent)
+				{
+					auto& slc = deserializedEntity.AddComponent<SpotLightComponent>();
+
+					slc.Color = spotLightComponent["Color"].as<glm::vec4>();
+					slc.Direction = spotLightComponent["Direction"].as<glm::vec3>();
+					slc.InnerCutoff = spotLightComponent["InnerCutoff"].as<float>();
+					slc.OuterCutoff = spotLightComponent["OuterCutoff"].as<float>();
+					slc.Falloff = spotLightComponent["Falloff"].as<float>();
+					slc.Radius = spotLightComponent["Radius"].as<float>();
+				}
+
+				auto meshComponent = entity["MeshComponent"];
+				if (meshComponent)
+				{
+					auto& mc = deserializedEntity.AddComponent<MeshComponent>();
+
+					std::string filepath = meshComponent["Filepath"].as<std::string>();
+					mc.MeshInstance = Mesh::LoadMesh(filepath.c_str());
+
+					auto meshSource = mc.MeshInstance->GetMeshSource();
+					auto materialData = meshComponent["Material"];
+
+					std::shared_ptr<Material> material = meshSource->GetMaterial();
+					glm::vec4 albedoColor = materialData["Albedo"].as<glm::vec4>();
+					float metallic = materialData["Metallic"].as<float>();
+					float roughness = materialData["Roughness"].as<float>();
+					uint32_t useNormalMap = materialData["UseNormalMap"].as<uint32_t>();
+					material->SetMaterialData({ albedoColor, roughness, metallic, useNormalMap });
+
+					std::string albedoPath = materialData["AlbedoTexture"].as<std::string>();
+					std::string normalPath = materialData["NormalTexture"].as<std::string>();
+					std::string armPath = materialData["ARMTexture"].as<std::string>();
+
+					auto materialTuple = std::make_tuple(albedoPath, normalPath, armPath);
+					if (!materialsData.contains(materialTuple))
+					{
+						auto vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
+						vulkanMaterial->UpdateMaterials(albedoPath, normalPath, armPath);
+
+						materialsData.emplace(materialTuple);
+					}
+				}
+			}
+		}
+
+		return true;
+	}
+
+	bool SceneSerializer::DeserializeRuntime(const std::string& filepath)
+	{
+		return false;
+	}
+
+}
