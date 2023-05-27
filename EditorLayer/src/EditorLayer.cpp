@@ -5,14 +5,18 @@
 #include "VulkanCore/Core/ImGuiLayer.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Events/Input.h"
-#include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
+#include "VulkanCore/Scene/Entity.h"
+#include "VulkanCore/Scene/SceneSerializer.h"
+#include "VulkanCore/Utils/PlatformUtils.h"
 
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanContext.h"
 
 #include <ImGuizmo.h>
+#include <imgui_internal.h>
+#include <optick.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
@@ -20,6 +24,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 namespace VulkanCore {
+
+	static const std::filesystem::path g_AssetPath = "assets";
 
 	EditorLayer::EditorLayer()
 		: Layer("Editor Layer")
@@ -36,17 +42,23 @@ namespace VulkanCore {
 
 		std::unique_ptr<Timer> editorInit = std::make_unique<Timer>("Editor Initialization");
 
-		LoadEntities();
+		m_MenuIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/MenuIcon.png");
+		m_MenuIconID = ImGuiLayer::AddTexture(*m_MenuIcon);
+
+		m_Scene = std::make_shared<Scene>();
 		m_SceneRenderer = std::make_shared<SceneRenderer>(m_Scene);
 
-		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
-
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
-
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
+		m_ContentBrowserPanel = ContentBrowserPanel();
 
-		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 100.0f);
+		auto commandLineArgs = Application::Get()->GetSpecification().CommandLineArgs;
+		if (commandLineArgs.Count > 1)
+		{
+			std::string sceneFilePath = commandLineArgs[1];
+			OpenScene(sceneFilePath);
+		}
+
+		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
 	}
 
 	void EditorLayer::OnDetach()
@@ -56,7 +68,9 @@ namespace VulkanCore {
 
 	void EditorLayer::OnUpdate()
 	{
-		if (m_ViewportFocused && m_ViewportHovered)
+		VK_CORE_PROFILE();
+
+		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
 			m_EditorCamera.OnUpdate();
 
 		m_SceneRenderer->RenderScene(m_EditorCamera);
@@ -122,6 +136,34 @@ namespace VulkanCore {
 			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 		}
 
+		if (ImGui::BeginMenuBar())
+		{
+			if (ImGui::BeginMenu("File"))
+			{
+				// Disabling fullscreen would allow the window to be moved to the front of other windows, 
+				// which we can't undo at the moment without finer window depth/z control.
+				//ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen_persistant);1
+				if (ImGui::MenuItem("New", "Ctrl+N"))
+					NewScene();
+
+				if (ImGui::MenuItem("Open...", "Ctrl+O"))
+					OpenScene();
+
+				if (ImGui::MenuItem("Save", "Ctrl+S"))
+					SaveScene();
+
+				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
+					SaveSceneAs();
+
+// 				if (ImGui::MenuItem("Exit"))
+// 					Application::Get()->Close();
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMenuBar();
+		}
+
 		style.WindowMinSize.x = minWinSizeX;
 
 		//ImGui::ShowDemoWindow(&m_ImGuiShowWindow);
@@ -146,7 +188,7 @@ namespace VulkanCore {
 			m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
 			(sceneViewportSize.x != m_ViewportSize.x || sceneViewportSize.y != m_ViewportSize.y))
 		{
-			m_SceneRenderer->SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+			m_SceneRenderer->SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 			m_EditorCamera.SetViewportSize(region.x, region.y);
 		}
 
@@ -154,12 +196,54 @@ namespace VulkanCore {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
-		ImGui::Image(m_SceneImages[Renderer::GetCurrentFrameIndex()], region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGui::Image(m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGui::SetItemAllowOverlap();
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			{
+				const wchar_t* path = (const wchar_t*)payload->Data;
+				std::filesystem::path scenePath = g_AssetPath / path;
+				OpenScene(scenePath.string());
+			}
+
+			ImGui::EndDragDropTarget();
+		}
+
+		// Button Position just at the top
+		ImGui::SetCursorPos({ ImGui::GetWindowContentRegionMin().x + 5.0f, ImGui::GetWindowContentRegionMin().y + 5.0f });
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 20.0f);
+		if (ImGui::ImageButton((ImTextureID)m_MenuIconID, { 20.0f, 20.0f }, { 0, 1 }, { 1, 0 }))
+			ImGui::OpenPopup("EditorSettings");
+		ImGui::PopStyleVar();
+
+		if (ImGui::BeginPopup("EditorSettings"))
+		{
+			static float fov = 45.0f;
+			static float thumbnailSize = 128.0f;
+			static float padding = 16.0f;
+
+			ImGui::DragFloat("Field of View", &fov, 0.01f, 5.0f, 90.0f);
+			if (ImGui::IsItemActive())
+				m_EditorCamera.SetFieldOfView(fov);
+
+			ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
+			if (ImGui::IsItemActive())
+				m_ContentBrowserPanel.SetThumbnailSize(thumbnailSize);
+
+			ImGui::SliderFloat("Padding", &padding, 0, 32);
+			if (ImGui::IsItemActive())
+				m_ContentBrowserPanel.SetPadding(padding);
+
+			ImGui::EndPopup();
+		}
 
 		RenderGizmo();
 		ImGui::End(); // End of Viewport
 
 		m_SceneHierarchyPanel.OnImGuiRender();
+		m_ContentBrowserPanel.OnImGuiRender();
 		m_SceneRenderer->OnImGuiRender();
 
 		ImGui::End(); // End of DockSpace
@@ -209,34 +293,36 @@ namespace VulkanCore {
 		return false;
 	}
 
-	void EditorLayer::RecreateSceneDescriptors()
+	void EditorLayer::UpdateSceneDescriptors()
 	{
-		m_SceneImages.clear();
-		m_SceneImages.resize(VulkanSwapChain::MaxFramesInFlight);
-
-		for (int i = 0; i < VulkanSwapChain::MaxFramesInFlight; i++)
-			m_SceneImages[i] = ImGuiLayer::AddTexture(m_SceneRenderer->GetFinalPassImage(i));
 	}
 
 	void EditorLayer::LoadEntities()
 	{
-		m_Scene = std::make_shared<Scene>();
-
 		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
-		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx", 1));
+		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx"));
 		auto& vaseTransform = CeramicVase.GetComponent<TransformComponent>();
 		vaseTransform.Translation = glm::vec3{ 0.0f, -1.2f, 2.5f };
 		vaseTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
 		vaseTransform.Scale = glm::vec3{ 3.5f };
 
 		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
-		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Cube.fbx", 3));
+		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Cube.fbx"));
 		auto& planeTransform = FlatPlane.GetComponent<TransformComponent>();
 		planeTransform.Translation = glm::vec3{ 0.0f, -1.3f, 0.0f };
 		planeTransform.Scale = glm::vec3{ 10.0f, 0.1f, 10.0f };
 
 		Entity SphereMesh = m_Scene->CreateEntity("Basic Sphere");
-		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx", 3));
+		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx"));
+
+#define LOAD_SPONZA 0
+#if LOAD_SPONZA
+		Entity SponzaMesh = m_Scene->CreateEntity("Sponza");
+		SponzaMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Sponza/Sponza.obj"));
+		auto& sponzaTransform = SponzaMesh.GetComponent<TransformComponent>();
+		sponzaTransform.Translation = glm::vec3{ -4.0f, -10.0f, 23.0f };
+		sponzaTransform.Scale = glm::vec3{ 0.25f };
+#endif
 
 		// TODO: Texture mapping not working correctly for GLTF mesh formats, fix this in future
 #if 0
@@ -247,7 +333,7 @@ namespace VulkanCore {
 #endif
 
 		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
-		BrassVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/BrassVase2K/BrassVase.fbx", 2));
+		BrassVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/BrassVase2K/BrassVase.fbx"));
 		auto& brassTransform = BrassVase.GetComponent<TransformComponent>();
 		brassTransform.Translation = glm::vec3{ 1.5f, -1.2f, 1.5f };
 		brassTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
@@ -257,22 +343,19 @@ namespace VulkanCore {
 		auto& blueLightTransform = BluePointLight.GetComponent<TransformComponent>();
 		blueLightTransform.Translation = glm::vec3{ -1.0f, 0.0f, 4.5f };
 		blueLightTransform.Scale = glm::vec3{ 0.1f };
-		std::shared_ptr<PointLight> blueLight = std::make_shared<PointLight>(glm::vec4(blueLightTransform.Translation, 1.0f), glm::vec4{ 0.2f, 0.3f, 0.8f, 1.0f });
-		BluePointLight.AddComponent<PointLightComponent>(blueLight);
+		auto& bluePLC = BluePointLight.AddComponent<PointLightComponent>(glm::vec4{ 0.2f, 0.3f, 0.8f, 20.0f });
 
 		Entity RedPointLight = m_Scene->CreateEntity("Red Light");
 		auto& redLightTransform = RedPointLight.GetComponent<TransformComponent>();
 		redLightTransform.Translation = glm::vec3{ 1.5f, 0.0f, 5.0f };
 		redLightTransform.Scale = glm::vec3{ 0.1f };
-		std::shared_ptr<PointLight> redLight = std::make_shared<PointLight>(glm::vec4(redLightTransform.Translation, 1.0f), glm::vec4{ 1.0f, 0.5f, 0.1f, 1.0f });
-		RedPointLight.AddComponent<PointLightComponent>(redLight);
+		auto& redPLC = RedPointLight.AddComponent<PointLightComponent>(glm::vec4{ 1.0f, 0.5f, 0.1f, 15.0f });
 
 		Entity GreenPointLight = m_Scene->CreateEntity("Green Light");
 		auto& greenLightTransform = GreenPointLight.GetComponent<TransformComponent>();
 		greenLightTransform.Translation = glm::vec3{ 2.0f, 0.0f, -0.5f };
 		greenLightTransform.Scale = glm::vec3{ 0.1f };
-		std::shared_ptr<PointLight> greenLight = std::make_shared<PointLight>(glm::vec4(greenLightTransform.Translation, 1.0f), glm::vec4{ 0.1f, 0.8f, 0.2f, 1.0f });
-		GreenPointLight.AddComponent<PointLightComponent>(greenLight);
+		auto& greenPLC = GreenPointLight.AddComponent<PointLightComponent>(glm::vec4{ 0.1f, 0.8f, 0.2f, 10.0f });
 	}
 
 	void EditorLayer::RenderGizmo()
@@ -304,7 +387,7 @@ namespace VulkanCore {
 			float snapValues[3] = { snapValue, snapValue, snapValue };
 
 			ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
-				(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::LOCAL, glm::value_ptr(transform),
+				(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::WORLD, glm::value_ptr(transform),
 				nullptr, snap ? snapValues : nullptr);
 
 			if (ImGuizmo::IsUsing())
@@ -320,6 +403,67 @@ namespace VulkanCore {
 				tc.Scale = scale;
 			}
 		}
+	}
+
+	void EditorLayer::NewScene()
+	{
+		m_Scene = std::make_shared<Scene>();
+		m_SceneRenderer->SetActiveScene(m_Scene);
+		m_SceneHierarchyPanel.SetContext(m_Scene);
+
+		m_EditorScenePath = std::filesystem::path();
+	}
+
+	void EditorLayer::OpenScene()
+	{
+		std::string filepath = FileDialogs::OpenFile("VulkanEngine Scene (*.vkscene)\0*.vkscene\0");
+		if (!filepath.empty())
+			OpenScene(filepath);
+	}
+
+	void EditorLayer::OpenScene(const std::string& path)
+	{
+		std::filesystem::path filepath(path);
+
+		if (filepath.extension().string() != ".vkscene")
+		{
+			VK_WARN("Could not load {0} - not a scene file", filepath.filename().string());
+			return;
+		}
+
+		std::shared_ptr<Scene> newScene = std::make_shared<Scene>();
+		SceneSerializer serializer(newScene);
+		if (serializer.Deserialize(filepath.string()))
+		{
+			m_Scene = newScene;
+			m_SceneRenderer->SetActiveScene(m_Scene);
+			m_SceneHierarchyPanel.SetContext(m_Scene);
+			m_EditorScenePath = path;
+		}
+	}
+
+	void EditorLayer::SaveScene()
+	{
+		if (!m_EditorScenePath.empty())
+			SerializeScene(m_Scene, m_EditorScenePath);
+		else
+			SaveSceneAs();
+	}
+
+	void EditorLayer::SaveSceneAs()
+	{
+		std::string filepath = FileDialogs::SaveFile("VulkanEngine Scene (*.vkscene)\0*.vkscene\0");
+		if (!filepath.empty())
+		{
+			SerializeScene(m_Scene, filepath);
+			m_EditorScenePath = filepath;
+		}
+	}
+
+	void EditorLayer::SerializeScene(std::shared_ptr<Scene> scene, const std::filesystem::path& scenePath)
+	{
+		SceneSerializer serializer(scene);
+		serializer.Serialize(scenePath.string());
 	}
 
 }

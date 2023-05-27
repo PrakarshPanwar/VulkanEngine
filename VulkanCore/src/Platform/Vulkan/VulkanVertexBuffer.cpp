@@ -2,6 +2,7 @@
 #include "VulkanVertexBuffer.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanAllocator.h"
 
 namespace VulkanCore {
@@ -82,8 +83,11 @@ namespace VulkanCore {
 
 	void VulkanVertexBuffer::WriteData(void* data, VkDeviceSize offset)
 	{
-		memcpy(m_MappedPtr, data, m_Size);
-		vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, offset, (VkDeviceSize)m_Size);
+		if (data)
+		{
+			memcpy(m_MappedPtr, data, m_Size);
+			vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, offset, (VkDeviceSize)m_Size);
+		}
 	}
 
 }

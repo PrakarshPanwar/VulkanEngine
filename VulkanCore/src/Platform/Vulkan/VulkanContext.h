@@ -4,6 +4,15 @@
 
 namespace VulkanCore {
 
+	namespace VKUtils {
+		void SetDebugUtilsObjectName(VkDevice device, VkObjectType objectType, const std::string& debugName, void* object);
+		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName);
+		void EndCommandBufferLabel(VkCommandBuffer cmdBuffer);
+	}
+
+	VkResult CreateDebugMarkerEXT(VkDevice device);
+	VkResult CreateDebugUtilsEXT(VkInstance instance);
+
 	class VulkanContext
 	{
 	public:
@@ -44,7 +53,7 @@ namespace VulkanCore {
 		VmaAllocator m_VkMemoryAllocator;
 
 		const std::vector<const char*> m_ValidationLayers = { "VK_LAYER_KHRONOS_validation" };
-		const std::vector<const char*> m_DeviceExtensions = {
+		std::vector<const char*> m_DeviceExtensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 			VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME,
 			VK_KHR_MAINTENANCE1_EXTENSION_NAME

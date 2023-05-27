@@ -19,15 +19,16 @@ namespace VulkanCore {
 
 		Entity CreateEntity(const std::string& name);
 		void OnUpdateGeometry(SceneRenderer* renderer);
-		void OnUpdateGeometry(const std::vector<VkCommandBuffer>& cmdBuffers, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
-		void OnUpdateLights(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::vector<VkDescriptorSet>& descriptorSet);
+		void OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions);
 		void UpdatePointLightUB(UBPointLights& ubo);
+		void UpdateSpotLightUB(UBSpotLights& ubo);
 		void DestroyEntity(Entity entity);
 	private:
 		entt::registry m_Registry;
 
 		friend class Entity;
 		friend class SceneHierarchyPanel;
+		friend class SceneSerializer;
 		friend class SceneRenderer;
 	};
 

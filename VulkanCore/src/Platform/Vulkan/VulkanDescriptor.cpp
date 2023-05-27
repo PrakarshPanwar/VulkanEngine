@@ -171,7 +171,7 @@ namespace VulkanCore {
 		return *this;
 	}
 
-	VulkanDescriptorWriter& VulkanDescriptorWriter::WriteImage(uint32_t binding, VkDescriptorImageInfo* imageInfo)
+	VulkanDescriptorWriter& VulkanDescriptorWriter::WriteImage(uint32_t binding, const VkDescriptorImageInfo* imageInfo)
 	{
 		VK_CORE_ASSERT(m_SetLayout.m_Bindings.count(binding) == 1, "Layout does not contain specified Binding!");
 		auto& bindingDescription = m_SetLayout.m_Bindings[binding];
@@ -208,7 +208,7 @@ namespace VulkanCore {
 
 	bool VulkanDescriptorWriter::Build(VkDescriptorSet& set)
 	{
-		bool success = m_Pool.AllocateDescriptorSet(m_SetLayout.GetDescriptorSetLayout(), set);
+		bool success = m_Pool.AllocateDescriptorSet(m_SetLayout.GetVulkanDescriptorSetLayout(), set);
 
 		if (!success)
 			return false;

@@ -2,28 +2,172 @@
 #include "VulkanContext.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Core/Application.h"
 
 namespace VulkanCore {
 
-	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
+	// Debug Marker Function Pointers
+	PFN_vkDebugMarkerSetObjectNameEXT vkDebugMarkerSetObjectNameEXT = VK_NULL_HANDLE;
+	PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = VK_NULL_HANDLE;
+	PFN_vkCmdDebugMarkerBeginEXT vkCmdDebugMarkerBeginEXT = VK_NULL_HANDLE;
+	PFN_vkCmdDebugMarkerEndEXT vkCmdDebugMarkerEndEXT = VK_NULL_HANDLE;
+
+	VkResult CreateDebugMarkerEXT(VkDevice device)
+	{
+		vkDebugMarkerSetObjectNameEXT = (PFN_vkDebugMarkerSetObjectNameEXT)vkGetDeviceProcAddr(device, "vkDebugMarkerSetObjectNameEXT");
+		vkCmdDebugMarkerBeginEXT = (PFN_vkCmdDebugMarkerBeginEXT)vkGetDeviceProcAddr(device, "vkCmdDebugMarkerBeginEXT");
+		vkCmdDebugMarkerEndEXT = (PFN_vkCmdDebugMarkerEndEXT)vkGetDeviceProcAddr(device, "vkCmdDebugMarkerEndEXT");
+
+		if (vkDebugMarkerSetObjectNameEXT == nullptr)
+			return VK_ERROR_EXTENSION_NOT_PRESENT;
+
+		return VK_SUCCESS;
+	}
+
+	VkResult CreateDebugUtilsEXT(VkInstance instance)
+	{
+		vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
+// 		vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdBeginDebugUtilsLabelEXT");
+// 		vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdEndDebugUtilsLabelEXT");
+
+		if (vkSetDebugUtilsObjectNameEXT == nullptr)
+			return VK_ERROR_EXTENSION_NOT_PRESENT;
+
+		return VK_SUCCESS;
+	}
+
+	namespace VKUtils {
+
+		void SetDebugUtilsObjectName(VkDevice device, VkObjectType objectType, const std::string& debugName, void* object)
+		{
+			if (vkSetDebugUtilsObjectNameEXT == nullptr)
+				return;
+
+			VkDebugUtilsObjectNameInfoEXT debugUtilsNameInfo{};
+			debugUtilsNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+			debugUtilsNameInfo.objectType = objectType;
+			debugUtilsNameInfo.objectHandle = (uint64_t)object;
+			debugUtilsNameInfo.pObjectName = debugName.c_str();
+
+			vkSetDebugUtilsObjectNameEXT(device, &debugUtilsNameInfo);
+
+			if (vkDebugMarkerSetObjectNameEXT == nullptr)
+				return;
+
+			VkDebugMarkerObjectNameInfoEXT debugMarkerNameInfo{};
+			debugMarkerNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
+			debugMarkerNameInfo.objectType = (VkDebugReportObjectTypeEXT)objectType;
+			debugMarkerNameInfo.object = (uint64_t)object;
+			debugMarkerNameInfo.pObjectName = debugName.c_str();
+				
+			vkDebugMarkerSetObjectNameEXT(device, &debugMarkerNameInfo);
+		}
+
+		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName)
+		{
+			if (vkCmdDebugMarkerBeginEXT == nullptr)
+				return;
+
+			VkDebugMarkerMarkerInfoEXT markerInfoExt{};
+			markerInfoExt.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
+			markerInfoExt.pMarkerName = labelName;
+			markerInfoExt.color[0] = 0.1f;
+			markerInfoExt.color[1] = 0.1f; 
+			markerInfoExt.color[2] = 0.8f;
+			markerInfoExt.color[3] = 1.0f;
+
+			vkCmdDebugMarkerBeginEXT(cmdBuffer, &markerInfoExt);
+		}
+
+		void EndCommandBufferLabel(VkCommandBuffer cmdBuffer)
+		{
+			if (vkCmdDebugMarkerEndEXT == nullptr)
+				return;
+
+			vkCmdDebugMarkerEndEXT(cmdBuffer);
+		}
+
+	}
+
+	namespace Utils {
+
+		std::string VkObjectTypeToString(VkObjectType objectType)
+		{
+			switch (objectType)
+			{
+			case VK_OBJECT_TYPE_UNKNOWN:	     return "Unknown";
+			case VK_OBJECT_TYPE_BUFFER:		     return "Buffer";
+			case VK_OBJECT_TYPE_COMMAND_BUFFER:  return "Command Buffer";
+			case VK_OBJECT_TYPE_COMMAND_POOL:    return "Command Pool";
+			case VK_OBJECT_TYPE_INSTANCE:		 return "Instance";
+			case VK_OBJECT_TYPE_DEVICE:		     return "Device";
+			case VK_OBJECT_TYPE_DESCRIPTOR_POOL: return "Descriptor Pool";
+			case VK_OBJECT_TYPE_DESCRIPTOR_SET:	 return "Descriptor Set";
+			case VK_OBJECT_TYPE_IMAGE:		     return "Image";
+			case VK_OBJECT_TYPE_IMAGE_VIEW:		 return "Image View";
+			case VK_OBJECT_TYPE_PIPELINE:		 return "Pipeline";
+			case VK_OBJECT_TYPE_PIPELINE_LAYOUT: return "Pipeline Layout";
+			case VK_OBJECT_TYPE_RENDER_PASS:	 return "Render Pass";
+			case VK_OBJECT_TYPE_SAMPLER:		 return "Image Sampler";
+			case VK_OBJECT_TYPE_FRAMEBUFFER:     return "Framebuffer";
+			case VK_OBJECT_TYPE_SHADER_MODULE:   return "Shader Module";
+			case VK_OBJECT_TYPE_QUEUE:			 return "Queue";
+			case VK_OBJECT_TYPE_SWAPCHAIN_KHR:	 return "Swapchain";
+			default:
+				VK_CORE_ASSERT(false, "Object Type not present in this scope");
+				return "Unsupported";
+			}
+		}
+
+		std::string VkDebugUtilsMessageSeverity(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity)
+		{
+			switch (messageSeverity)
+			{
+			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT: return "Verbose";
+			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:	  return "Info";
+			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: return "Warning";
+			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:	  return "Error";
+			default:											  return "Unknown";
+			}
+		}
+
+	}
+
+	static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugUtilsCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData)
 	{
+		std::string labels, objects;
+		if (pCallbackData->cmdBufLabelCount)
+		{
+			labels = fmt::format("\tLabels({}): \n", pCallbackData->cmdBufLabelCount);
+			for (uint32_t i = 0; i < pCallbackData->cmdBufLabelCount; ++i)
+			{
+				const auto& label = pCallbackData->pCmdBufLabels[i];
+				const std::string colorStr = fmt::format("[ {0}, {1}, {2}, {3} ]", label.color[0], label.color[1], label.color[2], label.color[3]);
+				labels.append(fmt::format("\t\t- Command Buffer Label[{0}]: name: {1}, color: {2}\n", i, label.pLabelName ? label.pLabelName : "NULL", colorStr));
+			}
+		}
+
+		if (pCallbackData->objectCount)
+		{
+			objects = fmt::format("\tObjects({}): \n", pCallbackData->objectCount);
+			for (uint32_t i = 0; i < pCallbackData->objectCount; ++i)
+			{
+				const auto& object = pCallbackData->pObjects[i];
+				objects.append(fmt::format("\t\t- Object[{0}]: name: {1}, type: {2}, handle: {3:#x}\n", i, object.pObjectName ? object.pObjectName : "NULL", Utils::VkObjectTypeToString(object.objectType), object.objectHandle));
+			}
+		}
+
 		switch (messageSeverity)
 		{
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-			VK_CORE_TRACE("Validation Layer: {0}", pCallbackData->pMessage);
-			break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-			VK_CORE_INFO("Validation Layer: {0}", pCallbackData->pMessage);
-			break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-			VK_CORE_WARN("Validation Layer: {0}", pCallbackData->pMessage);
+			VK_CORE_WARN("Validation Layer: {0} message: \n\t{1}\n {2} {3}", Utils::VkDebugUtilsMessageSeverity(messageSeverity), pCallbackData->pMessage, labels, objects);
 			break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-			VK_CORE_ERROR("Validation Layer: {0}", pCallbackData->pMessage);
+			VK_CORE_ERROR("Validation Layer: {0} message: \n\t{1}\n {2} {3}", Utils::VkDebugUtilsMessageSeverity(messageSeverity), pCallbackData->pMessage, labels, objects);
 			break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
 			break;
@@ -107,6 +251,7 @@ namespace VulkanCore {
 		VkDebugUtilsMessengerCreateInfoEXT createInfo;
 		PopulateDebugMessengerCreateInfo(createInfo);
 		VK_CHECK_RESULT(CreateDebugUtilsMessengerEXT(m_VkInstance, &createInfo, nullptr, &m_DebugMessenger), "Failed to Setup Debug Messenger!");
+		VK_CHECK_RESULT(CreateDebugUtilsEXT(m_VkInstance), "Failed to Set Debug Utils!");
 	}
 
 	void VulkanContext::CreateSurface()
@@ -215,7 +360,7 @@ namespace VulkanCore {
 			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
 			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
-		createInfo.pfnUserCallback = DebugCallback;
+		createInfo.pfnUserCallback = VulkanDebugUtilsCallback;
 		createInfo.pUserData = nullptr;
 	}
 
