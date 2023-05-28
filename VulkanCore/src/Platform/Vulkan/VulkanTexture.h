@@ -27,7 +27,7 @@ namespace VulkanCore {
 
 		inline std::string GetFilePath() const { return m_FilePath; }
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
-		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_Image->GetDescriptorInfo(); }
+		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_Image->GetDescriptorImageInfo(); }
 	private:
 		void Invalidate();
 		void Release();
