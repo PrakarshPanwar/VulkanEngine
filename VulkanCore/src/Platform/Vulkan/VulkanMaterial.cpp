@@ -117,7 +117,7 @@ namespace VulkanCore {
 			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
 			writeDescriptor.descriptorType = m_Shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
 			writeDescriptor.dstBinding = binding;
-			writeDescriptor.pImageInfo = &image->GetDescriptorInfo();
+			writeDescriptor.pImageInfo = &image->GetDescriptorImageInfo();
 			writeDescriptor.descriptorCount = 1;
 			writeDescriptor.dstArrayElement = 0;
 
@@ -137,7 +137,7 @@ namespace VulkanCore {
 			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
 			writeDescriptor.descriptorType = m_Shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
 			writeDescriptor.dstBinding = binding;
-			writeDescriptor.pImageInfo = &image->GetMipDescriptorInfo(mipLevel);
+			writeDescriptor.pImageInfo = &image->GetDescriptorImageInfo(mipLevel);
 			writeDescriptor.descriptorCount = 1;
 			writeDescriptor.dstArrayElement = 0;
 
@@ -218,7 +218,7 @@ namespace VulkanCore {
 			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
 			writeDescriptor.descriptorType = m_Shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
 			writeDescriptor.dstBinding = binding;
-			writeDescriptor.pImageInfo = &images[i]->GetDescriptorInfo();
+			writeDescriptor.pImageInfo = &images[i]->GetDescriptorImageInfo();
 			writeDescriptor.descriptorCount = 1;
 			writeDescriptor.dstArrayElement = 0;
 
