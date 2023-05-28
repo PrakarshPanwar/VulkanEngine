@@ -164,7 +164,7 @@ namespace VulkanCore {
 
 	VkDescriptorSet ImGuiLayer::AddTexture(const VulkanImage& image)
 	{
-		auto imageDescriptor = image.GetDescriptorInfo();
+		auto imageDescriptor = image.GetDescriptorImageInfo();
 
 		return ImGui_ImplVulkan_AddTexture(imageDescriptor.sampler,
 			imageDescriptor.imageView,
@@ -189,7 +189,7 @@ namespace VulkanCore {
 		writeDescriptor.dstSet = descriptorSet;
 		writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		writeDescriptor.dstBinding = 0;
-		writeDescriptor.pImageInfo = &image.GetDescriptorInfo();
+		writeDescriptor.pImageInfo = &image.GetDescriptorImageInfo();
 		writeDescriptor.descriptorCount = 1;
 		writeDescriptor.dstArrayElement = 0;
 

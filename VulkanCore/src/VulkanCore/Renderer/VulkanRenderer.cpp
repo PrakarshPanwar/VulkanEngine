@@ -415,7 +415,7 @@ namespace VulkanCore {
 			VkDescriptorSet descriptorSet;
 			VulkanDescriptorWriter descriptorWriter(*generateBRDFPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool);
 
-			VkDescriptorImageInfo brdfOutputInfo = brdfTexture->GetDescriptorInfo();
+			VkDescriptorImageInfo brdfOutputInfo = brdfTexture->GetDescriptorImageInfo();
 			descriptorWriter.WriteImage(0, &brdfOutputInfo);
 
 			descriptorWriter.Build(descriptorSet);

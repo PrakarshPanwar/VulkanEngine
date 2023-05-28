@@ -112,7 +112,7 @@ namespace VulkanCore {
 
 	VulkanTexture::~VulkanTexture()
 	{
-		if (m_Image->GetDescriptorInfo().imageView == nullptr)
+		if (m_Image->GetDescriptorImageInfo().imageView == nullptr)
 			return;
 
 		Release();
