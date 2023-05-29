@@ -5,7 +5,6 @@
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "VulkanCore/Renderer/Renderer.h"
 #include "SceneRenderer.h"
-#include "VulkanCore/Renderer/VulkanRenderer.h"
 
 namespace VulkanCore {
 

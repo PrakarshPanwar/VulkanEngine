@@ -40,7 +40,6 @@ namespace VulkanCore {
 		inline std::shared_ptr<VulkanRenderCommandBuffer> GetCommandBuffer() const { return m_SceneCommandBuffer; }
 		inline std::shared_ptr<VulkanFramebuffer> GetFramebuffer() { return m_SceneFramebuffer; }
 		inline VkFramebuffer GetFinalVulkanFramebuffer(uint32_t index) const { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
-		inline std::shared_ptr<Shader> GetGeometryPipelineShader() const { return m_GeometryPipeline->GetSpecification().pShader; }
 		inline std::shared_ptr<VulkanImage> GetFinalPassImage(uint32_t index) const { return m_SceneFramebuffer->GetResolveAttachment()[index]; }
 		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
 
@@ -76,6 +75,7 @@ namespace VulkanCore {
 		void CreatePipelines();
 		void CreateResources();
 		void CreateMaterials();
+		void RecreateMaterials();
 
 		void GeometryPass();
 		void ExternalCompositePass();
