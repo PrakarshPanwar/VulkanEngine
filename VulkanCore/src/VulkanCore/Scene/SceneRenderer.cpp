@@ -310,6 +310,103 @@ namespace VulkanCore {
 		}
 	}
 
+	void SceneRenderer::RecreateMaterials()
+	{
+		// Bloom Materials
+		{
+			const uint32_t mipCount = m_BloomTextures[0]->GetSpecification().MipLevels;
+
+			// Set A : Prefiltering
+			// Binding 0(o_Image): BloomTex[0]
+			// Binding 1(u_Texture): RenderTex
+			// Binding 2(u_BloomTexture): RenderTex
+			m_BloomPrefilterShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Prefilter Shader Material");
+
+			m_BloomPrefilterShaderMaterial->SetImage(0, m_BloomTextures[0]);
+			m_BloomPrefilterShaderMaterial->SetImages(1, m_SceneRenderTextures);
+			m_BloomPrefilterShaderMaterial->SetImages(2, m_SceneRenderTextures);
+			m_BloomPrefilterShaderMaterial->PrepareShaderMaterial();
+
+			m_BloomPingShaderMaterials.resize(mipCount - 1);
+			m_BloomPongShaderMaterials.resize(mipCount - 1);
+			for (uint32_t i = 1; i < mipCount; ++i)
+			{
+				// Set B: Downsampling(Ping)
+				// Binding 0(o_Image): BloomTex[1]
+				// Binding 1(u_Texture): BloomTex[0]
+				// Binding 2(u_BloomTexture): RenderTex
+				auto bloomPingShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Ping Shader Material");
+
+				m_BloomTextures[1]->CreateImageViewSingleMip(i);
+				bloomPingShaderMaterial->SetImage(0, m_BloomTextures[1], i);
+				bloomPingShaderMaterial->SetImage(1, m_BloomTextures[0]);
+				bloomPingShaderMaterial->SetImages(2, m_SceneRenderTextures);
+				bloomPingShaderMaterial->PrepareShaderMaterial();
+
+				m_BloomPingShaderMaterials[i - 1] = bloomPingShaderMaterial;
+
+				// Set C: Downsampling(Pong)
+				// Binding 0(o_Image): BloomTex[0]
+				// Binding 1(u_Texture): BloomTex[1]
+				// Binding 2(u_BloomTexture): RenderTex
+				auto bloomPongShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Pong Shader Material");
+
+				m_BloomTextures[0]->CreateImageViewSingleMip(i);
+				bloomPongShaderMaterial->SetImage(0, m_BloomTextures[0], i);
+				bloomPongShaderMaterial->SetImage(1, m_BloomTextures[1]);
+				bloomPongShaderMaterial->SetImages(2, m_SceneRenderTextures);
+				bloomPongShaderMaterial->PrepareShaderMaterial();
+
+				m_BloomPongShaderMaterials[i - 1] = bloomPongShaderMaterial;
+			}
+
+			// Set D: First Upsampling
+			// Binding 0(o_Image): BloomTex[2]
+			// Binding 1(u_Texture): BloomTex[0]
+			// Binding 2(u_BloomTexture): RenderTex
+			m_BloomUpsampleFirstShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample First Shader Material");
+
+			m_BloomTextures[2]->CreateImageViewSingleMip(mipCount - 1);
+			m_BloomUpsampleFirstShaderMaterial->SetImage(0, m_BloomTextures[2], mipCount - 1);
+			m_BloomUpsampleFirstShaderMaterial->SetImage(1, m_BloomTextures[0]);
+			m_BloomUpsampleFirstShaderMaterial->SetImages(2, m_SceneRenderTextures);
+			m_BloomUpsampleFirstShaderMaterial->PrepareShaderMaterial();
+
+			// Set E: Final Upsampling
+			// Binding 0(o_Image): BloomTex[2]
+			// Binding 1(u_Texture): BloomTex[0]
+			// Binding 2(u_BloomTexture): BloomTex[2]
+			m_BloomUpsampleShaderMaterials.resize(mipCount - 1);
+			for (int i = mipCount - 2; i >= 0; --i)
+			{
+				auto bloomUpsampleShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample Shader Material");
+
+				m_BloomTextures[2]->CreateImageViewSingleMip(i);
+				bloomUpsampleShaderMaterial->SetImage(0, m_BloomTextures[2], i);
+				bloomUpsampleShaderMaterial->SetImage(1, m_BloomTextures[0]);
+				bloomUpsampleShaderMaterial->SetImage(2, m_BloomTextures[2]);
+				bloomUpsampleShaderMaterial->PrepareShaderMaterial();
+
+				m_BloomUpsampleShaderMaterials[i] = bloomUpsampleShaderMaterial;
+			}
+		}
+
+		// Composite Material
+		{
+			m_CompositeShaderMaterial->SetImages(0, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
+			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
+			m_CompositeShaderMaterial->SetTexture(2, m_BloomDirtTexture);
+			m_CompositeShaderMaterial->PrepareShaderMaterial();
+		}
+
+		// Skybox Material
+		{
+			m_SkyboxMaterial->SetBuffers(0, m_UBCamera);
+			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
+			m_SkyboxMaterial->PrepareShaderMaterial();
+		}
+	}
+
 	void SceneRenderer::CreateResources()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
@@ -450,7 +547,7 @@ namespace VulkanCore {
 		}
 
 		// Recreate Shader Materials
-		CreateMaterials();
+		RecreateMaterials();
 	}
 
 	void SceneRenderer::OnImGuiRender()

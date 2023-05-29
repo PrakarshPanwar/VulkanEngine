@@ -84,7 +84,7 @@ namespace VulkanCore {
 
 	void Renderer::RenderSkybox(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::shared_ptr<VulkanMaterial>& skyboxMaterial, void* pcData /*= nullptr*/)
 	{
-		Renderer::Submit([cmdBuffer, pipeline, &skyboxMaterial, pcData, skyboxVB]
+		Renderer::Submit([cmdBuffer, pipeline, skyboxMaterial, pcData, skyboxVB]
 		{
 			VK_CORE_PROFILE_FN("Renderer::RenderSkybox");
 
@@ -166,7 +166,7 @@ namespace VulkanCore {
 
 	void Renderer::SubmitFullscreenQuad(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanMaterial>& shaderMaterial)
 	{
-		Renderer::Submit([cmdBuffer, pipeline, &shaderMaterial]
+		Renderer::Submit([cmdBuffer, pipeline, shaderMaterial]
 		{
 			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad");
 
