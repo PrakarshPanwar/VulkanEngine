@@ -78,8 +78,9 @@ namespace VulkanCore {
 		m_Shaders["GenerateBRDF"] = Utils::MakeShader("GenerateBRDF");
 	}
 
-	void Renderer::DestroyShaders()
+	void Renderer::ShutDown()
 	{
+		RenderThread::ExecuteDeletionQueue();
 		m_Shaders.clear();
 	}
 

@@ -71,7 +71,7 @@ namespace VulkanCore {
 		init_info.PhysicalDevice = device->GetPhysicalDevice();
 		init_info.Device = device->GetVulkanDevice();
 		init_info.Queue = device->GetGraphicsQueue();
-		init_info.DescriptorPool = m_ImGuiGlobalPool->GetDescriptorPool();
+		init_info.DescriptorPool = m_ImGuiGlobalPool->GetVulkanDescriptorPool();
 		init_info.MinImageCount = 2;
 		init_info.ImageCount = 3;
 		init_info.CheckVkResultFn = CheckVkResult;
