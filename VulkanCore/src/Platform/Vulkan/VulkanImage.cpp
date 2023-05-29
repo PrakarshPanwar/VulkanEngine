@@ -283,6 +283,15 @@ namespace VulkanCore {
 		m_DescriptorMipImagesInfo[mip] = mipImageInfo;
 	}
 
+	void VulkanImage::Resize(uint32_t width, uint32_t height, uint32_t mips)
+	{
+		m_Specification.Width = width;
+		m_Specification.Height = height;
+		m_Specification.MipLevels = mips;
+
+		Invalidate();
+	}
+
 	glm::uvec2 VulkanImage::GetMipSize(uint32_t mipLevel) const
 	{
 		uint32_t width = m_Specification.Width, height = m_Specification.Height;
@@ -311,30 +320,21 @@ namespace VulkanCore {
 
 	void VulkanImage::Release()
 	{
-#if USE_DELETION_QUEUE
-		Renderer::SubmitResourceFree([mipRefs = m_MipReferences, info = m_Info]
+		Renderer::SubmitResourceFree([mipRefs = m_MipReferences, imageInfo = m_Info]() mutable
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 			VulkanAllocator allocator("Image2D");
 
-			vkDestroyImageView(device->GetVulkanDevice(), info.ImageView, nullptr);
-			vkDestroySampler(device->GetVulkanDevice(), info.Sampler, nullptr);
-			allocator.DestroyImage((VkImage&)info.Image, info.MemoryAlloc);
+			vkDestroyImageView(device->GetVulkanDevice(), imageInfo.ImageView, nullptr);
+			vkDestroySampler(device->GetVulkanDevice(), imageInfo.Sampler, nullptr);
+			allocator.DestroyImage(imageInfo.Image, imageInfo.MemoryAlloc);
 
-			for (auto& MipReference : mipRefs)
-				vkDestroyImageView(device->GetVulkanDevice(), MipReference, nullptr);
+			for (auto& mipRef : mipRefs)
+				vkDestroyImageView(device->GetVulkanDevice(), mipRef, nullptr);
 		});
-#else
-		auto device = VulkanContext::GetCurrentDevice();
-		VulkanAllocator allocator("Image2D");
 
-		vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
-		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
-		allocator.DestroyImage(m_Info.Image, m_Info.MemoryAlloc);
-
-		for (auto& MipReference : m_MipReferences)
-			vkDestroyImageView(device->GetVulkanDevice(), MipReference, nullptr);
-#endif
+		m_MipReferences.clear();
+		m_DescriptorMipImagesInfo.clear();
 	}
 
 }

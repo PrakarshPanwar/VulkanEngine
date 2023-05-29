@@ -9,7 +9,7 @@
 namespace VulkanCore {
 
 	VulkanMaterial::VulkanMaterial(const std::string& debugName)
-		: m_DebugName(debugName), m_Shader(SceneRenderer::GetSceneRenderer()->GetGeometryPipelineShader())
+		: m_DebugName(debugName), m_Shader(Renderer::GetShader("CorePBR"))
 	{
 		InvalidateMaterial();
 		InvalidateMaterialDescriptorSets();
@@ -23,11 +23,21 @@ namespace VulkanCore {
 
 	VulkanMaterial::~VulkanMaterial()
 	{
+		// TODO: Another solution to this could be to reset and reallocate whole new pool but it is currently unfeasible
+		Renderer::SubmitResourceFree([descriptorSets = m_MaterialDescriptorSets]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			auto descriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
+
+			vkFreeDescriptorSets(device->GetVulkanDevice(), descriptorPool->GetVulkanDescriptorPool(), (uint32_t)descriptorSets.size(), descriptorSets.data());
+		});
+
+		m_MaterialDescriptorSets.clear();
 	}
 
 	void VulkanMaterial::InvalidateMaterial()
 	{
-		auto descriptorSetPool = Application::Get()->GetDescriptorPool();
+		auto descriptorSetPool = VulkanRenderer::Get()->GetDescriptorPool();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
 		auto shader = m_Shader;
@@ -53,7 +63,7 @@ namespace VulkanCore {
 
 	void VulkanMaterial::Invalidate()
 	{
-		auto descriptorSetPool = Application::Get()->GetDescriptorPool();
+		auto descriptorSetPool = VulkanRenderer::Get()->GetDescriptorPool();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
 		auto shader = m_Shader;

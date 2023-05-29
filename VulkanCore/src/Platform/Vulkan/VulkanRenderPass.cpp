@@ -2,7 +2,6 @@
 #include "VulkanRenderPass.h"
 
 #include "VulkanCore/Core/Core.h"
-#include "VulkanCore/Renderer/VulkanRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
 #include <glm/gtc/type_ptr.hpp>

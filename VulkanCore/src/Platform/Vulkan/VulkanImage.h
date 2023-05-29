@@ -73,6 +73,7 @@ namespace VulkanCore {
 
 		void Invalidate();
 		void CreateImageViewSingleMip(uint32_t mip);
+		void Resize(uint32_t width, uint32_t height, uint32_t mips = 1);
 
 		glm::uvec2 GetMipSize(uint32_t mipLevel) const;
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }

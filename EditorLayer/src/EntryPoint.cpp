@@ -15,7 +15,7 @@ namespace VulkanCore {
 		~EditorApp() = default;
 	};
 
-	std::unique_ptr<Application> CreateApplication(ApplicationCommandLineArgs args)
+	Application* CreateApplication(ApplicationCommandLineArgs args)
 	{
 		ApplicationSpecification spec{};
 		spec.Name = "Vulkan Application";
@@ -23,13 +23,15 @@ namespace VulkanCore {
 		spec.Fullscreen = true;
 		spec.CommandLineArgs = args;
 
-		return std::make_unique<EditorApp>(spec);
+		return new EditorApp(spec);
 	}
 
 }
 
 int main(int argc, char** argv)
 {
-	std::unique_ptr<VulkanCore::Application> app = VulkanCore::CreateApplication({ argc, argv });
+	VulkanCore::Application* app = VulkanCore::CreateApplication({ argc, argv });
 	app->Run();
+
+	TerminateApplication(app);
 }
