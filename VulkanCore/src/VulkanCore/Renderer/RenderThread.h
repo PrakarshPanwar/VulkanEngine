@@ -1,14 +1,13 @@
 #pragma once
 #include <atomic>
 
-#define USE_DELETION_QUEUE 1
-
 namespace VulkanCore {
 
 	class RenderThread
 	{
 	public:
 		static void Init();
+		static void ExecuteDeletionQueue();
 
 		template<typename FuncT>
 		static void SubmitToThread(FuncT&& func)
@@ -17,14 +16,12 @@ namespace VulkanCore {
 			m_RenderCommandQueue.emplace_back(std::move(func));
 		}
 
-#if USE_DELETION_QUEUE
 		template<typename FuncT>
 		static void SubmitToDeletion(FuncT&& func)
 		{
 			std::scoped_lock deletionLock(m_DeletionMutex);
 			m_DeletionCommandQueue.emplace_back(std::move(func));
 		}
-#endif
 
 		static void NextFrame();
 		static void Wait();

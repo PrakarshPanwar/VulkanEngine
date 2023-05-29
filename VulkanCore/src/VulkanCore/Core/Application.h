@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Platform/Windows/WindowsWindow.h"
-#include "Platform/Vulkan/VulkanDescriptor.h"
 #include "Platform/Vulkan/VulkanContext.h"
 
 #include "VulkanCore/Events/ApplicationEvent.h"
@@ -54,8 +53,6 @@ namespace VulkanCore {
 		static Application* Get() { return s_Instance; }
 
 		inline const ApplicationSpecification& GetSpecification() const { return m_Specification; }
-		inline VulkanDescriptorPool* GetVulkanDescriptorPool() { return m_GlobalPool.get(); }
-		inline std::shared_ptr<VulkanDescriptorPool> GetDescriptorPool() { return m_GlobalPool; }
 	private:
 		bool OnWindowClose(WindowCloseEvent& window);
 		bool OnWindowResize(WindowResizeEvent& window);
@@ -64,7 +61,6 @@ namespace VulkanCore {
 		std::shared_ptr<Window> m_Window;
 		std::unique_ptr<VulkanContext> m_Context;
 		std::unique_ptr<VulkanRenderer> m_Renderer;
-		std::shared_ptr<VulkanDescriptorPool> m_GlobalPool;
 		std::shared_ptr<ImGuiLayer> m_ImGuiLayer;
 		std::unique_ptr<Timer> m_AppTimer;
 
@@ -72,6 +68,10 @@ namespace VulkanCore {
 		LayerStack m_LayerStack;
 
 		static Application* s_Instance;
+
+		friend void TerminateApplication(Application* app);
 	};
+
+	void TerminateApplication(Application* app);
 
 }

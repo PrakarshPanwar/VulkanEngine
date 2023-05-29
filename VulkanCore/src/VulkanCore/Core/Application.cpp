@@ -26,20 +26,15 @@ namespace VulkanCore {
 
 	Application::~Application()
 	{
+		RenderThread::WaitAndDestroy();
 		vkDeviceWaitIdle(VulkanContext::GetCurrentDevice()->GetVulkanDevice());
 		m_ImGuiLayer->ShutDown();
-		Renderer::DestroyShaders();
 	}
 
 	void Application::Init()
 	{
 		m_Context = std::make_unique<VulkanContext>(std::dynamic_pointer_cast<WindowsWindow>(m_Window));
 		m_Renderer = std::make_unique<VulkanRenderer>(std::dynamic_pointer_cast<WindowsWindow>(m_Window));
-
-		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
-		descriptorPoolBuilder.SetMaxSets(100).AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10);
-		descriptorPoolBuilder.SetMaxSets(1000).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10);
-		m_GlobalPool = descriptorPoolBuilder.Build();
 
 		m_ImGuiLayer = std::make_shared<ImGuiLayer>();
 		m_ImGuiLayer->OnAttach();
@@ -78,8 +73,6 @@ namespace VulkanCore {
 
 			m_Renderer->FinalQueueSubmit();
 		}
-
-		RenderThread::WaitAndDestroy();
 	}
 
 	void Application::OnEvent(Event& e)
@@ -127,6 +120,15 @@ namespace VulkanCore {
 		m_ImGuiLayer->ImGuiNewFrame();
 		for (Layer* layer : m_LayerStack)
 			layer->OnImGuiRender();
+	}
+
+	void TerminateApplication(Application* app)
+	{
+		std::unique_ptr<VulkanContext> context = std::move(app->m_Context);
+		std::unique_ptr<VulkanRenderer> renderer = std::move(app->m_Renderer);
+		delete app;
+
+		Renderer::ShutDown();
 	}
 
 }

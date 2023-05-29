@@ -216,25 +216,45 @@ namespace VulkanCore {
 
 	void VulkanFramebuffer::Release()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
+		Renderer::SubmitResourceFree([framebuffers = m_Framebuffers]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
 
-		for (auto& Framebuffer : m_Framebuffers)
-			vkDestroyFramebuffer(device->GetVulkanDevice(), Framebuffer, nullptr);
-
-		m_Framebuffers.clear();
+			for (auto& framebuffer : framebuffers)
+				vkDestroyFramebuffer(device->GetVulkanDevice(), framebuffer, nullptr);
+		});
 	}
 
 	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height)
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		m_Specification.Width = width;
 		m_Specification.Height = height;
 
 		for (auto& fbImages : m_ColorAttachments)
-			fbImages.clear();
+		{
+			for (auto& fbImage : fbImages)
+			{
+				fbImage->Resize(width, height);
 
-		m_ColorAttachments.clear();
-		m_DepthAttachment.clear();
-		Invalidate();
+				if (fbImage->GetSpecification().Samples == 1)
+				{
+					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+
+					Utils::InsertImageMemoryBarrier(barrierCmd, fbImage->GetVulkanImageInfo().Image,
+						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+						VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+					device->FlushCommandBuffer(barrierCmd);
+				}
+			}
+		}
+
+		for (auto& depthImage : m_DepthAttachment)
+			depthImage->Resize(width, height);
 	}
 
 }
