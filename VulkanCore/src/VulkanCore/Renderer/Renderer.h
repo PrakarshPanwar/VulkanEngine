@@ -26,7 +26,7 @@ namespace VulkanCore {
 		static void BeginRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
 		static void EndRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
 		static void BuildShaders();
-		static void DestroyShaders();
+		static void ShutDown();
 
 		static void RenderSkybox(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::shared_ptr<VulkanMaterial>& skyboxMaterial, void* pcData = nullptr);
 		static void BeginTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
@@ -51,13 +51,11 @@ namespace VulkanCore {
 			RenderThread::SubmitToThread(func);
 		}
 
-#if USE_DELETION_QUEUE
 		template<typename FuncT>
 		static void SubmitResourceFree(FuncT&& func)
 		{
 			RenderThread::SubmitToDeletion(func);
 		}
-#endif
 
 		static void Init();
 		static void WaitAndRender();
