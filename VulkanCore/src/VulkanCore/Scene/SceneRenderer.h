@@ -75,6 +75,7 @@ namespace VulkanCore {
 		void CreatePipelines();
 		void CreateResources();
 		void CreateMaterials();
+		void RecreateMaterials();
 
 		void GeometryPass();
 		void CompositePass();
