@@ -14,22 +14,6 @@ layout(push_constant) uniform SceneData
 	float DirtIntensity;
 } u_SceneParams;
 
-vec3 ReinhardTonemap(vec3 hdrColor)
-{
-	vec3 mapped = vec3(1.0) - exp(-hdrColor);
-	return mapped;
-}
-
-vec3 ACESTonemap(vec3 hdrColor)
-{
-	const float A = 2.51;
-	const float B = 0.03;
-	const float C = 2.43;
-	const float D = 0.59;
-	const float E = 0.14;
-	return clamp((hdrColor * (A * hdrColor + B)) / (hdrColor * (C * hdrColor + D) + E), 0.0, 1.0);
-}
-
 vec3 UpsampleTent9(sampler2D tex, float lod, vec2 uv, vec2 texelSize, float radius)
 {
 	vec4 offset = texelSize.xyxy * vec4(1.0, 1.0, -1.0, 0.0) * radius;

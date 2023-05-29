@@ -438,11 +438,27 @@ namespace VulkanCore {
 			}
 		}
 
+		// External Composite Material
+		{
+			m_ExternalCompositeShaderMaterial->SetImages(1, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
+			m_ExternalCompositeShaderMaterial->SetImage(2, m_BloomTextures[2]);
+			m_ExternalCompositeShaderMaterial->SetTexture(3, m_BloomDirtTexture);
+			m_ExternalCompositeShaderMaterial->PrepareShaderMaterial();
+		}
+
+		// DOF Material
+		{
+			m_DOFMaterial->SetImages(0, m_DOFOutputTextures);
+			m_DOFMaterial->SetBuffers(1, m_UBCamera);
+			m_DOFMaterial->SetImages(2, m_ExternalCompositePipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
+			m_DOFMaterial->SetImages(3, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetDepthResolveAttachment());
+			m_DOFMaterial->SetBuffers(4, m_UBDOFData);
+			m_DOFMaterial->PrepareShaderMaterial();
+		}
+
 		// Composite Material
 		{
-			m_CompositeShaderMaterial->SetImages(0, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
-			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
-			m_CompositeShaderMaterial->SetTexture(2, m_BloomDirtTexture);
+			m_CompositeShaderMaterial->SetImages(0, m_DOFOutputTextures);
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -579,6 +595,7 @@ namespace VulkanCore {
 		VK_CORE_INFO("Scene has been Recreated!");
 		m_GeometryPipeline->GetSpecification().RenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 		m_CompositePipeline->GetSpecification().RenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
+		m_ExternalCompositePipeline->GetSpecification().RenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 
 		// Recreate Resources
 		{
@@ -607,6 +624,17 @@ namespace VulkanCore {
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRenderTexture->GetSpecification().MipLevels, 0, 1 });
+			}
+
+			for (auto& DOFTexture : m_DOFOutputTextures)
+			{
+				DOFTexture->Resize(m_ViewportSize.x, m_ViewportSize.y);
+
+				Utils::InsertImageMemoryBarrier(barrierCmd, DOFTexture->GetVulkanImageInfo().Image,
+					VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+					VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, DOFTexture->GetSpecification().MipLevels, 0, 1 });
 			}
 
 			device->FlushCommandBuffer(barrierCmd);

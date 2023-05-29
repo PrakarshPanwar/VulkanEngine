@@ -184,6 +184,7 @@ namespace VulkanCore {
 				for (int i = 0; i < framesInFlight; ++i)
 				{
 					ImageSpecification spec;
+					spec.DebugName = "Framebuffer Depth Resolve";
 					spec.Width = m_Specification.Width;
 					spec.Height = m_Specification.Height;
 					spec.Samples = 1;
