@@ -2,6 +2,7 @@
 #include "VulkanCore/Renderer/Camera.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Renderer/Material.h"
+#include "VulkanCore/Core/UUID.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
@@ -56,6 +57,17 @@ namespace VulkanCore {
 					inverseScale.z * (c1 * c2)
 				});
 		}
+	};
+
+	struct IDComponent
+	{
+		UUID ID;
+
+		IDComponent() = default;
+		IDComponent(const UUID& id)
+			: ID(id) {}
+
+		IDComponent(const IDComponent&) = default;
 	};
 
 	struct TagComponent
