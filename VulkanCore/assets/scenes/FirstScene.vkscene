@@ -1,6 +1,6 @@
 Scene: FirstScene
 Entities:
-  - Entity: 64321564316
+  - Entity: 524536352442
     TagComponent:
       Tag: Ceramic Vase
     TransformComponent:
@@ -17,7 +17,7 @@ Entities:
         AlbedoTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_diff_2k.jpg
         NormalTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_nor_gl_2k.png
         ARMTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_arm_2k.png
-  - Entity: 64321564316
+  - Entity: 538537539842
     TagComponent:
       Tag: Flat Plane
     TransformComponent:
@@ -34,7 +34,7 @@ Entities:
         AlbedoTexture: assets\textures\ConcreteWall\concrete_wall_006_diff_2k.png
         NormalTexture: assets\textures\ConcreteWall\concrete_wall_006_nor_gl_2k.png
         ARMTexture: assets\textures\ConcreteWall\concrete_wall_006_arm_2k.png
-  - Entity: 64321564316
+  - Entity: 99678686667
     TagComponent:
       Tag: Basic Sphere
     TransformComponent:
@@ -51,7 +51,7 @@ Entities:
         AlbedoTexture: assets\textures\PlankFlooring\plank_flooring_diff_2k.png
         NormalTexture: assets\textures\PlankFlooring\plank_flooring_nor_gl_2k.png
         ARMTexture: assets\textures\PlankFlooring\plank_flooring_arm_2k.png
-  - Entity: 64321564316
+  - Entity: 2353646777867
     TagComponent:
       Tag: Brass Vase
     TransformComponent:
@@ -68,7 +68,7 @@ Entities:
         AlbedoTexture: assets\meshes\BrassVase2K\textures\brass_vase_03_diff_2k.jpg
         NormalTexture: assets\meshes\BrassVase2K\textures\brass_vase_03_nor_gl_2k.png
         ARMTexture: assets\meshes\BrassVase2K\textures\brass_vase_03_arm_2k.png
-  - Entity: 64321564316
+  - Entity: 636536477775
     TagComponent:
       Tag: Blue Point Light
     TransformComponent:
@@ -79,7 +79,7 @@ Entities:
       Color: [0.200000003, 0.300000012, 0.800000012, 20]
       Falloff: 1
       Radius: 0.100000001
-  - Entity: 64321564316
+  - Entity: 12235647546
     TagComponent:
       Tag: Red Point Light
     TransformComponent:
@@ -90,7 +90,7 @@ Entities:
       Color: [1, 0.5, 0.100000001, 15]
       Falloff: 1
       Radius: 0.100000001
-  - Entity: 64321564316
+  - Entity: 842353453534
     TagComponent:
       Tag: Green Point Light
     TransformComponent:
@@ -101,7 +101,7 @@ Entities:
       Color: [0.100000001, 0.800000012, 0.200000003, 10]
       Falloff: 1
       Radius: 0.100000001
-  - Entity: 64321564316
+  - Entity: 309879778789
     TagComponent:
       Tag: Wall1
     TransformComponent:
@@ -118,7 +118,7 @@ Entities:
         AlbedoTexture: assets\textures\ConcreteWall\concrete_wall_006_diff_2k.png
         NormalTexture: assets\textures\ConcreteWall\concrete_wall_006_nor_gl_2k.png
         ARMTexture: assets\textures\ConcreteWall\concrete_wall_006_arm_2k.png
-  - Entity: 64321564316
+  - Entity: 446463443556
     TagComponent:
       Tag: Ceramic Vase 2
     TransformComponent:
@@ -135,7 +135,7 @@ Entities:
         AlbedoTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_diff_2k.jpg
         NormalTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_nor_gl_2k.png
         ARMTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_arm_2k.png
-  - Entity: 64321564316
+  - Entity: 257473563441
     TagComponent:
       Tag: Blue Spot Light
     TransformComponent:
