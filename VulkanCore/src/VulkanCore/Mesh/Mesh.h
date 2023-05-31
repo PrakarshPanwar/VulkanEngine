@@ -3,6 +3,7 @@
 #include "Platform/Vulkan/VulkanVertexBuffer.h"
 #include "Platform/Vulkan/VulkanIndexBuffer.h"
 #include "VulkanCore/Renderer/Material.h"
+#include "VulkanCore/Asset/Asset.h"
 
 // TODO: This include should be in PCH
 #include <map>
@@ -21,12 +22,13 @@ namespace VulkanCore {
 		glm::vec3 Binormal;
 		glm::vec3 Color;
 		glm::vec2 TexCoord;
-		//int TexID;
 
 		bool operator==(const Vertex& other) const
 		{
-			return Position == other.Position && Color == other.Color && 
-				Normal == other.Normal && TexCoord == other.TexCoord;
+			return Position == other.Position &&
+				Color == other.Color && 
+				Normal == other.Normal &&
+				TexCoord == other.TexCoord;
 		}
 	};
 
@@ -39,12 +41,12 @@ namespace VulkanCore {
 		glm::mat4 LocalTransform;
 	};
 
-	// TODO: Add MaterialIndex member
 	struct Submesh
 	{
 		std::string MeshName, NodeName;
 		uint32_t BaseVertex, BaseIndex;
 		uint32_t VertexCount, IndexCount;
+		uint32_t MaterialIndex;
 		glm::mat4 LocalTransform;
 	};
 
@@ -59,9 +61,9 @@ namespace VulkanCore {
 		inline const std::vector<MeshNode>& GetMeshNodes() const { return m_Nodes; }
 		inline const std::vector<Submesh>& GetSubmeshes() const { return m_Submeshes; }
 
-		inline std::shared_ptr<Material> GetMaterial() const { return m_Material; }
+		inline std::shared_ptr<Material> GetMaterial(uint32_t index = 0) const { return m_Materials[index]; }
 		// TODO: This method is temporary for now
-		inline void SetMaterial(std::shared_ptr<Material> material) { m_Material = material; }
+		inline void SetMaterial(std::shared_ptr<Material> material) { m_Materials.push_back(material); }
 
 		inline std::shared_ptr<VulkanVertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
 		inline std::shared_ptr<VulkanIndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
@@ -84,7 +86,7 @@ namespace VulkanCore {
 		std::vector<uint32_t> m_Indices{};
 
 		// TODO: In future we will support separate material for each submesh
-		std::shared_ptr<Material> m_Material;
+		std::vector<std::shared_ptr<Material>> m_Materials;
 
 		std::shared_ptr<VulkanVertexBuffer> m_VertexBuffer;
 		std::shared_ptr<VulkanIndexBuffer> m_IndexBuffer;
@@ -101,7 +103,7 @@ namespace VulkanCore {
 		static void ProcessMesh(std::shared_ptr<MeshSource> meshSource, aiMesh* mesh, const aiScene* scene);
 	};
 
-	class Mesh
+	class Mesh : public Asset
 	{
 	public:
 		Mesh();
@@ -111,6 +113,8 @@ namespace VulkanCore {
 		void InvalidateSubmeshes();
 		inline std::shared_ptr<MeshSource> GetMeshSource() const { return m_MeshSource; }
 		inline const std::vector<uint32_t>& GetSubmeshes() const { return m_Submeshes; }
+
+		AssetType GetType() const override { return AssetType::Mesh; }
 
 		static std::shared_ptr<Mesh> LoadMesh(const char* filepath);
 		static std::shared_ptr<VulkanVertexBuffer> GetTransformBuffer(uint64_t meshKey) { return s_MeshTransformBuffer[meshKey]; }
