@@ -148,16 +148,18 @@ namespace VulkanCore {
 			indexCount += submesh.IndexCount;
 		}
 
-		m_MeshHandle = std::filesystem::hash_value(filepath);
-		m_Material = std::make_shared<VulkanMaterial>(std::filesystem::path(filepath).stem().string());
+		std::filesystem::path meshSourcePath = filepath;
+		m_MeshHandle = std::filesystem::hash_value(meshSourcePath);
+		m_Materials.push_back(std::make_shared<VulkanMaterial>(meshSourcePath.stem().string()));
 
 		// Allocating Root Node
 		m_Nodes.emplace_back();
 	}
 
 	MeshSource::MeshSource()
-		: m_Material(std::make_shared<VulkanMaterial>("Default Material"))
 	{
+		auto& material = m_Materials.emplace_back();
+		material = std::make_shared<VulkanMaterial>("Default Material");
 	}
 
 	MeshSource::~MeshSource()
@@ -169,6 +171,7 @@ namespace VulkanCore {
 		for (uint32_t m = 0; m < (uint32_t)meshSource->m_Submeshes.size(); ++m)
 		{
 			aiMesh* mesh = meshSource->m_Scene->mMeshes[m];
+			aiMaterial* material = meshSource->m_Scene->mMaterials[m];
 
 			for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
 			{

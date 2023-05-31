@@ -291,8 +291,8 @@ namespace VulkanCore {
 		m_Specification.GenerateMips = true;
 	}
 
-	VulkanTextureCube::VulkanTextureCube(const std::string& filepath, TextureSpecification spec)
-		: m_FilePath(filepath), m_Specification(spec)
+	VulkanTextureCube::VulkanTextureCube(void* data, TextureSpecification spec)
+		: m_Specification(spec)
 	{
 	}
 
