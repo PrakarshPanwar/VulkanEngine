@@ -1,6 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
-#include "Platform/Vulkan/VulkanTexture.h"
+#include "VulkanCore/Renderer/Texture.h"
 
 namespace VulkanCore {
 
@@ -25,22 +25,19 @@ namespace VulkanCore {
 		void SetRoughness(float roughness);
 		void SetMaterialData(MaterialData materialData);
 
-		std::tuple<std::string, std::string, std::string> GetMaterialPaths() const
-		{ 
-			return { m_DiffuseTexture->GetFilePath(), m_NormalTexture->GetFilePath(), m_ARMTexture->GetFilePath() };
-		}
+		std::tuple<std::string, std::string, std::string> GetMaterialPaths() const;
 
-		virtual void SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture);
-		virtual void SetNormalTexture(std::shared_ptr<VulkanTexture> texture);
-		virtual void SetARMTexture(std::shared_ptr<VulkanTexture> texture);
+		virtual void SetDiffuseTexture(std::shared_ptr<Texture2D> texture);
+		virtual void SetNormalTexture(std::shared_ptr<Texture2D> texture);
+		virtual void SetARMTexture(std::shared_ptr<Texture2D> texture);
 
 		inline MaterialData& GetMaterialData() { return m_MaterialData; }
 	protected:
 		MaterialData m_MaterialData{};
 
-		std::shared_ptr<VulkanTexture> m_DiffuseTexture;
-		std::shared_ptr<VulkanTexture> m_NormalTexture;
-		std::shared_ptr<VulkanTexture> m_ARMTexture;
+		std::shared_ptr<Texture2D> m_DiffuseTexture;
+		std::shared_ptr<Texture2D> m_NormalTexture;
+		std::shared_ptr<Texture2D> m_ARMTexture;
 	};
 
 }

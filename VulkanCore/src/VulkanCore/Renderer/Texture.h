@@ -25,12 +25,16 @@ namespace VulkanCore {
 	class Texture2D : public Texture
 	{
 	public:
+		static std::shared_ptr<Texture2D> Create(void* data, TextureSpecification spec = {});
+
 		AssetType GetType() const override { return AssetType::Texture2D; }
 	};
 
 	class TextureCube : public Texture
 	{
 	public:
+		static std::shared_ptr<TextureCube> Create(void* data, TextureSpecification spec = {});
+
 		AssetType GetType() const override { return AssetType::TextureCube; }
 	};
 

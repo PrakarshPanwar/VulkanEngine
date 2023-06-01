@@ -21,9 +21,9 @@ namespace VulkanCore {
 			return { m_DiffuseDstID, m_NormalDstID, m_ARMDstID };
 		}
 
-		void SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture) override;
-		void SetNormalTexture(std::shared_ptr<VulkanTexture> texture) override;
-		void SetARMTexture(std::shared_ptr<VulkanTexture> texture) override;
+		void SetDiffuseTexture(std::shared_ptr<Texture2D> texture) override;
+		void SetNormalTexture(std::shared_ptr<Texture2D> texture) override;
+		void SetARMTexture(std::shared_ptr<Texture2D> texture) override;
 
 		void SetImage(uint32_t binding, std::shared_ptr<VulkanImage> image);
 		void SetImage(uint32_t binding, std::shared_ptr<VulkanImage> image, uint32_t mipLevel);

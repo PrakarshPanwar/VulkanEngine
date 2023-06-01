@@ -54,9 +54,9 @@ namespace VulkanCore {
 
 	void VulkanMaterial::InvalidateMaterialDescriptorSets()
 	{
-		SetTexture(0, m_DiffuseTexture);
-		SetTexture(1, m_NormalTexture);
-		SetTexture(2, m_ARMTexture);
+		SetTexture(0, std::static_pointer_cast<VulkanTexture>(m_DiffuseTexture));
+		SetTexture(1, std::static_pointer_cast<VulkanTexture>(m_NormalTexture));
+		SetTexture(2, std::static_pointer_cast<VulkanTexture>(m_ARMTexture));
 
 		InvalidateDescriptorSets();
 	}
@@ -94,27 +94,27 @@ namespace VulkanCore {
 		m_ARMTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
 
 		// For Materials Panel
-		m_DiffuseDstID = ImGuiLayer::AddTexture(*m_DiffuseTexture);
-		m_NormalDstID = ImGuiLayer::AddTexture(*m_NormalTexture);
-		m_ARMDstID = ImGuiLayer::AddTexture(*m_ARMTexture);
+		m_DiffuseDstID = ImGuiLayer::AddTexture(*std::static_pointer_cast<VulkanTexture>(m_DiffuseTexture));
+		m_NormalDstID = ImGuiLayer::AddTexture(*std::static_pointer_cast<VulkanTexture>(m_NormalTexture));
+		m_ARMDstID = ImGuiLayer::AddTexture(*std::static_pointer_cast<VulkanTexture>(m_ARMTexture));
 	}
 
-	void VulkanMaterial::SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture)
+	void VulkanMaterial::SetDiffuseTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_DiffuseTexture = texture;
-		UpdateDiffuseMap(m_DiffuseTexture);
+		UpdateDiffuseMap(std::static_pointer_cast<VulkanTexture>(m_DiffuseTexture));
 	}
 
-	void VulkanMaterial::SetNormalTexture(std::shared_ptr<VulkanTexture> texture)
+	void VulkanMaterial::SetNormalTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_NormalTexture = texture;
-		UpdateNormalMap(m_NormalTexture);
+		UpdateNormalMap(std::static_pointer_cast<VulkanTexture>(m_NormalTexture));
 	}
 
-	void VulkanMaterial::SetARMTexture(std::shared_ptr<VulkanTexture> texture)
+	void VulkanMaterial::SetARMTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_ARMTexture = texture;
-		UpdateARMMap(m_ARMTexture);
+		UpdateARMMap(std::static_pointer_cast<VulkanTexture>(m_ARMTexture));
 	}
 
 	void VulkanMaterial::SetImage(uint32_t binding, std::shared_ptr<VulkanImage> image)

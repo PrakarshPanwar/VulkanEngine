@@ -35,17 +35,22 @@ namespace VulkanCore {
 		m_MaterialData = materialData;
 	}
 
-	void Material::SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture)
+	std::tuple<std::string, std::string, std::string> Material::GetMaterialPaths() const
+	{
+		return {};
+	}
+
+	void Material::SetDiffuseTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_DiffuseTexture = texture;
 	}
 
-	void Material::SetNormalTexture(std::shared_ptr<VulkanTexture> texture)
+	void Material::SetNormalTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_NormalTexture = texture;
 	}
 
-	void Material::SetARMTexture(std::shared_ptr<VulkanTexture> texture)
+	void Material::SetARMTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_ARMTexture = texture;
 	}

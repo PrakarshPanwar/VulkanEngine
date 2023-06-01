@@ -5,9 +5,8 @@
 #include "VulkanCore/Scene/Scene.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
+#include "VulkanCore/Asset/AssetManagerBase.h"
 
-#include "Platform/Vulkan/VulkanSwapChain.h"
-#include "Platform/Vulkan/VulkanBuffer.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 
 #include <imgui.h>
@@ -50,6 +49,8 @@ namespace VulkanCore {
 		std::shared_ptr<SceneRenderer> m_SceneRenderer;
 		std::filesystem::path m_EditorScenePath;
 		EditorCamera m_EditorCamera;
+
+		std::shared_ptr<AssetManagerBase> m_AssetManagerBase;
 
 		bool m_ImGuiShowWindow = true, m_ViewportHovered = false, m_ViewportFocused = false, m_WindowResized = false;
 		ImVec2 m_ViewportSize = { 1904.0f, 991.0f }; // TODO: Calculate this by function
