@@ -299,6 +299,36 @@ namespace VulkanCore {
 		m_MaterialDescriptorWriter[binding] = writeDescriptors;
 	}
 
+	void VulkanMaterial::RT_BindMaterial(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, uint32_t setIndex)
+	{
+		VkCommandBuffer bindCmd = cmdBuffer->RT_GetActiveCommandBuffer();
+		VkDescriptorSet descriptorSet[1] = { RT_GetVulkanMaterialDescriptorSet() };
+
+		vkCmdBindDescriptorSets(bindCmd,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipeline->GetVulkanPipelineLayout(),
+			setIndex,
+			1,
+			descriptorSet,
+			0,
+			nullptr);
+	}
+
+	void VulkanMaterial::RT_BindMaterial(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanComputePipeline>& pipeline, uint32_t setIndex /*= 0*/)
+	{
+		VkCommandBuffer bindCmd = cmdBuffer->RT_GetActiveCommandBuffer();
+		VkDescriptorSet descriptorSet[1] = { RT_GetVulkanMaterialDescriptorSet() };
+
+		vkCmdBindDescriptorSets(bindCmd,
+			VK_PIPELINE_BIND_POINT_COMPUTE,
+			pipeline->GetVulkanPipelineLayout(),
+			setIndex,
+			1,
+			descriptorSet,
+			0,
+			nullptr);
+	}
+
 	void VulkanMaterial::UpdateMaterials(const std::string& albedo, const std::string& normal, const std::string& arm)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
