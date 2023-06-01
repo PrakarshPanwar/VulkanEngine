@@ -7,7 +7,7 @@ namespace VulkanCore {
 	class MaterialAsset : public Asset
 	{
 	public:
-		MaterialAsset(const std::string& filepath);
+		MaterialAsset();
 		~MaterialAsset();
 
 		void SaveAsset();
@@ -17,9 +17,6 @@ namespace VulkanCore {
 
 		inline std::shared_ptr<Material> GetMaterial() const { return m_Material; }
 	private:
-		std::string m_FilePath;
-		uint64_t m_MaterialAssetHandle = 0;
-
 		std::shared_ptr<Material> m_Material;
 	};
 

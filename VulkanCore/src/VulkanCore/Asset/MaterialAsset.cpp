@@ -4,18 +4,12 @@
 
 namespace VulkanCore {
 
-	MaterialAsset::MaterialAsset(const std::string& filepath)
-		: m_FilePath(filepath)
+	MaterialAsset::MaterialAsset()
 	{
-		std::filesystem::path materialAssetPath = filepath;
-
-		if (std::filesystem::exists(materialAssetPath))
-			m_MaterialAssetHandle = std::filesystem::hash_value(materialAssetPath);
 	}
 
 	MaterialAsset::~MaterialAsset()
 	{
-
 	}
 
 	void MaterialAsset::SaveAsset()

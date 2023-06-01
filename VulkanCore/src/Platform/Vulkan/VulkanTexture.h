@@ -39,6 +39,9 @@ namespace VulkanCore {
 
 		~VulkanTextureCube();
 
+		inline const TextureSpecification& GetSpecification() const override { return m_Specification; }
+		inline bool IsLoaded() const override { return m_IsLoaded; }
+
 		void Invalidate();
 		void GenerateMipMaps(bool readonly);
 		VkImageView CreateImageViewSingleMip(uint32_t mip);

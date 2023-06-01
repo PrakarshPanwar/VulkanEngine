@@ -1,7 +1,12 @@
 #pragma once
+#include "AssetMetadata.h"
 
 namespace VulkanCore {
 
-
+	class AssetImporter
+	{
+	public:
+		static std::shared_ptr<Asset> ImportAsset(AssetHandle handle, const AssetMetadata& metadata);
+	};
 
 }

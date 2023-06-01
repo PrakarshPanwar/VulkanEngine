@@ -10,6 +10,7 @@
 
 #include <glm/gtx/integer.hpp>
 #include "optick.h"
+#include "../Asset/AssetManager.h"
 
 namespace VulkanCore {
 
@@ -132,7 +133,7 @@ namespace VulkanCore {
 		constexpr uint32_t cubemapSize = 1024;
 		constexpr uint32_t irradianceMapSize = 32;
 
-		std::shared_ptr<VulkanTexture> envEquirect = std::make_shared<VulkanTexture>(filepath);
+		std::shared_ptr<VulkanTexture> envEquirect = std::dynamic_pointer_cast<VulkanTexture>(AssetManager::GetAsset<Texture2D>(filepath));
 
 		std::shared_ptr<VulkanTextureCube> envFiltered = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
 		std::shared_ptr<VulkanTextureCube> envUnfiltered = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);

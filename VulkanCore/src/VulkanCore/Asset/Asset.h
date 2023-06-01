@@ -18,7 +18,7 @@ namespace VulkanCore {
 	class Asset
 	{
 	public:
-		AssetHandle Handle;
+		AssetHandle Handle = 0;
 
 		virtual AssetType GetType() const = 0;
 	};

@@ -74,31 +74,10 @@ namespace VulkanCore {
 
 	}
 
-	VulkanTexture::VulkanTexture(const std::string& filepath, TextureSpecification spec)
-		: m_FilePath(filepath), m_Specification(spec)
-	{
-#if 0
-		Renderer::Submit([this]
-		{
-			Invalidate();
-		});
-#else
-		Invalidate();
-#endif
-	}
-
 	VulkanTexture::VulkanTexture(uint32_t width, uint32_t height, ImageFormat format)
 	{
 		m_Specification.Width = width;
 		m_Specification.Height = height;
-		m_Specification.Format = format;
-
-		Invalidate();
-	}
-
-	VulkanTexture::VulkanTexture(const std::string& filepath, ImageFormat format)
-		: m_FilePath(filepath)
-	{
 		m_Specification.Format = format;
 
 		Invalidate();
@@ -122,31 +101,18 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		int width = (int)m_Specification.Width, height = (int)m_Specification.Height, channels;
+		VkDeviceSize imageSize = Utils::GetMemorySize(m_Specification.Format, m_Specification.Width, m_Specification.Height);
 
-		if (stbi_is_hdr(m_FilePath.c_str()))
-		{
-			m_Specification.Format = ImageFormat::RGBA32F;
-			m_LocalStorage = (uint8_t*)stbi_loadf(m_FilePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-		}
-
-		else if (!m_FilePath.empty())
-			m_LocalStorage = stbi_load(m_FilePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-
-		m_Specification.Width = width;
-		m_Specification.Height = height;
-
-		VkDeviceSize imageSize = Utils::GetMemorySize(m_Specification.Format, width, height);
-
-		VK_CORE_ASSERT(m_LocalStorage, "Failed to Load Image {0}", m_FilePath);
+		std::string filepath = {};
+		//VK_CORE_ASSERT(m_LocalStorage, "Failed to Load Texture {0}", m_FilePath);
 
 		ImageSpecification spec;
-		spec.DebugName = std::filesystem::path(m_FilePath).stem().string();
+		//spec.DebugName = std::filesystem::path(m_FilePath).stem().string();
 		spec.Width = m_Specification.Width;
 		spec.Height = m_Specification.Height;
 		spec.Usage = ImageUsage::Texture;
 		spec.Format = m_Specification.Format;
-		spec.MipLevels = Utils::CalculateMipCount(width, height);
+		spec.MipLevels = m_Specification.GenerateMips ? Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height) : 1;
 		m_Image = std::make_shared<VulkanImage>(spec);
 		m_Image->Invalidate();
 		m_Info = m_Image->GetVulkanImageInfo();
@@ -174,7 +140,7 @@ namespace VulkanCore {
 			region.imageSubresource.layerCount = 1;
 
 			region.imageOffset = { 0, 0, 0 };
-			region.imageExtent = { (uint32_t)width, (uint32_t)height, 1 };
+			region.imageExtent = { (uint32_t)m_Specification.Width, (uint32_t)m_Specification.Height, 1 };
 
 			vkCmdCopyBufferToImage(copyCmd,
 				stagingBuffer.GetBuffer(),
@@ -203,6 +169,8 @@ namespace VulkanCore {
 
 			free(m_LocalStorage);
 		}
+
+		m_IsLoaded = true;
 	}
 
 	void VulkanTexture::Release() // TODO: Could be used otherwise will be removed in future
@@ -308,21 +276,6 @@ namespace VulkanCore {
 
 		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
 
-		// This process is done to get correct texture dimensions
-		if (!m_FilePath.empty())
-		{
-			std::filesystem::path facePath = m_FilePath;
-			facePath /= "px.png";
-
-			int width, height, channels;
-			uint8_t* pixelData = stbi_load(facePath.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
-
-			m_Specification.Width = width;
-			m_Specification.Height = height;
-
-			free(pixelData);
-		}
-
 		uint32_t mipCount = Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height);
 
 		VulkanAllocator allocator("TextureCube");
@@ -385,142 +338,6 @@ namespace VulkanCore {
 		sampler.maxLod = (float)mipCount;
 
 		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &sampler, nullptr, &m_Info.Sampler), "Failed to Create Cubemap Image Sampler!");
-
-		// Copy Image Data to cubemap
-		if (!m_FilePath.empty())
-		{
-			std::filesystem::path textureCubeDirectory = m_FilePath;
-			std::array<std::filesystem::path, 6> layerFilepath{
-				textureCubeDirectory / "px.png",
-				textureCubeDirectory / "nx.png",
-				textureCubeDirectory / "py.png",
-				textureCubeDirectory / "ny.png",
-				textureCubeDirectory / "pz.png",
-				textureCubeDirectory / "nz.png"
-			};
-
-			// Setting Texture Image to optimal layout
-			{
-				VkCommandBuffer barrierCmd = device->GetCommandBuffer();
-
-				VkImageSubresourceRange subresourceRange{};
-				subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				subresourceRange.baseMipLevel = 0;
-				subresourceRange.levelCount = mipCount;
-				subresourceRange.baseArrayLayer = 0;
-				subresourceRange.layerCount = 6;
-
-				Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
-					0, VK_ACCESS_TRANSFER_WRITE_BIT,
-					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-					subresourceRange);
-
-				device->FlushCommandBuffer(barrierCmd);
-			}
-
-			// Copying Cubemap Image Data to Vulkan Image
-			std::array<uint8_t*, 6> pixelData{};
-			for (uint32_t i = 0; i < pixelData.size(); ++i)
-			{
-				int width, height, channels;
-				pixelData[i] = stbi_load(layerFilepath[i].string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
-
-				VK_CORE_ASSERT(pixelData[i], "Could not find filepath: {0}", layerFilepath[i].string());
-			}
-
-			VkDeviceSize imageSize = Utils::GetMemorySize(m_Specification.Format, m_Specification.Width, m_Specification.Height);
-
-			VulkanBuffer stagingBuffer{ imageSize * 6, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
-
-			std::array<VkDeviceSize, 6> byteOffsets{};
-			VkDeviceSize byteOffset = 0;
-
-			stagingBuffer.Map();
-
-			for (int i = 0; i < pixelData.size(); ++i)
-			{
-				stagingBuffer.WriteToBuffer(pixelData[i], imageSize, byteOffset);
-				byteOffset += imageSize;
-			}
-
-			for (int i = 0; i < byteOffsets.size(); ++i)
-			{
-				if (i == 0)
-					byteOffsets[i] = 0;
-				else
-					byteOffsets[i] += imageSize + byteOffsets[i - 1];
-			}
-
-			for (uint8_t* pixels : pixelData)
-				free(pixels);
-
-			std::array<VkBufferImageCopy, 6> bufferCopyRegions;
-			for (int i = 0; i < byteOffsets.size(); ++i)
-			{
-				VkBufferImageCopy bufferCopyRegion{};
-				bufferCopyRegion.bufferOffset = byteOffsets[i];
-				bufferCopyRegion.bufferRowLength = 0;
-				bufferCopyRegion.bufferImageHeight = 0;
-
-				bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				bufferCopyRegion.imageSubresource.mipLevel = 0;
-				bufferCopyRegion.imageSubresource.baseArrayLayer = i;
-				bufferCopyRegion.imageSubresource.layerCount = 1;
-
-				bufferCopyRegion.imageOffset = { 0, 0, 0 };
-				bufferCopyRegion.imageExtent = { m_Specification.Width, m_Specification.Height, 1 };
-				bufferCopyRegions[i] = bufferCopyRegion;
-			}
-
-			// Copy Data
-			{
-				VkCommandBuffer copyCmd = device->GetCommandBuffer();
-
-				vkCmdCopyBufferToImage(copyCmd,
-					stagingBuffer.GetBuffer(),
-					m_Info.Image,
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-					(uint32_t)bufferCopyRegions.size(),
-					bufferCopyRegions.data()
-				);
-
-				stagingBuffer.Unmap();
-
-				device->FlushCommandBuffer(copyCmd);
-			}
-
-			// Set to Descriptor Image Layout
-			{
-				VkCommandBuffer barrierCmd = device->GetCommandBuffer();
-
-				VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, mipCount, 0, 6 };
-
-				Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
-					VK_ACCESS_TRANSFER_WRITE_BIT, 0,
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_DescriptorImageInfo.imageLayout,
-					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-					subresourceRange);
-
-				device->FlushCommandBuffer(barrierCmd);
-			}
-
-		}
-
-		else
-		{
-			VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, mipCount, 0, 6 };
-			VkCommandBuffer layoutCmd = device->GetCommandBuffer();
-
-			Utils::SetImageLayout(
-				layoutCmd, m_Info.Image,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_GENERAL,
-				subresourceRange);
-
-			device->FlushCommandBuffer(layoutCmd);
-		}
 
 		m_DescriptorImageInfo.imageView = m_Info.ImageView;
 		m_DescriptorImageInfo.sampler = m_Info.Sampler;

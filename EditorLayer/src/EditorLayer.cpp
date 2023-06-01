@@ -3,6 +3,8 @@
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
+#include "VulkanCore/Asset/EditorAssetManagerBase.h"
+#include "VulkanCore/Asset/AssetManager.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Events/Input.h"
 #include "VulkanCore/Renderer/VulkanRenderer.h"
@@ -41,6 +43,9 @@ namespace VulkanCore {
 		VK_INFO("Running Editor Layer");
 
 		std::unique_ptr<Timer> editorInit = std::make_unique<Timer>("Editor Initialization");
+
+		m_AssetManagerBase = std::make_shared<EditorAssetManagerBase>();
+		AssetManager::SetAssetManager(m_AssetManagerBase);
 
 		m_MenuIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/MenuIcon.png");
 		m_MenuIconID = ImGuiLayer::AddTexture(*m_MenuIcon);
