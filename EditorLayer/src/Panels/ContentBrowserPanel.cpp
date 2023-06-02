@@ -3,6 +3,7 @@
 #include <filesystem>
 
 #include "ContentBrowserPanel.h"
+#include "VulkanCore/Asset/AssetManager.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
 
 #include <imgui.h>
@@ -68,6 +69,12 @@ namespace VulkanCore {
 					m_CurrentDirectory /= path.filename();
 
 			}
+
+			if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+			{
+				//AssetManager::CreateNewAsset(filenameString, )
+			}
+
 			ImGui::TextWrapped(filenameString.c_str());
 
 			ImGui::NextColumn();

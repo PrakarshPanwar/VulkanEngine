@@ -14,6 +14,7 @@ namespace VulkanCore {
 		bool IsAssetHandleValid(AssetHandle handle) const override;
 		bool IsAssetLoaded(AssetHandle handle) const override;
 
+		bool LoadRegistryFromFile();
 		void WriteToAssetRegistry(AssetHandle handle, const AssetMetadata& metadata);
 		void SetLoadedAsset(AssetHandle handle, std::shared_ptr<Asset> asset);
 
