@@ -53,7 +53,7 @@ namespace VulkanCore {
 			for (auto&& [handle, metadata] : assetRegistry)
 			{
 				if (metadata.FilePath == assetPath)
-					return assetMap[handle];
+					return assetMap.at(handle);
 			}
 
 			return nullptr;
@@ -62,6 +62,7 @@ namespace VulkanCore {
 		static std::shared_ptr<AssetManagerBase> GetAssetManager() { return s_AssetManager; }
 		static void SetAssetManager(std::shared_ptr<AssetManagerBase> assetManager);
 	private:
+		static void LoadRegistryFromFile();
 		static void WriteRegistryToFile();
 	private:
 		static std::shared_ptr<AssetManagerBase> s_AssetManager;

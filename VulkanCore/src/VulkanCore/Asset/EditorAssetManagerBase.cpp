@@ -4,6 +4,8 @@
 
 #include "VulkanCore/Core/Core.h"
 
+#include <yaml-cpp/yaml.h>
+
 namespace VulkanCore {
 
 	bool EditorAssetManagerBase::IsAssetHandleValid(AssetHandle handle) const
@@ -14,6 +16,38 @@ namespace VulkanCore {
 	bool EditorAssetManagerBase::IsAssetLoaded(AssetHandle handle) const
 	{
 		return m_LoadedAssets.contains(handle);
+	}
+
+	bool EditorAssetManagerBase::LoadRegistryFromFile()
+	{
+		std::ifstream stream("assets/AssetRegistry.vkr");
+		std::stringstream strStream;
+		strStream << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(strStream.str());
+		if (!data["Asset Registry"])
+			return false;
+
+		auto assetRegistry = data["Asset Registry"];
+		if (assetRegistry)
+		{
+			for (auto asset : assetRegistry)
+			{
+				AssetHandle assetHandle = asset["Handle"].as<uint64_t>();
+				AssetMetadata assetMetadata{};
+
+				auto metadata = asset["Metadata"];
+				if (metadata)
+				{
+					assetMetadata.FilePath = metadata["Filepath"].as<std::string>();
+					assetMetadata.Type = (AssetType)metadata["Type"].as<uint16_t>();
+				}
+
+				m_AssetRegistry[assetHandle] = assetMetadata;
+			}
+		}
+
+		return true;
 	}
 
 	void EditorAssetManagerBase::WriteToAssetRegistry(AssetHandle handle, const AssetMetadata& metadata)
