@@ -63,16 +63,10 @@ namespace VulkanCore {
 		Release();
 	}
 
-	const std::vector<std::shared_ptr<VulkanImage>>& VulkanFramebuffer::GetResolveAttachment() const
+	const std::vector<std::shared_ptr<VulkanImage>>& VulkanFramebuffer::GetAttachment(bool resolve, uint32_t index) const
 	{
-		for (auto& images : m_ColorAttachments)
-		{
-			if (images[0]->GetSpecification().Samples == 1)
-				return images;
-		}
-
-		VK_CORE_ASSERT(false, "No Resolve Images present");
-		return {};
+		uint32_t attachmentSize = static_cast<uint32_t>(m_ColorAttachmentSpecifications.size());
+		return m_ColorAttachments[resolve ? attachmentSize + index : index];
 	}
 
 	void VulkanFramebuffer::Invalidate()
