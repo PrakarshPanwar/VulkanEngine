@@ -55,8 +55,8 @@ namespace VulkanCore {
 		inline std::shared_ptr<VulkanDescriptorPool> GetDescriptorPool() const { return m_GlobalDescriptorPool; }
 
 		void RecreateSwapChain();
-		void FinalQueueSubmit();
 		void FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers);
+		void SubmitAndPresent();
 		static VulkanRenderer* Get() { return s_Instance; }
 	private:
 		void CreateCommandBuffers();
