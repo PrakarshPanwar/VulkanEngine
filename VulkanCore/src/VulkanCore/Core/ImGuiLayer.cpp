@@ -51,7 +51,7 @@ namespace VulkanCore {
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000);
 
 		m_ImGuiGlobalPool = descriptorPoolBuilder.Build();
-		m_ImGuiCmdBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary);
+		//m_ImGuiCmdBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary);
 
 		ImGui::CreateContext();
 

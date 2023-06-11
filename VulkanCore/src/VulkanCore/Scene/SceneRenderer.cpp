@@ -321,7 +321,7 @@ namespace VulkanCore {
 		{
 			m_ExternalCompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_ExternalCompositePipeline->GetSpecification().pShader, "External Composite Shader Material");
 
-			m_ExternalCompositeShaderMaterial->SetImages(1, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
+			m_ExternalCompositeShaderMaterial->SetImages(1, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetAttachment(true));
 			m_ExternalCompositeShaderMaterial->SetImage(2, m_BloomTextures[2]);
 			m_ExternalCompositeShaderMaterial->SetTexture(3, m_BloomDirtTexture);
 			m_ExternalCompositeShaderMaterial->PrepareShaderMaterial();
@@ -333,8 +333,8 @@ namespace VulkanCore {
 
 			m_DOFMaterial->SetImages(0, m_DOFOutputTextures);
 			m_DOFMaterial->SetBuffers(1, m_UBCamera);
-			m_DOFMaterial->SetImages(2, m_ExternalCompositePipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
-			m_DOFMaterial->SetImages(3, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetDepthResolveAttachment());
+			m_DOFMaterial->SetImages(2, m_ExternalCompositePipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetAttachment(true));
+			m_DOFMaterial->SetImages(3, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment(true));
 			m_DOFMaterial->SetBuffers(4, m_UBDOFData);
 			m_DOFMaterial->PrepareShaderMaterial();
 		}
@@ -440,7 +440,7 @@ namespace VulkanCore {
 
 		// External Composite Material
 		{
-			m_ExternalCompositeShaderMaterial->SetImages(1, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
+			m_ExternalCompositeShaderMaterial->SetImages(1, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetAttachment(true));
 			m_ExternalCompositeShaderMaterial->SetImage(2, m_BloomTextures[2]);
 			m_ExternalCompositeShaderMaterial->SetTexture(3, m_BloomDirtTexture);
 			m_ExternalCompositeShaderMaterial->PrepareShaderMaterial();
@@ -450,8 +450,8 @@ namespace VulkanCore {
 		{
 			m_DOFMaterial->SetImages(0, m_DOFOutputTextures);
 			m_DOFMaterial->SetBuffers(1, m_UBCamera);
-			m_DOFMaterial->SetImages(2, m_ExternalCompositePipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
-			m_DOFMaterial->SetImages(3, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetDepthResolveAttachment());
+			m_DOFMaterial->SetImages(2, m_ExternalCompositePipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetAttachment(true));
+			m_DOFMaterial->SetImages(3, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment(true));
 			m_DOFMaterial->SetBuffers(4, m_UBDOFData);
 			m_DOFMaterial->PrepareShaderMaterial();
 		}
@@ -771,11 +771,7 @@ namespace VulkanCore {
 			m_LightPipeline->Bind(bindCmd);
 
 			// Binding Point Light Descriptor Set
-			vkCmdBindDescriptorSets(bindCmd,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				m_LightPipeline->GetVulkanPipelineLayout(),
-				0, 1, &m_PointLightShaderMaterial->RT_GetVulkanMaterialDescriptorSet(),
-				0, nullptr);
+			m_PointLightShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_LightPipeline);
 		});
 
 		// Point Lights
@@ -792,17 +788,7 @@ namespace VulkanCore {
 			});
 		}
 
-		Renderer::Submit([this]
-		{
-			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
-
-			// Binding Spot Light Descriptor Set
-			vkCmdBindDescriptorSets(bindCmd,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				m_LightPipeline->GetVulkanPipelineLayout(),
-				0, 1, &m_SpotLightShaderMaterial->RT_GetVulkanMaterialDescriptorSet(),
-				0, nullptr);
-		});
+		Renderer::Submit([this] { m_SpotLightShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_LightPipeline); });
 
 		// Spot Lights
 		for (auto spotLightPosition : m_SpotLightPositions)
@@ -875,16 +861,10 @@ namespace VulkanCore {
 		Renderer::Submit([this]
 		{
 			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
-			VkDescriptorSet geometryDstSet = m_GeometryMaterial->RT_GetVulkanMaterialDescriptorSet();
-
 			m_GeometryPipeline->Bind(bindCmd);
 
 			// Binding Static Geometry Descriptor Sets
-			vkCmdBindDescriptorSets(bindCmd,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				m_GeometryPipeline->GetVulkanPipelineLayout(),
-				0, 1, &geometryDstSet,
-				0, nullptr);
+			m_GeometryMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_GeometryPipeline);
 		});
 
 		for (auto& [mk, dc] : m_MeshDrawList)
@@ -915,7 +895,7 @@ namespace VulkanCore {
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
 		VulkanRenderer::CopyVulkanImage(m_SceneCommandBuffer,
-			m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment()[frameIndex],
+			m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetAttachment(true)[frameIndex],
 			m_SceneRenderTextures[frameIndex]);
 
 		VulkanRenderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
@@ -951,9 +931,7 @@ namespace VulkanCore {
 			m_LodAndMode.LOD = 0.0f;
 			m_LodAndMode.Mode = 0.0f;
 
-			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-				m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-				&m_BloomPrefilterShaderMaterial->RT_GetVulkanMaterialDescriptorSet(), 0, nullptr);
+			m_BloomPrefilterShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
 			const uint32_t mips = m_BloomTextures[0]->GetSpecification().MipLevels;
 			glm::uvec2 bloomMipSize = m_BloomMipSize;
@@ -969,22 +947,15 @@ namespace VulkanCore {
 
 				int currentIdx = i - 1;
 
-				// Downsample(Ping)
-				vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-					m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-					&m_BloomPingShaderMaterials[currentIdx]->RT_GetVulkanMaterialDescriptorSet(), 0, nullptr);
-
+				m_BloomPingShaderMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 				bloomMipSize = m_BloomTextures[0]->GetMipSize(i);
 
 				m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 				m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
 				m_LodAndMode.LOD = (float)i;
-
-				// Downsample(Pong)
-				vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-					m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-					&m_BloomPongShaderMaterials[currentIdx]->RT_GetVulkanMaterialDescriptorSet(), 0, nullptr);
+				
+				m_BloomPongShaderMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
 				m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 				m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
@@ -995,9 +966,7 @@ namespace VulkanCore {
 			m_LodAndMode.LOD = float(mips - 2);
 			m_LodAndMode.Mode = 2.0f;
 
-			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-				m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-				&m_BloomUpsampleFirstShaderMaterial->RT_GetVulkanMaterialDescriptorSet(), 0, nullptr);
+			m_BloomUpsampleFirstShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
 			bloomMipSize = m_BloomTextures[2]->GetMipSize(mips - 1);
 
@@ -1010,16 +979,13 @@ namespace VulkanCore {
 				m_LodAndMode.LOD = (float)i;
 				m_LodAndMode.Mode = 3.0f;
 
-				vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-					m_BloomPipeline->GetVulkanPipelineLayout(), 0, 1,
-					&m_BloomUpsampleShaderMaterials[i]->RT_GetVulkanMaterialDescriptorSet(), 0, nullptr);
+				m_BloomUpsampleShaderMaterials[i]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
 				bloomMipSize = m_BloomTextures[2]->GetMipSize(i);
 
 				m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 				m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 			}
-
 		});
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);

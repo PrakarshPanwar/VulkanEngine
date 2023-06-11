@@ -45,9 +45,9 @@ namespace VulkanCore {
 		inline const FramebufferSpecification& GetSpecification() const { return m_Specification; }
 		inline const std::vector<FramebufferTextureSpecification>& GetColorAttachmentsTextureSpec() const { return m_ColorAttachmentSpecifications; }
 		inline const FramebufferTextureSpecification& GetDepthAttachmentTextureSpec() const { return m_DepthAttachmentSpecification; }
-		inline bool HasDepthAttachment() { return m_DepthAttachmentSpecification; }
-		const std::vector<std::shared_ptr<VulkanImage>>& GetResolveAttachment(uint32_t index = 0) const;
-		const std::vector<std::shared_ptr<VulkanImage>>& GetDepthResolveAttachment() const;
+		inline bool HasDepthAttachment() const { return m_DepthAttachmentSpecification; }
+		const std::vector<std::shared_ptr<VulkanImage>>& GetAttachment(bool resolve = false, uint32_t index = 0) const;
+		const std::vector<std::shared_ptr<VulkanImage>>& GetDepthAttachment(bool resolve = false) const;
 
 		void Invalidate();
 		void CreateFramebuffer(VkRenderPass renderPass);

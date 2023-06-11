@@ -63,14 +63,15 @@ namespace VulkanCore {
 		Release();
 	}
 
-	const std::vector<std::shared_ptr<VulkanImage>>& VulkanFramebuffer::GetResolveAttachment(uint32_t index) const
+	const std::vector<std::shared_ptr<VulkanImage>>& VulkanFramebuffer::GetAttachment(bool resolve, uint32_t index) const
 	{
-		return m_ColorAttachments[m_ColorAttachmentSpecifications.size() + index];
+		uint32_t attachmentSize = static_cast<uint32_t>(m_ColorAttachmentSpecifications.size());
+		return m_ColorAttachments[resolve ? attachmentSize + index : index];
 	}
 
-	const std::vector< std::shared_ptr<VulkanImage>>& VulkanFramebuffer::GetDepthResolveAttachment() const
+	const std::vector< std::shared_ptr<VulkanImage>>& VulkanFramebuffer::GetDepthAttachment(bool resolve) const
 	{
-		return m_DepthAttachmentResolve;
+		return resolve ? m_DepthAttachmentResolve : m_DepthAttachment;
 	}
 
 	void VulkanFramebuffer::Invalidate()
