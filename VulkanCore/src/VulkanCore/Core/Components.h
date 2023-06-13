@@ -81,10 +81,12 @@ namespace VulkanCore {
 	};
 
 	class Mesh;
+	class MaterialAsset;
 
 	struct MeshComponent
 	{
 		std::shared_ptr<Mesh> MeshInstance;
+		std::vector<std::shared_ptr<MaterialAsset>> MaterialTable;
 
 		MeshComponent()
 			: MeshInstance(std::make_shared<Mesh>()) {}

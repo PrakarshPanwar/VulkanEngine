@@ -1,6 +1,8 @@
 #include "vulkanpch.h"
 #include "SceneRenderer.h"
 
+#include "VulkanCore/Asset/AssetManager.h"
+#include "VulkanCore/Asset/TextureImporter.h"
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/Timer.h"
@@ -203,11 +205,11 @@ namespace VulkanCore {
 			m_SpotLightShaderMaterial = std::make_shared<VulkanMaterial>(m_LightPipeline->GetSpecification().pShader, "Spot Light Shader Material");
 
 			m_PointLightShaderMaterial->SetBuffers(0, m_UBCamera);
-			m_PointLightShaderMaterial->SetTexture(1, m_PointLightTextureIcon);
+			m_PointLightShaderMaterial->SetTexture(1, std::dynamic_pointer_cast<VulkanTexture>(m_PointLightTextureIcon));
 			m_PointLightShaderMaterial->PrepareShaderMaterial();
 
 			m_SpotLightShaderMaterial->SetBuffers(0, m_UBCamera);
-			m_SpotLightShaderMaterial->SetTexture(1, m_SpotLightTextureIcon);
+			m_SpotLightShaderMaterial->SetTexture(1, std::dynamic_pointer_cast<VulkanTexture>(m_SpotLightTextureIcon));
 			m_SpotLightShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -296,7 +298,7 @@ namespace VulkanCore {
 
 			m_CompositeShaderMaterial->SetImages(0, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
 			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
-			m_CompositeShaderMaterial->SetTexture(2, m_BloomDirtTexture);
+			m_CompositeShaderMaterial->SetTexture(2, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -395,7 +397,7 @@ namespace VulkanCore {
 		{
 			m_CompositeShaderMaterial->SetImages(0, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetResolveAttachment());
 			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
-			m_CompositeShaderMaterial->SetTexture(2, m_BloomDirtTexture);
+			m_CompositeShaderMaterial->SetTexture(2, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -481,7 +483,7 @@ namespace VulkanCore {
 
 		device->FlushCommandBuffer(barrierCmd);
 
-		m_BloomDirtTexture = std::make_shared<VulkanTexture>("assets/textures/LensDirt.png");
+		m_BloomDirtTexture = AssetManager::GetAsset<Texture2D>("assets/textures/LensDirt.png");
 
 		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
 		m_CubemapTexture = filteredMap;
@@ -489,8 +491,8 @@ namespace VulkanCore {
 		m_IrradianceTexture = irradianceMap;
 
 		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
-		m_PointLightTextureIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/PointLightIcon.png");
-		m_SpotLightTextureIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/SpotLightIcon.png");
+		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/PointLightIcon.png");
+		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/SpotLightIcon.png");
 
 		m_SkyboxVBData = Utils::CreateCubeModel();
 	}
@@ -701,7 +703,7 @@ namespace VulkanCore {
 		VK_CORE_PROFILE();
 
 		auto meshSource = mesh->GetMeshSource();
-		uint64_t meshHandle = meshSource->GetMeshHandle();
+		uint64_t meshHandle = meshSource->Handle;
 
 		if (meshSource->GetVertexCount() == 0)
 			return;

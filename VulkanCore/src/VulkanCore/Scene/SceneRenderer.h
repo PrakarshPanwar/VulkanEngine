@@ -155,8 +155,8 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<VulkanImage>> m_BloomTextures;
 		std::vector<std::shared_ptr<VulkanImage>> m_SceneRenderTextures;
 
-		std::shared_ptr<VulkanTexture> m_BloomDirtTexture;
-		std::shared_ptr<VulkanTexture> m_PointLightTextureIcon, m_SpotLightTextureIcon;
+		std::shared_ptr<Texture2D> m_BloomDirtTexture;
+		std::shared_ptr<Texture2D> m_PointLightTextureIcon, m_SpotLightTextureIcon;
 
 		// Skybox Resources
 		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;

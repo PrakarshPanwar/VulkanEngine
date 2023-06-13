@@ -3,11 +3,11 @@
 
 namespace VulkanCore {
 
-	class MaterialAssetSerializer
+	class MaterialAssetImporter
 	{
 	public:
-		MaterialAssetSerializer();
-		~MaterialAssetSerializer();
+		MaterialAssetImporter();
+		~MaterialAssetImporter();
 
 		std::string SerializeToYAML(MaterialAsset& materialAsset);
 		bool DeserializeFromYAML(const std::string& filepath, MaterialAsset& materialAsset);

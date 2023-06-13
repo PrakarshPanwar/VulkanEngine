@@ -35,7 +35,7 @@ namespace VulkanCore {
 		void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<VulkanUniformBuffer>>& uniformBuffers);
 		void SetBuffers(uint32_t binding, const std::vector<VulkanUniformBuffer>& uniformBuffers);
 
-		void UpdateMaterials(const std::string& albedo, const std::string& normal, const std::string& arm);
+		void UpdateMaterials();
 		void PrepareShaderMaterial();
 	private:
 		void InvalidateMaterial();

@@ -1,6 +1,6 @@
 #pragma once
 #include "Platform/Vulkan/VulkanContext.h"
-#include "Platform/Vulkan/VulkanTexture.h"
+#include "VulkanCore/Renderer/Texture.h"
 
 namespace VulkanCore {
 
@@ -16,7 +16,7 @@ namespace VulkanCore {
 	private:
 		std::filesystem::path m_CurrentDirectory;
 
-		std::shared_ptr<VulkanTexture> m_DirectoryIcon, m_FileIcon;
+		std::shared_ptr<Texture2D> m_DirectoryIcon, m_FileIcon;
 		VkDescriptorSet m_DirectoryIconID, m_FileIconID;
 
 		float m_ThumbnailSize = 128.0f, m_Padding = 16.0f;

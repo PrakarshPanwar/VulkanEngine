@@ -3,8 +3,8 @@
 #include <filesystem>
 
 #include "MaterialEditor.h"
+#include "VulkanCore/Asset/AssetManager.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
-#include "Platform/Vulkan/VulkanTexture.h"
 
 #include <imgui.h>
 
@@ -70,7 +70,7 @@ namespace VulkanCore {
 						const wchar_t* path = (const wchar_t*)payload->Data;
 						std::filesystem::path scenePath = g_AssetPath / path;
 
-						std::shared_ptr<VulkanTexture> diffuseTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_SRGB);
+						std::shared_ptr<Texture2D> diffuseTex = AssetManager::GetAsset<Texture2D>(scenePath.string());
 						vulkanMaterial->SetDiffuseTexture(diffuseTex);
 					}
 
@@ -112,7 +112,7 @@ namespace VulkanCore {
 						const wchar_t* path = (const wchar_t*)payload->Data;
 						std::filesystem::path scenePath = g_AssetPath / path;
 
-						std::shared_ptr<VulkanTexture> normalTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_UNORM);
+						std::shared_ptr<Texture2D> normalTex = AssetManager::GetAsset<Texture2D>(scenePath.string());
 						vulkanMaterial->SetNormalTexture(normalTex);
 					}
 
@@ -154,7 +154,7 @@ namespace VulkanCore {
 						const wchar_t* path = (const wchar_t*)payload->Data;
 						std::filesystem::path scenePath = g_AssetPath / path;
 
-						std::shared_ptr<VulkanTexture> armTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_UNORM);
+						std::shared_ptr<Texture2D> armTex = AssetManager::GetAsset<Texture2D>(scenePath.string());
 						vulkanMaterial->SetARMTexture(armTex);
 					}
 
