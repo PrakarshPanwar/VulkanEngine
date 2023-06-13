@@ -50,11 +50,10 @@ namespace VulkanCore {
 		glm::mat4 LocalTransform;
 	};
 
-	class MeshSource
+	class MeshSource : public Asset
 	{
 	public:
 		MeshSource();
-		MeshSource(const std::string& filepath);
 		~MeshSource();
 
 		const aiScene* GetAssimpScene() const { return m_Scene; }
@@ -70,12 +69,11 @@ namespace VulkanCore {
 		inline uint32_t GetVertexCount() const { return (uint32_t)m_Vertices.size(); }
 		inline uint32_t GetIndexCount() const { return (uint32_t)m_Indices.size(); }
 
-		uint64_t GetMeshHandle() const { return m_MeshHandle; }
-		std::string& GetFilePath() { return m_FilePath; }
-	private:
-		std::string m_FilePath;
-		uint64_t m_MeshHandle;
+		inline AssetType GetType() const override { return AssetType::MeshAsset; }
 
+// 		uint64_t GetMeshHandle() const { return m_MeshHandle; }
+// 		std::string& GetFilePath() { return m_FilePath; }
+	private:
 		aiScene* m_Scene;
 		std::unique_ptr<Assimp::Importer> m_Importer;
 
@@ -92,16 +90,17 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanIndexBuffer> m_IndexBuffer;
 
 		friend class Mesh;
-		friend class AssimpMeshImporter;
+		//friend class AssimpMeshImporter;
+		friend class MeshImporter;
 	};
 
-	class AssimpMeshImporter
+	/*class AssimpMeshImporter
 	{
 	public:
 		static void InvalidateMesh(std::shared_ptr<MeshSource> meshSource);
 		static void TraverseNodes(std::shared_ptr<MeshSource> meshSource, aiNode* aNode, uint32_t nodeIndex);
 		static void ProcessMesh(std::shared_ptr<MeshSource> meshSource, aiMesh* mesh, const aiScene* scene);
-	};
+	};*/
 
 	class Mesh : public Asset
 	{
@@ -116,7 +115,7 @@ namespace VulkanCore {
 
 		AssetType GetType() const override { return AssetType::Mesh; }
 
-		static std::shared_ptr<Mesh> LoadMesh(const char* filepath);
+		//static std::shared_ptr<Mesh> LoadMesh(const char* filepath);
 		static std::shared_ptr<VulkanVertexBuffer> GetTransformBuffer(uint64_t meshKey) { return s_MeshTransformBuffer[meshKey]; }
 
 		static void ClearAllMeshes();

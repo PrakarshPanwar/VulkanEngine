@@ -25,7 +25,7 @@ namespace VulkanCore {
 		void SetRoughness(float roughness);
 		void SetMaterialData(MaterialData materialData);
 
-		std::tuple<std::string, std::string, std::string> GetMaterialPaths() const;
+		std::tuple<AssetHandle, AssetHandle, AssetHandle> GetMaterialHandles() const;
 
 		virtual void SetDiffuseTexture(std::shared_ptr<Texture2D> texture);
 		virtual void SetNormalTexture(std::shared_ptr<Texture2D> texture);

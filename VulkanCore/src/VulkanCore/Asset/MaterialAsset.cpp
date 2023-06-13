@@ -1,6 +1,6 @@
 #include "vulkanpch.h"
 #include "MaterialAsset.h"
-#include "MaterialAssetSerializer.h"
+#include "MaterialAssetImporter.h"
 
 namespace VulkanCore {
 
@@ -14,7 +14,7 @@ namespace VulkanCore {
 
 	void MaterialAsset::SaveAsset()
 	{
-		MaterialAssetSerializer assetSerializer{};
+		MaterialAssetImporter assetSerializer{};
 		assetSerializer.SerializeToYAML(*this);
 	}
 

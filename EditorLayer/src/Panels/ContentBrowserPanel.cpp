@@ -4,6 +4,7 @@
 
 #include "ContentBrowserPanel.h"
 #include "VulkanCore/Asset/AssetManager.h"
+#include "VulkanCore/Asset/TextureImporter.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
 
 #include <imgui.h>
@@ -15,11 +16,11 @@ namespace VulkanCore {
 	ContentBrowserPanel::ContentBrowserPanel()
 		: m_CurrentDirectory(g_AssetPath)
 	{
-		m_DirectoryIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/DirectoryIcon.png");
-		m_FileIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/FileIcon.png");
+		m_DirectoryIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/DirectoryIcon.png");
+		m_FileIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/FileIcon.png");
 
-		m_DirectoryIconID = ImGuiLayer::AddTexture(*m_DirectoryIcon);
-		m_FileIconID = ImGuiLayer::AddTexture(*m_FileIcon);
+		m_DirectoryIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_DirectoryIcon));
+		m_FileIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_FileIcon));
 	}
 
 	void ContentBrowserPanel::OnImGuiRender()

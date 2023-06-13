@@ -1,28 +1,13 @@
 #include "vulkanpch.h"
 #include "SceneSerializer.h"
 
+#include "VulkanCore/Core/Components.h"
+#include "VulkanCore/Asset/AssetManager.h"
+#include "VulkanCore/Asset/MaterialAsset.h"
+#include "Entity.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
 
 #include <yaml-cpp/yaml.h>
-#include <unordered_set>
-
-#include "VulkanCore/Core/Components.h"
-#include "Entity.h"
-
-namespace std {
-
-	template<>
-	struct hash<tuple<string, string, string>>
-	{
-		size_t operator()(const tuple<string, string, string>& pTuple) const
-		{
-			return hash<string>()(get<0>(pTuple))
-				^ hash<string>()(get<1>(pTuple))
-				^ hash<string>()(get<2>(pTuple));
-		}
-	};
-
-}
 
 namespace YAML {
 
@@ -188,27 +173,10 @@ namespace VulkanCore {
 			out << YAML::BeginMap;
 
 			auto& mc = entity.GetComponent<MeshComponent>();
-			out << YAML::Key << "Filepath" << YAML::Value << mc.MeshInstance->GetMeshSource()->GetFilePath();
+			out << YAML::Key << "MeshHandle" << YAML::Value << mc.MeshInstance->Handle;
 
 			// Storing Material Data of Mesh
-			out << YAML::Key << "Material";
-			out << YAML::BeginMap;
-
-			// TODO: This will be removed when we will implement Material Assets
-			auto material = mc.MeshInstance->GetMeshSource()->GetMaterial();
-			MaterialData& materialData = mc.MeshInstance->GetMeshSource()->GetMaterial()->GetMaterialData();
-			out << YAML::Key << "Albedo" << YAML::Value << materialData.Albedo;
-			out << YAML::Key << "Metallic" << YAML::Value << materialData.Metallic;
-			out << YAML::Key << "Roughness" << YAML::Value << materialData.Roughness;
-			out << YAML::Key << "UseNormalMap" << YAML::Value << materialData.UseNormalMap;
-
-			// Setting Materials Path
-			auto [diffusePath, normalPath, armPath] = material->GetMaterialPaths();
-			out << YAML::Key << "AlbedoTexture" << YAML::Value << diffusePath;
-			out << YAML::Key << "NormalTexture" << YAML::Value << normalPath;
-			out << YAML::Key << "ARMTexture" << YAML::Value << armPath;
-
-			out << YAML::EndMap; // End Material Map
+			out << YAML::Key << "MaterialHandle" << YAML::Value << mc.MaterialTable[0]->Handle;
 
 			out << YAML::EndMap;
 		}
@@ -223,9 +191,11 @@ namespace VulkanCore {
 
 	void SceneSerializer::Serialize(const std::string& filepath)
 	{
+		std::filesystem::path scenePath = filepath;
+
 		YAML::Emitter out;
 		out << YAML::BeginMap;
-		out << YAML::Key << "Scene" << YAML::Value << std::filesystem::path(filepath).stem().string();
+		out << YAML::Key << "Scene" << YAML::Value << scenePath.stem().string();
 		out << YAML::Key << "Entities";
 		out << YAML::Value << YAML::BeginSeq;
 		m_Scene->m_Registry.each([&](auto entityID)
@@ -265,8 +235,6 @@ namespace VulkanCore {
 
 		if (entities)
 		{
-			std::unordered_set<std::tuple<std::string, std::string, std::string>> materialsData;
-
 			for (auto entity : entities)
 			{
 				uint64_t uuid = entity["Entity"].as<uint64_t>();
@@ -317,31 +285,8 @@ namespace VulkanCore {
 				{
 					auto& mc = deserializedEntity.AddComponent<MeshComponent>();
 
-					std::string filepath = meshComponent["Filepath"].as<std::string>();
-					mc.MeshInstance = Mesh::LoadMesh(filepath.c_str());
-
-					auto meshSource = mc.MeshInstance->GetMeshSource();
-					auto materialData = meshComponent["Material"];
-
-					std::shared_ptr<Material> material = meshSource->GetMaterial();
-					glm::vec4 albedoColor = materialData["Albedo"].as<glm::vec4>();
-					float metallic = materialData["Metallic"].as<float>();
-					float roughness = materialData["Roughness"].as<float>();
-					uint32_t useNormalMap = materialData["UseNormalMap"].as<uint32_t>();
-					material->SetMaterialData({ albedoColor, roughness, metallic, useNormalMap });
-
-					std::string albedoPath = materialData["AlbedoTexture"].as<std::string>();
-					std::string normalPath = materialData["NormalTexture"].as<std::string>();
-					std::string armPath = materialData["ARMTexture"].as<std::string>();
-
-					auto materialTuple = std::make_tuple(albedoPath, normalPath, armPath);
-					if (!materialsData.contains(materialTuple))
-					{
-						auto vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
-						vulkanMaterial->UpdateMaterials(albedoPath, normalPath, armPath);
-
-						materialsData.emplace(materialTuple);
-					}
+					uint64_t meshHandle = meshComponent["MeshHandle"].as<uint64_t>();
+					mc.MeshInstance = AssetManager::GetAsset<Mesh>(meshHandle);
 				}
 			}
 		}

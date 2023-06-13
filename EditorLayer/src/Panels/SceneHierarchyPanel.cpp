@@ -1,5 +1,6 @@
 #include "SceneHierarchyPanel.h"
 
+#include "VulkanCore/Asset/AssetManager.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Renderer/Renderer.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
@@ -234,7 +235,7 @@ namespace VulkanCore {
 							const wchar_t* path = (const wchar_t*)payload->Data;
 							std::filesystem::path scenePath = g_AssetPath / path;
 
-							std::shared_ptr<VulkanTexture> diffuseTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_SRGB);
+							std::shared_ptr<Texture2D> diffuseTex = AssetManager::GetAsset<Texture2D>(scenePath.string());
 							vulkanMaterial->SetDiffuseTexture(diffuseTex);
 						}
 
@@ -276,7 +277,7 @@ namespace VulkanCore {
 							const wchar_t* path = (const wchar_t*)payload->Data;
 							std::filesystem::path scenePath = g_AssetPath / path;
 
-							std::shared_ptr<VulkanTexture> normalTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_UNORM);
+							std::shared_ptr<Texture2D> normalTex = AssetManager::GetAsset<Texture2D>(scenePath.string());
 							vulkanMaterial->SetNormalTexture(normalTex);
 						}
 
@@ -318,7 +319,7 @@ namespace VulkanCore {
 							const wchar_t* path = (const wchar_t*)payload->Data;
 							std::filesystem::path scenePath = g_AssetPath / path;
 
-							std::shared_ptr<VulkanTexture> armTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_UNORM);
+							std::shared_ptr<Texture2D> armTex = AssetManager::GetAsset<Texture2D>(scenePath.string());
 							vulkanMaterial->SetARMTexture(armTex);
 						}
 
@@ -444,12 +445,14 @@ namespace VulkanCore {
 
 		DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)
 		{
-			auto& meshFilePath = component.MeshInstance->GetMeshSource()->GetFilePath();
+			AssetHandle meshHandle = component.MeshInstance->GetMeshSource()->Handle;
+			auto& metadata = AssetManager::GetAssetMetadata(meshHandle);
+			auto meshFilePath = metadata.FilePath.string();
 
 			char buffer[512];
 			memset(buffer, 0, sizeof(buffer));
 			std::strncpy(buffer, meshFilePath.c_str(), sizeof(buffer));
-			if (ImGui::InputText("##MeshFilePath", buffer, sizeof(buffer)))
+			if (ImGui::InputText("##MeshFilePath", buffer, sizeof(buffer), ImGuiInputTextFlags_ReadOnly))
 			{
 				meshFilePath = std::string(buffer);
 			}
@@ -464,7 +467,7 @@ namespace VulkanCore {
 
 				else
 				{
-					std::shared_ptr<Mesh> mesh = Mesh::LoadMesh(meshFilePath.c_str());
+					std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshHandle);
 					component.MeshInstance = mesh;
 
 					s_ShowMessage = false;

@@ -1,0 +1,9 @@
+Asset Registry:
+  - Handle: 3496485124208379032
+    Metadata:
+      Filepath: assets/textures/Gold/GoldDiffuse.png
+      Type: Texture2D
+  - Handle: 10535975268657227650
+    Metadata:
+      Filepath: assets/textures/LensDirt.png
+      Type: Texture2D

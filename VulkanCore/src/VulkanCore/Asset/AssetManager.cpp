@@ -7,42 +7,50 @@
 
 namespace VulkanCore {
 
-	namespace Utils {
-
-		std::string AssetTypeToString(AssetType type)
-		{
-			switch (type)
-			{
-			case AssetType::None:		 return "None";
-			case AssetType::Scene:		 return "Scene";
-			case AssetType::Texture2D:	 return "Texture 2D";
-			case AssetType::TextureCube: return "Texture Cube";
-			case AssetType::Mesh:		 return "Mesh";
-			case AssetType::Material:	 return "Material";
-			default:
-				VK_CORE_ASSERT(false, "Asset Type not found!");
-				return {};
-			}
-		}
-
-	}
-
 	std::shared_ptr<AssetManagerBase> AssetManager::s_AssetManager;
 
-	void AssetManager::SetAssetManager(std::shared_ptr<AssetManagerBase> assetManager)
+	void AssetManager::SetAssetManagerBase(std::shared_ptr<AssetManagerBase> assetManager)
 	{
 		s_AssetManager = assetManager;
 	}
 
-	void AssetManager::LoadRegistryFromFile()
+	bool AssetManager::LoadRegistryFromFile()
 	{
-		auto editorAssetManager = std::static_pointer_cast<EditorAssetManagerBase>(s_AssetManager);
-		editorAssetManager->LoadRegistryFromFile();
+		auto editorAssetManager = GetEditorAssetManager();
+
+		std::ifstream stream("assets/AssetRegistry.vkr");
+		std::stringstream strStream;
+		strStream << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(strStream.str());
+		if (!data["Asset Registry"])
+			return false;
+
+		auto assetRegistry = data["Asset Registry"];
+		if (assetRegistry)
+		{
+			for (auto asset : assetRegistry)
+			{
+				AssetHandle assetHandle = asset["Handle"].as<uint64_t>();
+				AssetMetadata assetMetadata{};
+
+				auto metadata = asset["Metadata"];
+				if (metadata)
+				{
+					assetMetadata.FilePath = metadata["Filepath"].as<std::string>();
+					assetMetadata.Type = Utils::AssetTypeFromString(metadata["Type"].as<std::string>());
+				}
+
+				editorAssetManager->WriteToAssetRegistry(assetHandle, assetMetadata);
+			}
+		}
+
+		return true;
 	}
 
 	void AssetManager::WriteRegistryToFile()
 	{
-		auto editorAssetManager = std::static_pointer_cast<EditorAssetManagerBase>(s_AssetManager);
+		auto editorAssetManager = GetEditorAssetManager();
 		const AssetRegistry& assetRegistry = editorAssetManager->GetAssetRegistry();
 
 		YAML::Emitter out;
@@ -56,7 +64,7 @@ namespace VulkanCore {
 			out << YAML::Key << "Metadata";
 			out << YAML::BeginMap; // Map for saving metadata
 			out << YAML::Key << "Filepath" << YAML::Value << metadata.FilePath.string();
-			out << YAML::Key << "Type" << YAML::Value << (uint16_t)metadata.Type;
+			out << YAML::Key << "Type" << YAML::Value << Utils::AssetTypeToString(metadata.Type);
 			out << YAML::EndMap; // End Metadata Map
 			out << YAML::EndMap; // End Asset Map
 		}

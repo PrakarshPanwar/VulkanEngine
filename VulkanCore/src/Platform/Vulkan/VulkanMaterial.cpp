@@ -299,16 +299,16 @@ namespace VulkanCore {
 		m_MaterialDescriptorWriter[binding] = writeDescriptors;
 	}
 
-	void VulkanMaterial::UpdateMaterials(const std::string& albedo, const std::string& normal, const std::string& arm)
+	void VulkanMaterial::UpdateMaterials()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
 		std::vector<VkWriteDescriptorSet> writeDescriptors{};
-		if (!albedo.empty())
+
+		// Diffuse Texture
 		{
-			std::shared_ptr<VulkanTexture> diffuseTexture = std::make_shared<VulkanTexture>(albedo, ImageFormat::RGBA8_SRGB);
-			m_DiffuseTexture = diffuseTexture;
+			std::shared_ptr<VulkanTexture> diffuseTexture = std::dynamic_pointer_cast<VulkanTexture>(m_DiffuseTexture);
 
 			// Update Material Texture
 			for (uint32_t i = 0; i < framesInFlight; ++i)
@@ -340,10 +340,9 @@ namespace VulkanCore {
 			}
 		}
 
-		if (!normal.empty())
-		{
-			std::shared_ptr<VulkanTexture> normalTexture = std::make_shared<VulkanTexture>(normal, ImageFormat::RGBA8_UNORM);
-			m_NormalTexture = normalTexture;
+		// Normal Texture
+ 		{
+			std::shared_ptr<VulkanTexture> normalTexture = std::dynamic_pointer_cast<VulkanTexture>(m_NormalTexture);
 
 			// Update Material Texture
 			for (uint32_t i = 0; i < framesInFlight; ++i)
@@ -375,10 +374,9 @@ namespace VulkanCore {
 			}
 		}
 
-		if (!arm.empty())
+		// ARM Texture
 		{
-			std::shared_ptr<VulkanTexture> armTexture = std::make_shared<VulkanTexture>(arm, ImageFormat::RGBA8_UNORM);
-			m_ARMTexture = armTexture;
+			std::shared_ptr<VulkanTexture> armTexture = std::dynamic_pointer_cast<VulkanTexture>(m_ARMTexture);
 
 			// Update Material Texture
 			for (uint32_t i = 0; i < framesInFlight; ++i)

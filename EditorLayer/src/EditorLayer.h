@@ -7,7 +7,7 @@
 #include "VulkanCore/Renderer/EditorCamera.h"
 #include "VulkanCore/Asset/AssetManagerBase.h"
 
-#include "Platform/Vulkan/VulkanTexture.h"
+#include "VulkanCore/Renderer/Texture.h"
 
 #include <imgui.h>
 #include <memory>
@@ -34,8 +34,6 @@ namespace VulkanCore {
 		bool OnKeyEvent(KeyPressedEvent& keyEvent);
 		bool OnMouseScroll(MouseScrolledEvent& mouseScroll);
 		bool OnWindowResize(WindowResizeEvent& windowEvent);
-		void UpdateSceneDescriptors();
-		void LoadEntities();
 		void RenderGizmo();
 
 		void NewScene();
@@ -61,7 +59,7 @@ namespace VulkanCore {
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		ContentBrowserPanel m_ContentBrowserPanel;
 
-		std::shared_ptr<VulkanTexture> m_MenuIcon;
+		std::shared_ptr<Texture2D> m_MenuIcon;
 		VkDescriptorSet m_MenuIconID;
 	};
 

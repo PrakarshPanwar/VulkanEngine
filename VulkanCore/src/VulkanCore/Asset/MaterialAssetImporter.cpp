@@ -1,5 +1,6 @@
 #include "vulkanpch.h"
-#include "MaterialAssetSerializer.h"
+#include "MaterialAssetImporter.h"
+#include "AssetManager.h"
 
 #include "Platform/Vulkan/VulkanMaterial.h"
 
@@ -44,15 +45,15 @@ namespace VulkanCore {
 		return out;
 	}
 
-	MaterialAssetSerializer::MaterialAssetSerializer()
+	MaterialAssetImporter::MaterialAssetImporter()
 	{
 	}
 
-	MaterialAssetSerializer::~MaterialAssetSerializer()
+	MaterialAssetImporter::~MaterialAssetImporter()
 	{
 	}
 
-	std::string MaterialAssetSerializer::SerializeToYAML(MaterialAsset& materialAsset)
+	std::string MaterialAssetImporter::SerializeToYAML(MaterialAsset& materialAsset)
 	{
 		YAML::Emitter out;
 		out << YAML::BeginMap;
@@ -68,10 +69,10 @@ namespace VulkanCore {
 			out << YAML::Key << "UseNormalMap" << YAML::Value << materialData.UseNormalMap;
 
 			// Setting Materials Path
-			auto [diffusePath, normalPath, armPath] = material->GetMaterialPaths();
-			out << YAML::Key << "AlbedoTexture" << YAML::Value << diffusePath;
-			out << YAML::Key << "NormalTexture" << YAML::Value << normalPath;
-			out << YAML::Key << "ARMTexture" << YAML::Value << armPath;
+			auto [diffuseHandle, normalHandle, armHandle] = material->GetMaterialHandles();
+			out << YAML::Key << "Albedo" << YAML::Value << diffuseHandle;
+			out << YAML::Key << "Normal" << YAML::Value << normalHandle;
+			out << YAML::Key << "ARM" << YAML::Value << armHandle;
 
 			out << YAML::EndMap;
 		}
@@ -81,7 +82,7 @@ namespace VulkanCore {
 		return {};
 	}
 
-	bool MaterialAssetSerializer::DeserializeFromYAML(const std::string& filepath, MaterialAsset& materialAsset)
+	bool MaterialAssetImporter::DeserializeFromYAML(const std::string& filepath, MaterialAsset& materialAsset)
 	{
 		std::ifstream stream(filepath);
 		std::stringstream strStream;
@@ -100,12 +101,17 @@ namespace VulkanCore {
 		uint32_t useNormalMap = materialData["UseNormalMap"].as<uint32_t>();
 		material->SetMaterialData({ albedoColor, roughness, metallic, useNormalMap });
 
-		std::string albedoPath = materialData["AlbedoTexture"].as<std::string>();
-		std::string normalPath = materialData["NormalTexture"].as<std::string>();
-		std::string armPath = materialData["ARMTexture"].as<std::string>();
+		AssetHandle albedoHandle = materialData["Albedo"].as<uint64_t>();
+		AssetHandle normalHandle = materialData["Normal"].as<uint64_t>();
+		AssetHandle armHandle = materialData["ARM"].as<uint64_t>();
+
+		// Set Textures
+		material->SetDiffuseTexture(AssetManager::GetAsset<Texture2D>(albedoHandle));
+		material->SetNormalTexture(AssetManager::GetAsset<Texture2D>(normalHandle));
+		material->SetARMTexture(AssetManager::GetAsset<Texture2D>(armHandle));
 
 		auto vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
-		vulkanMaterial->UpdateMaterials(albedoPath, normalPath, armPath);
+		vulkanMaterial->UpdateMaterials();
 	}
 
 }

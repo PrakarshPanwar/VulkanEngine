@@ -35,9 +35,9 @@ namespace VulkanCore {
 		m_MaterialData = materialData;
 	}
 
-	std::tuple<std::string, std::string, std::string> Material::GetMaterialPaths() const
+	std::tuple<AssetHandle, AssetHandle, AssetHandle> Material::GetMaterialHandles() const
 	{
-		return {};
+		return { m_DiffuseTexture->Handle, m_NormalTexture->Handle, m_ARMTexture->Handle };
 	}
 
 	void Material::SetDiffuseTexture(std::shared_ptr<Texture2D> texture)
