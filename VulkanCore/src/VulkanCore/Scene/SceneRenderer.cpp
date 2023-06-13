@@ -712,7 +712,7 @@ namespace VulkanCore {
 	void SceneRenderer::CompositePass()
 	{
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Composite-Pass");
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Composite-Pass", DebugLabelColor::Red);
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().RenderPass);
 
@@ -733,7 +733,7 @@ namespace VulkanCore {
 
 		// Rendering Geometry
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Geometry-Pass");
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Geometry-Pass", DebugLabelColor::Gold);
 
 		Renderer::Submit([this]
 		{
@@ -751,15 +751,16 @@ namespace VulkanCore {
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Skybox");
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Skybox", DebugLabelColor::Orange);
 
 		// Rendering Skybox
 		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxMaterial, &m_SkyboxSettings);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
 		// Rendering Point Lights
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Lights");
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Lights", DebugLabelColor::Grey);
 
 		RenderLights();
 
@@ -781,7 +782,7 @@ namespace VulkanCore {
 	void SceneRenderer::BloomCompute()
 	{
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Bloom");
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Bloom", DebugLabelColor::Blue);
 
 		Renderer::Submit([this]
 		{
