@@ -63,7 +63,7 @@ namespace VulkanCore {
 			vkDebugMarkerSetObjectNameEXT(device, &debugMarkerNameInfo);
 		}
 
-		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName)
+		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName, float labelColor[])
 		{
 			if (vkCmdDebugMarkerBeginEXT == nullptr)
 				return;
@@ -71,10 +71,10 @@ namespace VulkanCore {
 			VkDebugMarkerMarkerInfoEXT markerInfoExt{};
 			markerInfoExt.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
 			markerInfoExt.pMarkerName = labelName;
-			markerInfoExt.color[0] = 0.1f;
-			markerInfoExt.color[1] = 0.1f; 
-			markerInfoExt.color[2] = 0.8f;
-			markerInfoExt.color[3] = 1.0f;
+			markerInfoExt.color[0] = labelColor[0];
+			markerInfoExt.color[1] = labelColor[1];
+			markerInfoExt.color[2] = labelColor[2];
+			markerInfoExt.color[3] = labelColor[3];
 
 			vkCmdDebugMarkerBeginEXT(cmdBuffer, &markerInfoExt);
 		}
