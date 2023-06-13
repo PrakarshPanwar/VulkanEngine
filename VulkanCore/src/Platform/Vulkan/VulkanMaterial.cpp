@@ -9,7 +9,7 @@
 namespace VulkanCore {
 
 	VulkanMaterial::VulkanMaterial(const std::string& debugName)
-		: m_DebugName(debugName), m_Shader(SceneRenderer::GetSceneRenderer()->GetGeometryPipelineShader())
+		: m_DebugName(debugName), m_Shader(Renderer::GetShader("CorePBR"))
 	{
 		InvalidateMaterial();
 		InvalidateMaterialDescriptorSets();
@@ -23,11 +23,21 @@ namespace VulkanCore {
 
 	VulkanMaterial::~VulkanMaterial()
 	{
+		// TODO: Another solution to this could be to reset and reallocate whole new pool but it is currently unfeasible
+		Renderer::SubmitResourceFree([descriptorSets = m_MaterialDescriptorSets]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			auto descriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
+
+			vkFreeDescriptorSets(device->GetVulkanDevice(), descriptorPool->GetVulkanDescriptorPool(), (uint32_t)descriptorSets.size(), descriptorSets.data());
+		});
+
+		m_MaterialDescriptorSets.clear();
 	}
 
 	void VulkanMaterial::InvalidateMaterial()
 	{
-		auto descriptorSetPool = Application::Get()->GetDescriptorPool();
+		auto descriptorSetPool = VulkanRenderer::Get()->GetDescriptorPool();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
 		auto shader = m_Shader;
@@ -53,7 +63,7 @@ namespace VulkanCore {
 
 	void VulkanMaterial::Invalidate()
 	{
-		auto descriptorSetPool = Application::Get()->GetDescriptorPool();
+		auto descriptorSetPool = VulkanRenderer::Get()->GetDescriptorPool();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
 		auto shader = m_Shader;
@@ -117,7 +127,7 @@ namespace VulkanCore {
 			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
 			writeDescriptor.descriptorType = m_Shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
 			writeDescriptor.dstBinding = binding;
-			writeDescriptor.pImageInfo = &image->GetDescriptorInfo();
+			writeDescriptor.pImageInfo = &image->GetDescriptorImageInfo();
 			writeDescriptor.descriptorCount = 1;
 			writeDescriptor.dstArrayElement = 0;
 
@@ -137,7 +147,7 @@ namespace VulkanCore {
 			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
 			writeDescriptor.descriptorType = m_Shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
 			writeDescriptor.dstBinding = binding;
-			writeDescriptor.pImageInfo = &image->GetMipDescriptorInfo(mipLevel);
+			writeDescriptor.pImageInfo = &image->GetDescriptorImageInfo(mipLevel);
 			writeDescriptor.descriptorCount = 1;
 			writeDescriptor.dstArrayElement = 0;
 
@@ -218,7 +228,7 @@ namespace VulkanCore {
 			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
 			writeDescriptor.descriptorType = m_Shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
 			writeDescriptor.dstBinding = binding;
-			writeDescriptor.pImageInfo = &images[i]->GetDescriptorInfo();
+			writeDescriptor.pImageInfo = &images[i]->GetDescriptorImageInfo();
 			writeDescriptor.descriptorCount = 1;
 			writeDescriptor.dstArrayElement = 0;
 
@@ -287,6 +297,36 @@ namespace VulkanCore {
 		}
 
 		m_MaterialDescriptorWriter[binding] = writeDescriptors;
+	}
+
+	void VulkanMaterial::RT_BindMaterial(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, uint32_t setIndex)
+	{
+		VkCommandBuffer bindCmd = cmdBuffer->RT_GetActiveCommandBuffer();
+		VkDescriptorSet descriptorSet[1] = { RT_GetVulkanMaterialDescriptorSet() };
+
+		vkCmdBindDescriptorSets(bindCmd,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipeline->GetVulkanPipelineLayout(),
+			setIndex,
+			1,
+			descriptorSet,
+			0,
+			nullptr);
+	}
+
+	void VulkanMaterial::RT_BindMaterial(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanComputePipeline>& pipeline, uint32_t setIndex /*= 0*/)
+	{
+		VkCommandBuffer bindCmd = cmdBuffer->RT_GetActiveCommandBuffer();
+		VkDescriptorSet descriptorSet[1] = { RT_GetVulkanMaterialDescriptorSet() };
+
+		vkCmdBindDescriptorSets(bindCmd,
+			VK_PIPELINE_BIND_POINT_COMPUTE,
+			pipeline->GetVulkanPipelineLayout(),
+			setIndex,
+			1,
+			descriptorSet,
+			0,
+			nullptr);
 	}
 
 	void VulkanMaterial::UpdateMaterials(const std::string& albedo, const std::string& normal, const std::string& arm)

@@ -51,7 +51,7 @@ namespace VulkanCore {
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000);
 
 		m_ImGuiGlobalPool = descriptorPoolBuilder.Build();
-		m_ImGuiCmdBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary);
+		//m_ImGuiCmdBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary);
 
 		ImGui::CreateContext();
 
@@ -71,7 +71,7 @@ namespace VulkanCore {
 		init_info.PhysicalDevice = device->GetPhysicalDevice();
 		init_info.Device = device->GetVulkanDevice();
 		init_info.Queue = device->GetGraphicsQueue();
-		init_info.DescriptorPool = m_ImGuiGlobalPool->GetDescriptorPool();
+		init_info.DescriptorPool = m_ImGuiGlobalPool->GetVulkanDescriptorPool();
 		init_info.MinImageCount = 2;
 		init_info.ImageCount = 3;
 		init_info.CheckVkResultFn = CheckVkResult;
@@ -164,7 +164,7 @@ namespace VulkanCore {
 
 	VkDescriptorSet ImGuiLayer::AddTexture(const VulkanImage& image)
 	{
-		auto imageDescriptor = image.GetDescriptorInfo();
+		auto imageDescriptor = image.GetDescriptorImageInfo();
 
 		return ImGui_ImplVulkan_AddTexture(imageDescriptor.sampler,
 			imageDescriptor.imageView,
@@ -189,7 +189,7 @@ namespace VulkanCore {
 		writeDescriptor.dstSet = descriptorSet;
 		writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		writeDescriptor.dstBinding = 0;
-		writeDescriptor.pImageInfo = &image.GetDescriptorInfo();
+		writeDescriptor.pImageInfo = &image.GetDescriptorImageInfo();
 		writeDescriptor.descriptorCount = 1;
 		writeDescriptor.dstArrayElement = 0;
 

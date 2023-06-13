@@ -5,6 +5,8 @@
 #include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 namespace VulkanCore {
 
 	std::unordered_map<std::string, std::shared_ptr<Shader>> Renderer::m_Shaders;
@@ -29,6 +31,22 @@ namespace VulkanCore {
 
 			VK_CORE_ASSERT(false, "Shader: {} does not exist!", path);
 			return std::make_shared<Shader>();
+		}
+
+		glm::vec4 GetLabelColor(DebugLabelColor labelColor)
+		{
+			switch (labelColor)
+			{
+			case DebugLabelColor::None:	  return { 0.1f, 0.1f, 0.1f, 1.0f };
+			case DebugLabelColor::Grey:	  return { 0.66f, 0.66f, 0.66f, 1.0f };
+			case DebugLabelColor::Red:	  return { 1.0f, 0.0f, 0.0f, 1.0f };
+			case DebugLabelColor::Blue:	  return { 0.0f, 0.58f, 1.0f, 1.0f };
+			case DebugLabelColor::Gold:	  return { 0.76f, 0.7f, 0.32f, 1.0f };
+			case DebugLabelColor::Orange: return { 1.0f, 0.34f, 0.2f, 1.0f };
+			default:
+				VK_CORE_ASSERT(false, "Label Color is undefined!");
+				return { 0.3f, 0.3f, 0.3f, 1.0f };
+			}
 		}
 
 	}
@@ -76,8 +94,9 @@ namespace VulkanCore {
 		m_Shaders["GenerateBRDF"] = Utils::MakeShader("GenerateBRDF");
 	}
 
-	void Renderer::DestroyShaders()
+	void Renderer::ShutDown()
 	{
+		RenderThread::ExecuteDeletionQueue();
 		m_Shaders.clear();
 	}
 
@@ -131,12 +150,14 @@ namespace VulkanCore {
 		});
 	}
 
-	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::string& name)
+	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::string& name, DebugLabelColor labelColor)
 	{
-		Renderer::Submit([cmdBuffer, name]
+		Renderer::Submit([cmdBuffer, name, labelColor]
 		{
 			VkCommandBuffer vulkanCmdBuffer = cmdBuffer->RT_GetActiveCommandBuffer();
-			VKUtils::SetCommandBufferLabel(vulkanCmdBuffer, name.c_str());
+
+			glm::vec4 color = Utils::GetLabelColor(labelColor);
+			VKUtils::SetCommandBufferLabel(vulkanCmdBuffer, name.c_str(), glm::value_ptr(color));
 		});
 	}
 
@@ -181,10 +202,6 @@ namespace VulkanCore {
 
 			vkCmdDraw(vulkanDrawCmd, 3, 1, 0, 0);
 		});
-	}
-
-	void Renderer::RenderMesh(std::shared_ptr<Mesh> mesh)
-	{
 	}
 
 	void Renderer::Init()

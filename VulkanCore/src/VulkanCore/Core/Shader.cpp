@@ -275,7 +275,7 @@ namespace VulkanCore {
 
 	std::vector<VkDescriptorSet> Shader::AllocateDescriptorSets(uint32_t index)
 	{
-		auto vulkanDescriptorPool = Application::Get()->GetDescriptorPool();
+		auto vulkanDescriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
 		VkDescriptorSetLayout setLayout = CreateDescriptorSetLayout(index)->GetVulkanDescriptorSetLayout();
 
 		std::vector<VkDescriptorSet> descriptorSets(3);

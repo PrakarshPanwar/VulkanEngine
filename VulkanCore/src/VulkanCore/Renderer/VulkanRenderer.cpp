@@ -2,7 +2,6 @@
 #include "VulkanRenderer.h"
 
 #include "VulkanCore/Core/ImGuiLayer.h"
-#include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
 #include "Renderer.h"
 #include "Platform/Vulkan/VulkanContext.h"
@@ -32,6 +31,7 @@ namespace VulkanCore {
 	{
 		RecreateSwapChain();
 		CreateCommandBuffers();
+		InitDescriptorPool();
 	}
 
 	void VulkanRenderer::BeginFrame()
@@ -146,7 +146,7 @@ namespace VulkanCore {
 		Renderer::Submit([equirectangularConversionPipeline, envEquirect, envUnfiltered]()
 		{
 			auto device = VulkanContext::GetCurrentDevice();
-			auto vulkanDescriptorPool = Application::Get()->GetVulkanDescriptorPool();
+			auto vulkanDescriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
 
 			VkDescriptorSet equirectSet;
 			VulkanDescriptorWriter equirectSetWriter(*equirectangularConversionPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool);
@@ -181,7 +181,7 @@ namespace VulkanCore {
 			auto device = VulkanContext::GetCurrentDevice();
 
 			const uint32_t mipCount = std::_Floor_of_log_2(cubemapSize) + 1;
-			auto vulkanDescriptorPool = Application::Get()->GetVulkanDescriptorPool();
+			auto vulkanDescriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
 
 			// Building Descriptor Sets
 			std::vector<VkDescriptorSet> descriptorSets(mipCount);
@@ -224,7 +224,7 @@ namespace VulkanCore {
 		Renderer::Submit([environmentIrradiancePipeline, irradianceMap, envFiltered]
 		{
 			auto device = VulkanContext::GetCurrentDevice();
-			auto vulkanDescriptorPool = Application::Get()->GetVulkanDescriptorPool();
+			auto vulkanDescriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
 
 			// Building Descriptor Set
 			VkDescriptorSet descriptorSet;
@@ -409,13 +409,13 @@ namespace VulkanCore {
 		Renderer::Submit([generateBRDFPipeline, brdfTexture, textureSize]
 		{
 			auto device = VulkanContext::GetCurrentDevice();
-			auto vulkanDescriptorPool = Application::Get()->GetVulkanDescriptorPool();
+			auto vulkanDescriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
 
 			// Building Descriptor Set
 			VkDescriptorSet descriptorSet;
 			VulkanDescriptorWriter descriptorWriter(*generateBRDFPipeline->GetDescriptorSetLayout(), *vulkanDescriptorPool);
 
-			VkDescriptorImageInfo brdfOutputInfo = brdfTexture->GetDescriptorInfo();
+			VkDescriptorImageInfo brdfOutputInfo = brdfTexture->GetDescriptorImageInfo();
 			descriptorWriter.WriteImage(0, &brdfOutputInfo);
 
 			descriptorWriter.Build(descriptorSet);
@@ -486,6 +486,15 @@ namespace VulkanCore {
 		m_CommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetRenderThreadCommandPool());
 	}
 
+	void VulkanRenderer::InitDescriptorPool()
+	{
+		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
+		descriptorPoolBuilder.SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
+		descriptorPoolBuilder.SetMaxSets(100).AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10);
+		descriptorPoolBuilder.SetMaxSets(1000).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10);
+		m_GlobalDescriptorPool = descriptorPoolBuilder.Build();
+	}
+
 	void VulkanRenderer::RecreateSwapChain()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
@@ -518,27 +527,9 @@ namespace VulkanCore {
 
 	}
 
-	void VulkanRenderer::FinalQueueSubmit()
+	void VulkanRenderer::SubmitAndPresent()
 	{
-		Renderer::Submit([this]
-		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::FinalQueueSubmit");
-
-			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
-
-			const std::vector<VkCommandBuffer> cmdBuffers{ m_CommandBuffer->RT_GetActiveCommandBuffer(), sceneRenderer->GetCommandBuffer()->RT_GetActiveCommandBuffer() };
-			auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
-
-			if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
-			{
-				m_Window->ResetWindowResizeFlag();
-				RecreateSwapChain();
-				sceneRenderer->RecreateScene();
-			}
-
-			else if (result != VK_SUCCESS)
-				VK_CORE_ERROR("Failed to Present Swap Chain Image!");
-		});
+		VulkanRenderCommandBuffer::SubmitCommandBuffersToQueue();
 
 		Renderer::WaitAndRender();
 
@@ -554,14 +545,10 @@ namespace VulkanCore {
 		{
 			m_Window->ResetWindowResizeFlag();
 			RecreateSwapChain();
-			SceneRenderer::GetSceneRenderer()->RecreateScene();
 		}
 
 		else if (result != VK_SUCCESS)
 			VK_CORE_ERROR("Failed to Present Swap Chain Image!");
-
-		IsFrameStarted = false;
-		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
 	}
 
 }

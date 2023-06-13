@@ -73,11 +73,12 @@ namespace VulkanCore {
 
 		void Invalidate();
 		void CreateImageViewSingleMip(uint32_t mip);
+		void Resize(uint32_t width, uint32_t height, uint32_t mips = 1);
 
 		glm::uvec2 GetMipSize(uint32_t mipLevel) const;
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
-		inline const VkDescriptorImageInfo& GetDescriptorInfo() const { return m_DescriptorImageInfo; }
-		inline const VkDescriptorImageInfo& GetMipDescriptorInfo(uint32_t mipLevel) const { return m_DescriptorMipImagesInfo.at(mipLevel); }
+		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_DescriptorImageInfo; }
+		inline const VkDescriptorImageInfo& GetDescriptorImageInfo(uint32_t mipLevel) const { return m_DescriptorMipImagesInfo.at(mipLevel); }
 		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
 	private:
 		void UpdateImageDescriptor();
