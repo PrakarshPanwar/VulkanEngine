@@ -4,6 +4,7 @@
 #include "VulkanCore/Renderer/Renderer.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanUniformBuffer.h"
+#include "Platform/Vulkan/VulkanComputePipeline.h"
 
 namespace VulkanCore {
 
@@ -34,6 +35,9 @@ namespace VulkanCore {
 		void SetBuffer(uint32_t binding, std::shared_ptr<VulkanUniformBuffer> uniformBuffer);
 		void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<VulkanUniformBuffer>>& uniformBuffers);
 		void SetBuffers(uint32_t binding, const std::vector<VulkanUniformBuffer>& uniformBuffers);
+
+		void RT_BindMaterial(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, uint32_t setIndex = 0);
+		void RT_BindMaterial(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanComputePipeline>& pipeline, uint32_t setIndex = 0);
 
 		void UpdateMaterials(const std::string& albedo, const std::string& normal, const std::string& arm);
 		void PrepareShaderMaterial();

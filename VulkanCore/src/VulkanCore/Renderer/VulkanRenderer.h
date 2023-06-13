@@ -2,6 +2,7 @@
 #include "Platform/Windows/WindowsWindow.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
 #include "Platform/Vulkan/VulkanTexture.h"
+#include "Platform/Vulkan/VulkanDescriptor.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 #include "VulkanCore/Mesh/Mesh.h"
@@ -51,16 +52,19 @@ namespace VulkanCore {
 
 		inline VkRenderPass GetSwapChainRenderPass() const { return m_SwapChain->GetRenderPass(); }
 		inline int GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
+		inline std::shared_ptr<VulkanDescriptorPool> GetDescriptorPool() const { return m_GlobalDescriptorPool; }
 
 		void RecreateSwapChain();
-		void FinalQueueSubmit();
 		void FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers);
+		void SubmitAndPresent();
 		static VulkanRenderer* Get() { return s_Instance; }
 	private:
 		void CreateCommandBuffers();
+		void InitDescriptorPool();
 	private:
 		std::shared_ptr<WindowsWindow> m_Window;
 		std::unique_ptr<VulkanSwapChain> m_SwapChain;
+		std::shared_ptr<VulkanDescriptorPool> m_GlobalDescriptorPool;
 
 		std::shared_ptr<VulkanRenderCommandBuffer> m_CommandBuffer;
 
