@@ -90,6 +90,7 @@ namespace VulkanCore {
 
 	std::shared_ptr<Mesh> Mesh::LoadMesh(const char* filepath)
 	{
+		// TODO: An asset system is required as same mesh can load 100 times causing redundant I/O disk reads
 		std::shared_ptr<MeshSource> meshSource = std::make_shared<MeshSource>(filepath);
 		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(meshSource);
 		return mesh;
