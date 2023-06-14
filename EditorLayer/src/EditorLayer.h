@@ -35,8 +35,6 @@ namespace VulkanCore {
 		bool OnKeyEvent(KeyPressedEvent& keyEvent);
 		bool OnMouseScroll(MouseScrolledEvent& mouseScroll);
 		bool OnWindowResize(WindowResizeEvent& windowEvent);
-		void UpdateSceneDescriptors();
-		void LoadEntities();
 		void RenderGizmo();
 
 		void NewScene();

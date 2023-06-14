@@ -224,9 +224,9 @@ namespace VulkanCore {
 			static float thumbnailSize = 128.0f;
 			static float padding = 16.0f;
 
-			ImGui::DragFloat("Field of View", &fov, 0.01f, 5.0f, 90.0f);
+			ImGui::DragFloat("Field of View", &fov, 0.5f, 5.0f, 90.0f);
 			if (ImGui::IsItemActive())
-				m_EditorCamera.SetFieldOfView(fov);
+				m_EditorCamera.SetFieldOfView(glm::radians(fov));
 
 			ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
 			if (ImGui::IsItemActive())
@@ -291,71 +291,6 @@ namespace VulkanCore {
 	{
 		m_WindowResized = true;
 		return false;
-	}
-
-	void EditorLayer::UpdateSceneDescriptors()
-	{
-	}
-
-	void EditorLayer::LoadEntities()
-	{
-		Entity CeramicVase = m_Scene->CreateEntity("Ceramic Vase");
-		CeramicVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx"));
-		auto& vaseTransform = CeramicVase.GetComponent<TransformComponent>();
-		vaseTransform.Translation = glm::vec3{ 0.0f, -1.2f, 2.5f };
-		vaseTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
-		vaseTransform.Scale = glm::vec3{ 3.5f };
-
-		Entity FlatPlane = m_Scene->CreateEntity("Flat Plane");
-		FlatPlane.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Cube.fbx"));
-		auto& planeTransform = FlatPlane.GetComponent<TransformComponent>();
-		planeTransform.Translation = glm::vec3{ 0.0f, -1.3f, 0.0f };
-		planeTransform.Scale = glm::vec3{ 10.0f, 0.1f, 10.0f };
-
-		Entity SphereMesh = m_Scene->CreateEntity("Basic Sphere");
-		SphereMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Standard/Sphere.fbx"));
-
-#define LOAD_SPONZA 0
-#if LOAD_SPONZA
-		Entity SponzaMesh = m_Scene->CreateEntity("Sponza");
-		SponzaMesh.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/Sponza/Sponza.obj"));
-		auto& sponzaTransform = SponzaMesh.GetComponent<TransformComponent>();
-		sponzaTransform.Translation = glm::vec3{ -4.0f, -10.0f, 23.0f };
-		sponzaTransform.Scale = glm::vec3{ 0.25f };
-#endif
-
-		// TODO: Texture mapping not working correctly for GLTF mesh formats, fix this in future
-#if 0
-		Entity CrateModel = m_Scene->CreateEntity("Wooden Crate");
-		auto& crateTransform = CrateModel.AddComponent<TransformComponent>(glm::vec3{ 0.5f, 0.0f, 4.5f }, glm::vec3{ 1.5f });
-		crateTransform.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-		CrateModel.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/WoodenCrate/WoodenCrate.gltf"));
-#endif
-
-		Entity BrassVase = m_Scene->CreateEntity("Brass Vase");
-		BrassVase.AddComponent<MeshComponent>(Mesh::LoadMesh("assets/meshes/BrassVase2K/BrassVase.fbx"));
-		auto& brassTransform = BrassVase.GetComponent<TransformComponent>();
-		brassTransform.Translation = glm::vec3{ 1.5f, -1.2f, 1.5f };
-		brassTransform.Rotation = glm::vec3(glm::radians(-90.0f), 0.0f, 0.0f);
-		brassTransform.Scale = glm::vec3{ 6.0f };
-
-		Entity BluePointLight = m_Scene->CreateEntity("Blue Light");
-		auto& blueLightTransform = BluePointLight.GetComponent<TransformComponent>();
-		blueLightTransform.Translation = glm::vec3{ -1.0f, 0.0f, 4.5f };
-		blueLightTransform.Scale = glm::vec3{ 0.1f };
-		auto& bluePLC = BluePointLight.AddComponent<PointLightComponent>(glm::vec4{ 0.2f, 0.3f, 0.8f, 20.0f });
-
-		Entity RedPointLight = m_Scene->CreateEntity("Red Light");
-		auto& redLightTransform = RedPointLight.GetComponent<TransformComponent>();
-		redLightTransform.Translation = glm::vec3{ 1.5f, 0.0f, 5.0f };
-		redLightTransform.Scale = glm::vec3{ 0.1f };
-		auto& redPLC = RedPointLight.AddComponent<PointLightComponent>(glm::vec4{ 1.0f, 0.5f, 0.1f, 15.0f });
-
-		Entity GreenPointLight = m_Scene->CreateEntity("Green Light");
-		auto& greenLightTransform = GreenPointLight.GetComponent<TransformComponent>();
-		greenLightTransform.Translation = glm::vec3{ 2.0f, 0.0f, -0.5f };
-		greenLightTransform.Scale = glm::vec3{ 0.1f };
-		auto& greenPLC = GreenPointLight.AddComponent<PointLightComponent>(glm::vec4{ 0.1f, 0.8f, 0.2f, 10.0f });
 	}
 
 	void EditorLayer::RenderGizmo()
