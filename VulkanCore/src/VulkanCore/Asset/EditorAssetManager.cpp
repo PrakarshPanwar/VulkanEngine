@@ -53,6 +53,7 @@ namespace VulkanCore {
 			// Load asset
 			const AssetMetadata& metadata = GetMetadata(handle);
 			asset = AssetImporter::ImportAsset(handle, metadata);
+			asset->Handle = handle;
 			if (!asset)
 			{
 				// Import failed

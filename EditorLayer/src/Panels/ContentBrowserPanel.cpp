@@ -4,12 +4,27 @@
 
 #include "ContentBrowserPanel.h"
 #include "VulkanCore/Asset/AssetManager.h"
+#include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Asset/TextureImporter.h"
+#include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
 
 #include <imgui.h>
 
 namespace VulkanCore {
+
+	namespace Utils {
+
+		static AssetType AssetTypeFromExtension(const std::filesystem::path& fileExtension)
+		{
+			if (fileExtension == ".png" || fileExtension == ".jpg") return AssetType::Texture2D;
+			if (fileExtension == ".fbx" || fileExtension == ".obj") return AssetType::MeshAsset;
+			if (fileExtension == ".vkmesh")							return AssetType::Mesh;
+
+			return AssetType::None;
+		}
+
+	}
 
 	static const std::filesystem::path g_AssetPath = "assets";
 
@@ -30,9 +45,7 @@ namespace VulkanCore {
 		if (m_CurrentDirectory != std::filesystem::path(g_AssetPath))
 		{
 			if (ImGui::Button("Back"))
-			{
 				m_CurrentDirectory = m_CurrentDirectory.parent_path();
-			}
 		}
 
 		float cellSize = m_ThumbnailSize + m_Padding;
@@ -68,16 +81,52 @@ namespace VulkanCore {
 			{
 				if (directoryEntry.is_directory())
 					m_CurrentDirectory /= path.filename();
-
 			}
 
 			if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+				ImGui::OpenPopup("AssetImport");
+
+			if (ImGui::BeginPopup("AssetImport"))
 			{
-				//AssetManager::CreateNewAsset(filenameString, )
+				if (ImGui::MenuItem("Import"))
+				{
+					AssetType assetType = Utils::AssetTypeFromExtension(path.extension());
+					std::string filepath = path.generic_string();
+
+					if (assetType == AssetType::Texture2D)
+						AssetManager::ImportNewAsset<Texture2D>(filepath);
+					if (assetType == AssetType::MeshAsset)
+					{
+						std::shared_ptr<MeshSource> meshSource = nullptr;
+
+						if (ImGui::BeginPopupModal("Mesh Import Options"))
+						{
+							char buffer[512];
+							memset(buffer, 0, sizeof(buffer));
+							ImGui::InputText("assets/", buffer, sizeof(buffer));
+							ImGui::Separator();
+							if (ImGui::Button("OK"))
+							{
+								std::string path = buffer;
+								meshSource = AssetManager::GetAsset<MeshSource>(path);
+								AssetManager::CreateNewAsset<Mesh>(filepath, meshSource);
+								ImGui::CloseCurrentPopup();
+							}
+
+							ImGui::EndPopup();
+						}
+
+					}
+					if (assetType == AssetType::Mesh)
+						VK_ERROR("AssetType Mesh is already in Registry!");
+					if (assetType == AssetType::None)
+						VK_ERROR("Extension type currently is not defined!");
+				}
+
+				ImGui::EndPopup();
 			}
 
 			ImGui::TextWrapped(filenameString.c_str());
-
 			ImGui::NextColumn();
 
 			ImGui::PopID();

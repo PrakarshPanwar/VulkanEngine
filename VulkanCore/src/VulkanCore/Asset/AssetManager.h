@@ -6,7 +6,9 @@ namespace VulkanCore {
 
 	class Texture2D;
 	class TextureCube;
+	class MeshSource;
 	class Mesh;
+	class MaterialAsset;
 
 	class AssetManager
 	{
@@ -40,6 +42,35 @@ namespace VulkanCore {
 			WriteRegistryToFile();
 
 			return std::static_pointer_cast<T>(asset);
+		}
+
+		template<typename T, typename... Args>
+		static std::shared_ptr<T> CreateNewAsset(const std::string& filepath, Args&&... args)
+		{
+			static_assert(std::derived_from<T, Asset>, "ImportNewAsset only works for types derived from Asset");
+
+			std::filesystem::path assetPath = filepath;
+
+			// NOTE: Maybe in future we can try assigned handle "std.filesystem.hash_value(assetPath)"
+			// But for now we are assigning random generated UUIDs
+			AssetHandle handle = {}; // Generate Random Handle
+			AssetMetadata metadata = {};
+			metadata.FilePath = assetPath;
+			metadata.Type = GetAssetType<T>();
+
+			// Create Asset
+			std::shared_ptr<T> asset = std::make_shared<T>(std::forward<Args>(args)...);
+			asset->Handle = handle;
+
+			std::shared_ptr<EditorAssetManager> editorAssetManager = GetEditorAssetManager();
+			editorAssetManager->WriteToAssetRegistry(handle, metadata);
+			editorAssetManager->SetLoadedAsset(handle, asset);
+
+			WriteRegistryToFile();
+
+			AssetImporter::Serialize(metadata, asset);
+
+			return asset;
 		}
 
 		template<typename T>
@@ -95,6 +126,12 @@ namespace VulkanCore {
 
 		template<>
 		static AssetType GetAssetType<Mesh>() { return AssetType::Mesh; }
+
+		template<>
+		static AssetType GetAssetType<MeshSource>() { return AssetType::MeshAsset; }
+
+		template<>
+		static AssetType GetAssetType<MaterialAsset>() { return AssetType::Material; }
 	private:
 		static std::shared_ptr<AssetManagerBase> s_AssetManager;
 	};
