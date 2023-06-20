@@ -1,0 +1,8 @@
+Material:
+  Albedo: [1, 0.99613899, 0.99613899, 1]
+  Metallic: 1
+  Roughness: 1
+  UseNormalMap: 1
+  AlbedoHandle: 10795462124020049898
+  NormalHandle: 372900142167400875
+  ARMHandle: 1422745146941273386

@@ -296,6 +296,7 @@ namespace VulkanCore {
 		imageCreateInfo.mipLevels = mipCount;
 
 		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE, "Default TextureCube", m_Info.Image);
 
 		m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		// Create a view for Image
@@ -338,6 +339,18 @@ namespace VulkanCore {
 		sampler.maxLod = (float)mipCount;
 
 		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &sampler, nullptr, &m_Info.Sampler), "Failed to Create Cubemap Image Sampler!");
+
+		// Set Image to General Layout
+		VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, mipCount, 0, 6 };
+		VkCommandBuffer layoutCmd = device->GetCommandBuffer();
+
+		Utils::SetImageLayout(
+			layoutCmd, m_Info.Image,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_GENERAL,
+			subresourceRange);
+
+		device->FlushCommandBuffer(layoutCmd);
 
 		m_DescriptorImageInfo.imageView = m_Info.ImageView;
 		m_DescriptorImageInfo.sampler = m_Info.Sampler;

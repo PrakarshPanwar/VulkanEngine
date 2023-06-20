@@ -10,7 +10,7 @@ namespace VulkanCore {
 		static std::shared_ptr<MaterialAsset> ImportMaterialAsset(AssetHandle handle, const AssetMetadata& metadata);
 
 		static void SerializeToYAML(const AssetMetadata& metadata, std::shared_ptr<Asset> asset);
-		static bool DeserializeFromYAML(const std::string& filepath, MaterialAsset& materialAsset);
+		static bool DeserializeFromYAML(const AssetMetadata& metadata, std::shared_ptr<Asset>& asset);
 	private:
 	};
 
