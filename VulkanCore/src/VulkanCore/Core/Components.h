@@ -86,11 +86,9 @@ namespace VulkanCore {
 	struct MeshComponent
 	{
 		std::shared_ptr<Mesh> MeshInstance;
-		std::vector<std::shared_ptr<MaterialAsset>> MaterialTable;
+		std::shared_ptr<MaterialAsset> MaterialTable;
 
-		MeshComponent()
-			: MeshInstance(std::make_shared<Mesh>()) {}
-
+		MeshComponent() = default;
 		MeshComponent(const MeshComponent&) = default;
 		MeshComponent(std::shared_ptr<Mesh> mesh)
 			: MeshInstance(mesh) {}

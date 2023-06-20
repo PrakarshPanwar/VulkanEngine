@@ -1,4 +1,8 @@
 Asset Registry:
+  - Handle: 18321688921956561236
+    Metadata:
+      Filepath: assets/meshes/Source/BrassVase2K/textures/brass_vase_03_arm_2k.png
+      Type: Texture2D
   - Handle: 9946649459505985444
     Metadata:
       Filepath: assets/textures/WoodFloor/wood_table_001_nor_dx_2k.png
@@ -13,83 +17,83 @@ Asset Registry:
       Type: Texture2D
   - Handle: 16995992634766553316
     Metadata:
-      Filepath: assets/meshes/CeramicVase2K/textures/antique_ceramic_vase_01_arm_2k.png
-      Type: Texture2D
-  - Handle: 18321688921956561236
-    Metadata:
-      Filepath: assets/meshes/BrassVase2K/textures/brass_vase_03_arm_2k.png
-      Type: Texture2D
-  - Handle: 15662263919763271311
-    Metadata:
-      Filepath: assets/meshes/BrassVase2K/textures/brass_vase_03_diff_2k.jpg
-      Type: Texture2D
-  - Handle: 16363266815915649551
-    Metadata:
-      Filepath: assets/textures/MudSnow/snow_05_disp_2k.png
+      Filepath: assets/meshes/Source/CeramicVase2K/textures/antique_ceramic_vase_01_arm_2k.png
       Type: Texture2D
   - Handle: 11844912818719243279
     Metadata:
       Filepath: assets/meshes/CeramicVase.vkmesh
       Type: Mesh
+  - Handle: 16363266815915649551
+    Metadata:
+      Filepath: assets/textures/MudSnow/snow_05_disp_2k.png
+      Type: Texture2D
   - Handle: 13739926517336245135
     Metadata:
       Filepath: assets/textures/DeformedSnow/SnowSpecular.jpg
       Type: Texture2D
+  - Handle: 15662263919763271311
+    Metadata:
+      Filepath: assets/meshes/Source/BrassVase2K/textures/brass_vase_03_diff_2k.jpg
+      Type: Texture2D
   - Handle: 2838023438895478808
     Metadata:
-      Filepath: assets/meshes/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png
+      Filepath: assets/meshes/Source/BrassVase2K/textures/brass_vase_03_nor_gl_2k.png
+      Type: Texture2D
+  - Handle: 9237957414532367595
+    Metadata:
+      Filepath: assets/meshes/Source/WoodenCrate/textures/wooden_crate_01_arm_2k.jpg
       Type: Texture2D
   - Handle: 372900142167400875
     Metadata:
       Filepath: assets/textures/ConcreteWall/concrete_wall_006_nor_gl_2k.png
       Type: Texture2D
-  - Handle: 9237957414532367595
+  - Handle: 11134850192642027083
     Metadata:
-      Filepath: assets/meshes/WoodenCrate/textures/wooden_crate_01_arm_2k.jpg
+      Filepath: assets/materials/PlankFloorMaterial.vkmat
+      Type: Material
+  - Handle: 8506193630372759627
+    Metadata:
+      Filepath: assets/meshes/Source/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg
       Type: Texture2D
   - Handle: 11078869145224166603
     Metadata:
       Filepath: assets/textures/PlainSnow/SnowDisp.png
       Type: Texture2D
-  - Handle: 8506193630372759627
-    Metadata:
-      Filepath: assets/meshes/CeramicVase2K/textures/antique_ceramic_vase_01_diff_2k.jpg
-      Type: Texture2D
   - Handle: 4868991886611659141
     Metadata:
-      Filepath: assets/meshes/WoodenCrate/textures/wooden_crate_01_diff_2k.jpg
+      Filepath: assets/meshes/Source/WoodenCrate/textures/wooden_crate_01_diff_2k.jpg
+      Type: Texture2D
+  - Handle: 2390326016474146997
+    Metadata:
+      Filepath: assets/meshes/Source/CeramicVase2K/textures/antique_ceramic_vase_01_nor_gl_2k.png
       Type: Texture2D
   - Handle: 15230484090559896949
     Metadata:
       Filepath: assets/textures/PlainSnow/SnowNormalDX.png
       Type: Texture2D
-  - Handle: 2390326016474146997
-    Metadata:
-      Filepath: assets/meshes/CeramicVase2K/textures/antique_ceramic_vase_01_nor_gl_2k.png
-      Type: Texture2D
   - Handle: 4625224975748685563
     Metadata:
-      Filepath: assets/meshes/WoodenCrate/textures/wooden_crate_01_nor_gl_2k.jpg
-      Type: Texture2D
-  - Handle: 2674044839447360160
-    Metadata:
-      Filepath: assets/textures/StoneTiles/StoneTilesDiff.png
+      Filepath: assets/meshes/Source/WoodenCrate/textures/wooden_crate_01_nor_gl_2k.jpg
       Type: Texture2D
   - Handle: 17796155842977712544
     Metadata:
       Filepath: assets/textures/BRDF_LUTMap.png
       Type: Texture2D
-  - Handle: 3047598569550881834
+  - Handle: 2674044839447360160
     Metadata:
-      Filepath: assets/textures/Marble/marble_01_rough_2k.jpg
+      Filepath: assets/textures/StoneTiles/StoneTilesDiff.png
+      Type: Texture2D
+  - Handle: 1422745146941273386
+    Metadata:
+      Filepath: assets/textures/ConcreteWall/concrete_wall_006_arm_2k.png
       Type: Texture2D
   - Handle: 10795462124020049898
     Metadata:
       Filepath: assets/textures/ConcreteWall/concrete_wall_006_diff_2k.png
       Type: Texture2D
-  - Handle: 1422745146941273386
+  - Handle: 3047598569550881834
     Metadata:
-      Filepath: assets/textures/ConcreteWall/concrete_wall_006_arm_2k.png
+      Filepath: assets/textures/Marble/marble_01_rough_2k.jpg
       Type: Texture2D
   - Handle: 8420624084485281664
     Metadata:
@@ -99,17 +103,21 @@ Asset Registry:
     Metadata:
       Filepath: assets/textures/DeformedSnow/SnowDiffuse.jpg
       Type: Texture2D
-  - Handle: 16115119200242699657
-    Metadata:
-      Filepath: assets/textures/StoneTiles/StoneTilesNorGL.png
-      Type: Texture2D
   - Handle: 4590653388674929417
     Metadata:
       Filepath: assets/textures/DeformedSnow/SnowNormalDX.png
       Type: Texture2D
+  - Handle: 16115119200242699657
+    Metadata:
+      Filepath: assets/textures/StoneTiles/StoneTilesNorGL.png
+      Type: Texture2D
   - Handle: 9579594759406966294
     Metadata:
       Filepath: assets/textures/DeformedSnow/SnowNormalGL.png
+      Type: Texture2D
+  - Handle: 6435095255789984124
+    Metadata:
+      Filepath: assets/textures/DeformedSnow/SnowSurface.jpg
       Type: Texture2D
   - Handle: 15967528988288359420
     Metadata:
@@ -119,25 +127,21 @@ Asset Registry:
     Metadata:
       Filepath: assets/textures/MetalPlate.jpg
       Type: Texture2D
-  - Handle: 6435095255789984124
+  - Handle: 4120767157361030501
     Metadata:
-      Filepath: assets/textures/DeformedSnow/SnowSurface.jpg
+      Filepath: assets/textures/Gold/GoldAORM.png
       Type: Texture2D
   - Handle: 6435582088167422949
     Metadata:
       Filepath: assets/textures/StoneTiles/StoneTilesARM.png
       Type: Texture2D
-  - Handle: 4120767157361030501
+  - Handle: 11490543663800678755
     Metadata:
-      Filepath: assets/textures/Gold/GoldAORM.png
+      Filepath: assets/textures/Gold/GoldDiffuse.png
       Type: Texture2D
   - Handle: 15810401681865586723
     Metadata:
       Filepath: assets/textures/PlainSnow/SnowDiffuse.jpg
-      Type: Texture2D
-  - Handle: 11490543663800678755
-    Metadata:
-      Filepath: assets/textures/Gold/GoldDiffuse.png
       Type: Texture2D
   - Handle: 3163653045526664533
     Metadata:
@@ -175,33 +179,33 @@ Asset Registry:
     Metadata:
       Filepath: assets/textures/Marble/marble_01_disp_2k.png
       Type: Texture2D
-  - Handle: 8271548682682006668
-    Metadata:
-      Filepath: assets/textures/PlankFlooring/plank_flooring_diff_2k.png
-      Type: Texture2D
   - Handle: 5506449773511264652
     Metadata:
       Filepath: assets/textures/Marble/marble_01_nor_dx_2k.png
       Type: Texture2D
-  - Handle: 17624622743935529912
+  - Handle: 8271548682682006668
     Metadata:
-      Filepath: assets/textures/WoodFloor/wood_table_001_arm_2k.jpg
+      Filepath: assets/textures/PlankFlooring/plank_flooring_diff_2k.png
       Type: Texture2D
   - Handle: 6526164684220672696
     Metadata:
       Filepath: assets/textures/MudSnow/SnowDiffuse.jpg
       Type: Texture2D
+  - Handle: 17624622743935529912
+    Metadata:
+      Filepath: assets/textures/WoodFloor/wood_table_001_arm_2k.jpg
+      Type: Texture2D
   - Handle: 13544332261415112142
     Metadata:
       Filepath: assets/textures/MudSnow/SnowNormalDX.png
       Type: Texture2D
-  - Handle: 17840413035978278856
-    Metadata:
-      Filepath: assets/textures/MudSnow/snow_05_arm_2k.jpg
-      Type: Texture2D
   - Handle: 5811867991354229320
     Metadata:
       Filepath: assets/textures/MudSnow/SnowNormalGL.png
+      Type: Texture2D
+  - Handle: 17840413035978278856
+    Metadata:
+      Filepath: assets/textures/MudSnow/snow_05_arm_2k.jpg
       Type: Texture2D
   - Handle: 3620384474883821673
     Metadata:
@@ -211,6 +215,10 @@ Asset Registry:
     Metadata:
       Filepath: assets/textures/MudSnow/snow_05_ao_2k.jpg
       Type: Texture2D
+  - Handle: 11882808831638673068
+    Metadata:
+      Filepath: assets/textures/MudSnow/snow_05_rough_2k.jpg
+      Type: Texture2D
   - Handle: 198845055566275628
     Metadata:
       Filepath: assets/textures/PlankFlooring/plank_flooring_nor_gl_2k.png
@@ -218,10 +226,6 @@ Asset Registry:
   - Handle: 6872735820265506860
     Metadata:
       Filepath: assets/textures/PlankFlooring/plank_flooring_arm_2k.png
-      Type: Texture2D
-  - Handle: 11882808831638673068
-    Metadata:
-      Filepath: assets/textures/MudSnow/snow_05_rough_2k.jpg
       Type: Texture2D
   - Handle: 12706125439717262462
     Metadata:
@@ -231,13 +235,13 @@ Asset Registry:
     Metadata:
       Filepath: assets/textures/PlainSnow/SnowSpecular.jpg
       Type: Texture2D
-  - Handle: 15437163501494111519
-    Metadata:
-      Filepath: assets/textures/WoodFloor/wood_table_001_rough_2k.jpg
-      Type: Texture2D
   - Handle: 5478426729395431519
     Metadata:
       Filepath: assets/textures/PlainSnow/snow_02_rough_2k.jpg
+      Type: Texture2D
+  - Handle: 15437163501494111519
+    Metadata:
+      Filepath: assets/textures/WoodFloor/wood_table_001_rough_2k.jpg
       Type: Texture2D
   - Handle: 14812889688405863738
     Metadata:
@@ -311,3 +315,19 @@ Asset Registry:
     Metadata:
       Filepath: assets/meshes/Sponza.vkmesh
       Type: Mesh
+  - Handle: 18198936774292638234
+    Metadata:
+      Filepath: assets/materials/CeramicVaseMaterial.vkmat
+      Type: Material
+  - Handle: 3893884925322395954
+    Metadata:
+      Filepath: assets/materials/ConcreteWallMaterial.vkmat
+      Type: Material
+  - Handle: 8997689789897987
+    Metadata:
+      Filepath: assets/cubemaps/HDR/Birchwood4K.hdr
+      Type: Texture2D
+  - Handle: 4518070022644985823
+    Metadata:
+      Filepath: assets/materials/BrassVaseMaterial.vkmat
+      Type: Material

@@ -8,7 +8,7 @@ namespace VulkanCore {
 	class AssetManagerBase
 	{
 	public:
-		virtual std::shared_ptr<Asset> GetAsset(AssetHandle handle) const = 0;
+		virtual std::shared_ptr<Asset> GetAsset(AssetHandle handle) = 0;
 
 		virtual bool IsAssetHandleValid(AssetHandle handle) const = 0;
 		virtual bool IsAssetLoaded(AssetHandle handle) const = 0;

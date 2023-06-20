@@ -29,7 +29,8 @@ namespace VulkanCore {
 
 	using AssetDeserializer = std::function<bool(const AssetMetadata&, std::shared_ptr<Asset>&)>;
 	static std::map<AssetType, AssetDeserializer> s_AssetDeserializers = {
-		{ AssetType::Mesh, MeshImporter::DeserializeMesh }
+		{ AssetType::Mesh, MeshImporter::DeserializeMesh },
+		{ AssetType::Material, MaterialAssetImporter::DeserializeFromYAML }
 	};
 
 	std::shared_ptr<Asset> AssetImporter::ImportAsset(AssetHandle handle, const AssetMetadata& metadata)

@@ -9,14 +9,7 @@ Entities:
       Scale: [3.5, 3.5, 3.5]
     MeshComponent:
       MeshHandle: 11844912818719243279
-      MaterialHandle:
-        Albedo: [1, 1, 1, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: 1
-        AlbedoTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_diff_2k.jpg
-        NormalTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_nor_gl_2k.png
-        ARMTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_arm_2k.png
+      MaterialHandle: 18198936774292638234
   - Entity: 538537539842
     TagComponent:
       Tag: Flat Plane
@@ -26,14 +19,7 @@ Entities:
       Scale: [10, 0.100000001, 10]
     MeshComponent:
       MeshHandle: 9816593081404201911
-      MaterialHandle:
-        Albedo: [1, 0.99613899, 0.99613899, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: 1
-        AlbedoTexture: assets\textures\ConcreteWall\concrete_wall_006_diff_2k.png
-        NormalTexture: assets\textures\ConcreteWall\concrete_wall_006_nor_gl_2k.png
-        ARMTexture: assets\textures\ConcreteWall\concrete_wall_006_arm_2k.png
+      MaterialHandle: 3893884925322395954
   - Entity: 99678686667
     TagComponent:
       Tag: Basic Sphere
@@ -43,14 +29,7 @@ Entities:
       Scale: [1, 1, 1]
     MeshComponent:
       MeshHandle: 5887157471203535698
-      MaterialHandle:
-        Albedo: [1, 1, 1, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: 1
-        AlbedoTexture: assets\textures\PlankFlooring\plank_flooring_diff_2k.png
-        NormalTexture: assets\textures\PlankFlooring\plank_flooring_nor_gl_2k.png
-        ARMTexture: assets\textures\PlankFlooring\plank_flooring_arm_2k.png
+      MaterialHandle: 11134850192642027083
   - Entity: 2353646777867
     TagComponent:
       Tag: Brass Vase
@@ -60,14 +39,7 @@ Entities:
       Scale: [6, 6, 6]
     MeshComponent:
       MeshHandle: 12839587798147330480
-      MaterialHandle:
-        Albedo: [1, 1, 1, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: 1
-        AlbedoTexture: assets\meshes\BrassVase2K\textures\brass_vase_03_diff_2k.jpg
-        NormalTexture: assets\meshes\BrassVase2K\textures\brass_vase_03_nor_gl_2k.png
-        ARMTexture: assets\meshes\BrassVase2K\textures\brass_vase_03_arm_2k.png
+      MaterialHandle: 4518070022644985823
   - Entity: 636536477775
     TagComponent:
       Tag: Blue Point Light
@@ -110,14 +82,7 @@ Entities:
       Scale: [9.99999332, 2.68595648, 0.109166376]
     MeshComponent:
       MeshHandle: 9816593081404201911
-      MaterialHandle:
-        Albedo: [1, 0.99613899, 0.99613899, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: 1
-        AlbedoTexture: assets\textures\ConcreteWall\concrete_wall_006_diff_2k.png
-        NormalTexture: assets\textures\ConcreteWall\concrete_wall_006_nor_gl_2k.png
-        ARMTexture: assets\textures\ConcreteWall\concrete_wall_006_arm_2k.png
+      MaterialHandle: 3893884925322395954
   - Entity: 446463443556
     TagComponent:
       Tag: Ceramic Vase 2
@@ -127,14 +92,7 @@ Entities:
       Scale: [3, 2.99965668, 2.99965668]
     MeshComponent:
       MeshHandle: 11844912818719243279
-      MaterialHandle:
-        Albedo: [1, 1, 1, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: 1
-        AlbedoTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_diff_2k.jpg
-        NormalTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_nor_gl_2k.png
-        ARMTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_arm_2k.png
+      MaterialHandle: 18198936774292638234
   - Entity: 257473563441
     TagComponent:
       Tag: Blue Spot Light

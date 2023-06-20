@@ -38,8 +38,8 @@ namespace VulkanCore {
 	{
 		std::shared_ptr<Asset> mesh = nullptr;
 
-		bool deserialized = DeserializeMesh(metadata, mesh);
-		if (deserialized)
+		bool loaded = DeserializeMesh(metadata, mesh);
+		if (loaded)
 			return std::static_pointer_cast<Mesh>(mesh);
 
 		return nullptr;

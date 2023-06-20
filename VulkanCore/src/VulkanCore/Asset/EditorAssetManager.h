@@ -9,7 +9,7 @@ namespace VulkanCore {
 	class EditorAssetManager : public AssetManagerBase
 	{
 	public:
-		std::shared_ptr<Asset> GetAsset(AssetHandle handle) const override;
+		std::shared_ptr<Asset> GetAsset(AssetHandle handle) override;
 
 		bool IsAssetHandleValid(AssetHandle handle) const override;
 		bool IsAssetLoaded(AssetHandle handle) const override;

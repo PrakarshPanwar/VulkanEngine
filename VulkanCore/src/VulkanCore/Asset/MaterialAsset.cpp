@@ -1,5 +1,6 @@
 #include "vulkanpch.h"
 #include "MaterialAsset.h"
+#include "AssetManager.h"
 #include "MaterialAssetImporter.h"
 
 namespace VulkanCore {

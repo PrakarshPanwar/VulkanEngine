@@ -38,7 +38,7 @@ namespace YAML {
 
 namespace VulkanCore {
 
-	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec4& v)
+	static YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec4& v)
 	{
 		out << YAML::Flow;
 		out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
@@ -47,12 +47,23 @@ namespace VulkanCore {
 
 	std::shared_ptr<MaterialAsset> MaterialAssetImporter::ImportMaterialAsset(AssetHandle handle, const AssetMetadata& metadata)
 	{
-		
+		std::shared_ptr<Asset> materialAsset = nullptr;
+
+		bool loaded = DeserializeFromYAML(metadata, materialAsset);
+		if (loaded)
+			return std::static_pointer_cast<MaterialAsset>(materialAsset);
+
+		return nullptr;
 	}
 
 	void MaterialAssetImporter::SerializeToYAML(const AssetMetadata& metadata, std::shared_ptr<Asset> asset)
 	{
+		std::string filepath = metadata.FilePath.string();
 		std::shared_ptr<MaterialAsset> materialAsset = std::dynamic_pointer_cast<MaterialAsset>(asset);
+
+		std::string filenameStr = metadata.FilePath.stem().string();
+		std::shared_ptr<Material> material = std::make_shared<VulkanMaterial>(filenameStr);
+		materialAsset->SetMaterial(material);
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;
@@ -60,7 +71,6 @@ namespace VulkanCore {
 		{
 			out << YAML::BeginMap;
 
-			auto material = materialAsset->GetMaterial();
 			MaterialData& materialData = material->GetMaterialData();
 			out << YAML::Key << "Albedo" << YAML::Value << materialData.Albedo;
 			out << YAML::Key << "Metallic" << YAML::Value << materialData.Metallic;
@@ -77,10 +87,14 @@ namespace VulkanCore {
 		}
 
 		out << YAML::EndMap; // End Material Map
+
+		std::ofstream fout(filepath);
+		fout << out.c_str();
 	}
 
- 	bool MaterialAssetImporter::DeserializeFromYAML(const std::string& filepath, MaterialAsset& materialAsset)
+ 	bool MaterialAssetImporter::DeserializeFromYAML(const AssetMetadata& metadata, std::shared_ptr<Asset>& asset)
  	{
+		std::string filepath = metadata.FilePath.string();
  		std::ifstream stream(filepath);
  		std::stringstream strStream;
  		strStream << stream.rdbuf();
@@ -91,7 +105,11 @@ namespace VulkanCore {
  
  		YAML::Node materialNode = data["Material"];
  
- 		std::shared_ptr<Material> material = materialAsset.GetMaterial();
+		std::string filenameStr = metadata.FilePath.stem().string();
+		std::shared_ptr<MaterialAsset> materialAsset = std::make_shared<MaterialAsset>();
+		std::shared_ptr<Material> material = std::make_shared<VulkanMaterial>(filenameStr);
+		materialAsset->SetMaterial(material);
+
  		glm::vec4 albedoColor = materialNode["Albedo"].as<glm::vec4>();
  		float metallic = materialNode["Metallic"].as<float>();
  		float roughness = materialNode["Roughness"].as<float>();
@@ -103,12 +121,18 @@ namespace VulkanCore {
  		AssetHandle armHandle = materialNode["ARMHandle"].as<uint64_t>();
  
  		// Set Textures
- 		material->SetDiffuseTexture(AssetManager::GetAsset<Texture2D>(albedoHandle));
- 		material->SetNormalTexture(AssetManager::GetAsset<Texture2D>(normalHandle));
- 		material->SetARMTexture(AssetManager::GetAsset<Texture2D>(armHandle));
+		bool albedo = AssetManager::GetAssetManager()->IsAssetHandleValid(albedoHandle);
+		bool normal = AssetManager::GetAssetManager()->IsAssetHandleValid(normalHandle);
+		bool arm = AssetManager::GetAssetManager()->IsAssetHandleValid(armHandle);
+
+ 		material->SetDiffuseTexture(albedo ? AssetManager::GetAsset<Texture2D>(albedoHandle) : Renderer::GetWhiteTexture());
+ 		material->SetNormalTexture(normal ? AssetManager::GetAsset<Texture2D>(normalHandle) : Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM));
+ 		material->SetARMTexture(arm ? AssetManager::GetAsset<Texture2D>(armHandle) : Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM));
  
  		auto vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
  		vulkanMaterial->UpdateMaterials();
+
+		asset = materialAsset;
 		return true;
  	}
 

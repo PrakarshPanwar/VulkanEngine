@@ -36,7 +36,7 @@ namespace VulkanCore {
 		return it->second;
 	}
 
-	std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle) const
+	std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
 	{
 		// 1. Check if handle is valid
 		if (!IsAssetHandleValid(handle))
@@ -59,6 +59,8 @@ namespace VulkanCore {
 				// Import failed
 				VK_CORE_ERROR("EditorAssetManager::GetAsset - asset import failed!");
 			}
+
+			m_LoadedAssets[handle] = asset;
 		}
 		// 3. Return asset
 		return asset;

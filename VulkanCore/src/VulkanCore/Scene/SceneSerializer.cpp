@@ -87,21 +87,21 @@ namespace YAML {
 
 namespace VulkanCore {
 
-	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
+	static YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
 	{
 		out << YAML::Flow;
 		out << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
 		return out;
 	}
 
-	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec3& v)
+	static YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec3& v)
 	{
 		out << YAML::Flow;
 		out << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
 		return out;
 	}
 
-	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec4& v)
+	static YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec4& v)
 	{
 		out << YAML::Flow;
 		out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
@@ -176,7 +176,7 @@ namespace VulkanCore {
 			out << YAML::Key << "MeshHandle" << YAML::Value << mc.MeshInstance->Handle;
 
 			// Storing Material Data of Mesh
-			out << YAML::Key << "MaterialHandle" << YAML::Value << mc.MaterialTable[0]->Handle;
+			out << YAML::Key << "MaterialHandle" << YAML::Value << mc.MaterialTable->Handle;
 
 			out << YAML::EndMap;
 		}
@@ -287,6 +287,12 @@ namespace VulkanCore {
 
 					uint64_t meshHandle = meshComponent["MeshHandle"].as<uint64_t>();
 					mc.MeshInstance = AssetManager::GetAsset<Mesh>(meshHandle);
+
+					uint64_t materialHandle = meshComponent["MaterialHandle"].as<uint64_t>();
+					mc.MaterialTable = AssetManager::GetAsset<MaterialAsset>(materialHandle);
+
+					std::shared_ptr<MeshSource> meshSource = mc.MeshInstance->GetMeshSource();
+					meshSource->SetMaterial(mc.MaterialTable->GetMaterial());
 				}
 			}
 		}
