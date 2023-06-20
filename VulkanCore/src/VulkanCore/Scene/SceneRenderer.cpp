@@ -494,13 +494,31 @@ namespace VulkanCore {
 		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/PointLightIcon.png");
 		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/SpotLightIcon.png");
 
+#if 0
+		auto assetDirectoryIterator = std::filesystem::recursive_directory_iterator("assets");
+		auto importAssets = [&assetDirectoryIterator]() mutable
+		{
+			for (auto& directoryEntry : assetDirectoryIterator)
+			{
+				const auto& path = directoryEntry.path();
+				std::string filenameString = path.generic_string();
+
+				if (!directoryEntry.is_directory())
+				{
+					if (path.extension() == "")
+						AssetManager::ImportNewAsset<T>(filenameString);
+				}
+			}
+		};
+
+		importAssets();
+#endif
+
 		m_SkyboxVBData = Utils::CreateCubeModel();
 	}
 
 	void SceneRenderer::Release()
 	{
-		// Deleting all Transforms
-		Mesh::ClearAllMeshes();
 	}
 
 	void SceneRenderer::RecreateScene()
@@ -720,7 +738,7 @@ namespace VulkanCore {
 			dc.MeshInstance = mesh;
 			dc.MaterialInstance = material;
 			dc.SubmeshIndex = submeshIndex;
-			dc.TransformBuffer = mesh->GetTransformBuffer(meshHandle);
+			dc.TransformBuffer = mesh->GetTransformBuffer();
 			dc.InstanceCount++;
 		}
 	}

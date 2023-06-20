@@ -25,6 +25,7 @@ namespace VulkanCore {
 		AssetMap m_LoadedAssets;
 
 		// TODO: Memory-only assets
+		AssetMap m_MemoryAssets;
 	};
 
 }

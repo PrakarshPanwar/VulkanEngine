@@ -8,8 +8,8 @@ Entities:
       Rotation: [-1.57079637, 0, 0]
       Scale: [3.5, 3.5, 3.5]
     MeshComponent:
-      Filepath: assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx
-      Material:
+      MeshHandle: 11844912818719243279
+      MaterialHandle:
         Albedo: [1, 1, 1, 1]
         Metallic: 1
         Roughness: 1
@@ -25,8 +25,8 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [10, 0.100000001, 10]
     MeshComponent:
-      Filepath: assets/meshes/Standard/Cube.fbx
-      Material:
+      MeshHandle: 9816593081404201911
+      MaterialHandle:
         Albedo: [1, 0.99613899, 0.99613899, 1]
         Metallic: 1
         Roughness: 1
@@ -42,8 +42,8 @@ Entities:
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     MeshComponent:
-      Filepath: assets/meshes/Standard/Sphere.fbx
-      Material:
+      MeshHandle: 5887157471203535698
+      MaterialHandle:
         Albedo: [1, 1, 1, 1]
         Metallic: 1
         Roughness: 1
@@ -59,8 +59,8 @@ Entities:
       Rotation: [-1.57079637, 0, 0]
       Scale: [6, 6, 6]
     MeshComponent:
-      Filepath: assets/meshes/BrassVase2K/BrassVase.fbx
-      Material:
+      MeshHandle: 12839587798147330480
+      MaterialHandle:
         Albedo: [1, 1, 1, 1]
         Metallic: 1
         Roughness: 1
@@ -109,8 +109,8 @@ Entities:
       Rotation: [1.11806941e-09, -1.57045102, 1.11710485e-09]
       Scale: [9.99999332, 2.68595648, 0.109166376]
     MeshComponent:
-      Filepath: assets/meshes/Standard/Cube.fbx
-      Material:
+      MeshHandle: 9816593081404201911
+      MaterialHandle:
         Albedo: [1, 0.99613899, 0.99613899, 1]
         Metallic: 1
         Roughness: 1
@@ -126,8 +126,8 @@ Entities:
       Rotation: [-1.57079601, 0, 0]
       Scale: [3, 2.99965668, 2.99965668]
     MeshComponent:
-      Filepath: assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx
-      Material:
+      MeshHandle: 11844912818719243279
+      MaterialHandle:
         Albedo: [1, 1, 1, 1]
         Metallic: 1
         Roughness: 1

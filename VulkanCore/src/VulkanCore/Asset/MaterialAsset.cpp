@@ -14,13 +14,10 @@ namespace VulkanCore {
 
 	void MaterialAsset::SaveAsset()
 	{
-		MaterialAssetImporter assetSerializer{};
-		assetSerializer.SerializeToYAML(*this);
 	}
 
 	void MaterialAsset::NewAsset()
 	{
-
 	}
 
 }

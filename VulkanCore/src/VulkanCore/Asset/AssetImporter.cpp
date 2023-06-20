@@ -2,6 +2,7 @@
 #include "AssetImporter.h"
 #include "TextureImporter.h"
 #include "MeshImporter.h"
+#include "MaterialAssetImporter.h"
 
 #include "VulkanCore/Core/Core.h"
 
@@ -14,13 +15,21 @@ namespace VulkanCore {
 		{ AssetType::Texture2D, TextureImporter::ImportTexture2D },
 		{ AssetType::TextureCube, TextureImporter::ImportTextureCube },
 		{ AssetType::Mesh, MeshImporter::ImportMesh },
-		{ AssetType::MeshAsset, MeshImporter::ImportAssimpMesh }
+		{ AssetType::MeshAsset, MeshImporter::ImportAssimpMesh },
+		{ AssetType::Material, MaterialAssetImporter::ImportMaterialAsset }
 	};
 
-	using AssetSerializeFunction = std::function<void(const AssetMetadata&, std::shared_ptr<Asset>)>;
-	static std::map<AssetType, AssetSerializeFunction> s_AssetSerializeFunctions = {
+	using AssetSerializer = std::function<void(const AssetMetadata&, std::shared_ptr<Asset>)>;
+	static std::map<AssetType, AssetSerializer> s_AssetSerializers = {
 		{ AssetType::Texture2D, TextureImporter::SerializeTexture2D },
-		{ AssetType::TextureCube, TextureImporter::SerializeTextureCube }
+		{ AssetType::TextureCube, TextureImporter::SerializeTextureCube },
+		{ AssetType::Mesh, MeshImporter::SerializeMesh },
+		{ AssetType::Material, MaterialAssetImporter::SerializeToYAML }
+	};
+
+	using AssetDeserializer = std::function<bool(const AssetMetadata&, std::shared_ptr<Asset>&)>;
+	static std::map<AssetType, AssetDeserializer> s_AssetDeserializers = {
+		{ AssetType::Mesh, MeshImporter::DeserializeMesh }
 	};
 
 	std::shared_ptr<Asset> AssetImporter::ImportAsset(AssetHandle handle, const AssetMetadata& metadata)
@@ -36,7 +45,24 @@ namespace VulkanCore {
 
 	void AssetImporter::Serialize(const AssetMetadata& metadata, std::shared_ptr<Asset> asset)
 	{
-		return s_AssetSerializeFunctions.at(metadata.Type)(metadata, asset);
+		if (!s_AssetSerializers.contains(metadata.Type))
+		{
+			VK_CORE_ERROR("No serializer available for asset type: {}", Utils::AssetTypeToString(metadata.Type));
+			return;
+		}
+
+		return s_AssetSerializers.at(metadata.Type)(metadata, asset);
+	}
+
+	bool AssetImporter::Deserialize(const AssetMetadata& metadata, std::shared_ptr<Asset>& asset)
+	{
+		if (!s_AssetDeserializers.contains(metadata.Type))
+		{
+			VK_CORE_ERROR("No deserializer available for asset type: {}", Utils::AssetTypeToString(metadata.Type));
+			return false;
+		}
+
+		return s_AssetDeserializers.at(metadata.Type)(metadata, asset);
 	}
 
 }

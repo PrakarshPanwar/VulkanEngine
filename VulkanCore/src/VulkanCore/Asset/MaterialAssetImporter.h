@@ -1,4 +1,5 @@
 #pragma once
+#include "VulkanCore/Asset/AssetMetadata.h"
 #include "MaterialAsset.h"
 
 namespace VulkanCore {
@@ -6,11 +7,10 @@ namespace VulkanCore {
 	class MaterialAssetImporter
 	{
 	public:
-		MaterialAssetImporter();
-		~MaterialAssetImporter();
+		static std::shared_ptr<MaterialAsset> ImportMaterialAsset(AssetHandle handle, const AssetMetadata& metadata);
 
-		std::string SerializeToYAML(MaterialAsset& materialAsset);
-		bool DeserializeFromYAML(const std::string& filepath, MaterialAsset& materialAsset);
+		static void SerializeToYAML(const AssetMetadata& metadata, std::shared_ptr<Asset> asset);
+		static bool DeserializeFromYAML(const std::string& filepath, MaterialAsset& materialAsset);
 	private:
 	};
 

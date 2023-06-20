@@ -1,5 +1,8 @@
 #include "vulkanpch.h"
 #include "MeshImporter.h"
+#include "AssetManager.h"
+
+#include <yaml-cpp/yaml.h>
 
 namespace VulkanCore {
 
@@ -21,7 +24,7 @@ namespace VulkanCore {
 
 	std::shared_ptr<MeshSource> MeshImporter::ImportAssimpMesh(AssetHandle handle, const AssetMetadata& metadata)
 	{
-		std::shared_ptr<MeshSource> meshSource = std::make_shared<MeshSource>();
+		std::shared_ptr<MeshSource> meshSource = std::make_shared<MeshSource>(metadata);
 
 		TraverseNodes(meshSource, meshSource->m_Scene->mRootNode, 0);
 		InvalidateMesh(meshSource);
@@ -29,11 +32,62 @@ namespace VulkanCore {
 		return meshSource;
 	}
 
-	// NOTE: For this we have to serialize mesh asset which includes
+	// NOTE: For this we have to serialize/deserialize mesh asset which includes
 	// Mesh Asset handle(Most Important) and Submesh Indices(Optional/In future)
 	std::shared_ptr<Mesh> MeshImporter::ImportMesh(AssetHandle handle, const AssetMetadata& metadata)
 	{
+		std::shared_ptr<Asset> mesh = nullptr;
+
+		bool deserialized = DeserializeMesh(metadata, mesh);
+		if (deserialized)
+			return std::static_pointer_cast<Mesh>(mesh);
+
 		return nullptr;
+	}
+
+	// NOTE: Asset in parameter is of type Mesh(not MeshSource)
+	void MeshImporter::SerializeMesh(const AssetMetadata& metadata, std::shared_ptr<Asset> asset)
+	{
+		std::string filepath = metadata.FilePath.string();
+		// Obtain MeshSource
+		std::shared_ptr<Mesh> mesh = std::dynamic_pointer_cast<Mesh>(asset);
+		std::shared_ptr<MeshSource> meshSource = mesh->GetMeshSource();
+
+		YAML::Emitter out;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Mesh";
+		out << YAML::Value;
+		out << YAML::BeginMap;
+		out << YAML::Key << "MeshAsset" << YAML::Value << meshSource->Handle;
+		out << YAML::EndMap;
+		out << YAML::EndMap; // End Root Node
+
+		std::ofstream fout(filepath);
+		fout << out.c_str();
+	}
+
+	bool MeshImporter::DeserializeMesh(const AssetMetadata& metadata, std::shared_ptr<Asset>& asset)
+	{
+		std::string filepath = metadata.FilePath.string();
+		std::ifstream stream(filepath);
+		std::stringstream strStream;
+		strStream << stream.rdbuf();
+
+		YAML::Node data = YAML::Load(strStream.str());
+		if (!data["Mesh"])
+			return false;
+
+		YAML::Node rootNode = data["Mesh"];
+		if (!rootNode["MeshAsset"])
+			return false;
+
+		AssetHandle meshSourceHandle = rootNode["MeshAsset"].as<uint64_t>();
+		std::shared_ptr<MeshSource> meshSource = AssetManager::GetAsset<MeshSource>(meshSourceHandle);
+
+		// NOTE: We have to find a way to set handle
+		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(meshSource);
+		asset = mesh;
+		return true;
 	}
 
 	void MeshImporter::InvalidateMesh(std::shared_ptr<MeshSource> meshSource)
