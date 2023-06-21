@@ -22,6 +22,7 @@ namespace VulkanCore {
 			if (fileExtension == ".hdr")							return AssetType::Texture2D;
 			if (fileExtension == ".fbx" || fileExtension == ".obj") return AssetType::MeshAsset;
 			if (fileExtension == ".vkmesh")							return AssetType::Mesh;
+			if (fileExtension == ".vkmat")							return AssetType::Material;
 
 			return AssetType::None;
 		}
@@ -83,6 +84,14 @@ namespace VulkanCore {
 			{
 				if (directoryEntry.is_directory())
 					m_CurrentDirectory /= path.filename();
+
+				AssetType assetType = Utils::AssetTypeFromExtension(path.extension());
+				if (assetType == AssetType::Material)
+				{
+					std::string pathStr = path.string();
+					std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(pathStr);
+					m_MaterialEditor = std::make_shared<MaterialEditor>(materialAsset);
+				}
 			}
 
 			if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
@@ -118,6 +127,9 @@ namespace VulkanCore {
 		}
 
 		ImGui::Columns(1);
+
+		if (m_MaterialEditor)
+			m_MaterialEditor->OnImGuiRender();
 
 		CreateMaterialDialog();
 

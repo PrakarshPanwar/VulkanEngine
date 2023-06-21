@@ -1,6 +1,7 @@
 #pragma once
 #include "Platform/Vulkan/VulkanContext.h"
 #include "VulkanCore/Renderer/Texture.h"
+#include "MaterialEditor.h"
 
 namespace VulkanCore {
 
@@ -21,6 +22,8 @@ namespace VulkanCore {
 
 		std::shared_ptr<Texture2D> m_DirectoryIcon, m_FileIcon;
 		VkDescriptorSet m_DirectoryIconID, m_FileIconID;
+
+		std::shared_ptr<MaterialEditor> m_MaterialEditor;
 
 		float m_ThumbnailSize = 128.0f, m_Padding = 16.0f;
 	};

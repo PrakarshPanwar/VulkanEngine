@@ -125,8 +125,6 @@ namespace VulkanCore {
 		}
 
 		ImGui::End(); // End of Properties Panel
-
-		//DrawMaterialsPanel();
 	}
 
 	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
