@@ -5,6 +5,7 @@
 #include "ContentBrowserPanel.h"
 #include "VulkanCore/Asset/AssetManager.h"
 #include "VulkanCore/Mesh/Mesh.h"
+#include "VulkanCore/Asset/MaterialAsset.h"
 #include "VulkanCore/Asset/TextureImporter.h"
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
@@ -43,7 +44,7 @@ namespace VulkanCore {
 	{
 		ImGui::Begin("Content Browser");
 
-		if (m_CurrentDirectory != std::filesystem::path(g_AssetPath))
+		if (m_CurrentDirectory != g_AssetPath)
 		{
 			if (ImGui::Button("Back"))
 				m_CurrentDirectory = m_CurrentDirectory.parent_path();
@@ -108,38 +109,7 @@ namespace VulkanCore {
 				ImGui::EndPopup();
 			}
 
-			if (openMeshImportDialog)
-				ImGui::OpenPopup("Mesh Import Dialog");
-
-			ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-			ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-			if (ImGui::BeginPopupModal("Mesh Import Dialog", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-			{
-				std::shared_ptr<MeshSource> meshSource = nullptr;
-
-				char buffer[512];
-				memset(buffer, 0, sizeof(buffer));
-				ImGui::Text("assets/");
-				ImGui::SameLine();
-				ImGui::InputText("##InputPath", buffer, sizeof(buffer), ImGuiInputTextFlags_CharsDecimal);
-
-				ImGui::Separator();
-				if (ImGui::Button("OK"))
-				{
-					std::filesystem::path filepath = buffer;
-					filepath = g_AssetPath / filepath;
-
-					meshSource = AssetManager::GetAsset<MeshSource>(path.string());
-					AssetManager::CreateNewAsset<Mesh>(filepath.string(), meshSource);
-					ImGui::CloseCurrentPopup();
-				}
-
-				ImGui::SameLine();
-				if (ImGui::Button("Cancel"))
-					ImGui::CloseCurrentPopup();
-
-				ImGui::EndPopup();
-			}
+			MeshImportDialog(openMeshImportDialog, path);
 
 			ImGui::TextWrapped(filenameString.c_str());
 			ImGui::NextColumn();
@@ -149,8 +119,111 @@ namespace VulkanCore {
 
 		ImGui::Columns(1);
 
+		CreateMaterialDialog();
+
 		// TODO: status bar
 		ImGui::End();
+	}
+
+	void ContentBrowserPanel::MeshImportDialog(bool open, const std::filesystem::path& path)
+	{
+		if (open)
+			ImGui::OpenPopup("Mesh Import Dialog");
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		if (ImGui::BeginPopupModal("Mesh Import Dialog", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			std::shared_ptr<MeshSource> meshSource = nullptr;
+
+			ImGui::Text("Importing a mesh is going to create a additional file which will store main asset handle");
+			ImGui::TextColored({ 1.0f, 1.0f, 0.0f, 1.0f }, "NOTE: A material has to be created separately and assigned to mesh!");
+
+			static char buffer[512];
+			ImGui::Text("assets/meshes/");
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 25.0f);
+			ImGui::InputText("##InputPath", buffer, sizeof(buffer));
+			ImGui::SameLine();
+			ImGui::Text(".vkmesh");
+
+			ImGui::Separator();
+			if (ImGui::Button("OK"))
+			{
+				std::string pathStr = { buffer };
+				std::filesystem::path filepath = pathStr;
+				filepath.replace_extension(".vkmesh");
+
+				filepath = g_AssetPath / "meshes" / filepath;
+
+				meshSource = AssetManager::ImportNewAsset<MeshSource>(path.string());
+				AssetManager::CreateNewAsset<Mesh>(filepath.string(), meshSource);
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel"))
+				ImGui::CloseCurrentPopup();
+
+			ImGui::EndPopup();
+		}
+	}
+
+	void ContentBrowserPanel::CreateMaterialDialog()
+	{
+		bool openMaterialCreateDialog = false;
+		if (ImGui::BeginPopupContextWindow("##CreateAsset", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverExistingPopup))
+		{
+			if (ImGui::BeginMenu("Create"))
+			{
+				if (ImGui::MenuItem("Material"))
+					openMaterialCreateDialog = true;
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndPopup();
+		}
+
+		if (openMaterialCreateDialog)
+			ImGui::OpenPopup("Create Material Dialog");
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		if (ImGui::BeginPopupModal("Create Material Dialog", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			std::shared_ptr<MaterialAsset> materialAsset = nullptr;
+
+			ImGui::Text("Creating a material asset will write to asset registry");
+
+			static char buffer[512];
+			ImGui::Text("assets/materials/");
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 25.0f);
+			ImGui::InputText("##InputPath", buffer, sizeof(buffer));
+			ImGui::SameLine();
+			ImGui::Text(".vkmat");
+
+			ImGui::Separator();
+			if (ImGui::Button("OK"))
+			{
+				std::string pathStr = { buffer };
+				std::filesystem::path filepath = pathStr;
+				filepath.replace_extension(".vkmat");
+
+				filepath = g_AssetPath / "materials" / filepath;
+
+				std::shared_ptr<Material> material = Material::Create(filepath.stem().string());
+				materialAsset = AssetManager::CreateNewAsset<MaterialAsset>(filepath.string(), material);
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel"))
+				ImGui::CloseCurrentPopup();
+
+			ImGui::EndPopup();
+		}
 	}
 
 }

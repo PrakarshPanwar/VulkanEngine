@@ -7,7 +7,7 @@ namespace VulkanCore {
 	class MaterialAsset : public Asset
 	{
 	public:
-		MaterialAsset();
+		MaterialAsset(std::shared_ptr<Material> material);
 		~MaterialAsset();
 
 		void SaveAsset();
@@ -15,7 +15,6 @@ namespace VulkanCore {
 
 		AssetType GetType() const override { return AssetType::Material; }
 
-		inline void SetMaterial(std::shared_ptr<Material> material) { m_Material = material; }
 		inline std::shared_ptr<Material> GetMaterial() const { return m_Material; }
 	private:
 		std::shared_ptr<Material> m_Material;

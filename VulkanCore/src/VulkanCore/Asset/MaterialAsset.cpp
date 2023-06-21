@@ -5,7 +5,8 @@
 
 namespace VulkanCore {
 
-	MaterialAsset::MaterialAsset()
+	MaterialAsset::MaterialAsset(std::shared_ptr<Material> material)
+		: m_Material(material)
 	{
 	}
 

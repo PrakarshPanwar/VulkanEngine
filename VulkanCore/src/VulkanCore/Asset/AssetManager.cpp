@@ -2,6 +2,7 @@
 #include "AssetManager.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Core/Timer.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -16,6 +17,7 @@ namespace VulkanCore {
 
 	bool AssetManager::LoadRegistryFromFile()
 	{
+		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Loading Asset Registry");
 		auto editorAssetManager = GetEditorAssetManager();
 
 		std::ifstream stream("assets/AssetRegistry.vkr");

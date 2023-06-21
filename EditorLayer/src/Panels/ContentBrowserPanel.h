@@ -14,6 +14,9 @@ namespace VulkanCore {
 
 		void OnImGuiRender();
 	private:
+		void MeshImportDialog(bool open, const std::filesystem::path& path);
+		void CreateMaterialDialog();
+	private:
 		std::filesystem::path m_CurrentDirectory;
 
 		std::shared_ptr<Texture2D> m_DirectoryIcon, m_FileIcon;
