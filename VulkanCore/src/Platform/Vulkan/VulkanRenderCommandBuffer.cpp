@@ -150,19 +150,21 @@ namespace VulkanCore {
 		return m_TimestampQueryPoolBuffer[(index << 1) + 1] - m_TimestampQueryPoolBuffer[index << 1];
 	}
 
-	// TODO: Use RT_GetCurrentFrameIndex
 	void VulkanRenderCommandBuffer::SubmitCommandBuffersToQueue()
 	{
-		uint32_t currentFrameIndex = Renderer::GetCurrentFrameIndex();
+		Renderer::Submit([]
+		{
+			uint32_t frameIndex = Renderer::RT_GetCurrentFrameIndex();
 		
-		std::vector<VkCommandBuffer> cmdBuffers;
-		cmdBuffers.reserve(m_AllCommandBuffers.size());
+			std::vector<VkCommandBuffer> cmdBuffers;
+			cmdBuffers.reserve(m_AllCommandBuffers.size());
 
-		for (auto& cmdBuffer : m_AllCommandBuffers)
-			cmdBuffers.emplace_back(cmdBuffer[currentFrameIndex]);
+			for (auto& cmdBuffer : m_AllCommandBuffers)
+				cmdBuffers.emplace_back(cmdBuffer[frameIndex]);
 
-		auto vulkanRenderer = VulkanRenderer::Get();
-		vulkanRenderer->FinalQueueSubmit(cmdBuffers);
+			auto vulkanRenderer = VulkanRenderer::Get();
+			vulkanRenderer->FinalQueueSubmit(cmdBuffers);
+		});
 	}
 
 }

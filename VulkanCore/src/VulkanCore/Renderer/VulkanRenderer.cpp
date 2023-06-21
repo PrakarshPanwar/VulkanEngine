@@ -528,27 +528,9 @@ namespace VulkanCore {
 
 	}
 
-	void VulkanRenderer::FinalQueueSubmit()
+	void VulkanRenderer::SubmitAndPresent()
 	{
-		Renderer::Submit([this]
-		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::FinalQueueSubmit");
-
-			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
-
-			const std::vector<VkCommandBuffer> cmdBuffers{ m_CommandBuffer->RT_GetActiveCommandBuffer(), sceneRenderer->GetCommandBuffer()->RT_GetActiveCommandBuffer() };
-			auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
-
-			if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
-			{
-				m_Window->ResetWindowResizeFlag();
-				RecreateSwapChain();
-				sceneRenderer->RecreateScene();
-			}
-
-			else if (result != VK_SUCCESS)
-				VK_CORE_ERROR("Failed to Present Swap Chain Image!");
-		});
+		VulkanRenderCommandBuffer::SubmitCommandBuffersToQueue();
 
 		Renderer::WaitAndRender();
 
@@ -564,14 +546,10 @@ namespace VulkanCore {
 		{
 			m_Window->ResetWindowResizeFlag();
 			RecreateSwapChain();
-			SceneRenderer::GetSceneRenderer()->RecreateScene();
 		}
 
 		else if (result != VK_SUCCESS)
 			VK_CORE_ERROR("Failed to Present Swap Chain Image!");
-
-		IsFrameStarted = false;
-		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
 	}
 
 }

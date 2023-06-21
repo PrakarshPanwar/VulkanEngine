@@ -16,9 +16,10 @@ Start by cloning the repository with `git clone --recursive https://github.com/P
 cd Assimp 
 cmake -DASSIMP_BUILD_ZLIB=ON CMakeLists.txt
 ```
-3. One prerequisite is the Vulkan SDK. If it is not installed, then install [VulkanSDK here](https://vulkan.lunarg.com/).
-4. After installation, create a folder **VulkanSDK** in vendor and copy all the folders of VulkanSDK in [VulkanCore/vendor/VulkanSDK](VulkanCore/vendor).
-5. Again run [VkGenProjects.bat](VkGenProjects.bat) to link debug libraries in shaderc.
+3. Open `Assimp.sln` in Visual Studio and build solution.
+4. One prerequisite is the Vulkan SDK. If it is not installed, then install [VulkanSDK here](https://vulkan.lunarg.com/).
+5. After installation, create a folder **VulkanSDK** in vendor and copy all the folders of VulkanSDK in [VulkanCore/vendor/VulkanSDK](VulkanCore/vendor).
+6. Again run [VkGenProjects.bat](VkGenProjects.bat) to link debug libraries in shaderc.
 
 ### Big Features to Come
 

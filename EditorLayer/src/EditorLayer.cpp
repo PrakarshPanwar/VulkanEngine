@@ -233,7 +233,7 @@ namespace VulkanCore {
 			static float thumbnailSize = 128.0f;
 			static float padding = 16.0f;
 
-			ImGui::DragFloat("Field of View", &fov, 0.01f, 5.0f, 90.0f);
+			ImGui::DragFloat("Field of View", &fov, 0.5f, 5.0f, 90.0f);
 			if (ImGui::IsItemActive())
 				m_EditorCamera.SetFieldOfView(glm::radians(fov));
 

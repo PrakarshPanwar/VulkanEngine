@@ -71,7 +71,7 @@ namespace VulkanCore {
 
 			m_Renderer->EndScene();
 
-			m_Renderer->FinalQueueSubmit();
+			m_Renderer->SubmitAndPresent();
 		}
 	}
 

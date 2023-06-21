@@ -11,6 +11,17 @@ namespace VulkanCore {
 	class VulkanRenderer;
 	class VulkanMaterial;
 
+	// More Colors can be added in future
+	enum class DebugLabelColor
+	{
+		None,
+		Grey,
+		Red,
+		Blue,
+		Gold,
+		Orange
+	};
+
 	struct RendererConfig
 	{
 		static const uint32_t FramesInFlight = 3;
@@ -31,7 +42,7 @@ namespace VulkanCore {
 		static void RenderSkybox(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::shared_ptr<VulkanMaterial>& skyboxMaterial, void* pcData = nullptr);
 		static void BeginTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
 		static void EndTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
-		static void BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::string& name);
+		static void BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::string& name, DebugLabelColor labelColor = DebugLabelColor::None);
 		static void EndGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
 
 		static std::shared_ptr<VulkanTexture> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
