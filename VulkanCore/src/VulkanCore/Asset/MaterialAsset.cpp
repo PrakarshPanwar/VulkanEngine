@@ -14,12 +14,10 @@ namespace VulkanCore {
 	{
 	}
 
-	void MaterialAsset::SaveAsset()
+	void MaterialAsset::Serialize()
 	{
-	}
-
-	void MaterialAsset::NewAsset()
-	{
+		AssetMetadata metadata = AssetManager::GetAssetMetadata(Handle);
+		MaterialAssetImporter::Serialize(metadata, this);
 	}
 
 }

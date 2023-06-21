@@ -89,7 +89,39 @@ namespace VulkanCore {
 		fout << out.c_str();
 	}
 
- 	bool MaterialAssetImporter::DeserializeFromYAML(const AssetMetadata& metadata, std::shared_ptr<Asset>& asset)
+	void MaterialAssetImporter::Serialize(const AssetMetadata& metadata, MaterialAsset* materialAsset)
+	{
+		std::string filepath = metadata.FilePath.string();
+		auto material = materialAsset->GetMaterial();
+
+		YAML::Emitter out;
+		out << YAML::BeginMap;
+		out << YAML::Key << "Material" << YAML::Value;
+		{
+			out << YAML::BeginMap;
+
+			MaterialData& materialData = material->GetMaterialData();
+			out << YAML::Key << "Albedo" << YAML::Value << materialData.Albedo;
+			out << YAML::Key << "Metallic" << YAML::Value << materialData.Metallic;
+			out << YAML::Key << "Roughness" << YAML::Value << materialData.Roughness;
+			out << YAML::Key << "UseNormalMap" << YAML::Value << materialData.UseNormalMap;
+
+			// Setting Materials Path
+			auto [diffuseHandle, normalHandle, armHandle] = material->GetMaterialHandles();
+			out << YAML::Key << "AlbedoHandle" << YAML::Value << diffuseHandle;
+			out << YAML::Key << "NormalHandle" << YAML::Value << normalHandle;
+			out << YAML::Key << "ARMHandle" << YAML::Value << armHandle;
+
+			out << YAML::EndMap;
+		}
+
+		out << YAML::EndMap; // End Material Map
+
+		std::ofstream fout(filepath);
+		fout << out.c_str();
+	}
+
+	bool MaterialAssetImporter::DeserializeFromYAML(const AssetMetadata& metadata, std::shared_ptr<Asset>& asset)
  	{
 		std::string filepath = metadata.FilePath.string();
  		std::ifstream stream(filepath);

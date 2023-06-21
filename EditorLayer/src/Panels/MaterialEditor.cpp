@@ -16,17 +16,13 @@ namespace VulkanCore {
 
 	std::unordered_map<uint64_t, std::shared_ptr<Material>> MaterialEditor::s_OpenedMaterials;
 
-	MaterialEditor::MaterialEditor(std::shared_ptr<Material> material)
-		: m_Material(material)
+	MaterialEditor::MaterialEditor(std::shared_ptr<MaterialAsset> materialAsset)
+		: m_MaterialAsset(materialAsset)
 	{
-		/*uint64_t materialHandle = m_Material->GetAssetHandle();
-		if (s_OpenedMaterials.contains(materialHandle))
-		*/
 	}
 
 	MaterialEditor::~MaterialEditor()
 	{
-
 	}
 
 	void MaterialEditor::OnImGuiRender()
@@ -35,9 +31,13 @@ namespace VulkanCore {
 		{
 			ImGui::Begin("Material Editor", &m_OpenEditorWindow);
 
-			auto vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(m_Material);
+			auto vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(m_MaterialAsset->GetMaterial());
 
-			auto& materialData = m_Material->GetMaterialData();
+			if (ImGui::Button("Save"))
+				m_MaterialAsset->Serialize();
+			ImGui::Separator();
+
+			auto& materialData = vulkanMaterial->GetMaterialData();
 			auto [diffuse, normal, arm] = vulkanMaterial->GetMaterialTextureIDs();
 
 			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;

@@ -10,11 +10,9 @@ namespace VulkanCore {
 		MaterialAsset(std::shared_ptr<Material> material);
 		~MaterialAsset();
 
-		void SaveAsset();
-		void NewAsset();
+		void Serialize();
 
 		AssetType GetType() const override { return AssetType::Material; }
-
 		inline std::shared_ptr<Material> GetMaterial() const { return m_Material; }
 	private:
 		std::shared_ptr<Material> m_Material;
