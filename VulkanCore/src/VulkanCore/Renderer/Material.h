@@ -32,6 +32,8 @@ namespace VulkanCore {
 		virtual void SetARMTexture(std::shared_ptr<Texture2D> texture);
 
 		inline MaterialData& GetMaterialData() { return m_MaterialData; }
+
+		static std::shared_ptr<Material> Create(const std::string& debugName);
 	protected:
 		MaterialData m_MaterialData{};
 

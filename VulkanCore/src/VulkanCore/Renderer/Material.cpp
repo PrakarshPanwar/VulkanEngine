@@ -55,4 +55,9 @@ namespace VulkanCore {
 		m_ARMTexture = texture;
 	}
 
+	std::shared_ptr<Material> Material::Create(const std::string& debugName)
+	{
+		return std::make_shared<VulkanMaterial>(debugName);
+	}
+
 }

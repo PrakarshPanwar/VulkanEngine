@@ -60,10 +60,7 @@ namespace VulkanCore {
 	{
 		std::string filepath = metadata.FilePath.string();
 		std::shared_ptr<MaterialAsset> materialAsset = std::dynamic_pointer_cast<MaterialAsset>(asset);
-
-		std::string filenameStr = metadata.FilePath.stem().string();
-		std::shared_ptr<Material> material = std::make_shared<VulkanMaterial>(filenameStr);
-		materialAsset->SetMaterial(material);
+		auto material = materialAsset->GetMaterial();
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;
@@ -106,9 +103,8 @@ namespace VulkanCore {
  		YAML::Node materialNode = data["Material"];
  
 		std::string filenameStr = metadata.FilePath.stem().string();
-		std::shared_ptr<MaterialAsset> materialAsset = std::make_shared<MaterialAsset>();
 		std::shared_ptr<Material> material = std::make_shared<VulkanMaterial>(filenameStr);
-		materialAsset->SetMaterial(material);
+		std::shared_ptr<MaterialAsset> materialAsset = std::make_shared<MaterialAsset>(material);
 
  		glm::vec4 albedoColor = materialNode["Albedo"].as<glm::vec4>();
  		float metallic = materialNode["Metallic"].as<float>();

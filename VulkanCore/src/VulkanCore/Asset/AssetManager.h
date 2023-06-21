@@ -47,7 +47,7 @@ namespace VulkanCore {
 		template<typename T, typename... Args>
 		static std::shared_ptr<T> CreateNewAsset(const std::string& filepath, Args&&... args)
 		{
-			static_assert(std::derived_from<T, Asset>, "ImportNewAsset only works for types derived from Asset");
+			static_assert(std::derived_from<T, Asset>, "CreateNewAsset only works for types derived from Asset");
 
 			std::filesystem::path assetPath = filepath;
 
