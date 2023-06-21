@@ -13,7 +13,7 @@ namespace VulkanCore {
 
 		ImageFormat ImgFormat = ImageFormat::None;
 
-		operator bool() const { return ImgFormat == ImageFormat::None ? false : true; }
+		operator bool() const { return ImgFormat != ImageFormat::None; }
 	};
 
 	struct FramebufferAttachmentSpecification
@@ -46,7 +46,7 @@ namespace VulkanCore {
 		inline const std::vector<FramebufferTextureSpecification>& GetColorAttachmentsTextureSpec() const { return m_ColorAttachmentSpecifications; }
 		inline const FramebufferTextureSpecification& GetDepthAttachmentTextureSpec() const { return m_DepthAttachmentSpecification; }
 		inline bool HasDepthAttachment() const { return m_DepthAttachmentSpecification; }
-		const std::vector<std::shared_ptr<VulkanImage>>& GetResolveAttachment() const;
+		const std::vector<std::shared_ptr<VulkanImage>>& GetAttachment(bool resolve = false, uint32_t index = 0) const;
 
 		void Invalidate();
 		void CreateFramebuffer(VkRenderPass renderPass);
