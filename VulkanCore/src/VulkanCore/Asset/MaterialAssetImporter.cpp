@@ -125,9 +125,16 @@ namespace VulkanCore {
 		bool normal = AssetManager::GetAssetManager()->IsAssetHandleValid(normalHandle);
 		bool arm = AssetManager::GetAssetManager()->IsAssetHandleValid(armHandle);
 
- 		material->SetDiffuseTexture(albedo ? AssetManager::GetAsset<Texture2D>(albedoHandle) : Renderer::GetWhiteTexture());
- 		material->SetNormalTexture(normal ? AssetManager::GetAsset<Texture2D>(normalHandle) : Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM));
- 		material->SetARMTexture(arm ? AssetManager::GetAsset<Texture2D>(armHandle) : Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM));
+		auto diffuseTexture = albedo ? AssetManager::GetAsset<Texture2D>(albedoHandle) : Renderer::GetWhiteTexture();
+		auto normalTexture = normal ? AssetManager::GetAsset<VulkanTexture>(normalHandle) : Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
+		auto armTexture = arm ? AssetManager::GetAsset<VulkanTexture>(armHandle) : Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
+
+		normalTexture->Reload(ImageFormat::RGBA8_UNORM);
+		armTexture->Reload(ImageFormat::RGBA8_UNORM);
+
+ 		material->SetDiffuseTexture(diffuseTexture);
+ 		material->SetNormalTexture(normalTexture);
+ 		material->SetARMTexture(armTexture);
  
  		auto vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
  		vulkanMaterial->UpdateMaterials();

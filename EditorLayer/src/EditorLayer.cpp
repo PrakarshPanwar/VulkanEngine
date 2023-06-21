@@ -37,6 +37,8 @@ namespace VulkanCore {
 
 	EditorLayer::~EditorLayer()
 	{
+		auto editorAssetManager = AssetManager::GetEditorAssetManager();
+		editorAssetManager->ClearLoadedAssets();
 	}
 
 	void EditorLayer::OnAttach()
@@ -233,7 +235,7 @@ namespace VulkanCore {
 
 			ImGui::DragFloat("Field of View", &fov, 0.01f, 5.0f, 90.0f);
 			if (ImGui::IsItemActive())
-				m_EditorCamera.SetFieldOfView(fov);
+				m_EditorCamera.SetFieldOfView(glm::radians(fov));
 
 			ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
 			if (ImGui::IsItemActive())

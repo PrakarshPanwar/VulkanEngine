@@ -97,17 +97,21 @@ namespace VulkanCore {
 		Release();
 	}
 
+	void VulkanTexture::Reload(ImageFormat format)
+	{
+		m_Specification.Format = format;
+
+		Invalidate();
+	}
+
 	void VulkanTexture::Invalidate()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
 		VkDeviceSize imageSize = Utils::GetMemorySize(m_Specification.Format, m_Specification.Width, m_Specification.Height);
 
-		std::string filepath = {};
-		//VK_CORE_ASSERT(m_LocalStorage, "Failed to Load Texture {0}", m_FilePath);
-
-		ImageSpecification spec;
-		//spec.DebugName = std::filesystem::path(m_FilePath).stem().string();
+		ImageSpecification spec{};
+		spec.DebugName = std::format("Texture: ({0}, {1})", m_Specification.Width, m_Specification.Height);
 		spec.Width = m_Specification.Width;
 		spec.Height = m_Specification.Height;
 		spec.Usage = ImageUsage::Texture;
@@ -166,8 +170,6 @@ namespace VulkanCore {
 
 				device->FlushCommandBuffer(barrierCmd);
 			}
-
-			free(m_LocalStorage);
 		}
 
 		m_IsLoaded = true;
@@ -175,6 +177,8 @@ namespace VulkanCore {
 
 	void VulkanTexture::Release() // TODO: Could be used otherwise will be removed in future
 	{
+		if (m_LocalStorage)
+			free(m_LocalStorage);
 	}
 
 	void VulkanTexture::GenerateMipMaps()
@@ -356,6 +360,7 @@ namespace VulkanCore {
 		m_DescriptorImageInfo.sampler = m_Info.Sampler;
 	}
 
+	// TODO: Should be done in RenderThread
 	void VulkanTextureCube::Release()
 	{
 		auto device = VulkanContext::GetCurrentDevice();

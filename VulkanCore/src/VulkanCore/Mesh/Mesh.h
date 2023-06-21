@@ -71,9 +71,6 @@ namespace VulkanCore {
 		inline uint32_t GetIndexCount() const { return (uint32_t)m_Indices.size(); }
 
 		inline AssetType GetType() const override { return AssetType::MeshAsset; }
-
-// 		uint64_t GetMeshHandle() const { return m_MeshHandle; }
-// 		std::string& GetFilePath() { return m_FilePath; }
 	private:
 		aiScene* m_Scene;
 		std::unique_ptr<Assimp::Importer> m_Importer;
@@ -91,7 +88,6 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanIndexBuffer> m_IndexBuffer;
 
 		friend class Mesh;
-		//friend class AssimpMeshImporter;
 		friend class MeshImporter;
 	};
 
@@ -111,10 +107,8 @@ namespace VulkanCore {
 	private:
 		std::shared_ptr<MeshSource> m_MeshSource;
 		std::vector<uint32_t> m_Submeshes;
-		// TODO: We will not need this once we have VulkanMaterial and MaterialTable
 
 		std::shared_ptr<VulkanVertexBuffer> m_TransformBuffer;
-		//static std::map<uint64_t, std::shared_ptr<VulkanVertexBuffer>> s_MeshTransformBuffer;
 	};
 
 }

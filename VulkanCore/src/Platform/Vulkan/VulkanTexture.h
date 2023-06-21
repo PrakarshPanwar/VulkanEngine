@@ -17,6 +17,8 @@ namespace VulkanCore {
 
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_Image->GetDescriptorImageInfo(); }
+
+		void Reload(ImageFormat format);
 	private:
 		void Invalidate();
 		void Release();

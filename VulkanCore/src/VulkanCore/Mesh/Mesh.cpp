@@ -117,8 +117,6 @@ namespace VulkanCore {
 			indexCount += submesh.IndexCount;
 		}
 
-		m_Materials.push_back(std::make_shared<VulkanMaterial>(filepath));
-
 		// Allocating Root Node
 		m_Nodes.emplace_back();
 	}
