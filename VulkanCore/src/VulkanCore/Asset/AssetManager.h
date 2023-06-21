@@ -111,8 +111,8 @@ namespace VulkanCore {
 		}
 
 		static void SetAssetManagerBase(std::shared_ptr<AssetManagerBase> assetManager);
-		static bool LoadRegistryFromFile();
 	private:
+		static bool LoadRegistryFromFile();
 		static void WriteRegistryToFile();
 
 		template<typename T>
@@ -134,6 +134,8 @@ namespace VulkanCore {
 		static AssetType GetAssetType<MaterialAsset>() { return AssetType::Material; }
 	private:
 		static std::shared_ptr<AssetManagerBase> s_AssetManager;
+
+		friend class EditorLayer;
 	};
 
 }

@@ -18,6 +18,7 @@ namespace VulkanCore {
 		static AssetType AssetTypeFromExtension(const std::filesystem::path& fileExtension)
 		{
 			if (fileExtension == ".png" || fileExtension == ".jpg") return AssetType::Texture2D;
+			if (fileExtension == ".hdr")							return AssetType::Texture2D;
 			if (fileExtension == ".fbx" || fileExtension == ".obj") return AssetType::MeshAsset;
 			if (fileExtension == ".vkmesh")							return AssetType::Mesh;
 
@@ -86,6 +87,7 @@ namespace VulkanCore {
 			if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
 				ImGui::OpenPopup("AssetImport");
 
+			bool openMeshImportDialog = false;
 			if (ImGui::BeginPopup("AssetImport"))
 			{
 				if (ImGui::MenuItem("Import"))
@@ -96,32 +98,45 @@ namespace VulkanCore {
 					if (assetType == AssetType::Texture2D)
 						AssetManager::ImportNewAsset<Texture2D>(filepath);
 					if (assetType == AssetType::MeshAsset)
-					{
-						std::shared_ptr<MeshSource> meshSource = nullptr;
-
-						if (ImGui::BeginPopupModal("Mesh Import Options"))
-						{
-							char buffer[512];
-							memset(buffer, 0, sizeof(buffer));
-							ImGui::InputText("assets/", buffer, sizeof(buffer));
-							ImGui::Separator();
-							if (ImGui::Button("OK"))
-							{
-								std::string path = buffer;
-								meshSource = AssetManager::GetAsset<MeshSource>(path);
-								AssetManager::CreateNewAsset<Mesh>(filepath, meshSource);
-								ImGui::CloseCurrentPopup();
-							}
-
-							ImGui::EndPopup();
-						}
-
-					}
+						openMeshImportDialog = true;
 					if (assetType == AssetType::Mesh)
 						VK_ERROR("AssetType Mesh is already in Registry!");
 					if (assetType == AssetType::None)
 						VK_ERROR("Extension type currently is not defined!");
 				}
+
+				ImGui::EndPopup();
+			}
+
+			if (openMeshImportDialog)
+				ImGui::OpenPopup("Mesh Import Dialog");
+
+			ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+			ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+			if (ImGui::BeginPopupModal("Mesh Import Dialog", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+			{
+				std::shared_ptr<MeshSource> meshSource = nullptr;
+
+				char buffer[512];
+				memset(buffer, 0, sizeof(buffer));
+				ImGui::Text("assets/");
+				ImGui::SameLine();
+				ImGui::InputText("##InputPath", buffer, sizeof(buffer), ImGuiInputTextFlags_CharsDecimal);
+
+				ImGui::Separator();
+				if (ImGui::Button("OK"))
+				{
+					std::filesystem::path filepath = buffer;
+					filepath = g_AssetPath / filepath;
+
+					meshSource = AssetManager::GetAsset<MeshSource>(path.string());
+					AssetManager::CreateNewAsset<Mesh>(filepath.string(), meshSource);
+					ImGui::CloseCurrentPopup();
+				}
+
+				ImGui::SameLine();
+				if (ImGui::Button("Cancel"))
+					ImGui::CloseCurrentPopup();
 
 				ImGui::EndPopup();
 			}

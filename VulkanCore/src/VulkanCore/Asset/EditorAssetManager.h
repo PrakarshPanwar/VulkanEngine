@@ -20,6 +20,8 @@ namespace VulkanCore {
 		const AssetRegistry& GetAssetRegistry() const { return m_AssetRegistry; }
 		const AssetMap& GetAssetMap() const { return m_LoadedAssets; }
 		const AssetMetadata& GetMetadata(AssetHandle handle) const;
+
+		void ClearLoadedAssets();
 	private:
 		AssetRegistry m_AssetRegistry;
 		AssetMap m_LoadedAssets;
