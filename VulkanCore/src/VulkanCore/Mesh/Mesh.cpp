@@ -51,7 +51,6 @@ namespace VulkanCore {
 	Mesh::Mesh(std::shared_ptr<MeshSource> meshSource)
 		: m_MeshSource(meshSource)
 	{
-		m_TransformBuffer = std::make_shared<VulkanVertexBuffer>(10 * sizeof(TransformData));
 		InvalidateSubmeshes();
 	}
 
@@ -116,6 +115,8 @@ namespace VulkanCore {
 			vertexCount += mesh->mNumVertices;
 			indexCount += submesh.IndexCount;
 		}
+
+		m_Materials.push_back(nullptr);
 
 		// Allocating Root Node
 		m_Nodes.emplace_back();

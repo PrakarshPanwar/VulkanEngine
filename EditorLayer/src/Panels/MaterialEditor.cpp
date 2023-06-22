@@ -68,9 +68,9 @@ namespace VulkanCore {
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
 						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path scenePath = g_AssetPath / path;
+						std::filesystem::path assetPath = g_AssetPath / path;
 
-						std::shared_ptr<Texture2D> diffuseTex = AssetManager::GetAsset<Texture2D>(scenePath.string());
+						std::shared_ptr<Texture2D> diffuseTex = AssetManager::GetAsset<Texture2D>(assetPath.string());
 						vulkanMaterial->SetDiffuseTexture(diffuseTex);
 					}
 
@@ -110,9 +110,9 @@ namespace VulkanCore {
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
 						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path scenePath = g_AssetPath / path;
+						std::filesystem::path assetPath = g_AssetPath / path;
 
-						std::shared_ptr<Texture2D> normalTex = AssetManager::GetAsset<Texture2D>(scenePath.string());
+						std::shared_ptr<Texture2D> normalTex = AssetManager::GetAsset<Texture2D>(assetPath.string());
 						vulkanMaterial->SetNormalTexture(normalTex);
 					}
 
@@ -152,9 +152,9 @@ namespace VulkanCore {
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
 						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path scenePath = g_AssetPath / path;
+						std::filesystem::path assetPath = g_AssetPath / path;
 
-						std::shared_ptr<Texture2D> armTex = AssetManager::GetAsset<Texture2D>(scenePath.string());
+						std::shared_ptr<Texture2D> armTex = AssetManager::GetAsset<Texture2D>(assetPath.string());
 						vulkanMaterial->SetARMTexture(armTex);
 					}
 

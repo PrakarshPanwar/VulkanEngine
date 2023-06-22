@@ -22,7 +22,6 @@ namespace VulkanCore {
 		void DisplayAddComponentEntry(const std::string& entryName);
 
 		void DrawEntityNode(Entity entity);
-		void DrawMaterialsPanel();
 		void DrawComponents(Entity entity);
 	private:
 		std::shared_ptr<Scene> m_Context;

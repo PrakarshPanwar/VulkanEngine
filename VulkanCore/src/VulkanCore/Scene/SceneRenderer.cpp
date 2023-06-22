@@ -683,30 +683,44 @@ namespace VulkanCore {
 		}
 	}
 
-	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, const glm::mat4& transform)
+	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset, const glm::mat4& transform)
 	{
 		VK_CORE_PROFILE();
 
 		auto meshSource = mesh->GetMeshSource();
-		uint64_t meshHandle = meshSource->Handle;
+		uint64_t meshHandle = mesh->Handle;
+		uint64_t materialHandle = materialAsset->Handle;
 
 		if (meshSource->GetVertexCount() == 0)
 			return;
 
 		for (uint32_t submeshIndex : mesh->GetSubmeshes())
 		{
-			MeshKey meshKey = { meshHandle, submeshIndex };
-			auto& transformBuffer = m_MeshTransformMap[meshKey].emplace_back();
+			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
+			auto& transformBuffer = m_MeshTransformMap[meshKey].Transforms.emplace_back();
 			transformBuffer.MRow[0] = { transform[0][0], transform[1][0], transform[2][0], transform[3][0] };
 			transformBuffer.MRow[1] = { transform[0][1], transform[1][1], transform[2][1], transform[3][1] };
 			transformBuffer.MRow[2] = { transform[0][2], transform[1][2], transform[2][2], transform[3][2] };
 
 			auto& dc = m_MeshDrawList[meshKey];
 			dc.MeshInstance = mesh;
-			dc.MaterialInstance = material;
+			dc.MaterialInstance = materialAsset->GetMaterial();
 			dc.SubmeshIndex = submeshIndex;
-			dc.TransformBuffer = mesh->GetTransformBuffer();
+			dc.TransformBuffer = m_MeshTransformMap[meshKey].TransformBuffer;
 			dc.InstanceCount++;
+		}
+	}
+
+	void SceneRenderer::UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset)
+	{
+		uint64_t meshHandle = mesh->Handle;
+		uint64_t materialHandle = materialAsset->Handle;
+
+		for (uint32_t submeshIndex : mesh->GetSubmeshes())
+		{
+			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
+			m_MeshTransformMap.erase(meshKey);
+			m_MeshDrawList.erase(meshKey);
 		}
 	}
 
@@ -746,7 +760,7 @@ namespace VulkanCore {
 		});
 
 		for (auto& [mk, dc] : m_MeshDrawList)
-			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
+			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk].Transforms, dc.InstanceCount);
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
@@ -867,7 +881,7 @@ namespace VulkanCore {
 	{
 		for (auto& [mk, dc] : m_MeshDrawList)
 		{
-			m_MeshTransformMap[mk].clear();
+			m_MeshTransformMap[mk].Transforms.clear();
 			dc.InstanceCount = 0;
 		}
 
