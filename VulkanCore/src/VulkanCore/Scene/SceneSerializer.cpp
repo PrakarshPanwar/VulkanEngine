@@ -166,7 +166,6 @@ namespace VulkanCore {
 			out << YAML::EndMap;
 		}
 
-		// TODO: Probably will create a separate mesh serializer when we will implement Asset system
 		if (entity.HasComponent<MeshComponent>())
 		{
 			out << YAML::Key << "MeshComponent";
@@ -174,8 +173,6 @@ namespace VulkanCore {
 
 			auto& mc = entity.GetComponent<MeshComponent>();
 			out << YAML::Key << "MeshHandle" << YAML::Value << mc.MeshInstance->Handle;
-
-			// Storing Material Data of Mesh
 			out << YAML::Key << "MaterialHandle" << YAML::Value << mc.MaterialTable->Handle;
 
 			out << YAML::EndMap;

@@ -63,7 +63,7 @@ namespace VulkanCore {
 
 		inline std::shared_ptr<Material> GetMaterial(uint32_t index = 0) const { return m_Materials[index]; }
 		// TODO: This method is temporary for now
-		inline void SetMaterial(std::shared_ptr<Material> material) { m_Materials.push_back(material); }
+		inline void SetMaterial(std::shared_ptr<Material> material) { m_Materials[0] = material; }
 
 		inline std::shared_ptr<VulkanVertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
 		inline std::shared_ptr<VulkanIndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
@@ -100,15 +100,12 @@ namespace VulkanCore {
 
 		void InvalidateSubmeshes();
 		inline std::shared_ptr<MeshSource> GetMeshSource() const { return m_MeshSource; }
-		inline std::shared_ptr<VulkanVertexBuffer> GetTransformBuffer() { return m_TransformBuffer; }
 		inline const std::vector<uint32_t>& GetSubmeshes() const { return m_Submeshes; }
 
 		AssetType GetType() const override { return AssetType::Mesh; }
 	private:
 		std::shared_ptr<MeshSource> m_MeshSource;
 		std::vector<uint32_t> m_Submeshes;
-
-		std::shared_ptr<VulkanVertexBuffer> m_TransformBuffer;
 	};
 
 }

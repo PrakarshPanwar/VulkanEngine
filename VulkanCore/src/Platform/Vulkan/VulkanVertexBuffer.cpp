@@ -72,13 +72,16 @@ namespace VulkanCore {
 
 	VulkanVertexBuffer::~VulkanVertexBuffer()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-		VulkanAllocator allocator("VertexBuffer");
+		Renderer::SubmitResourceFree([mappedPtr = m_MappedPtr, memoryAlloc = m_MemoryAllocation, vulkanBuffer = m_VulkanBuffer]() mutable
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			VulkanAllocator allocator("VertexBuffer");
 		
-		if (m_MappedPtr)
-			allocator.UnmapMemory(m_MemoryAllocation);
+			if (mappedPtr)
+				allocator.UnmapMemory(memoryAlloc);
 
-		allocator.DestroyBuffer(m_VulkanBuffer, m_MemoryAllocation);
+			allocator.DestroyBuffer(vulkanBuffer, memoryAlloc);
+		});
 	}
 
 	void VulkanVertexBuffer::WriteData(void* data, VkDeviceSize offset)

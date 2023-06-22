@@ -465,7 +465,7 @@ namespace VulkanCore {
 				sizeof(MaterialData),
 				&material->GetMaterialData());
 	
-			const auto& submeshes = mesh->GetMeshSource()->GetSubmeshes();
+			const auto& submeshes = meshSource->GetSubmeshes();
 			const Submesh& submesh = submeshes[submeshIndex];
 			vkCmdDrawIndexed(drawCmd, submesh.IndexCount, instanceCount, submesh.BaseIndex, submesh.BaseVertex, 0);
 

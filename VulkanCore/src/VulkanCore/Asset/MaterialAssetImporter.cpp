@@ -149,24 +149,18 @@ namespace VulkanCore {
  		AssetHandle armHandle = materialNode["ARMHandle"].as<uint64_t>();
  
  		// Set Textures
-		bool albedo = AssetManager::GetAssetManager()->IsAssetHandleValid(albedoHandle);
-		bool normal = AssetManager::GetAssetManager()->IsAssetHandleValid(normalHandle);
-		bool arm = AssetManager::GetAssetManager()->IsAssetHandleValid(armHandle);
+		bool hasAlbedo = AssetManager::GetAssetManager()->IsAssetHandleValid(albedoHandle);
+		bool hasNormal = AssetManager::GetAssetManager()->IsAssetHandleValid(normalHandle);
+		bool hasARM = AssetManager::GetAssetManager()->IsAssetHandleValid(armHandle);
 
-		auto diffuseTexture = albedo ? AssetManager::GetAsset<Texture2D>(albedoHandle) : Renderer::GetWhiteTexture();
-		auto normalTexture = normal ? AssetManager::GetAsset<VulkanTexture>(normalHandle) : Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
-		auto armTexture = arm ? AssetManager::GetAsset<VulkanTexture>(armHandle) : Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
-
-		normalTexture->Reload(ImageFormat::RGBA8_UNORM);
-		armTexture->Reload(ImageFormat::RGBA8_UNORM);
+		auto diffuseTexture = hasAlbedo ? AssetManager::GetAsset<Texture2D>(albedoHandle) : Renderer::GetWhiteTexture();
+		auto normalTexture = hasNormal ? AssetManager::GetAsset<VulkanTexture>(normalHandle) : Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
+		auto armTexture = hasARM ? AssetManager::GetAsset<VulkanTexture>(armHandle) : Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
 
  		material->SetDiffuseTexture(diffuseTexture);
  		material->SetNormalTexture(normalTexture);
  		material->SetARMTexture(armTexture);
  
- 		auto vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
- 		vulkanMaterial->UpdateMaterials();
-
 		asset = materialAsset;
 		return true;
  	}
