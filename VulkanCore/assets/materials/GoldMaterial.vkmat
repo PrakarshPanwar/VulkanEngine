@@ -1,7 +1,7 @@
 Material:
   Albedo: [1, 1, 1, 1]
-  Metallic: 0.699999988
-  Roughness: 0.200000003
+  Metallic: 1
+  Roughness: 0
   UseNormalMap: 1
   AlbedoHandle: 11490543663800678755
   NormalHandle: 17075763227726546998

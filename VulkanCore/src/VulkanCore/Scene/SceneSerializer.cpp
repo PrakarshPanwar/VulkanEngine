@@ -172,8 +172,8 @@ namespace VulkanCore {
 			out << YAML::BeginMap;
 
 			auto& mc = entity.GetComponent<MeshComponent>();
-			out << YAML::Key << "MeshHandle" << YAML::Value << mc.MeshInstance->Handle;
-			out << YAML::Key << "MaterialHandle" << YAML::Value << mc.MaterialTable->Handle;
+			out << YAML::Key << "MeshHandle" << YAML::Value << mc.MeshHandle;
+			out << YAML::Key << "MaterialHandle" << YAML::Value << mc.MaterialTableHandle;
 
 			out << YAML::EndMap;
 		}
@@ -283,13 +283,15 @@ namespace VulkanCore {
 					auto& mc = deserializedEntity.AddComponent<MeshComponent>();
 
 					uint64_t meshHandle = meshComponent["MeshHandle"].as<uint64_t>();
-					mc.MeshInstance = AssetManager::GetAsset<Mesh>(meshHandle);
+					mc.MeshHandle = meshHandle;
 
 					uint64_t materialHandle = meshComponent["MaterialHandle"].as<uint64_t>();
-					mc.MaterialTable = AssetManager::GetAsset<MaterialAsset>(materialHandle);
+					mc.MaterialTableHandle = materialHandle;
 
-					std::shared_ptr<MeshSource> meshSource = mc.MeshInstance->GetMeshSource();
-					meshSource->SetMaterial(mc.MaterialTable->GetMaterial());
+					std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(mc.MeshHandle);
+					std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(mc.MaterialTableHandle);
+					std::shared_ptr<MeshSource> meshSource = mesh->GetMeshSource();
+					meshSource->SetMaterial(materialAsset->GetMaterial());
 				}
 			}
 		}

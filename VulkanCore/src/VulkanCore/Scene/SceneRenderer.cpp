@@ -687,6 +687,9 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
+		if (!mesh || !materialAsset)
+			return;
+
 		auto meshSource = mesh->GetMeshSource();
 		uint64_t meshHandle = mesh->Handle;
 		uint64_t materialHandle = materialAsset->Handle;

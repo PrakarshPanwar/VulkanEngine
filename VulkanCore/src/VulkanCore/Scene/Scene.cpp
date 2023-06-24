@@ -1,6 +1,8 @@
 #include "vulkanpch.h"
 #include "Scene.h"
 #include "Entity.h"
+#include "VulkanCore/Asset/AssetManager.h"
+#include "VulkanCore/Asset/MaterialAsset.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Core/UUID.h"
 #include "SceneRenderer.h"
@@ -38,7 +40,10 @@ namespace VulkanCore {
 		for (auto ent : view)
 		{
 			auto [transform, meshComponent] = view.get<TransformComponent, MeshComponent>(ent);
-			renderer->SubmitMesh(meshComponent.MeshInstance, meshComponent.MaterialTable, transform.GetTransform());
+
+			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshComponent.MeshHandle);
+			std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(meshComponent.MaterialTableHandle);
+			renderer->SubmitMesh(mesh, materialAsset, transform.GetTransform());
 		}
 	}
 
