@@ -109,7 +109,7 @@ namespace VulkanCore {
 				m_SelectionContext = {};
 
 			// Right-click on blank space
-			if (ImGui::BeginPopupContextWindow("##CreateEntity", 1))
+			if (ImGui::BeginPopupContextWindow("##CreateEntity", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverExistingPopup))
 			{
 				if (ImGui::MenuItem("Create Empty Entity"))
 					m_Context->CreateEntity("Empty Entity");
@@ -169,8 +169,9 @@ namespace VulkanCore {
 				if (entity.HasComponent<MeshComponent>())
 				{
 					MeshComponent meshComponent = entity.GetComponent<MeshComponent>();
-					
-					for (const MeshNode& submeshes : meshComponent.MeshInstance->GetMeshSource()->GetMeshNodes())
+
+					std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshComponent.MeshHandle);
+					for (const MeshNode& submeshes : mesh->GetMeshSource()->GetMeshNodes())
 					{
 						if (ImGui::TreeNode(submeshes.Name.c_str()))
 							ImGui::TreePop();
@@ -297,63 +298,114 @@ namespace VulkanCore {
 
 		DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)
 		{
-			// Mesh Asset
-			auto meshSource = component.MeshInstance->GetMeshSource();
 			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
-			AssetHandle meshHandle = meshSource->Handle;
-			auto& meshAssetMetadata = AssetManager::GetAssetMetadata(meshHandle);
-			auto meshAssetPath = meshAssetMetadata.FilePath.generic_string();
-			ImGui::InputText("Mesh", meshAssetPath.data(), meshAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
+			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(component.MeshHandle);
+			std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(component.MaterialTableHandle);
 
-			if (ImGui::BeginDragDropTarget())
+			if (mesh && materialAsset)
 			{
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+				// Mesh Asset
+				auto meshSource = mesh->GetMeshSource();
+				auto& meshAssetMetadata = AssetManager::GetAssetMetadata(meshSource->Handle);
+				auto meshAssetPath = meshAssetMetadata.FilePath.generic_string();
+				ImGui::InputText("Mesh", meshAssetPath.data(), meshAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
+
+				if (ImGui::BeginDragDropTarget())
 				{
-					const wchar_t* path = (const wchar_t*)payload->Data;
-					std::filesystem::path assetPath = g_AssetPath / path;
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					{
+						const wchar_t* path = (const wchar_t*)payload->Data;
+						std::filesystem::path assetPath = g_AssetPath / path;
 
-					std::shared_ptr<Mesh> oldMesh = component.MeshInstance;
-					sceneRenderer->UpdateMeshInstanceData(oldMesh, component.MaterialTable);
+						sceneRenderer->UpdateMeshInstanceData(mesh, materialAsset);
 
-					std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(assetPath.string());
-					component.MeshInstance = mesh;
+						std::shared_ptr<Mesh> newMesh = AssetManager::GetAsset<Mesh>(assetPath.string());
+						component.MeshHandle = newMesh->Handle;
+					}
+
+					ImGui::EndDragDropTarget();
 				}
 
-				ImGui::EndDragDropTarget();
-			}
+				ImGui::Separator();
 
-			ImGui::Separator();
+				// Material Asset
+				AssetHandle materialHandle = component.MaterialTableHandle;
+				auto& materialAssetMetadata = AssetManager::GetAssetMetadata(materialHandle);
+				auto materialAssetPath = materialAssetMetadata.FilePath.generic_string();
+				ImGui::InputText("Material", materialAssetPath.data(), materialAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
 
-			// Material Asset
-			AssetHandle materialHandle = component.MaterialTable->Handle;
-			auto& materialAssetMetadata = AssetManager::GetAssetMetadata(materialHandle);
-			auto materialAssetPath = materialAssetMetadata.FilePath.generic_string();
-			ImGui::InputText("Material", materialAssetPath.data(), materialAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
-
-			if (ImGui::BeginDragDropTarget())
-			{
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+				if (ImGui::BeginDragDropTarget())
 				{
-					const wchar_t* path = (const wchar_t*)payload->Data;
-					std::filesystem::path assetPath = g_AssetPath / path;
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					{
+						const wchar_t* path = (const wchar_t*)payload->Data;
+						std::filesystem::path assetPath = g_AssetPath / path;
 
-					std::shared_ptr<MaterialAsset> oldMaterialAsset = component.MaterialTable;
-					sceneRenderer->UpdateMeshInstanceData(component.MeshInstance, oldMaterialAsset);
+						sceneRenderer->UpdateMeshInstanceData(mesh, materialAsset);
 
-					std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(assetPath.string());
-					component.MaterialTable = materialAsset;
-					meshSource->SetMaterial(materialAsset->GetMaterial());
+						std::shared_ptr<MaterialAsset> newMaterialAsset = AssetManager::GetAsset<MaterialAsset>(assetPath.string());
+						component.MaterialTableHandle = newMaterialAsset->Handle;
+						meshSource->SetMaterial(newMaterialAsset->GetMaterial());
+					}
+
+					ImGui::EndDragDropTarget();
 				}
 
-				ImGui::EndDragDropTarget();
+				ImGui::Separator();
+
+				// Mesh Stats
+				ImGui::Text("Vertex Count: %d", meshSource->GetVertexCount());
+				ImGui::Text("Index Count: %d", meshSource->GetIndexCount());
 			}
+			else
+			{
+				ImVec2 buttonSize = ImVec2{ ImGui::GetContentRegionAvail().x - 20.0f, 0.0f };
 
-			ImGui::Separator();
+				// Import Mesh
+				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+				ImGui::Button("Import Mesh", buttonSize);
+				ImGui::PopItemFlag();
 
-			// Mesh Stats
-			ImGui::Text("Vertex Count: %d", meshSource->GetVertexCount());
-			ImGui::Text("Index Count: %d", meshSource->GetIndexCount());
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					{
+						const wchar_t* path = (const wchar_t*)payload->Data;
+						std::filesystem::path assetPath = g_AssetPath / path;
+
+						std::shared_ptr<Mesh> newMesh = AssetManager::GetAsset<Mesh>(assetPath.string());
+						component.MeshHandle = newMesh->Handle;
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+
+				if (component.MeshHandle)
+				{
+					// Import Material Asset
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+					ImGui::Button("Import Material", buttonSize);
+					ImGui::PopItemFlag();
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+						{
+							const wchar_t* path = (const wchar_t*)payload->Data;
+							std::filesystem::path assetPath = g_AssetPath / path;
+
+							std::shared_ptr<MaterialAsset> newMaterialAsset = AssetManager::GetAsset<MaterialAsset>(assetPath.string());
+							component.MaterialTableHandle = newMaterialAsset->Handle;
+
+							auto meshSource = mesh->GetMeshSource();
+							meshSource->SetMaterial(newMaterialAsset->GetMaterial());
+						}
+
+						ImGui::EndDragDropTarget();
+					}
+				}
+			}
 		});
 	}
 

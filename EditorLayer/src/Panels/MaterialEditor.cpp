@@ -16,6 +16,49 @@ namespace VulkanCore {
 
 	std::unordered_map<uint64_t, std::shared_ptr<Material>> MaterialEditor::s_OpenedMaterials;
 
+	enum class TextureType
+	{
+		None = 0,
+		Diffuse,
+		Normal,
+		ARM
+	};
+
+	namespace Utils {
+
+		static void ResetTexturePopup(TextureType textureType, std::shared_ptr<VulkanMaterial> material)
+		{
+			if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+				ImGui::OpenPopup("RemoveTexture");
+
+			if (ImGui::BeginPopup("RemoveTexture"))
+			{
+				if (ImGui::MenuItem("Remove Texture"))
+				{
+					auto whiteTexture = Renderer::GetWhiteTexture();
+
+					switch (textureType)
+					{
+					case TextureType::Diffuse:
+						material->SetDiffuseTexture(whiteTexture);
+						break;
+					case TextureType::Normal:
+						material->SetNormalTexture(whiteTexture);
+						break;
+					case TextureType::ARM:
+						material->SetARMTexture(whiteTexture);
+						break;
+					default:
+						break;
+					}
+				}
+
+				ImGui::EndPopup();
+			}
+		}
+
+	}
+
 	MaterialEditor::MaterialEditor(std::shared_ptr<MaterialAsset> materialAsset)
 		: m_MaterialAsset(materialAsset)
 	{
@@ -48,20 +91,7 @@ namespace VulkanCore {
 			if (albedoNode)
 			{
 				ImGui::Image((ImTextureID)diffuse, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
-
-				if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
-					ImGui::OpenPopup("RemoveTexture");
-
-				if (ImGui::BeginPopup("RemoveTexture"))
-				{
-					if (ImGui::MenuItem("Remove Texture"))
-					{
-						auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_SRGB);
-						vulkanMaterial->SetDiffuseTexture(whiteTexture);
-					}
-
-					ImGui::EndPopup();
-				}
+				Utils::ResetTexturePopup(TextureType::Diffuse, vulkanMaterial);
 
 				if (ImGui::BeginDragDropTarget())
 				{
@@ -90,20 +120,7 @@ namespace VulkanCore {
 			if (normalNode)
 			{
 				ImGui::Image((ImTextureID)normal, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
-
-				if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
-					ImGui::OpenPopup("RemoveTexture");
-
-				if (ImGui::BeginPopup("RemoveTexture"))
-				{
-					if (ImGui::MenuItem("Remove Texture"))
-					{
-						auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
-						vulkanMaterial->SetNormalTexture(whiteTexture);
-					}
-
-					ImGui::EndPopup();
-				}
+				Utils::ResetTexturePopup(TextureType::Normal, vulkanMaterial);
 
 				if (ImGui::BeginDragDropTarget())
 				{
@@ -126,26 +143,13 @@ namespace VulkanCore {
 			}
 
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
-			bool armNode = ImGui::TreeNodeEx("ROUGHNESS/METALLIC", treeNodeFlags);
+			bool armNode = ImGui::TreeNodeEx("AO/ROUGHNESS/METALLIC", treeNodeFlags);
 			ImGui::PopStyleVar();
 
 			if (armNode)
 			{
 				ImGui::Image((ImTextureID)arm, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
-
-				if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
-					ImGui::OpenPopup("RemoveTexture");
-
-				if (ImGui::BeginPopup("RemoveTexture"))
-				{
-					if (ImGui::MenuItem("Remove Texture"))
-					{
-						auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
-						vulkanMaterial->SetARMTexture(whiteTexture);
-					}
-
-					ImGui::EndPopup();
-				}
+				Utils::ResetTexturePopup(TextureType::ARM, vulkanMaterial);
 
 				if (ImGui::BeginDragDropTarget())
 				{

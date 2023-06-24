@@ -6,8 +6,6 @@
 
 #include "VulkanCore/Core/Core.h"
 
-#include <map>
-
 namespace VulkanCore {
 
 	using AssetImportFunction = std::function<std::shared_ptr<Asset>(AssetHandle, const AssetMetadata&)>;

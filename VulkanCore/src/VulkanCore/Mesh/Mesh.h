@@ -6,8 +6,6 @@
 #include "VulkanCore/Asset/Asset.h"
 #include "VulkanCore/Asset/AssetMetadata.h"
 
-// TODO: This include should be in PCH
-#include <map>
 #include <glm/glm.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
