@@ -16,6 +16,7 @@ namespace VulkanCore {
 		void OnImGuiRender();
 	private:
 		void MeshImportDialog(bool open, const std::filesystem::path& path);
+		void RemoveAssetDialog(bool open, const std::filesystem::path& path);
 		void CreateMaterialDialog();
 	private:
 		std::filesystem::path m_CurrentDirectory;
