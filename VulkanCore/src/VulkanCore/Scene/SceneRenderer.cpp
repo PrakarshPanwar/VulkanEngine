@@ -602,6 +602,9 @@ namespace VulkanCore {
 	void SceneRenderer::SetActiveScene(std::shared_ptr<Scene> scene)
 	{
 		m_Scene = scene;
+
+		m_MeshDrawList.clear();
+		m_MeshTransformMap.clear();
 	}
 
 	void SceneRenderer::SetViewportSize(uint32_t width, uint32_t height)
