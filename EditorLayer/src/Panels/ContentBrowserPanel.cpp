@@ -98,6 +98,7 @@ namespace VulkanCore {
 				ImGui::OpenPopup("AssetImport");
 
 			bool openMeshImportDialog = false;
+			bool openRemoveAssetDialog = false;
 			if (ImGui::BeginPopup("AssetImport"))
 			{
 				if (ImGui::MenuItem("Import"))
@@ -115,9 +116,13 @@ namespace VulkanCore {
 						VK_ERROR("Extension type currently is not defined!");
 				}
 
+				if (ImGui::MenuItem("Remove"))
+					openRemoveAssetDialog = true;
+
 				ImGui::EndPopup();
 			}
 
+			RemoveAssetDialog(openRemoveAssetDialog, path);
 			MeshImportDialog(openMeshImportDialog, path);
 
 			ImGui::TextWrapped(filenameString.c_str());
@@ -163,13 +168,58 @@ namespace VulkanCore {
 			if (ImGui::Button("OK"))
 			{
 				std::string pathStr = { buffer };
+				std::replace(pathStr.begin(), pathStr.end(), '/', '\\');
 				std::filesystem::path filepath = pathStr;
 				filepath.replace_extension(".vkmesh");
 
 				filepath = g_AssetPath / "meshes" / filepath;
 
-				meshSource = AssetManager::ImportNewAsset<MeshSource>(path.string());
-				AssetManager::CreateNewAsset<Mesh>(filepath.string(), meshSource);
+				meshSource = AssetManager::ImportNewAsset<MeshSource>(path.generic_string());
+				AssetManager::CreateNewAsset<Mesh>(filepath.generic_string(), meshSource);
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel"))
+				ImGui::CloseCurrentPopup();
+
+			ImGui::EndPopup();
+		}
+	}
+
+	void ContentBrowserPanel::RemoveAssetDialog(bool open, const std::filesystem::path& path)
+	{
+		if (open)
+			ImGui::OpenPopup("Remove Asset");
+
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		if (ImGui::BeginPopupModal("Remove Asset", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			AssetType assetType = Utils::AssetTypeFromExtension(path.extension());
+			std::string filepath = path.generic_string();
+
+			ImGui::Text("Are you sure, you want to delete %s?", filepath.data());
+
+			ImGui::Separator();
+			if (ImGui::Button("OK"))
+			{
+				bool removed = false;
+
+				// TODO: Implement for other asset types
+				if (assetType == AssetType::Texture2D)
+					removed = AssetManager::RemoveAsset<Texture2D>(filepath);
+				if (assetType == AssetType::Mesh)
+					removed = AssetManager::RemoveAsset<Mesh>(filepath);
+				if (assetType == AssetType::Material)
+					removed = AssetManager::RemoveAsset<MaterialAsset>(filepath);
+
+				// TODO: Here we should prompt another popup stating whether file has been deleted or not
+				if (removed)
+					VK_WARN("File: {} is removed from ContentBrowser!", filepath);
+				else
+					VK_WARN("Unable to remove file: {}! It could be referencing in memory!", filepath);
+
 				ImGui::CloseCurrentPopup();
 			}
 
@@ -220,13 +270,14 @@ namespace VulkanCore {
 			if (ImGui::Button("OK"))
 			{
 				std::string pathStr = { buffer };
+				std::replace(pathStr.begin(), pathStr.end(), '/', '\\');
 				std::filesystem::path filepath = pathStr;
 				filepath.replace_extension(".vkmat");
 
 				filepath = g_AssetPath / "materials" / filepath;
 
 				std::shared_ptr<Material> material = Material::Create(filepath.stem().string());
-				materialAsset = AssetManager::CreateNewAsset<MaterialAsset>(filepath.string(), material);
+				materialAsset = AssetManager::CreateNewAsset<MaterialAsset>(filepath.generic_string(), material);
 				ImGui::CloseCurrentPopup();
 			}
 

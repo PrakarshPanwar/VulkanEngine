@@ -337,5 +337,5 @@ Asset Registry:
       Type: Texture2D
   - Handle: 11737455955276656076
     Metadata:
-      Filepath: assets\materials\GoldMaterial.vkmat
+      Filepath: assets/materials/GoldMaterial.vkmat
       Type: Material

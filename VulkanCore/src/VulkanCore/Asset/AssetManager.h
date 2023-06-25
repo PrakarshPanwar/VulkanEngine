@@ -74,6 +74,34 @@ namespace VulkanCore {
 		}
 
 		template<typename T>
+		static bool RemoveAsset(const std::string& filepath)
+		{
+			static_assert(std::derived_from<T, Asset>, "RemoveAsset only works for types derived from Asset");
+
+			std::filesystem::path assetPath = filepath;
+
+			auto editorAssetManager = GetEditorAssetManager();
+			auto& assetRegistry = (AssetRegistry&)editorAssetManager->GetAssetRegistry();
+			auto& loadedAssets = (AssetMap&)editorAssetManager->GetAssetMap();
+
+			std::shared_ptr<Asset> asset = GetAsset<T>(filepath);
+			AssetHandle assetHandle = asset->Handle;
+
+			if (assetRegistry.contains(assetHandle))
+			{
+				if (loadedAssets.contains(assetHandle) && asset.use_count() > 2)
+					return false;
+
+				assetRegistry.erase(assetHandle);
+				loadedAssets.erase(assetHandle);
+			}
+
+			WriteRegistryToFile();
+
+			return std::filesystem::remove(assetPath);
+		}
+
+		template<typename T>
 		static std::shared_ptr<T> GetAsset(AssetHandle handle)
 		{
 			static_assert(std::derived_from<T, Asset>, "GetAsset only works for types derived from Asset");
