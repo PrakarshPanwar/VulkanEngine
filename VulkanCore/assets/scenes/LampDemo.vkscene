@@ -1,0 +1,32 @@
+Scene: LampDemo
+Entities:
+  - Entity: 15242862645277867730
+    TagComponent:
+      Tag: Wall
+    TransformComponent:
+      Translation: [-5.0999999, 2.5, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.100000001, 2.5, 4.99762774]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialHandle: 11134850192642027083
+  - Entity: 11083512246634496834
+    TagComponent:
+      Tag: Plane
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [5, 0.0500000007, 5]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialHandle: 11134850192642027083
+  - Entity: 15512763241384639425
+    TagComponent:
+      Tag: Vintage Lamp
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [-1.57079601, 0, 0]
+      Scale: [2.5, 2.49999976, 2.49999976]
+    MeshComponent:
+      MeshHandle: 5959344745003257604
+      MaterialHandle: 6952677873291693697
