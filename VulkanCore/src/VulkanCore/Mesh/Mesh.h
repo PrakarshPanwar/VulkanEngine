@@ -45,7 +45,7 @@ namespace VulkanCore {
 		std::string MeshName, NodeName;
 		uint32_t BaseVertex, BaseIndex;
 		uint32_t VertexCount, IndexCount;
-		uint32_t MaterialIndex;
+		int MaterialIndex;
 		glm::mat4 LocalTransform;
 	};
 
