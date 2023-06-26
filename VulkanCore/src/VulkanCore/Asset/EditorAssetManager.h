@@ -17,16 +17,22 @@ namespace VulkanCore {
 		void WriteToAssetRegistry(AssetHandle handle, const AssetMetadata& metadata);
 		void SetLoadedAsset(AssetHandle handle, std::shared_ptr<Asset> asset);
 
+		// const types
 		const AssetRegistry& GetAssetRegistry() const { return m_AssetRegistry; }
 		const AssetMap& GetAssetMap() const { return m_LoadedAssets; }
+		const AssetMap& GetMemoryAssetMap() const { return m_MemoryAssets; }
 		const AssetMetadata& GetMetadata(AssetHandle handle) const;
 
+		// non-const types
+		AssetRegistry& GetAssetRegistry() { return m_AssetRegistry; }
+		AssetMap& GetAssetMap() { return m_LoadedAssets; }
+		AssetMap& GetMemoryAssetMap() { return m_MemoryAssets; }
+
 		void ClearLoadedAssets();
+		void ClearMemoryOnlyAssets();
 	private:
 		AssetRegistry m_AssetRegistry;
 		AssetMap m_LoadedAssets;
-
-		// TODO: Memory-only assets
 		AssetMap m_MemoryAssets;
 	};
 

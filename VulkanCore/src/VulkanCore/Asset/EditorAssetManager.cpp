@@ -41,6 +41,11 @@ namespace VulkanCore {
 		m_LoadedAssets.clear();
 	}
 
+	void EditorAssetManager::ClearMemoryOnlyAssets()
+	{
+		m_MemoryAssets.clear();
+	}
+
 	std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
 	{
 		// 1. Check if handle is valid

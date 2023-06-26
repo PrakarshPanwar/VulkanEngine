@@ -111,6 +111,7 @@ namespace VulkanCore {
 			submesh.VertexCount = mesh->mNumVertices;
 			submesh.IndexCount = mesh->mNumFaces * 3;
 			submesh.MeshName = mesh->mName.C_Str();
+			submesh.MaterialIndex = mesh->mMaterialIndex;
 
 			vertexCount += mesh->mNumVertices;
 			indexCount += submesh.IndexCount;

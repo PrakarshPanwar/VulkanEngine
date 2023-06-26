@@ -38,6 +38,7 @@ namespace VulkanCore {
 	EditorLayer::~EditorLayer()
 	{
 		auto editorAssetManager = AssetManager::GetEditorAssetManager();
+		editorAssetManager->ClearMemoryOnlyAssets();
 		editorAssetManager->ClearLoadedAssets();
 	}
 

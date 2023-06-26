@@ -73,6 +73,21 @@ namespace VulkanCore {
 			return asset;
 		}
 
+		template<typename T, typename... Args>
+		static std::shared_ptr<T> CreateMemoryOnlyAsset(Args&&... args)
+		{
+			static_assert(std::derived_from<T, Asset>, "CreateMemoryOnlyAsset only works for types derived from Asset");
+
+			AssetHandle handle = {}; // Generate Random handle
+			auto editorAssetManager = GetEditorAssetManager();
+			auto& memoryAssets = editorAssetManager->GetMemoryAssetMap();
+
+			std::shared_ptr<Asset> asset = std::make_shared<T>(std::forward<Args>(args)...);
+			memoryAssets[handle] = asset;
+
+			return std::static_pointer_cast<T>(asset);
+		}
+
 		template<typename T>
 		static bool RemoveAsset(const std::string& filepath)
 		{
@@ -81,8 +96,8 @@ namespace VulkanCore {
 			std::filesystem::path assetPath = filepath;
 
 			auto editorAssetManager = GetEditorAssetManager();
-			auto& assetRegistry = (AssetRegistry&)editorAssetManager->GetAssetRegistry();
-			auto& loadedAssets = (AssetMap&)editorAssetManager->GetAssetMap();
+			auto& assetRegistry = editorAssetManager->GetAssetRegistry();
+			auto& loadedAssets = editorAssetManager->GetAssetMap();
 
 			std::shared_ptr<Asset> asset = GetAsset<T>(filepath);
 			AssetHandle assetHandle = asset->Handle;
@@ -119,8 +134,8 @@ namespace VulkanCore {
 			std::filesystem::path assetPath = filepath;
 
 			auto editorAssetManager = GetEditorAssetManager();
-			auto& assetRegistry = editorAssetManager->GetAssetRegistry();
-			auto& assetMap = editorAssetManager->GetAssetMap();
+			const auto& assetRegistry = editorAssetManager->GetAssetRegistry();
+			const auto& assetMap = editorAssetManager->GetAssetMap();
 
 			for (auto&& [handle, metadata] : assetRegistry)
 			{

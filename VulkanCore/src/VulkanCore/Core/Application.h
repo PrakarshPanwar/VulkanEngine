@@ -15,12 +15,12 @@ namespace VulkanCore {
 	struct ApplicationCommandLineArgs
 	{
 		int Count = 0;
-		char** Args = nullptr;
+		char** CmdArgs = nullptr;
 
 		const char* operator[](int index) const
 		{
 			VK_CORE_ASSERT(index < Count, "Index is greater than Count!");
-			return Args[index];
+			return CmdArgs[index];
 		}
 	};
 
