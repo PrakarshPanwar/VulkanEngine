@@ -30,6 +30,7 @@ namespace VulkanCore {
 
 		void ClearLoadedAssets();
 		void ClearMemoryOnlyAssets();
+		void ClearAssetRegistry();
 	private:
 		AssetRegistry m_AssetRegistry;
 		AssetMap m_LoadedAssets;

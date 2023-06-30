@@ -147,13 +147,16 @@ namespace VulkanCore {
 		}
 
 		static std::shared_ptr<AssetManagerBase> GetAssetManager() { return s_AssetManager; }
-		static const AssetMetadata& GetAssetMetadata(AssetHandle handle) { return GetEditorAssetManager()->GetMetadata(handle); }
+		static const AssetMetadata& GetMetadata(AssetHandle handle) { return GetEditorAssetManager()->GetMetadata(handle); }
 		static std::shared_ptr<EditorAssetManager> GetEditorAssetManager()
 		{
 			return std::static_pointer_cast<EditorAssetManager>(s_AssetManager);
 		}
 
-		static void SetAssetManagerBase(std::shared_ptr<AssetManagerBase> assetManager);
+		static void SetAssetManagerBase(const std::shared_ptr<AssetManagerBase>& assetManager);
+
+		static void Init(const std::shared_ptr<AssetManagerBase>& assetManager);
+		static void Shutdown();
 	private:
 		static bool LoadRegistryFromFile();
 		static void WriteRegistryToFile();
@@ -177,8 +180,6 @@ namespace VulkanCore {
 		static AssetType GetAssetType<MaterialAsset>() { return AssetType::Material; }
 	private:
 		static std::shared_ptr<AssetManagerBase> s_AssetManager;
-
-		friend class EditorLayer;
 	};
 
 }

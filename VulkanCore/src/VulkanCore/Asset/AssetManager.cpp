@@ -10,9 +10,23 @@ namespace VulkanCore {
 
 	std::shared_ptr<AssetManagerBase> AssetManager::s_AssetManager;
 
-	void AssetManager::SetAssetManagerBase(std::shared_ptr<AssetManagerBase> assetManager)
+	void AssetManager::SetAssetManagerBase(const std::shared_ptr<AssetManagerBase>& assetManager)
 	{
 		s_AssetManager = assetManager;
+	}
+
+	void AssetManager::Init(const std::shared_ptr<AssetManagerBase>& assetManager)
+	{
+		SetAssetManagerBase(assetManager);
+		LoadRegistryFromFile();
+	}
+
+	void AssetManager::Shutdown()
+	{
+		auto editorAssetManager = AssetManager::GetEditorAssetManager();
+		editorAssetManager->ClearMemoryOnlyAssets();
+		editorAssetManager->ClearLoadedAssets();
+		editorAssetManager->ClearAssetRegistry();
 	}
 
 	bool AssetManager::LoadRegistryFromFile()

@@ -24,7 +24,8 @@ namespace VulkanCore {
 
 	std::shared_ptr<MeshSource> MeshImporter::ImportAssimpMesh(AssetHandle handle, const AssetMetadata& metadata)
 	{
-		std::shared_ptr<MeshSource> meshSource = std::make_shared<MeshSource>(metadata);
+		std::string filepath = metadata.FilePath.generic_string();
+		std::shared_ptr<MeshSource> meshSource = std::make_shared<MeshSource>(filepath);
 
 		TraverseNodes(meshSource, meshSource->m_Scene->mRootNode, 0);
 		InvalidateMesh(meshSource);

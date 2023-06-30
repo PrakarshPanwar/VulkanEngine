@@ -55,7 +55,7 @@ namespace VulkanCore {
 	}
 
 	Mesh::Mesh()
-		: m_MeshSource(std::make_shared<MeshSource>(AssetMetadata{}))
+		: m_MeshSource(std::make_shared<MeshSource>(std::string{}))
 	{
 	}
 
@@ -83,9 +83,10 @@ namespace VulkanCore {
 		aiProcess_ValidateDataStructure
 	};
 
-	MeshSource::MeshSource(const AssetMetadata& metadata)
+	MeshSource::MeshSource(const std::string& filepath)
 	{
-		std::string filepath = metadata.FilePath.string();
+		if (filepath.empty())
+			return;
 
 		VK_CORE_INFO("Loading Mesh: {0}", filepath);
 
