@@ -37,9 +37,7 @@ namespace VulkanCore {
 
 	EditorLayer::~EditorLayer()
 	{
-		auto editorAssetManager = AssetManager::GetEditorAssetManager();
-		editorAssetManager->ClearMemoryOnlyAssets();
-		editorAssetManager->ClearLoadedAssets();
+		AssetManager::Shutdown();
 	}
 
 	void EditorLayer::OnAttach()
@@ -49,8 +47,7 @@ namespace VulkanCore {
 		std::unique_ptr<Timer> editorInit = std::make_unique<Timer>("Editor Initialization");
 
 		m_AssetManagerBase = std::make_shared<EditorAssetManager>();
-		AssetManager::SetAssetManagerBase(m_AssetManagerBase);
-		AssetManager::LoadRegistryFromFile();
+		AssetManager::Init(m_AssetManagerBase);
 
 		m_MenuIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/MenuIcon.png");
 		m_MenuIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_MenuIcon));

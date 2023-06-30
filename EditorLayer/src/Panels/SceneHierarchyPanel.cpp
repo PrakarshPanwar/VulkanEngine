@@ -307,7 +307,7 @@ namespace VulkanCore {
 			{
 				// Mesh Asset
 				auto meshSource = mesh->GetMeshSource();
-				auto& meshAssetMetadata = AssetManager::GetAssetMetadata(meshSource->Handle);
+				auto& meshAssetMetadata = AssetManager::GetMetadata(meshSource->Handle);
 				auto meshAssetPath = meshAssetMetadata.FilePath.generic_string();
 				ImGui::InputText("Mesh", meshAssetPath.data(), meshAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
 
@@ -331,7 +331,7 @@ namespace VulkanCore {
 
 				// Material Asset
 				AssetHandle materialHandle = component.MaterialTableHandle;
-				auto& materialAssetMetadata = AssetManager::GetAssetMetadata(materialHandle);
+				auto& materialAssetMetadata = AssetManager::GetMetadata(materialHandle);
 				auto materialAssetPath = materialAssetMetadata.FilePath.generic_string();
 				ImGui::InputText("Material", materialAssetPath.data(), materialAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
 

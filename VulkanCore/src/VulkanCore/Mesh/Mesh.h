@@ -52,7 +52,7 @@ namespace VulkanCore {
 	class MeshSource : public Asset
 	{
 	public:
-		MeshSource(const AssetMetadata& metadata);
+		MeshSource(const std::string& filepath);
 		~MeshSource();
 
 		const aiScene* GetAssimpScene() const { return m_Scene; }

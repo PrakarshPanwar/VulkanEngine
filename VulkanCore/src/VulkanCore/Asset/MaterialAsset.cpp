@@ -16,7 +16,7 @@ namespace VulkanCore {
 
 	void MaterialAsset::Serialize()
 	{
-		AssetMetadata metadata = AssetManager::GetAssetMetadata(Handle);
+		AssetMetadata metadata = AssetManager::GetMetadata(Handle);
 		MaterialAssetImporter::Serialize(metadata, this);
 	}
 
