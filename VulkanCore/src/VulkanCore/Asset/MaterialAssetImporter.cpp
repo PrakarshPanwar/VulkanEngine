@@ -70,6 +70,7 @@ namespace VulkanCore {
 
 			MaterialData& materialData = material->GetMaterialData();
 			out << YAML::Key << "Albedo" << YAML::Value << materialData.Albedo;
+			out << YAML::Key << "Emission" << YAML::Value << materialData.Emission;
 			out << YAML::Key << "Metallic" << YAML::Value << materialData.Metallic;
 			out << YAML::Key << "Roughness" << YAML::Value << materialData.Roughness;
 			out << YAML::Key << "UseNormalMap" << YAML::Value << materialData.UseNormalMap;
@@ -102,6 +103,7 @@ namespace VulkanCore {
 
 			MaterialData& materialData = material->GetMaterialData();
 			out << YAML::Key << "Albedo" << YAML::Value << materialData.Albedo;
+			out << YAML::Key << "Emission" << YAML::Value << materialData.Emission;
 			out << YAML::Key << "Metallic" << YAML::Value << materialData.Metallic;
 			out << YAML::Key << "Roughness" << YAML::Value << materialData.Roughness;
 			out << YAML::Key << "UseNormalMap" << YAML::Value << materialData.UseNormalMap;
@@ -139,10 +141,12 @@ namespace VulkanCore {
 		std::shared_ptr<MaterialAsset> materialAsset = std::make_shared<MaterialAsset>(material);
 
  		glm::vec4 albedoColor = materialNode["Albedo"].as<glm::vec4>();
+		float emission = materialNode["Emission"].as<float>();
  		float metallic = materialNode["Metallic"].as<float>();
  		float roughness = materialNode["Roughness"].as<float>();
  		uint32_t useNormalMap = materialNode["UseNormalMap"].as<uint32_t>();
- 		material->SetMaterialData({ albedoColor, roughness, metallic, useNormalMap });
+ 		material->SetMaterialData({ albedoColor, emission, roughness, metallic, useNormalMap });
+		materialAsset->SetTransparent(albedoColor.w < 1.0f);
  
  		AssetHandle albedoHandle = materialNode["AlbedoHandle"].as<uint64_t>();
  		AssetHandle normalHandle = materialNode["NormalHandle"].as<uint64_t>();

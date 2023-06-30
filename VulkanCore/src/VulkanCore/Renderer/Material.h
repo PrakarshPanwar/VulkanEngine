@@ -7,6 +7,7 @@ namespace VulkanCore {
 	struct MaterialData
 	{
 		glm::vec4 Albedo{ 1.0f };
+		float Emission = 1.0f;
 		float Roughness = 1.0f;
 		float Metallic = 1.0f;
 		uint32_t UseNormalMap = 0;

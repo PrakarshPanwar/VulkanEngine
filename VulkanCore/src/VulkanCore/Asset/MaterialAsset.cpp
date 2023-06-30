@@ -20,4 +20,9 @@ namespace VulkanCore {
 		MaterialAssetImporter::Serialize(metadata, this);
 	}
 
+	void MaterialAsset::SetTransparent(bool transparent)
+	{
+		m_Transparent = transparent;
+	}
+
 }

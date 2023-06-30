@@ -107,8 +107,11 @@ namespace VulkanCore {
 					ImGui::EndDragDropTarget();
 				}
 
-				ImGui::ColorEdit3("Color", glm::value_ptr(materialData.Albedo), ImGuiColorEditFlags_NoInputs);
-				ImGui::DragFloat("Emission", &materialData.Albedo.w, 0.01f, 0.0f, 10000.0f);
+				ImGui::ColorEdit4("Color", glm::value_ptr(materialData.Albedo), ImGuiColorEditFlags_NoInputs);
+				if (ImGui::IsItemEdited())
+					m_MaterialAsset->SetTransparent(materialData.Albedo.w < 1.0f);
+
+				ImGui::DragFloat("Emission", &materialData.Emission, 0.01f, 0.0f, 10000.0f);
 
 				ImGui::TreePop();
 			}

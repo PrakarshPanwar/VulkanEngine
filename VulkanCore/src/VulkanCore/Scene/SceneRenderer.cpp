@@ -129,6 +129,7 @@ namespace VulkanCore {
 			PipelineSpecification geomPipelineSpec;
 			geomPipelineSpec.DebugName = "Geometry Pipeline";
 			geomPipelineSpec.pShader = Renderer::GetShader("CorePBR");
+			geomPipelineSpec.Blend = true;
 			geomPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(geomRenderPassSpec);
 			geomPipelineSpec.Layout = vertexLayout;
 			geomPipelineSpec.InstanceLayout = instanceLayout;
@@ -570,8 +571,8 @@ namespace VulkanCore {
 		{
 			m_SceneCommandBuffer->RetrieveQueryPoolResults();
 
-			ImGui::Text("Geometry Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(0));
-			ImGui::Text("Skybox Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(1));
+			ImGui::Text("Geometry Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(1));
+			ImGui::Text("Skybox Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(0));
 			ImGui::Text("Composite Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(4));
 			ImGui::Text("Bloom Compute Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(3));
 			ImGui::TreePop();
@@ -686,7 +687,7 @@ namespace VulkanCore {
 		}
 	}
 
-	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset, const glm::mat4& transform)
+	void SceneRenderer::SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform)
 	{
 		VK_CORE_PROFILE();
 
@@ -715,6 +716,11 @@ namespace VulkanCore {
 			dc.TransformBuffer = m_MeshTransformMap[meshKey].TransformBuffer;
 			dc.InstanceCount++;
 		}
+	}
+
+	void SceneRenderer::SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform)
+	{
+
 	}
 
 	void SceneRenderer::UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset)
@@ -752,6 +758,14 @@ namespace VulkanCore {
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().RenderPass);
 
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Skybox", DebugLabelColor::Orange);
+
+		// Rendering Skybox
+		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxMaterial, &m_SkyboxSettings);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+
 		// Rendering Geometry
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Geometry-Pass", DebugLabelColor::Gold);
@@ -771,13 +785,7 @@ namespace VulkanCore {
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
-		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Skybox", DebugLabelColor::Orange);
-
-		// Rendering Skybox
-		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxMaterial, &m_SkyboxSettings);
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
-		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+		// TODO: Render Transparent Meshes
 
 		// Rendering Point Lights
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
