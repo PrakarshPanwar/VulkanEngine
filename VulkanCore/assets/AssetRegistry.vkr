@@ -19,14 +19,6 @@ Asset Registry:
     Metadata:
       Filepath: assets/meshes/Source/BrassVase2K/textures/brass_vase_03_arm_2k.png
       Type: Texture2D
-  - Handle: 11844912818719243279
-    Metadata:
-      Filepath: assets/meshes/CeramicVase.vkmesh
-      Type: Mesh
-  - Handle: 16363266815915649551
-    Metadata:
-      Filepath: assets/textures/MudSnow/snow_05_disp_2k.png
-      Type: Texture2D
   - Handle: 13739926517336245135
     Metadata:
       Filepath: assets/textures/DeformedSnow/SnowSpecular.jpg
@@ -34,6 +26,14 @@ Asset Registry:
   - Handle: 15662263919763271311
     Metadata:
       Filepath: assets/meshes/Source/BrassVase2K/textures/brass_vase_03_diff_2k.jpg
+      Type: Texture2D
+  - Handle: 11844912818719243279
+    Metadata:
+      Filepath: assets/meshes/CeramicVase.vkmesh
+      Type: Mesh
+  - Handle: 16363266815915649551
+    Metadata:
+      Filepath: assets/textures/MudSnow/snow_05_disp_2k.png
       Type: Texture2D
   - Handle: 2838023438895478808
     Metadata:
@@ -362,4 +362,24 @@ Asset Registry:
   - Handle: 6952677873291693697
     Metadata:
       Filepath: assets/materials/VintageLamp.vkmat
+      Type: Material
+  - Handle: 16590454202587251103
+    Metadata:
+      Filepath: assets/materials/BlueGlow.vkmat
+      Type: Material
+  - Handle: 3565451914413388225
+    Metadata:
+      Filepath: assets/meshes/Source/VintageOilLamp2K/textures/vintage_oil_lamp_glass_arm_2k.png
+      Type: Texture2D
+  - Handle: 3494472154727054444
+    Metadata:
+      Filepath: assets/meshes/Source/VintageOilLamp2K/textures/vintage_oil_lamp_glass_diff_2k.png
+      Type: Texture2D
+  - Handle: 3845082802786299029
+    Metadata:
+      Filepath: assets/meshes/Source/VintageOilLamp2K/textures/vintage_oil_lamp_glass_nor_gl_2k.jpg
+      Type: Texture2D
+  - Handle: 8919638264423776238
+    Metadata:
+      Filepath: assets/materials/Glass.vkmat
       Type: Material

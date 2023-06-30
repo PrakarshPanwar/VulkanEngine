@@ -433,7 +433,7 @@ namespace VulkanCore {
 		return brdfTexture;
 	}
 
-	void VulkanRenderer::RenderMesh(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, uint32_t submeshIndex, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	void VulkanRenderer::RenderMesh(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 		Renderer::Submit([cmdBuffer, mesh, pipeline, material, transformBuffer, transformData, submeshIndex, instanceCount]
 		{
@@ -472,6 +472,11 @@ namespace VulkanCore {
 			s_Data.DrawCalls++;
 			s_Data.InstanceCount += instanceCount;
 		});
+	}
+
+	void VulkanRenderer::RenderTransparentMesh(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	{
+
 	}
 
 	void VulkanRenderer::ResetStats()
