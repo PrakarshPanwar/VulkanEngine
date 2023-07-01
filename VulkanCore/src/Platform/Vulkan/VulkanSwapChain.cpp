@@ -40,13 +40,13 @@ namespace VulkanCore {
 			m_SwapChain = nullptr;
 		}
 
-		for (int i = 0; i < framesInFlight; i++)
+		for (uint32_t i = 0; i < framesInFlight; i++)
 		{
 			vkDestroyImageView(device->GetVulkanDevice(), m_ColorImageViews[i], nullptr);
 			allocator.DestroyImage(m_ColorImages[i], m_ColorImageMemories[i]);
 		}
 
-		for (int i = 0; i < framesInFlight; i++)
+		for (uint32_t i = 0; i < framesInFlight; i++)
 		{
 			vkDestroyImageView(device->GetVulkanDevice(), m_DepthImageViews[i], nullptr);
 			allocator.DestroyImage(m_DepthImages[i], m_DepthImageMemories[i]);
