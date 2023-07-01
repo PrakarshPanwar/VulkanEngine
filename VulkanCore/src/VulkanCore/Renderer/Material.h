@@ -1,12 +1,13 @@
 #pragma once
 #include <glm/glm.hpp>
-#include "Platform/Vulkan/VulkanTexture.h"
+#include "VulkanCore/Renderer/Texture.h"
 
 namespace VulkanCore {
 
 	struct MaterialData
 	{
 		glm::vec4 Albedo{ 1.0f };
+		float Emission = 1.0f;
 		float Roughness = 1.0f;
 		float Metallic = 1.0f;
 		uint32_t UseNormalMap = 0;
@@ -25,22 +26,21 @@ namespace VulkanCore {
 		void SetRoughness(float roughness);
 		void SetMaterialData(MaterialData materialData);
 
-		std::tuple<std::string, std::string, std::string> GetMaterialPaths() const
-		{ 
-			return { m_DiffuseTexture->GetFilePath(), m_NormalTexture->GetFilePath(), m_ARMTexture->GetFilePath() };
-		}
+		std::tuple<AssetHandle, AssetHandle, AssetHandle> GetMaterialHandles() const;
 
-		virtual void SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture);
-		virtual void SetNormalTexture(std::shared_ptr<VulkanTexture> texture);
-		virtual void SetARMTexture(std::shared_ptr<VulkanTexture> texture);
+		virtual void SetDiffuseTexture(std::shared_ptr<Texture2D> texture);
+		virtual void SetNormalTexture(std::shared_ptr<Texture2D> texture);
+		virtual void SetARMTexture(std::shared_ptr<Texture2D> texture);
 
 		inline MaterialData& GetMaterialData() { return m_MaterialData; }
+
+		static std::shared_ptr<Material> Create(const std::string& debugName);
 	protected:
 		MaterialData m_MaterialData{};
 
-		std::shared_ptr<VulkanTexture> m_DiffuseTexture;
-		std::shared_ptr<VulkanTexture> m_NormalTexture;
-		std::shared_ptr<VulkanTexture> m_ARMTexture;
+		std::shared_ptr<Texture2D> m_DiffuseTexture;
+		std::shared_ptr<Texture2D> m_NormalTexture;
+		std::shared_ptr<Texture2D> m_ARMTexture;
 	};
 
 }

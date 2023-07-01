@@ -30,7 +30,9 @@ namespace VulkanCore {
 		void SetViewportSize(uint32_t width, uint32_t height);
 		void RenderScene(EditorCamera& camera);
 		void RenderLights();
-		void SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, const glm::mat4& transform);
+		void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
+		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
+		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
@@ -44,11 +46,14 @@ namespace VulkanCore {
 		struct MeshKey
 		{
 			uint64_t MeshHandle;
+			uint64_t MaterialHandle;
 			uint32_t SubmeshIndex;
 
 			bool operator==(const MeshKey& other)
 			{
-				return MeshHandle == other.MeshHandle && SubmeshIndex == other.SubmeshIndex;
+				return MeshHandle == other.MeshHandle &&
+					SubmeshIndex == other.SubmeshIndex &&
+					MaterialHandle == other.MaterialHandle;
 			}
 
 			bool operator<(const MeshKey& other) const
@@ -63,6 +68,12 @@ namespace VulkanCore {
 					return true;
 
 				if (SubmeshIndex > other.SubmeshIndex)
+					return false;
+
+				if (MaterialHandle < other.MaterialHandle)
+					return true;
+
+				if (MaterialHandle > other.MaterialHandle)
 					return false;
 				
 				return false;
@@ -79,7 +90,7 @@ namespace VulkanCore {
 		void CompositePass();
 		void BloomCompute();
 		void ResetDrawCommands();
-
+	private:
 		struct DrawCommand
 		{
 			std::shared_ptr<Mesh> MeshInstance;
@@ -88,7 +99,17 @@ namespace VulkanCore {
 			uint32_t SubmeshIndex;
 			uint32_t InstanceCount;
 		};
-	private:
+
+		struct MeshTransform
+		{
+			MeshTransform()
+				: Transforms(std::vector<TransformData>{ 10 })
+				, TransformBuffer(std::make_shared<VulkanVertexBuffer>(10 * sizeof(TransformData))) {}
+
+			std::vector<TransformData> Transforms;
+			std::shared_ptr<VulkanVertexBuffer> TransformBuffer;
+		};
+
 		struct LodAndMode
 		{
 			float LOD = 1.0f;
@@ -153,8 +174,8 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<VulkanImage>> m_BloomTextures;
 		std::vector<std::shared_ptr<VulkanImage>> m_SceneRenderTextures;
 
-		std::shared_ptr<VulkanTexture> m_BloomDirtTexture;
-		std::shared_ptr<VulkanTexture> m_PointLightTextureIcon, m_SpotLightTextureIcon;
+		std::shared_ptr<Texture2D> m_BloomDirtTexture;
+		std::shared_ptr<Texture2D> m_PointLightTextureIcon, m_SpotLightTextureIcon;
 
 		// Skybox Resources
 		std::shared_ptr<VulkanTextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;
@@ -163,7 +184,7 @@ namespace VulkanCore {
 		SkyboxSettings m_SkyboxSettings;
 
 		std::map<MeshKey, DrawCommand> m_MeshDrawList;
-		std::map<MeshKey, std::vector<TransformData>> m_MeshTransformMap;
+		std::map<MeshKey, MeshTransform> m_MeshTransformMap;
 
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;

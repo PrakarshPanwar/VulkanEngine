@@ -43,6 +43,9 @@ namespace VulkanCore {
 			case DebugLabelColor::Blue:	  return { 0.0f, 0.58f, 1.0f, 1.0f };
 			case DebugLabelColor::Gold:	  return { 0.76f, 0.7f, 0.32f, 1.0f };
 			case DebugLabelColor::Orange: return { 1.0f, 0.34f, 0.2f, 1.0f };
+			case DebugLabelColor::Pink:	  return { 0.972f, 0.784f, 0.862f, 1.0f };
+			case DebugLabelColor::Aqua:	  return { 0.0f, 1.0f, 1.0f, 1.0f };
+			case DebugLabelColor::Green:  return { 0.486f, 0.988f, 0.0f, 1.0f };
 			default:
 				VK_CORE_ASSERT(false, "Label Color is undefined!");
 				return { 0.3f, 0.3f, 0.3f, 1.0f };
@@ -71,12 +74,12 @@ namespace VulkanCore {
 		return s_RendererConfig;
 	}
 
-	void Renderer::BeginRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)
+	void Renderer::BeginRenderPass(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)
 	{
 		renderPass->Begin(cmdBuffer);
 	}
 
-	void Renderer::EndRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)
+	void Renderer::EndRenderPass(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)
 	{
 		renderPass->End(cmdBuffer);
 	}
@@ -100,7 +103,7 @@ namespace VulkanCore {
 		m_Shaders.clear();
 	}
 
-	void Renderer::RenderSkybox(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::shared_ptr<VulkanMaterial>& skyboxMaterial, void* pcData /*= nullptr*/)
+	void Renderer::RenderSkybox(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& skyboxVB, const std::shared_ptr<VulkanMaterial>& skyboxMaterial, void* pcData)
 	{
 		Renderer::Submit([cmdBuffer, pipeline, skyboxMaterial, pcData, skyboxVB]
 		{
@@ -129,7 +132,7 @@ namespace VulkanCore {
 		});
 	}	
 	
-	void Renderer::BeginTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
+	void Renderer::BeginTimestampsQuery(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer)
 	{
 		Renderer::Submit([cmdBuffer]
 		{
@@ -138,7 +141,7 @@ namespace VulkanCore {
 		});
 	}
 
-	void Renderer::EndTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
+	void Renderer::EndTimestampsQuery(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer)
 	{
 		Renderer::Submit([cmdBuffer]
 		{
@@ -150,7 +153,7 @@ namespace VulkanCore {
 		});
 	}
 
-	void Renderer::BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::string& name, DebugLabelColor labelColor)
+	void Renderer::BeginGPUPerfMarker(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::string& name, DebugLabelColor labelColor)
 	{
 		Renderer::Submit([cmdBuffer, name, labelColor]
 		{
@@ -161,7 +164,7 @@ namespace VulkanCore {
 		});
 	}
 
-	void Renderer::EndGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer)
+	void Renderer::EndGPUPerfMarker(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer)
 	{
 		Renderer::Submit([cmdBuffer]
 		{
@@ -184,7 +187,7 @@ namespace VulkanCore {
 		return whiteTexture;
 	}
 
-	void Renderer::SubmitFullscreenQuad(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanMaterial>& shaderMaterial)
+	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanMaterial>& shaderMaterial)
 	{
 		Renderer::Submit([cmdBuffer, pipeline, shaderMaterial]
 		{

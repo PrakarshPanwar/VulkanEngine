@@ -10,6 +10,7 @@
 
 #include <glm/gtx/integer.hpp>
 #include "optick.h"
+#include "../Asset/AssetManager.h"
 
 namespace VulkanCore {
 
@@ -64,22 +65,9 @@ namespace VulkanCore {
 		m_CommandBuffer->End();
 	}
 
-	void VulkanRenderer::BeginScene()
-	{
-		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer();
-		commandBuffer->Begin();
-	}
-
-	void VulkanRenderer::EndScene()
-	{
-		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer();
-		commandBuffer->End();
-	}
-
 	void VulkanRenderer::BeginSwapChainRenderPass()
 	{
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call BeginSwapChainRenderPass() if frame is not in progress!");
-		//VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot begin Render Pass on Command Buffer from a different frame!");
 	
 		Renderer::Submit([this]
 		{
@@ -118,7 +106,6 @@ namespace VulkanCore {
 	void VulkanRenderer::EndSwapChainRenderPass()
 	{
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndSwapChainRenderPass() if frame is not in progress!");
-		//VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot end Render Pass on Command Buffer from a different frame!");
 
 		Renderer::Submit([this]
 		{
@@ -132,7 +119,7 @@ namespace VulkanCore {
 		constexpr uint32_t cubemapSize = 1024;
 		constexpr uint32_t irradianceMapSize = 32;
 
-		std::shared_ptr<VulkanTexture> envEquirect = std::make_shared<VulkanTexture>(filepath);
+		std::shared_ptr<VulkanTexture> envEquirect = std::dynamic_pointer_cast<VulkanTexture>(AssetManager::GetAsset<Texture2D>(filepath));
 
 		std::shared_ptr<VulkanTextureCube> envFiltered = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
 		std::shared_ptr<VulkanTextureCube> envUnfiltered = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
@@ -432,7 +419,7 @@ namespace VulkanCore {
 		return brdfTexture;
 	}
 
-	void VulkanRenderer::RenderMesh(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, uint32_t submeshIndex, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	void VulkanRenderer::RenderMesh(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 		Renderer::Submit([cmdBuffer, mesh, pipeline, material, transformBuffer, transformData, submeshIndex, instanceCount]
 		{
@@ -464,13 +451,18 @@ namespace VulkanCore {
 				sizeof(MaterialData),
 				&material->GetMaterialData());
 	
-			const auto& submeshes = mesh->GetMeshSource()->GetSubmeshes();
+			const auto& submeshes = meshSource->GetSubmeshes();
 			const Submesh& submesh = submeshes[submeshIndex];
 			vkCmdDrawIndexed(drawCmd, submesh.IndexCount, instanceCount, submesh.BaseIndex, submesh.BaseVertex, 0);
 
 			s_Data.DrawCalls++;
 			s_Data.InstanceCount += instanceCount;
 		});
+	}
+
+	void VulkanRenderer::RenderTransparentMesh(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	{
+
 	}
 
 	void VulkanRenderer::ResetStats()

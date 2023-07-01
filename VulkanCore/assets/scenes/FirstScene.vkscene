@@ -1,6 +1,6 @@
 Scene: FirstScene
 Entities:
-  - Entity: 64321564316
+  - Entity: 524536352442
     TagComponent:
       Tag: Ceramic Vase
     TransformComponent:
@@ -8,16 +8,9 @@ Entities:
       Rotation: [-1.57079637, 0, 0]
       Scale: [3.5, 3.5, 3.5]
     MeshComponent:
-      Filepath: assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx
-      Material:
-        Albedo: [1, 1, 1, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: 1
-        AlbedoTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_diff_2k.jpg
-        NormalTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_nor_gl_2k.png
-        ARMTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_arm_2k.png
-  - Entity: 64321564316
+      MeshHandle: 11844912818719243279
+      MaterialHandle: 18198936774292638234
+  - Entity: 538537539842
     TagComponent:
       Tag: Flat Plane
     TransformComponent:
@@ -25,16 +18,9 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [10, 0.100000001, 10]
     MeshComponent:
-      Filepath: assets/meshes/Standard/Cube.fbx
-      Material:
-        Albedo: [1, 0.99613899, 0.99613899, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: 1
-        AlbedoTexture: assets\textures\ConcreteWall\concrete_wall_006_diff_2k.png
-        NormalTexture: assets\textures\ConcreteWall\concrete_wall_006_nor_gl_2k.png
-        ARMTexture: assets\textures\ConcreteWall\concrete_wall_006_arm_2k.png
-  - Entity: 64321564316
+      MeshHandle: 9816593081404201911
+      MaterialHandle: 3893884925322395954
+  - Entity: 99678686667
     TagComponent:
       Tag: Basic Sphere
     TransformComponent:
@@ -42,16 +28,9 @@ Entities:
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     MeshComponent:
-      Filepath: assets/meshes/Standard/Sphere.fbx
-      Material:
-        Albedo: [1, 1, 1, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: 1
-        AlbedoTexture: assets\textures\PlankFlooring\plank_flooring_diff_2k.png
-        NormalTexture: assets\textures\PlankFlooring\plank_flooring_nor_gl_2k.png
-        ARMTexture: assets\textures\PlankFlooring\plank_flooring_arm_2k.png
-  - Entity: 64321564316
+      MeshHandle: 5887157471203535698
+      MaterialHandle: 11134850192642027083
+  - Entity: 2353646777867
     TagComponent:
       Tag: Brass Vase
     TransformComponent:
@@ -59,16 +38,9 @@ Entities:
       Rotation: [-1.57079637, 0, 0]
       Scale: [6, 6, 6]
     MeshComponent:
-      Filepath: assets/meshes/BrassVase2K/BrassVase.fbx
-      Material:
-        Albedo: [1, 1, 1, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: 1
-        AlbedoTexture: assets\meshes\BrassVase2K\textures\brass_vase_03_diff_2k.jpg
-        NormalTexture: assets\meshes\BrassVase2K\textures\brass_vase_03_nor_gl_2k.png
-        ARMTexture: assets\meshes\BrassVase2K\textures\brass_vase_03_arm_2k.png
-  - Entity: 64321564316
+      MeshHandle: 12839587798147330480
+      MaterialHandle: 4518070022644985823
+  - Entity: 636536477775
     TagComponent:
       Tag: Blue Point Light
     TransformComponent:
@@ -79,7 +51,7 @@ Entities:
       Color: [0.200000003, 0.300000012, 0.800000012, 20]
       Falloff: 1
       Radius: 0.100000001
-  - Entity: 64321564316
+  - Entity: 12235647546
     TagComponent:
       Tag: Red Point Light
     TransformComponent:
@@ -90,7 +62,7 @@ Entities:
       Color: [1, 0.5, 0.100000001, 15]
       Falloff: 1
       Radius: 0.100000001
-  - Entity: 64321564316
+  - Entity: 842353453534
     TagComponent:
       Tag: Green Point Light
     TransformComponent:
@@ -101,7 +73,7 @@ Entities:
       Color: [0.100000001, 0.800000012, 0.200000003, 10]
       Falloff: 1
       Radius: 0.100000001
-  - Entity: 64321564316
+  - Entity: 309879778789
     TagComponent:
       Tag: Wall1
     TransformComponent:
@@ -109,16 +81,9 @@ Entities:
       Rotation: [1.11806941e-09, -1.57045102, 1.11710485e-09]
       Scale: [9.99999332, 2.68595648, 0.109166376]
     MeshComponent:
-      Filepath: assets/meshes/Standard/Cube.fbx
-      Material:
-        Albedo: [1, 0.99613899, 0.99613899, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: 1
-        AlbedoTexture: assets\textures\ConcreteWall\concrete_wall_006_diff_2k.png
-        NormalTexture: assets\textures\ConcreteWall\concrete_wall_006_nor_gl_2k.png
-        ARMTexture: assets\textures\ConcreteWall\concrete_wall_006_arm_2k.png
-  - Entity: 64321564316
+      MeshHandle: 9816593081404201911
+      MaterialHandle: 3893884925322395954
+  - Entity: 446463443556
     TagComponent:
       Tag: Ceramic Vase 2
     TransformComponent:
@@ -126,16 +91,9 @@ Entities:
       Rotation: [-1.57079601, 0, 0]
       Scale: [3, 2.99965668, 2.99965668]
     MeshComponent:
-      Filepath: assets/meshes/CeramicVase2K/antique_ceramic_vase_01_2k.fbx
-      Material:
-        Albedo: [1, 1, 1, 1]
-        Metallic: 1
-        Roughness: 1
-        UseNormalMap: 1
-        AlbedoTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_diff_2k.jpg
-        NormalTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_nor_gl_2k.png
-        ARMTexture: assets\meshes\CeramicVase2K\textures\antique_ceramic_vase_01_arm_2k.png
-  - Entity: 64321564316
+      MeshHandle: 11844912818719243279
+      MaterialHandle: 18198936774292638234
+  - Entity: 257473563441
     TagComponent:
       Tag: Blue Spot Light
     TransformComponent:

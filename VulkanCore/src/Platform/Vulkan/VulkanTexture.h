@@ -1,55 +1,48 @@
 #pragma once
 #include "VulkanDevice.h"
-#include <stb_image.h>
-
-#include "VulkanImage.h"
+#include "VulkanCore/Renderer/Texture.h"
 
 namespace VulkanCore {
 
-	struct TextureSpecification
-	{
-		uint32_t Width = 0;
-		uint32_t Height = 0;
-		ImageFormat Format = ImageFormat::RGBA8_SRGB;
-		TextureWrap SamplerWrap = TextureWrap::Repeat;
-		bool GenerateMips = true;
-	};
-
-	class VulkanTexture
+	class VulkanTexture : public Texture2D
 	{
 	public:
 		VulkanTexture() = default;
-		VulkanTexture(const std::string& filepath, TextureSpecification spec = {});
-		VulkanTexture(const std::string& filepath, ImageFormat format);
 		VulkanTexture(void* data, TextureSpecification spec = {});
 		VulkanTexture(uint32_t width, uint32_t height, ImageFormat format);
 		~VulkanTexture();
 
-		inline std::string GetFilePath() const { return m_FilePath; }
+		inline const TextureSpecification& GetSpecification() const override { return m_Specification; }
+		inline bool IsLoaded() const override { return m_IsLoaded; }
+
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_Image->GetDescriptorImageInfo(); }
+
+		void Reload(ImageFormat format);
 	private:
 		void Invalidate();
 		void Release();
 		void GenerateMipMaps();
 	private:
-		std::string m_FilePath;
-
 		TextureSpecification m_Specification;
 
 		std::shared_ptr<VulkanImage> m_Image;
 		VulkanImageInfo m_Info;
 
 		uint8_t* m_LocalStorage = nullptr;
+		bool m_IsLoaded = false;
 	};
 
-	class VulkanTextureCube
+	class VulkanTextureCube : public TextureCube
 	{
 	public:
-		VulkanTextureCube(const std::string& filepath, TextureSpecification spec = {});
+		VulkanTextureCube(void* data, TextureSpecification spec = {});
 		VulkanTextureCube(uint32_t width, uint32_t height, ImageFormat format = ImageFormat::RGBA32F);
 
 		~VulkanTextureCube();
+
+		inline const TextureSpecification& GetSpecification() const override { return m_Specification; }
+		inline bool IsLoaded() const override { return m_IsLoaded; }
 
 		void Invalidate();
 		void GenerateMipMaps(bool readonly);
@@ -58,12 +51,13 @@ namespace VulkanCore {
 	private:
 		void Release();
 	private:
-		std::string m_FilePath;
 		std::vector<VkImageView> m_MipReferences;
 
 		TextureSpecification m_Specification;
 		VulkanImageInfo m_Info;
 		VkDescriptorImageInfo m_DescriptorImageInfo;
+
+		bool m_IsLoaded = false;
 	};
 
 }

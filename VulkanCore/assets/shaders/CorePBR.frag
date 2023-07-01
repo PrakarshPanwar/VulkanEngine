@@ -35,6 +35,7 @@ struct SpotLight
 layout(push_constant) uniform Material
 {
     vec4 Albedo;
+    float Emission;
     float Roughness;
     float Metallic;
     uint UseNormalMap;
@@ -259,7 +260,8 @@ vec3 IBL(vec3 F0, vec3 Lr)
 
 void main()
 {
-	m_Params.Albedo = texture(u_DiffuseTexture, Input.TexCoord).rgb * u_Material.Albedo.rgb * u_Material.Albedo.a;
+    vec4 diffuse = texture(u_DiffuseTexture, Input.TexCoord);
+	m_Params.Albedo = diffuse.rgb * u_Material.Albedo.rgb * u_Material.Emission;
     // R->Ambient Occlusion, G->Roughness, B->Metallic
     vec3 aorm = texture(u_ARMTexture, Input.TexCoord).rgb;
 
@@ -282,5 +284,6 @@ void main()
 
     vec3 color = iblContribution + lightContribution;
 
-	o_Color = vec4(color, 1.0);
+    // TODO: Transparent Materials(OIT)
+	o_Color = vec4(color, u_Material.Albedo.a * diffuse.a);
 }
