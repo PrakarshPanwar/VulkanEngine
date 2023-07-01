@@ -638,11 +638,15 @@ namespace VulkanCore {
 		m_Scene->UpdateSpotLightUB(spotLightUB);
 		m_UBSpotLight[frameIndex].WriteandFlushBuffer(&spotLightUB);
 
+		m_SceneCommandBuffer->Begin();
+
 		GeometryPass();
 		BloomCompute();
 		CompositePass();
 
 		ResetDrawCommands();
+
+		m_SceneCommandBuffer->End();
 	}
 
 	void SceneRenderer::RenderLights()

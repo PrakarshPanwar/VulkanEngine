@@ -65,22 +65,9 @@ namespace VulkanCore {
 		m_CommandBuffer->End();
 	}
 
-	void VulkanRenderer::BeginScene()
-	{
-		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer();
-		commandBuffer->Begin();
-	}
-
-	void VulkanRenderer::EndScene()
-	{
-		auto commandBuffer = SceneRenderer::GetSceneRenderer()->GetCommandBuffer();
-		commandBuffer->End();
-	}
-
 	void VulkanRenderer::BeginSwapChainRenderPass()
 	{
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call BeginSwapChainRenderPass() if frame is not in progress!");
-		//VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot begin Render Pass on Command Buffer from a different frame!");
 	
 		Renderer::Submit([this]
 		{
@@ -119,7 +106,6 @@ namespace VulkanCore {
 	void VulkanRenderer::EndSwapChainRenderPass()
 	{
 		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndSwapChainRenderPass() if frame is not in progress!");
-		//VK_CORE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot end Render Pass on Command Buffer from a different frame!");
 
 		Renderer::Submit([this]
 		{

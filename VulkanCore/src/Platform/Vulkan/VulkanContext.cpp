@@ -142,22 +142,22 @@ namespace VulkanCore {
 		std::string labels, objects;
 		if (pCallbackData->cmdBufLabelCount)
 		{
-			labels = fmt::format("\tLabels({}): \n", pCallbackData->cmdBufLabelCount);
+			labels = std::format("\tLabels({}): \n", pCallbackData->cmdBufLabelCount);
 			for (uint32_t i = 0; i < pCallbackData->cmdBufLabelCount; ++i)
 			{
 				const auto& label = pCallbackData->pCmdBufLabels[i];
-				const std::string colorStr = fmt::format("[ {0}, {1}, {2}, {3} ]", label.color[0], label.color[1], label.color[2], label.color[3]);
-				labels.append(fmt::format("\t\t- Command Buffer Label[{0}]: name: {1}, color: {2}\n", i, label.pLabelName ? label.pLabelName : "NULL", colorStr));
+				const std::string colorStr = std::format("[ {0}, {1}, {2}, {3} ]", label.color[0], label.color[1], label.color[2], label.color[3]);
+				labels.append(std::format("\t\t- Command Buffer Label[{0}]: name: {1}, color: {2}\n", i, label.pLabelName ? label.pLabelName : "NULL", colorStr));
 			}
 		}
 
 		if (pCallbackData->objectCount)
 		{
-			objects = fmt::format("\tObjects({}): \n", pCallbackData->objectCount);
+			objects = std::format("\tObjects({}): \n", pCallbackData->objectCount);
 			for (uint32_t i = 0; i < pCallbackData->objectCount; ++i)
 			{
 				const auto& object = pCallbackData->pObjects[i];
-				objects.append(fmt::format("\t\t- Object[{0}]: name: {1}, type: {2}, handle: {3:#x}\n", i, object.pObjectName ? object.pObjectName : "NULL", Utils::VkObjectTypeToString(object.objectType), object.objectHandle));
+				objects.append(std::format("\t\t- Object[{0}]: name: {1}, type: {2}, handle: {3:#x}\n", i, object.pObjectName ? object.pObjectName : "NULL", Utils::VkObjectTypeToString(object.objectType), object.objectHandle));
 			}
 		}
 

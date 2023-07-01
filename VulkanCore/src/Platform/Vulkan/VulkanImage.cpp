@@ -181,7 +181,7 @@ namespace VulkanCore {
 		viewCreateInfo.subresourceRange.layerCount = 1;
 
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &m_Info.ImageView), "Failed to Create Image View!");
-		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE_VIEW, fmt::format("{} default image view", m_Specification.DebugName), m_Info.ImageView);
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE_VIEW, std::format("{} default image view", m_Specification.DebugName), m_Info.ImageView);
 
 		VkSamplerAddressMode addressMode = Utils::VulkanSamplerWrap(m_Specification.SamplerWrap);
 
@@ -208,7 +208,7 @@ namespace VulkanCore {
 		sampler.maxLod = (float)m_Specification.MipLevels;
 
 		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &sampler, nullptr, &m_Info.Sampler), "Failed to Create Image Sampler!");
-		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_SAMPLER, fmt::format("{} default image sampler", m_Specification.DebugName), m_Info.Sampler);
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_SAMPLER, std::format("{} default image sampler", m_Specification.DebugName), m_Info.Sampler);
 
 		if (m_Specification.Usage == ImageUsage::Storage)
 		{
