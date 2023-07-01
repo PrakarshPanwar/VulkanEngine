@@ -1,6 +1,9 @@
 #include "vulkanpch.h"
 #include "SceneRenderer.h"
 
+#include "VulkanCore/Asset/AssetManager.h"
+#include "VulkanCore/Asset/TextureImporter.h"
+#include "VulkanCore/Asset/MaterialAsset.h"
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/Timer.h"
@@ -126,6 +129,7 @@ namespace VulkanCore {
 			PipelineSpecification geomPipelineSpec;
 			geomPipelineSpec.DebugName = "Geometry Pipeline";
 			geomPipelineSpec.pShader = Renderer::GetShader("CorePBR");
+			geomPipelineSpec.Blend = true;
 			geomPipelineSpec.RenderPass = std::make_shared<VulkanRenderPass>(geomRenderPassSpec);
 			geomPipelineSpec.Layout = vertexLayout;
 			geomPipelineSpec.InstanceLayout = instanceLayout;
@@ -203,11 +207,11 @@ namespace VulkanCore {
 			m_SpotLightShaderMaterial = std::make_shared<VulkanMaterial>(m_LightPipeline->GetSpecification().pShader, "Spot Light Shader Material");
 
 			m_PointLightShaderMaterial->SetBuffers(0, m_UBCamera);
-			m_PointLightShaderMaterial->SetTexture(1, m_PointLightTextureIcon);
+			m_PointLightShaderMaterial->SetTexture(1, std::dynamic_pointer_cast<VulkanTexture>(m_PointLightTextureIcon));
 			m_PointLightShaderMaterial->PrepareShaderMaterial();
 
 			m_SpotLightShaderMaterial->SetBuffers(0, m_UBCamera);
-			m_SpotLightShaderMaterial->SetTexture(1, m_SpotLightTextureIcon);
+			m_SpotLightShaderMaterial->SetTexture(1, std::dynamic_pointer_cast<VulkanTexture>(m_SpotLightTextureIcon));
 			m_SpotLightShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -296,7 +300,7 @@ namespace VulkanCore {
 
 			m_CompositeShaderMaterial->SetImages(0, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetAttachment(true));
 			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
-			m_CompositeShaderMaterial->SetTexture(2, m_BloomDirtTexture);
+			m_CompositeShaderMaterial->SetTexture(2, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -395,7 +399,7 @@ namespace VulkanCore {
 		{
 			m_CompositeShaderMaterial->SetImages(0, m_GeometryPipeline->GetSpecification().RenderPass->GetSpecification().TargetFramebuffer->GetAttachment(true));
 			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
-			m_CompositeShaderMaterial->SetTexture(2, m_BloomDirtTexture);
+			m_CompositeShaderMaterial->SetTexture(2, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -416,7 +420,7 @@ namespace VulkanCore {
 
 		m_SceneImages.resize(framesInFlight);
 
-		for (int i = 0; i < framesInFlight; i++)
+		for (uint32_t i = 0; i < framesInFlight; ++i)
 			m_SceneImages[i] = ImGuiLayer::AddTexture(*GetFinalPassImage(i));
 
 		m_UBCamera.reserve(framesInFlight);
@@ -424,7 +428,7 @@ namespace VulkanCore {
 		m_UBSpotLight.reserve(framesInFlight);
 
 		// Uniform Buffers
-		for (int i = 0; i < framesInFlight; ++i)
+		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
 			m_UBCamera.emplace_back(sizeof(UBCamera));
 			m_UBPointLight.emplace_back(sizeof(UBPointLights));
@@ -447,7 +451,7 @@ namespace VulkanCore {
 
 		VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
-		for (int i = 0; i < framesInFlight; i++)
+		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
 			auto BloomTexture = m_BloomTextures.emplace_back(std::make_shared<VulkanImage>(bloomRTSpec));
 			BloomTexture->Invalidate();
@@ -467,7 +471,7 @@ namespace VulkanCore {
 		sceneRTSpec.Usage = ImageUsage::Texture;
 		sceneRTSpec.MipLevels = Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y);
 
-		for (int i = 0; i < framesInFlight; i++)
+		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
 			auto SceneTexture = m_SceneRenderTextures.emplace_back(std::make_shared<VulkanImage>(sceneRTSpec));
 			SceneTexture->Invalidate();
@@ -481,7 +485,7 @@ namespace VulkanCore {
 
 		device->FlushCommandBuffer(barrierCmd);
 
-		m_BloomDirtTexture = std::make_shared<VulkanTexture>("assets/textures/LensDirt.png");
+		m_BloomDirtTexture = AssetManager::GetAsset<Texture2D>("assets/textures/LensDirt.png");
 
 		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
 		m_CubemapTexture = filteredMap;
@@ -489,16 +493,14 @@ namespace VulkanCore {
 		m_IrradianceTexture = irradianceMap;
 
 		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
-		m_PointLightTextureIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/PointLightIcon.png");
-		m_SpotLightTextureIcon = std::make_shared<VulkanTexture>("../EditorLayer/Resources/Icons/SpotLightIcon.png");
+		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/PointLightIcon.png");
+		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/SpotLightIcon.png");
 
 		m_SkyboxVBData = Utils::CreateCubeModel();
 	}
 
 	void SceneRenderer::Release()
 	{
-		// Deleting all Transforms
-		Mesh::ClearAllMeshes();
 	}
 
 	void SceneRenderer::RecreateScene()
@@ -569,8 +571,8 @@ namespace VulkanCore {
 		{
 			m_SceneCommandBuffer->RetrieveQueryPoolResults();
 
-			ImGui::Text("Geometry Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(0));
-			ImGui::Text("Skybox Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(1));
+			ImGui::Text("Geometry Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(1));
+			ImGui::Text("Skybox Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(0));
 			ImGui::Text("Composite Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(4));
 			ImGui::Text("Bloom Compute Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(3));
 			ImGui::TreePop();
@@ -601,6 +603,9 @@ namespace VulkanCore {
 	void SceneRenderer::SetActiveScene(std::shared_ptr<Scene> scene)
 	{
 		m_Scene = scene;
+
+		m_MeshDrawList.clear();
+		m_MeshTransformMap.clear();
 	}
 
 	void SceneRenderer::SetViewportSize(uint32_t width, uint32_t height)
@@ -633,11 +638,15 @@ namespace VulkanCore {
 		m_Scene->UpdateSpotLightUB(spotLightUB);
 		m_UBSpotLight[frameIndex].WriteandFlushBuffer(&spotLightUB);
 
+		m_SceneCommandBuffer->Begin();
+
 		GeometryPass();
 		BloomCompute();
 		CompositePass();
 
 		ResetDrawCommands();
+
+		m_SceneCommandBuffer->End();
 	}
 
 	void SceneRenderer::RenderLights()
@@ -682,30 +691,52 @@ namespace VulkanCore {
 		}
 	}
 
-	void SceneRenderer::SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, const glm::mat4& transform)
+	void SceneRenderer::SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform)
 	{
 		VK_CORE_PROFILE();
 
+		if (!mesh || !materialAsset)
+			return;
+
 		auto meshSource = mesh->GetMeshSource();
-		uint64_t meshHandle = meshSource->GetMeshHandle();
+		uint64_t meshHandle = mesh->Handle;
+		uint64_t materialHandle = materialAsset->Handle;
 
 		if (meshSource->GetVertexCount() == 0)
 			return;
 
 		for (uint32_t submeshIndex : mesh->GetSubmeshes())
 		{
-			MeshKey meshKey = { meshHandle, submeshIndex };
-			auto& transformBuffer = m_MeshTransformMap[meshKey].emplace_back();
+			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
+			auto& transformBuffer = m_MeshTransformMap[meshKey].Transforms.emplace_back();
 			transformBuffer.MRow[0] = { transform[0][0], transform[1][0], transform[2][0], transform[3][0] };
 			transformBuffer.MRow[1] = { transform[0][1], transform[1][1], transform[2][1], transform[3][1] };
 			transformBuffer.MRow[2] = { transform[0][2], transform[1][2], transform[2][2], transform[3][2] };
 
 			auto& dc = m_MeshDrawList[meshKey];
 			dc.MeshInstance = mesh;
-			dc.MaterialInstance = material;
+			dc.MaterialInstance = materialAsset->GetMaterial();
 			dc.SubmeshIndex = submeshIndex;
-			dc.TransformBuffer = mesh->GetTransformBuffer(meshHandle);
+			dc.TransformBuffer = m_MeshTransformMap[meshKey].TransformBuffer;
 			dc.InstanceCount++;
+		}
+	}
+
+	void SceneRenderer::SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform)
+	{
+
+	}
+
+	void SceneRenderer::UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset)
+	{
+		uint64_t meshHandle = mesh->Handle;
+		uint64_t materialHandle = materialAsset->Handle;
+
+		for (uint32_t submeshIndex : mesh->GetSubmeshes())
+		{
+			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
+			m_MeshTransformMap.erase(meshKey);
+			m_MeshDrawList.erase(meshKey);
 		}
 	}
 
@@ -731,6 +762,14 @@ namespace VulkanCore {
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().RenderPass);
 
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Skybox", DebugLabelColor::Orange);
+
+		// Rendering Skybox
+		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxMaterial, &m_SkyboxSettings);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+
 		// Rendering Geometry
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Geometry-Pass", DebugLabelColor::Gold);
@@ -745,18 +784,12 @@ namespace VulkanCore {
 		});
 
 		for (auto& [mk, dc] : m_MeshDrawList)
-			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk], dc.InstanceCount);
+			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk].Transforms, dc.InstanceCount);
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
-		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Skybox", DebugLabelColor::Orange);
-
-		// Rendering Skybox
-		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxMaterial, &m_SkyboxSettings);
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
-		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+		// TODO: Render Transparent Meshes
 
 		// Rendering Point Lights
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
@@ -866,7 +899,7 @@ namespace VulkanCore {
 	{
 		for (auto& [mk, dc] : m_MeshDrawList)
 		{
-			m_MeshTransformMap[mk].clear();
+			m_MeshTransformMap[mk].Transforms.clear();
 			dc.InstanceCount = 0;
 		}
 

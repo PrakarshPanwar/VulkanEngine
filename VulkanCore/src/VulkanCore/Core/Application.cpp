@@ -64,12 +64,8 @@ namespace VulkanCore {
 			m_Renderer->EndSwapChainRenderPass();
 			m_Renderer->EndFrame();
 
-			// Render Scene
-			m_Renderer->BeginScene();
 			for (Layer* layer : m_LayerStack)
 				layer->OnUpdate();
-
-			m_Renderer->EndScene();
 
 			m_Renderer->SubmitAndPresent();
 		}

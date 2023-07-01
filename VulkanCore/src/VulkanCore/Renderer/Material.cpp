@@ -1,5 +1,5 @@
 #include "vulkanpch.h"
-#include "Material.h"
+#include "Platform/Vulkan/VulkanMaterial.h"
 #include "Renderer.h"
 
 #include <imgui.h>
@@ -35,19 +35,29 @@ namespace VulkanCore {
 		m_MaterialData = materialData;
 	}
 
-	void Material::SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture)
+	std::tuple<AssetHandle, AssetHandle, AssetHandle> Material::GetMaterialHandles() const
+	{
+		return { m_DiffuseTexture->Handle, m_NormalTexture->Handle, m_ARMTexture->Handle };
+	}
+
+	void Material::SetDiffuseTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_DiffuseTexture = texture;
 	}
 
-	void Material::SetNormalTexture(std::shared_ptr<VulkanTexture> texture)
+	void Material::SetNormalTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_NormalTexture = texture;
 	}
 
-	void Material::SetARMTexture(std::shared_ptr<VulkanTexture> texture)
+	void Material::SetARMTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_ARMTexture = texture;
+	}
+
+	std::shared_ptr<Material> Material::Create(const std::string& debugName)
+	{
+		return std::make_shared<VulkanMaterial>(debugName);
 	}
 
 }

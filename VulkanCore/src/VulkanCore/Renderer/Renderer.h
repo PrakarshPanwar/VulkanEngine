@@ -19,7 +19,10 @@ namespace VulkanCore {
 		Red,
 		Blue,
 		Gold,
-		Orange
+		Orange,
+		Pink,
+		Aqua,
+		Green
 	};
 
 	struct RendererConfig
@@ -34,19 +37,19 @@ namespace VulkanCore {
 		static int GetCurrentFrameIndex();
 		static int RT_GetCurrentFrameIndex();
 		static RendererConfig GetConfig();
-		static void BeginRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
-		static void EndRenderPass(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
+		static void BeginRenderPass(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
+		static void EndRenderPass(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
 		static void BuildShaders();
 		static void ShutDown();
 
-		static void RenderSkybox(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, std::shared_ptr<VulkanPipeline> pipeline, std::shared_ptr<VulkanVertexBuffer> skyboxVB, const std::shared_ptr<VulkanMaterial>& skyboxMaterial, void* pcData = nullptr);
-		static void BeginTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
-		static void EndTimestampsQuery(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
-		static void BeginGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::string& name, DebugLabelColor labelColor = DebugLabelColor::None);
-		static void EndGPUPerfMarker(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer);
+		static void RenderSkybox(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& skyboxVB, const std::shared_ptr<VulkanMaterial>& skyboxMaterial, void* pcData = nullptr);
+		static void BeginTimestampsQuery(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer);
+		static void EndTimestampsQuery(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer);
+		static void BeginGPUPerfMarker(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::string& name, DebugLabelColor labelColor = DebugLabelColor::None);
+		static void EndGPUPerfMarker(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer);
 
 		static std::shared_ptr<VulkanTexture> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
-		static void SubmitFullscreenQuad(std::shared_ptr<VulkanRenderCommandBuffer> cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanMaterial>& shaderMaterial);
+		static void SubmitFullscreenQuad(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanMaterial>& shaderMaterial);
 
 		static std::shared_ptr<Shader> GetShader(const std::string& name)
 		{

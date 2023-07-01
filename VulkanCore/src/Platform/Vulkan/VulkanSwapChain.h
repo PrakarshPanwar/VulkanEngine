@@ -58,7 +58,7 @@ namespace VulkanCore {
 
 		// Required for Depth
 		std::vector<VkImage> m_DepthImages;
-		std::vector<VkDeviceMemory> m_DepthImageMemories;
+		std::vector<VmaAllocation> m_DepthImageMemories;
 		std::vector<VkImageView> m_DepthImageViews;
 
 		// Required to receive images from Swap Chain
