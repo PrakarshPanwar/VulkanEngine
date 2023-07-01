@@ -43,6 +43,9 @@ namespace VulkanCore {
 			case DebugLabelColor::Blue:	  return { 0.0f, 0.58f, 1.0f, 1.0f };
 			case DebugLabelColor::Gold:	  return { 0.76f, 0.7f, 0.32f, 1.0f };
 			case DebugLabelColor::Orange: return { 1.0f, 0.34f, 0.2f, 1.0f };
+			case DebugLabelColor::Pink:	  return { 0.972f, 0.784f, 0.862f, 1.0f };
+			case DebugLabelColor::Aqua:	  return { 0.0f, 1.0f, 1.0f, 1.0f };
+			case DebugLabelColor::Green:  return { 0.486f, 0.988f, 0.0f, 1.0f };
 			default:
 				VK_CORE_ASSERT(false, "Label Color is undefined!");
 				return { 0.3f, 0.3f, 0.3f, 1.0f };

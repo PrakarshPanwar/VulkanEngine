@@ -19,7 +19,10 @@ namespace VulkanCore {
 		Red,
 		Blue,
 		Gold,
-		Orange
+		Orange,
+		Pink,
+		Aqua,
+		Green
 	};
 
 	struct RendererConfig

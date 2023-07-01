@@ -420,7 +420,7 @@ namespace VulkanCore {
 
 		m_SceneImages.resize(framesInFlight);
 
-		for (int i = 0; i < framesInFlight; i++)
+		for (uint32_t i = 0; i < framesInFlight; ++i)
 			m_SceneImages[i] = ImGuiLayer::AddTexture(*GetFinalPassImage(i));
 
 		m_UBCamera.reserve(framesInFlight);
@@ -428,7 +428,7 @@ namespace VulkanCore {
 		m_UBSpotLight.reserve(framesInFlight);
 
 		// Uniform Buffers
-		for (int i = 0; i < framesInFlight; ++i)
+		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
 			m_UBCamera.emplace_back(sizeof(UBCamera));
 			m_UBPointLight.emplace_back(sizeof(UBPointLights));
@@ -451,7 +451,7 @@ namespace VulkanCore {
 
 		VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
-		for (int i = 0; i < framesInFlight; i++)
+		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
 			auto BloomTexture = m_BloomTextures.emplace_back(std::make_shared<VulkanImage>(bloomRTSpec));
 			BloomTexture->Invalidate();
@@ -471,7 +471,7 @@ namespace VulkanCore {
 		sceneRTSpec.Usage = ImageUsage::Texture;
 		sceneRTSpec.MipLevels = Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y);
 
-		for (int i = 0; i < framesInFlight; i++)
+		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
 			auto SceneTexture = m_SceneRenderTextures.emplace_back(std::make_shared<VulkanImage>(sceneRTSpec));
 			SceneTexture->Invalidate();
