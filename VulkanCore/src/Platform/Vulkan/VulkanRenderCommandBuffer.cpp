@@ -86,19 +86,23 @@ namespace VulkanCore {
 		{
 			VK_CORE_PROFILE_FN("VulkanRenderCommandBuffer::Begin");
 
+			VkCommandBuffer commandBuffer = RT_GetActiveCommandBuffer();
+
 			VkCommandBufferBeginInfo beginInfo{};
 			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 
-			vkBeginCommandBuffer(RT_GetActiveCommandBuffer(), &beginInfo);
+			vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
 			if (m_TimestampQueryPool)
-				vkCmdResetQueryPool(RT_GetActiveCommandBuffer(), m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
+				vkCmdResetQueryPool(commandBuffer, m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
 		});
 	}
 
 	void VulkanRenderCommandBuffer::Begin(VkRenderPass renderPass, VkFramebuffer framebuffer)
 	{
+		VkCommandBuffer commandBuffer = RT_GetActiveCommandBuffer();
+
 		VkCommandBufferInheritanceInfo inheritanceInfo{};
 		inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 		inheritanceInfo.renderPass = renderPass;
@@ -109,10 +113,10 @@ namespace VulkanCore {
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 		beginInfo.pInheritanceInfo = &inheritanceInfo;
 
-		vkBeginCommandBuffer(RT_GetActiveCommandBuffer(), &beginInfo);
+		vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
 		if (m_TimestampQueryPool)
-			vkCmdResetQueryPool(RT_GetActiveCommandBuffer(), m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
+			vkCmdResetQueryPool(commandBuffer, m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
 	}
 
 	void VulkanRenderCommandBuffer::End()
@@ -137,7 +141,9 @@ namespace VulkanCore {
 
 	void VulkanRenderCommandBuffer::RetrieveQueryPoolResults()
 	{
-		vkGetQueryPoolResults(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
+		auto device = VulkanContext::GetCurrentDevice();
+
+		vkGetQueryPoolResults(device->GetVulkanDevice(),
 			m_TimestampQueryPool,
 			0,
 			m_TimestampQueryBufferSize, sizeof(uint64_t) * m_TimestampQueryBufferSize,

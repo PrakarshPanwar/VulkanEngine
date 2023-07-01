@@ -28,8 +28,6 @@ namespace VulkanCore {
 
 		void BeginFrame();
 		void EndFrame();
-		void BeginScene();
-		void EndScene();
 		void BeginSwapChainRenderPass();
 		void EndSwapChainRenderPass();
 		inline float GetAspectRatio() const { return m_SwapChain->ExtentAspectRatio(); }
