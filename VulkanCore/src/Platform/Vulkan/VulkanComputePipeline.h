@@ -1,6 +1,6 @@
 #pragma once
 #include "VulkanContext.h"
-#include "VulkanCore/Core/Shader.h"
+#include "VulkanCore/Renderer/Shader.h"
 
 namespace VulkanCore {
 

@@ -1,13 +1,12 @@
 #include "vulkanpch.h"
-#include "Shader.h"
+#include "VulkanShader.h"
 
-#include "../Renderer/Renderer.h"
+#include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Core/Application.h"
+#include "VulkanCore/Core/Timer.h"
+#include "VulkanCore/Renderer/Renderer.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
-#include "Application.h"
-#include "Assert.h"
-#include "Log.h"
-#include "Timer.h"
 
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
@@ -72,7 +71,7 @@ namespace VulkanCore {
 		}
 	}
 
-	Shader::Shader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath)
+	VulkanShader::VulkanShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath)
 		: m_VertexFilePath(vsfilepath), m_FragmentFilePath(fsfilepath), m_GeometryFilePath(gsfilepath)
 	{
 		if (m_GeometryFilePath.empty())
@@ -109,7 +108,7 @@ namespace VulkanCore {
 		InvalidateDescriptors();
 	}
 
-	Shader::Shader(const std::string& cmpfilepath)
+	VulkanShader::VulkanShader(const std::string& cmpfilepath)
 		: m_ComputeFilePath(cmpfilepath)
 	{
 		auto ComputeSrc = ParseShader(cmpfilepath);
@@ -126,13 +125,13 @@ namespace VulkanCore {
 		InvalidateDescriptors();
 	}
 
-	Shader::~Shader()
+	VulkanShader::~VulkanShader()
 	{
 
 	}
 
 #if USE_VULKAN_DESCRIPTOR
-	std::shared_ptr<VulkanDescriptorSetLayout> Shader::CreateDescriptorSetLayout(int index)
+	std::shared_ptr<VulkanDescriptorSetLayout> VulkanShader::CreateDescriptorSetLayout(int index)
 	{
 		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
 
@@ -201,7 +200,7 @@ namespace VulkanCore {
 		return descriptorSetLayout;
 	}
 
-	std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> Shader::CreateAllDescriptorSetsLayout()
+	std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> VulkanShader::CreateAllDescriptorSetsLayout()
 	{
 		// Key: Set number
 		std::unordered_map<uint32_t, DescriptorSetLayoutBuilder> descriptorSetLayoutBuilderMap;
@@ -265,7 +264,7 @@ namespace VulkanCore {
 		return m_DescriptorSetLayouts;
 	}
 
-	VkDescriptorSetLayout Shader::CreateVulkanDescriptorSetLayout(uint32_t index)
+	VkDescriptorSetLayout VulkanShader::CreateVulkanDescriptorSetLayout(uint32_t index)
 	{
 		return nullptr;
 	}
@@ -273,7 +272,7 @@ namespace VulkanCore {
 #else
 #endif
 
-	std::vector<VkDescriptorSet> Shader::AllocateDescriptorSets(uint32_t index)
+	std::vector<VkDescriptorSet> VulkanShader::AllocateDescriptorSets(uint32_t index)
 	{
 		auto vulkanDescriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
 		VkDescriptorSetLayout setLayout = CreateDescriptorSetLayout(index)->GetVulkanDescriptorSetLayout();
@@ -285,12 +284,12 @@ namespace VulkanCore {
 		return descriptorSets;
 	}
 
-	std::vector<VkDescriptorSet> Shader::AllocateAllDescriptorSets()
+	std::vector<VkDescriptorSet> VulkanShader::AllocateAllDescriptorSets()
 	{
 		return {};
 	}
 
-	std::tuple<std::string, std::string> Shader::ParseShader(const std::string& vsfilepath, const std::string& fsfilepath)
+	std::tuple<std::string, std::string> VulkanShader::ParseShader(const std::string& vsfilepath, const std::string& fsfilepath)
 	{
 		std::ifstream VertexSource(vsfilepath, std::ios::binary);
 		std::ifstream FragmentSource(fsfilepath, std::ios::binary);
@@ -306,7 +305,7 @@ namespace VulkanCore {
 		return { VertexStream.str(), FragmentStream.str() };
 	}
 
-	std::tuple<std::string, std::string, std::string> Shader::ParseShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath)
+	std::tuple<std::string, std::string, std::string> VulkanShader::ParseShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath)
 	{
 		std::ifstream VertexSource(vsfilepath, std::ios::binary);
 		std::ifstream FragmentSource(fsfilepath, std::ios::binary);
@@ -325,7 +324,7 @@ namespace VulkanCore {
 		return { VertexStream.str(), FragmentStream.str(), GeometryStream.str() };
 	}
 
-	std::string Shader::ParseShader(const std::string& cmpfilepath)
+	std::string VulkanShader::ParseShader(const std::string& cmpfilepath)
 	{
 		std::ifstream ComputeSource(cmpfilepath, std::ios::binary);
 
@@ -337,7 +336,7 @@ namespace VulkanCore {
 		return ComputeStream.str();
 	}
 
-	void Shader::CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources)
+	void VulkanShader::CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources)
 	{
 		shaderc::Compiler compiler;
 		shaderc::CompileOptions options;
@@ -443,7 +442,7 @@ namespace VulkanCore {
 			VK_CORE_TRACE("Total Shader Async Threads: {0}", m_Futures.size());
 	}
 
-	void Shader::ReflectShaderData()
+	void VulkanShader::ReflectShaderData()
 	{
 		std::filesystem::path shaderFilePath = m_VertexFilePath;
 		if (!std::filesystem::exists(shaderFilePath))
@@ -489,9 +488,10 @@ namespace VulkanCore {
 		}
 	}
 
-	void Shader::InvalidateDescriptors()
+	void VulkanShader::InvalidateDescriptors()
 	{
-		
+
 	}
 
 }
+

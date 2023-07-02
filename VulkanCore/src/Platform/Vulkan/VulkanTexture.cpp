@@ -148,7 +148,7 @@ namespace VulkanCore {
 
 			vkCmdCopyBufferToImage(copyCmd,
 				stagingBuffer.GetBuffer(),
-				m_Image->GetVulkanImageInfo().Image,
+				m_Image->GetVulkanImageInfo().pImage,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				1,
 				&region);
@@ -162,7 +162,7 @@ namespace VulkanCore {
 			{
 				VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
-				Utils::InsertImageMemoryBarrier(barrierCmd, m_Image->GetVulkanImageInfo().Image,
+				Utils::InsertImageMemoryBarrier(barrierCmd, m_Image->GetVulkanImageInfo().pImage,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -187,7 +187,7 @@ namespace VulkanCore {
 
 		VkCommandBuffer blitCmd = device->GetCommandBuffer();
 
-		const VkImage vulkanImage = m_Image->GetVulkanImageInfo().Image;
+		const VkImage vulkanImage = m_Image->GetVulkanImageInfo().pImage;
 		VkImageSubresourceRange subresourceRange = {};
 		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		subresourceRange.baseArrayLayer = 0;
@@ -270,7 +270,7 @@ namespace VulkanCore {
 
 	VulkanTextureCube::~VulkanTextureCube()
 	{
-		if (m_Info.Image)
+		if (m_Info.pImage)
 			Release();
 	}
 
@@ -299,15 +299,15 @@ namespace VulkanCore {
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.mipLevels = mipCount;
 
-		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
-		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE, "Default TextureCube", m_Info.Image);
+		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.pImage);
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE, "Default TextureCube", m_Info.pImage);
 
 		m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		// Create a view for Image
 		VkImageViewCreateInfo viewCreateInfo{};
 		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-		viewCreateInfo.image = m_Info.Image;
+		viewCreateInfo.image = m_Info.pImage;
 		viewCreateInfo.format = vulkanFormat;
 		viewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -349,7 +349,7 @@ namespace VulkanCore {
 		VkCommandBuffer layoutCmd = device->GetCommandBuffer();
 
 		Utils::SetImageLayout(
-			layoutCmd, m_Info.Image,
+			layoutCmd, m_Info.pImage,
 			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_GENERAL,
 			subresourceRange);
@@ -371,7 +371,7 @@ namespace VulkanCore {
 
 		vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
 		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
-		allocator.DestroyImage(m_Info.Image, m_Info.MemoryAlloc);
+		allocator.DestroyImage(m_Info.pImage, m_Info.MemoryAlloc);
 	}
 
 	// NOTE: It should not be called inside Invalidate
@@ -391,7 +391,7 @@ namespace VulkanCore {
 			mipSubRange.levelCount = 1;
 			mipSubRange.layerCount = 1;
 
-			Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
+			Utils::InsertImageMemoryBarrier(blitCmd, m_Info.pImage,
 				0, VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -429,19 +429,19 @@ namespace VulkanCore {
 				mipSubRange.levelCount = 1;
 				mipSubRange.layerCount = 1;
 
-				Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
+				Utils::InsertImageMemoryBarrier(blitCmd, m_Info.pImage,
 					0, VK_ACCESS_TRANSFER_WRITE_BIT,
 					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 					mipSubRange);
 
 				vkCmdBlitImage(blitCmd,
-					m_Info.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-					m_Info.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					m_Info.pImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+					m_Info.pImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 					1, &imageBlit,
 					VK_FILTER_LINEAR);
 
-				Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
+				Utils::InsertImageMemoryBarrier(blitCmd, m_Info.pImage,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -454,7 +454,7 @@ namespace VulkanCore {
 		subresourceRange.layerCount = 6;
 		subresourceRange.levelCount = mipLevels;
 
-		Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
+		Utils::InsertImageMemoryBarrier(blitCmd, m_Info.pImage,
 			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, readonly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
 			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -475,7 +475,7 @@ namespace VulkanCore {
 		VkImageViewCreateInfo viewCreateInfo{};
 		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-		viewCreateInfo.image = m_Info.Image;
+		viewCreateInfo.image = m_Info.pImage;
 		viewCreateInfo.format = vulkanFormat;
 		viewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;

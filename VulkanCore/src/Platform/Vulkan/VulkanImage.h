@@ -1,5 +1,6 @@
 #pragma once
 #include "VulkanContext.h"
+#include "VulkanCore/Renderer/Image.h"
 
 #include <glm/glm.hpp>
 
@@ -13,58 +14,15 @@ namespace VulkanCore {
 			VkImageSubresourceRange subresourceRange);
 	}
 
-	enum class ImageFormat
-	{
-		None,
-		RGBA8_SRGB,
-		RGBA8_NORM,
-		RGBA8_UNORM,
-		RGBA16_NORM,
-		RGBA16_UNORM,
-		RGBA16F,
-		RGBA32F,
-		R11G11B10F,
-
-		DEPTH24STENCIL8,
-		DEPTH16F,
-		DEPTH32F
-	};
-
-	enum class TextureWrap
-	{
-		Repeat,
-		Clamp
-	};
-
-	enum class ImageUsage
-	{
-		Storage,
-		Attachment,
-		Texture
-	};
-
-	struct ImageSpecification
-	{
-		std::string DebugName;
-
-		uint32_t Width, Height;
-		uint32_t Samples = 1;
-		uint32_t MipLevels = 1;
-		ImageFormat Format;
-		ImageUsage Usage;
-		bool Transfer = false;
-		TextureWrap SamplerWrap = TextureWrap::Clamp;
-	};
-
 	struct VulkanImageInfo
 	{
-		VkImage Image = nullptr;
+		VkImage pImage = nullptr;
 		VkImageView ImageView = nullptr;
 		VkSampler Sampler = nullptr;
 		VmaAllocation MemoryAlloc = nullptr;
 	};
 
-	class VulkanImage
+	class VulkanImage : public Image
 	{
 	public:
 		VulkanImage(const ImageSpecification& spec);

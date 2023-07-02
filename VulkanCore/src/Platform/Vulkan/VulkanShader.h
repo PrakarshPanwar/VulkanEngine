@@ -1,34 +1,18 @@
 #pragma once
-#include <future>
-#include "Platform/Vulkan/VulkanDescriptor.h"
-#include "../Source/SPIRV-Reflect/spirv_reflect.h"
-
-#define USE_VULKAN_DESCRIPTOR 1
+#include "VulkanCore/Renderer/Shader.h"
 
 namespace VulkanCore {
 
-	// Based on OpenGL Macros
-	enum class ShaderType
+	class VulkanShader : public Shader
 	{
-		Vertex = 0x8B31,
-		Fragment = 0x8B30,
-		Geometry = 0x8DD9,
-		Compute = 0x91B9
-	};
-
-	class Shader
-	{
-	public:
-		Shader() = default;
-
-		Shader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath = "");
-		Shader(const std::string& cmpfilepath);
-		~Shader();
+		VulkanShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath = "");
+		VulkanShader(const std::string& cmpfilepath);
+		~VulkanShader();
 
 #if USE_VULKAN_DESCRIPTOR
 		std::shared_ptr<VulkanDescriptorSetLayout> CreateDescriptorSetLayout(int index = 0);
 		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> CreateAllDescriptorSetsLayout();
-		
+
 		VkDescriptorSetLayout CreateVulkanDescriptorSetLayout(uint32_t index = 0);
 #endif
 		std::vector<VkDescriptorSet> AllocateDescriptorSets(uint32_t index = 0);

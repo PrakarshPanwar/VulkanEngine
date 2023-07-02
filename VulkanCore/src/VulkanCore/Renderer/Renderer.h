@@ -1,9 +1,10 @@
 #pragma once
-#include "VulkanRenderer.h"
+#include "Platform/Vulkan/VulkanRenderer.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
 #include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
+#include "Platform/Vulkan/VulkanRenderPass.h"
 #include "VulkanCore/Mesh/Mesh.h"
-#include "VulkanCore/Core/Shader.h"
+#include "VulkanCore/Renderer/Shader.h"
 #include "VulkanCore/Renderer/RenderThread.h"
 
 namespace VulkanCore {
@@ -27,7 +28,7 @@ namespace VulkanCore {
 
 	struct RendererConfig
 	{
-		static const uint32_t FramesInFlight = 3;
+		static constexpr uint32_t FramesInFlight = 3;
 	};
 
 	class Renderer
