@@ -84,8 +84,8 @@ namespace VulkanCore {
 			std::vector<std::shared_ptr<VulkanImage>> AttachmentImages;
 			AttachmentImages.reserve(framesInFlight);
 
-			// Adding 3 Images in Flight(Only for this system)
-			for (int i = 0; i < framesInFlight; ++i)
+			// Adding Images in Flight
+			for (uint32_t i = 0; i < framesInFlight; ++i)
 			{
 				ImageSpecification spec;
 				spec.DebugName = "Framebuffer Color Attachment";
@@ -124,7 +124,7 @@ namespace VulkanCore {
 				std::vector<std::shared_ptr<VulkanImage>> ResolveImages;
 				ResolveImages.reserve(framesInFlight);
 
-				for (int i = 0; i < framesInFlight; i++)
+				for (uint32_t i = 0; i < framesInFlight; ++i)
 				{
 					ImageSpecification spec;
 					spec.DebugName = "Framebuffer Color Resolve";
@@ -159,7 +159,7 @@ namespace VulkanCore {
 		{
 			m_DepthAttachment.reserve(framesInFlight);
 
-			for (int i = 0; i < framesInFlight; i++)
+			for (uint32_t i = 0; i < framesInFlight; ++i)
 			{
 				ImageSpecification spec;
 				spec.DebugName = "Framebuffer Depth Attachment";
@@ -185,7 +185,7 @@ namespace VulkanCore {
 
 		m_Framebuffers.resize(framesInFlight);
 
-		for (int i = 0; i < framesInFlight; i++)
+		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
 			std::vector<VkImageView> Attachments;
 
@@ -236,7 +236,7 @@ namespace VulkanCore {
 				{
 					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
-					Utils::InsertImageMemoryBarrier(barrierCmd, fbImage->GetVulkanImageInfo().Image,
+					Utils::InsertImageMemoryBarrier(barrierCmd, fbImage->GetVulkanImageInfo().pImage,
 						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
 						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,

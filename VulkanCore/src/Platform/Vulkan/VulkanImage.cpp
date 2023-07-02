@@ -116,7 +116,7 @@ namespace VulkanCore {
 
 	VulkanImage::~VulkanImage()
 	{
-		if (m_Info.Image == nullptr)
+		if (m_Info.pImage == nullptr)
 			return;
 
 		Release();
@@ -124,7 +124,7 @@ namespace VulkanCore {
 
 	void VulkanImage::Invalidate()
 	{
-		if (m_Info.Image != nullptr)
+		if (m_Info.pImage != nullptr)
 			Release();
 
 		auto device = VulkanContext::GetCurrentDevice();
@@ -165,14 +165,14 @@ namespace VulkanCore {
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.mipLevels = Utils::IsMultisampled(m_Specification) ? 1 : m_Specification.MipLevels;
 
-		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
-		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE, m_Specification.DebugName, m_Info.Image);
+		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.pImage);
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE, m_Specification.DebugName, m_Info.pImage);
 
 		// Create a view for Image
 		VkImageViewCreateInfo viewCreateInfo{};
 		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewCreateInfo.image = m_Info.Image;
+		viewCreateInfo.image = m_Info.pImage;
 		viewCreateInfo.format = vulkanFormat;
 		viewCreateInfo.subresourceRange.aspectMask = aspectMask;
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
@@ -220,7 +220,7 @@ namespace VulkanCore {
 			subresourceRange.levelCount = m_Specification.MipLevels;
 			subresourceRange.layerCount = 1;
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.pImage,
 				0, 0,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
@@ -240,7 +240,7 @@ namespace VulkanCore {
 			subresourceRange.baseArrayLayer = 0;
 			subresourceRange.layerCount = 1;
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.pImage,
 				0, VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -264,7 +264,7 @@ namespace VulkanCore {
 		VkImageViewCreateInfo viewCreateInfo{};
 		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewCreateInfo.image = m_Info.Image;
+		viewCreateInfo.image = m_Info.pImage;
 		viewCreateInfo.format = vulkanFormat;
 		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		viewCreateInfo.subresourceRange.baseMipLevel = mip;
@@ -327,7 +327,7 @@ namespace VulkanCore {
 
 			vkDestroyImageView(device->GetVulkanDevice(), imageInfo.ImageView, nullptr);
 			vkDestroySampler(device->GetVulkanDevice(), imageInfo.Sampler, nullptr);
-			allocator.DestroyImage(imageInfo.Image, imageInfo.MemoryAlloc);
+			allocator.DestroyImage(imageInfo.pImage, imageInfo.MemoryAlloc);
 
 			for (auto& mipRef : mipRefs)
 				vkDestroyImageView(device->GetVulkanDevice(), mipRef, nullptr);

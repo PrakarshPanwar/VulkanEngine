@@ -76,7 +76,7 @@ namespace VulkanCore {
 	void VulkanRenderPass::Invalidate()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-		auto Framebuffer = m_Specification.TargetFramebuffer;
+		auto Framebuffer = std::static_pointer_cast<VulkanFramebuffer>(m_Specification.TargetFramebuffer);
 
 		VkSampleCountFlagBits samples = Utils::VulkanSampleCount(Framebuffer->GetSpecification().Samples);
 
@@ -199,60 +199,14 @@ namespace VulkanCore {
 
 	void VulkanRenderPass::RecreateFramebuffers(uint32_t width, uint32_t height)
 	{
-		auto Framebuffer = m_Specification.TargetFramebuffer;
+		auto Framebuffer = std::static_pointer_cast<VulkanFramebuffer>(m_Specification.TargetFramebuffer);
 		Framebuffer->Resize(width, height);
 		Framebuffer->CreateFramebuffer(m_RenderPass);
 	}
 
-	void VulkanRenderPass::Begin(VkCommandBuffer beginCmd)
+	void VulkanRenderPass::Begin(const std::shared_ptr<VulkanRenderCommandBuffer>& beginCmd)
 	{
-		auto Framebuffer = m_Specification.TargetFramebuffer;
-		const FramebufferSpecification fbSpec = Framebuffer->GetSpecification();
-		const VkExtent2D framebufferExtent = { fbSpec.Width, fbSpec.Height };
-
-		Renderer::Submit([this, beginCmd, Framebuffer, framebufferExtent, fbSpec]
-		{
-			VK_CORE_PROFILE_FN("VulkanRenderPass::Begin");
-
-			VkRenderPassBeginInfo beginPassInfo{};
-			beginPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			beginPassInfo.renderPass = m_RenderPass;
-			beginPassInfo.framebuffer = Framebuffer->GetVulkanFramebuffers()[Renderer::RT_GetCurrentFrameIndex()];
-			beginPassInfo.renderArea.offset = { 0, 0 };
-			beginPassInfo.renderArea.extent = framebufferExtent;
-
-			// TODO: We may change this in future as there will be multiple allocation/deallocation in
-			// clearValues vector
-			std::vector<VkClearValue> clearValues{ m_AttachmentDescriptions.size() };
-			for (uint32_t i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
-				clearValues[i].color = { fbSpec.ClearColor.x, fbSpec.ClearColor.y, fbSpec.ClearColor.z, fbSpec.ClearColor.w };
-
-			clearValues[clearValues.size() - 1].depthStencil = { 1.0f, 0 };
-
-			beginPassInfo.clearValueCount = (uint32_t)clearValues.size();
-			beginPassInfo.pClearValues = clearValues.data();
-
-			vkCmdBeginRenderPass(beginCmd, &beginPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			VkViewport viewport{};
-			viewport.x = 0.0f;
-			viewport.y = static_cast<float>(fbSpec.Height);
-			viewport.width = static_cast<float>(fbSpec.Width);
-			viewport.height = -static_cast<float>(fbSpec.Height);
-			viewport.minDepth = 0.0f;
-			viewport.maxDepth = 1.0f;
-
-			VkRect2D scissor{ { 0, 0 }, framebufferExtent };
-			vkCmdSetViewport(beginCmd, 0, 1, &viewport);
-			vkCmdSetScissor(beginCmd, 0, 1, &scissor);
-		});
-	}
-
-	void VulkanRenderPass::Begin(std::shared_ptr<VulkanRenderCommandBuffer> beginCmd)
-	{
-		auto Framebuffer = m_Specification.TargetFramebuffer;
-
-		Renderer::Submit([this, beginCmd, Framebuffer]
+		Renderer::Submit([this, beginCmd, Framebuffer = std::static_pointer_cast<VulkanFramebuffer>(m_Specification.TargetFramebuffer)]
 		{
 			VK_CORE_PROFILE_FN("VulkanRenderPass::Begin");
 
@@ -292,12 +246,7 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderPass::End(VkCommandBuffer endCmd)
-	{
-		Renderer::Submit([endCmd] { vkCmdEndRenderPass(endCmd); });
-	}
-
-	void VulkanRenderPass::End(std::shared_ptr<VulkanRenderCommandBuffer> endCmd)
+	void VulkanRenderPass::End(const std::shared_ptr<VulkanRenderCommandBuffer>& endCmd)
 	{
 		Renderer::Submit([endCmd]
 		{

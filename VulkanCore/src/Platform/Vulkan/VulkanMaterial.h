@@ -1,5 +1,5 @@
 #pragma once
-#include "VulkanCore/Core/Shader.h"
+#include "VulkanCore/Renderer/Shader.h"
 #include "VulkanCore/Renderer/Material.h"
 #include "VulkanCore/Renderer/Renderer.h"
 #include "Platform/Vulkan/VulkanTexture.h"
