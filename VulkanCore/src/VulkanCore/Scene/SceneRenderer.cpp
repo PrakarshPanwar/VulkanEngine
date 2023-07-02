@@ -699,6 +699,7 @@ namespace VulkanCore {
 			return;
 
 		auto meshSource = mesh->GetMeshSource();
+		auto& submeshData = meshSource->GetSubmeshes();
 		uint64_t meshHandle = mesh->Handle;
 		uint64_t materialHandle = materialAsset->Handle;
 
@@ -709,9 +710,11 @@ namespace VulkanCore {
 		{
 			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
 			auto& transformBuffer = m_MeshTransformMap[meshKey].Transforms.emplace_back();
-			transformBuffer.MRow[0] = { transform[0][0], transform[1][0], transform[2][0], transform[3][0] };
-			transformBuffer.MRow[1] = { transform[0][1], transform[1][1], transform[2][1], transform[3][1] };
-			transformBuffer.MRow[2] = { transform[0][2], transform[1][2], transform[2][2], transform[3][2] };
+
+			glm::mat4 submeshTransform = transform * submeshData[submeshIndex].LocalTransform;
+			transformBuffer.MRow[0] = { submeshTransform[0][0], submeshTransform[1][0], submeshTransform[2][0], submeshTransform[3][0] };
+			transformBuffer.MRow[1] = { submeshTransform[0][1], submeshTransform[1][1], submeshTransform[2][1], submeshTransform[3][1] };
+			transformBuffer.MRow[2] = { submeshTransform[0][2], submeshTransform[1][2], submeshTransform[2][2], submeshTransform[3][2] };
 
 			auto& dc = m_MeshDrawList[meshKey];
 			dc.MeshInstance = mesh;
