@@ -150,7 +150,7 @@ namespace VulkanCore {
 			compFramebufferSpec.Width = 1920;
 			compFramebufferSpec.Height = 1080;
 			compFramebufferSpec.Attachments = { ImageFormat::RGBA8_SRGB };
-			compFramebufferSpec.Samples = 8;
+			compFramebufferSpec.Samples = 1;
 
 			RenderPassSpecification compRenderPassSpec;
 			compRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(compFramebufferSpec);
