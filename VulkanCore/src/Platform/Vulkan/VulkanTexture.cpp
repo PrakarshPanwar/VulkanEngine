@@ -175,7 +175,7 @@ namespace VulkanCore {
 		m_IsLoaded = true;
 	}
 
-	void VulkanTexture::Release() // TODO: Could be used otherwise will be removed in future
+	void VulkanTexture::Release()
 	{
 		if (m_LocalStorage)
 			free(m_LocalStorage);
