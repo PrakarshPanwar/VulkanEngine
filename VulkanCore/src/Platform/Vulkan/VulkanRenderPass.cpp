@@ -33,7 +33,7 @@ namespace VulkanCore {
 
 		static bool IsMultisampled(RenderPassSpecification spec)
 		{
-			return spec.TargetFramebuffer->GetSpecification().Samples > 1 ? true : false;
+			return spec.TargetFramebuffer->GetSpecification().Samples > 1;
 		}
 
 		static VkSampleCountFlagBits VulkanSampleCount(uint32_t sampleCount)
@@ -83,6 +83,7 @@ namespace VulkanCore {
 
 		VkSampleCountFlagBits samples = Utils::VulkanSampleCount(Framebuffer->GetSpecification().Samples);
 
+		bool multisampled = Utils::IsMultisampled(m_Specification);
 		std::vector<VkAttachmentDescription> attachmentDescriptions;
 		std::vector<VkAttachmentReference> attachmentRefs;
 
@@ -97,15 +98,14 @@ namespace VulkanCore {
 			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			colorAttachment.finalLayout = Utils::IsMultisampled(m_Specification) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			colorAttachment.finalLayout = multisampled ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			attachmentDescriptions.push_back(colorAttachment);
 		}
 
 		// Resolve Attachment Description
 		VkAttachmentDescription colorAttachmentResolve = {};
-		if (Utils::IsMultisampled(m_Specification))
+		if (multisampled)
 		{
 			for (const auto& attachmentSpec : Framebuffer->GetColorAttachmentsTextureSpec())
 			{
@@ -147,7 +147,7 @@ namespace VulkanCore {
 		}
 
 		// Resolve Attachment Reference(Only applicable if multisampling is present)
-		if (Utils::IsMultisampled(m_Specification))
+		if (multisampled)
 		{
 			for (int i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
 			{
@@ -169,8 +169,7 @@ namespace VulkanCore {
 		subpass.colorAttachmentCount = static_cast<uint32_t>(Framebuffer->GetColorAttachmentsTextureSpec().size());
 		subpass.pColorAttachments = attachmentRefs.data();
 		subpass.pDepthStencilAttachment = Framebuffer->HasDepthAttachment() ? &depthAttachmentRef : nullptr;
-		subpass.pResolveAttachments = Utils::IsMultisampled(m_Specification) ?
-			attachmentRefs.data() + Framebuffer->GetColorAttachmentsTextureSpec().size() : nullptr;
+		subpass.pResolveAttachments = multisampled ? attachmentRefs.data() + Framebuffer->GetColorAttachmentsTextureSpec().size() : nullptr;
 
 		VkSubpassDependency dependency = {}; // TODO: Changes need to be made
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;

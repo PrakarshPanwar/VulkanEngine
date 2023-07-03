@@ -2,6 +2,7 @@
 #include "VulkanCore/Renderer/Camera.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Renderer/Material.h"
+#include "VulkanCore/Core/UUID.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
@@ -58,6 +59,17 @@ namespace VulkanCore {
 		}
 	};
 
+	struct IDComponent
+	{
+		UUID ID;
+
+		IDComponent() = default;
+		IDComponent(const UUID& id)
+			: ID(id) {}
+
+		IDComponent(const IDComponent&) = default;
+	};
+
 	struct TagComponent
 	{
 		std::string Tag;
@@ -69,17 +81,15 @@ namespace VulkanCore {
 	};
 
 	class Mesh;
+	class MaterialAsset;
 
 	struct MeshComponent
 	{
-		std::shared_ptr<Mesh> MeshInstance;
+		AssetHandle MeshHandle = 0;
+		AssetHandle MaterialTableHandle = 0;
 
-		MeshComponent()
-			: MeshInstance(std::make_shared<Mesh>()) {}
-
+		MeshComponent() = default;
 		MeshComponent(const MeshComponent&) = default;
-		MeshComponent(std::shared_ptr<Mesh> mesh)
-			: MeshInstance(mesh) {}
 	};
 
 	struct TransformData

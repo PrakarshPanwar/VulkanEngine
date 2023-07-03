@@ -13,7 +13,7 @@ namespace VulkanCore {
 
 		ImageFormat ImgFormat = ImageFormat::None;
 
-		operator bool() const { return ImgFormat == ImageFormat::None ? false : true; }
+		operator bool() const { return ImgFormat != ImageFormat::None; }
 	};
 
 	struct FramebufferAttachmentSpecification

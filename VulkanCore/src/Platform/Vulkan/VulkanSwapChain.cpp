@@ -28,39 +28,37 @@ namespace VulkanCore {
 	VulkanSwapChain::~VulkanSwapChain()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+		VulkanAllocator allocator("DestroySwapChain");
 
-		for (int i = 0; i < m_ColorImages.size(); i++)
-		{
-			vkDestroyImageView(device->GetVulkanDevice(), m_ColorImageViews[i], nullptr);
-			vmaDestroyImage(VulkanContext::GetVulkanMemoryAllocator(), m_ColorImages[i], m_ColorImageMemories[i]);
-		}
+		for (auto& swapChainImageView : m_SwapChainImageViews)
+			vkDestroyImageView(device->GetVulkanDevice(), swapChainImageView, nullptr);
 
-		for (auto imageView : m_SwapChainImageViews)
-			vkDestroyImageView(device->GetVulkanDevice(), imageView, nullptr);
-
-		m_SwapChainImageViews.clear();
-
-		if (m_SwapChain != nullptr)
+		if (m_SwapChain)
 		{
 			vkDestroySwapchainKHR(device->GetVulkanDevice(), m_SwapChain, nullptr);
 			m_SwapChain = nullptr;
 		}
 
-
-		for (int i = 0; i < m_DepthImages.size(); i++)
+		for (uint32_t i = 0; i < framesInFlight; i++)
 		{
-			vkDestroyImageView(device->GetVulkanDevice(), m_DepthImageViews[i], nullptr);
-			vkDestroyImage(device->GetVulkanDevice(), m_DepthImages[i], nullptr);
-			vkFreeMemory(device->GetVulkanDevice(), m_DepthImageMemories[i], nullptr);
+			vkDestroyImageView(device->GetVulkanDevice(), m_ColorImageViews[i], nullptr);
+			allocator.DestroyImage(m_ColorImages[i], m_ColorImageMemories[i]);
 		}
 
-		for (auto framebuffer : m_SwapChainFramebuffers)
+		for (uint32_t i = 0; i < framesInFlight; i++)
+		{
+			vkDestroyImageView(device->GetVulkanDevice(), m_DepthImageViews[i], nullptr);
+			allocator.DestroyImage(m_DepthImages[i], m_DepthImageMemories[i]);
+		}
+
+		for (auto& framebuffer : m_SwapChainFramebuffers)
 			vkDestroyFramebuffer(device->GetVulkanDevice(), framebuffer, nullptr);
 
 		vkDestroyRenderPass(device->GetVulkanDevice(), m_RenderPass, nullptr);
 
 		// Cleanup Synchronization Objects
-		for (size_t i = 0; i < Renderer::GetConfig().FramesInFlight; i++)
+		for (size_t i = 0; i < framesInFlight; i++)
 		{
 			vkDestroySemaphore(device->GetVulkanDevice(), m_RenderFinishedSemaphores[i], nullptr);
 			vkDestroySemaphore(device->GetVulkanDevice(), m_ImageAvailableSemaphores[i], nullptr);
@@ -219,7 +217,6 @@ namespace VulkanCore {
 		VkSwapchainCreateInfoKHR createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 		createInfo.surface = vulkanSurface;
-
 		createInfo.minImageCount = imageCount;
 		createInfo.imageFormat = surfaceFormat.format;
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -236,7 +233,6 @@ namespace VulkanCore {
 			createInfo.queueFamilyIndexCount = 2;
 			createInfo.pQueueFamilyIndices = queueFamilyIndices;
 		}
-
 		else
 		{
 			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -246,10 +242,8 @@ namespace VulkanCore {
 
 		createInfo.preTransform = swapChainSupport.Capabilities.currentTransform;
 		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-
 		createInfo.presentMode = presentMode;
 		createInfo.clipped = VK_TRUE;
-
 		createInfo.oldSwapchain = m_OldSwapChain == nullptr ? VK_NULL_HANDLE : m_OldSwapChain->m_SwapChain;
 
 		VK_CHECK_RESULT(vkCreateSwapchainKHR(device->GetVulkanDevice(), &createInfo, nullptr, &m_SwapChain), "Failed to Create Swap Chain!");
@@ -268,6 +262,8 @@ namespace VulkanCore {
 
 	void VulkanSwapChain::CreateImageViews()
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		m_SwapChainImageViews.resize(m_SwapChainImages.size());
 
 		for (size_t i = 0; i < m_SwapChainImages.size(); i++)
@@ -283,7 +279,7 @@ namespace VulkanCore {
 			viewInfo.subresourceRange.baseArrayLayer = 0;
 			viewInfo.subresourceRange.layerCount = 1;
 
-			VK_CHECK_RESULT(vkCreateImageView(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), &viewInfo, nullptr, &m_SwapChainImageViews[i]), "Failed to Create Texture Image View!");
+			VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewInfo, nullptr, &m_SwapChainImageViews[i]), "Failed to Create Texture Image View!");
 		}
 	}
 
@@ -293,7 +289,7 @@ namespace VulkanCore {
 
 		VkFormat format = GetSwapChainImageFormat();
 		VkExtent2D swapChainExtent = GetSwapChainExtent();
-		VulkanAllocator allocator("SwapChainImages");
+		VulkanAllocator allocator("SwapChainColorImages");
 
 		m_ColorImages.resize(GetImageCount());
 		m_ColorImageMemories.resize(GetImageCount());
@@ -317,8 +313,8 @@ namespace VulkanCore {
 			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			imageInfo.flags = 0;
 
-			// TODO: Use VMA allocator
-			m_ColorImageMemories[i] = device->CreateImage(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_ColorImages[i]);
+			m_ColorImageMemories[i] = allocator.AllocateImage(imageInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_ColorImages[i]);
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE, std::format("SwapChainColor: {}", i), m_ColorImages[i]);
 
 			VkImageViewCreateInfo viewInfo{};
 			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -342,6 +338,7 @@ namespace VulkanCore {
 		VkFormat depthFormat = FindDepthFormat();
 		m_SwapChainDepthFormat = depthFormat;
 		VkExtent2D swapChainExtent = GetSwapChainExtent();
+		VulkanAllocator allocator("SwapChainDepthImages");
 
 		m_DepthImages.resize(GetImageCount());
 		m_DepthImageMemories.resize(GetImageCount());
@@ -365,8 +362,8 @@ namespace VulkanCore {
 			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			imageInfo.flags = 0;
 
-			// TODO: Use VMA allocator
-			device->CreateImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthImages[i], m_DepthImageMemories[i]);
+			m_DepthImageMemories[i] = allocator.AllocateImage(imageInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_DepthImages[i]);
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE, std::format("SwapChainDepth: {}", i), m_DepthImages[i]);
 
 			VkImageViewCreateInfo viewInfo{};
 			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -387,6 +384,20 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
+		VkAttachmentDescription colorAttachment{};
+		colorAttachment.format = GetSwapChainImageFormat();
+		colorAttachment.samples = device->GetMSAASampleCount();
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VkAttachmentReference colorAttachmentRef{};
+		colorAttachmentRef.attachment = 0;
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
 		VkAttachmentDescription depthAttachment{};
 		depthAttachment.format = FindDepthFormat();
 		depthAttachment.samples = device->GetMSAASampleCount();
@@ -401,22 +412,7 @@ namespace VulkanCore {
 		depthAttachmentRef.attachment = 1;
 		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentDescription colorAttachment = {};
-		colorAttachment.format = GetSwapChainImageFormat();
-		colorAttachment.samples = device->GetMSAASampleCount();
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-		VkAttachmentReference colorAttachmentRef = {};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentDescription colorAttachmentResolve;
+		VkAttachmentDescription colorAttachmentResolve{};
 		colorAttachmentResolve.format = GetSwapChainImageFormat();
 		colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
 		colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -468,7 +464,7 @@ namespace VulkanCore {
 
 		for (size_t i = 0; i < GetImageCount(); i++)
 		{
-			std::array<VkImageView, 3> attachments = { m_ColorImageViews[i], m_DepthImageViews[i], m_SwapChainImageViews[i]};
+			std::array<VkImageView, 3> attachments = { m_ColorImageViews[i], m_DepthImageViews[i], m_SwapChainImageViews[i] };
 
 			VkFramebufferCreateInfo framebufferInfo = {};
 			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

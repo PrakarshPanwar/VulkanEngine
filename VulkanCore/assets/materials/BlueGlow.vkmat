@@ -1,0 +1,9 @@
+Material:
+  Albedo: [0.130528748, 0.243807867, 0.768339753, 1]
+  Emission: 20
+  Metallic: 1
+  Roughness: 1
+  UseNormalMap: 0
+  AlbedoHandle: 0
+  NormalHandle: 0
+  ARMHandle: 0

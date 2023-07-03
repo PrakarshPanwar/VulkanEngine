@@ -22,9 +22,9 @@ namespace VulkanCore {
 			return { m_DiffuseDstID, m_NormalDstID, m_ARMDstID };
 		}
 
-		void SetDiffuseTexture(std::shared_ptr<VulkanTexture> texture) override;
-		void SetNormalTexture(std::shared_ptr<VulkanTexture> texture) override;
-		void SetARMTexture(std::shared_ptr<VulkanTexture> texture) override;
+		void SetDiffuseTexture(std::shared_ptr<Texture2D> texture) override;
+		void SetNormalTexture(std::shared_ptr<Texture2D> texture) override;
+		void SetARMTexture(std::shared_ptr<Texture2D> texture) override;
 
 		void SetImage(uint32_t binding, std::shared_ptr<VulkanImage> image);
 		void SetImage(uint32_t binding, std::shared_ptr<VulkanImage> image, uint32_t mipLevel);
@@ -39,7 +39,7 @@ namespace VulkanCore {
 		void RT_BindMaterial(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, uint32_t setIndex = 0);
 		void RT_BindMaterial(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanComputePipeline>& pipeline, uint32_t setIndex = 0);
 
-		void UpdateMaterials(const std::string& albedo, const std::string& normal, const std::string& arm);
+		void UpdateMaterials();
 		void PrepareShaderMaterial();
 	private:
 		void InvalidateMaterial();

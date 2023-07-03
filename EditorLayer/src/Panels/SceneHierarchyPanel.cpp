@@ -1,6 +1,9 @@
 #include "SceneHierarchyPanel.h"
 
+#include "VulkanCore/Asset/AssetManager.h"
+#include "VulkanCore/Asset/MaterialAsset.h"
 #include "VulkanCore/Mesh/Mesh.h"
+#include "VulkanCore/Scene/SceneRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
 
@@ -106,7 +109,7 @@ namespace VulkanCore {
 				m_SelectionContext = {};
 
 			// Right-click on blank space
-			if (ImGui::BeginPopupContextWindow("##CreateEntity", 1))
+			if (ImGui::BeginPopupContextWindow("##CreateEntity", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverExistingPopup))
 			{
 				if (ImGui::MenuItem("Create Empty Entity"))
 					m_Context->CreateEntity("Empty Entity");
@@ -124,8 +127,6 @@ namespace VulkanCore {
 		}
 
 		ImGui::End(); // End of Properties Panel
-
-		DrawMaterialsPanel();
 	}
 
 	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
@@ -168,8 +169,9 @@ namespace VulkanCore {
 				if (entity.HasComponent<MeshComponent>())
 				{
 					MeshComponent meshComponent = entity.GetComponent<MeshComponent>();
-					
-					for (const MeshNode& submeshes : meshComponent.MeshInstance->GetMeshSource()->GetMeshNodes())
+
+					std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshComponent.MeshHandle);
+					for (const MeshNode& submeshes : mesh->GetMeshSource()->GetMeshNodes())
 					{
 						if (ImGui::TreeNode(submeshes.Name.c_str()))
 							ImGui::TreePop();
@@ -187,154 +189,6 @@ namespace VulkanCore {
 			if (m_SelectionContext == entity)
 				m_SelectionContext = {};
 		}
-	}
-
-	void SceneHierarchyPanel::DrawMaterialsPanel()
-	{
-		ImGui::Begin("Materials");
-
-		if (m_SelectionContext)
-		{
-			if (m_SelectionContext.HasComponent<MeshComponent>())
-			{
-				auto meshSource = m_SelectionContext.GetComponent<MeshComponent>().MeshInstance->GetMeshSource();
-				auto material = meshSource->GetMaterial();
-				auto vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
-
-				auto& materialData = material->GetMaterialData();
-				auto [diffuse, normal, arm] = vulkanMaterial->GetMaterialTextureIDs();
-
-				const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
-				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
-				bool albedoNode = ImGui::TreeNodeEx("ALBEDO", treeNodeFlags);
-				ImGui::PopStyleVar();
-
-				if (albedoNode)
-				{
-					ImGui::Image((ImTextureID)diffuse, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
-
-					if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
-						ImGui::OpenPopup("RemoveTexture");
-
-					if (ImGui::BeginPopup("RemoveTexture"))
-					{
-						if (ImGui::MenuItem("Remove Texture"))
-						{
-							auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_SRGB);
-							vulkanMaterial->SetDiffuseTexture(whiteTexture);
-						}
-
-						ImGui::EndPopup();
-					}
-
-					if (ImGui::BeginDragDropTarget())
-					{
-						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-						{
-							const wchar_t* path = (const wchar_t*)payload->Data;
-							std::filesystem::path scenePath = g_AssetPath / path;
-
-							std::shared_ptr<VulkanTexture> diffuseTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_SRGB);
-							vulkanMaterial->SetDiffuseTexture(diffuseTex);
-						}
-
-						ImGui::EndDragDropTarget();
-					}
-
-					ImGui::ColorEdit3("Color", glm::value_ptr(materialData.Albedo), ImGuiColorEditFlags_NoInputs);
-					ImGui::DragFloat("Emission", &materialData.Albedo.w, 0.01f, 0.0f, 10000.0f);
-
-					ImGui::TreePop();
-				}
-
-				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
-				bool normalNode = ImGui::TreeNodeEx("NORMAL", treeNodeFlags);
-				ImGui::PopStyleVar();
-
-				if (normalNode)
-				{
-					ImGui::Image((ImTextureID)normal, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
-
-					if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
-						ImGui::OpenPopup("RemoveTexture");
-
-					if (ImGui::BeginPopup("RemoveTexture"))
-					{
-						if (ImGui::MenuItem("Remove Texture"))
-						{
-							auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
-							vulkanMaterial->SetNormalTexture(whiteTexture);
-						}
-
-						ImGui::EndPopup();
-					}
-
-					if (ImGui::BeginDragDropTarget())
-					{
-						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-						{
-							const wchar_t* path = (const wchar_t*)payload->Data;
-							std::filesystem::path scenePath = g_AssetPath / path;
-
-							std::shared_ptr<VulkanTexture> normalTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_UNORM);
-							vulkanMaterial->SetNormalTexture(normalTex);
-						}
-
-						ImGui::EndDragDropTarget();
-					}
-
-					ImGui::SameLine();
-					ImGui::Checkbox("Use", (bool*)&materialData.UseNormalMap);
-
-					ImGui::TreePop();
-				}
-
-				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
-				bool armNode = ImGui::TreeNodeEx("ROUGHNESS/METALLIC", treeNodeFlags);
-				ImGui::PopStyleVar();
-
-				if (armNode)
-				{
-					ImGui::Image((ImTextureID)arm, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
-
-					if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
-						ImGui::OpenPopup("RemoveTexture");
-
-					if (ImGui::BeginPopup("RemoveTexture"))
-					{
-						if (ImGui::MenuItem("Remove Texture"))
-						{
-							auto whiteTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
-							vulkanMaterial->SetARMTexture(whiteTexture);
-						}
-
-						ImGui::EndPopup();
-					}
-
-					if (ImGui::BeginDragDropTarget())
-					{
-						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-						{
-							const wchar_t* path = (const wchar_t*)payload->Data;
-							std::filesystem::path scenePath = g_AssetPath / path;
-
-							std::shared_ptr<VulkanTexture> armTex = std::make_shared<VulkanTexture>(scenePath.string(), ImageFormat::RGBA8_UNORM);
-							vulkanMaterial->SetARMTexture(armTex);
-						}
-
-						ImGui::EndDragDropTarget();
-					}
-
-					ImGui::DragFloat("Roughness", &materialData.Roughness, 0.01f, 0.0f, 1.0f);
-					ImGui::DragFloat("Metallic", &materialData.Metallic, 0.01f, 0.0f, 1.0f);
-
-					ImGui::TreePop();
-				}
-
-			}
-		}
-
-		ImGui::End();
 	}
 
 	template<typename T, typename UIFunction>
@@ -444,40 +298,114 @@ namespace VulkanCore {
 
 		DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)
 		{
-			auto& meshFilePath = component.MeshInstance->GetMeshSource()->GetFilePath();
+			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
-			char buffer[512];
-			memset(buffer, 0, sizeof(buffer));
-			std::strncpy(buffer, meshFilePath.c_str(), sizeof(buffer));
-			if (ImGui::InputText("##MeshFilePath", buffer, sizeof(buffer)))
+			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(component.MeshHandle);
+			std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(component.MaterialTableHandle);
+
+			if (mesh && materialAsset)
 			{
-				meshFilePath = std::string(buffer);
-			}
+				// Mesh Asset
+				auto meshSource = mesh->GetMeshSource();
+				auto& meshAssetMetadata = AssetManager::GetMetadata(meshSource->Handle);
+				auto meshAssetPath = meshAssetMetadata.FilePath.generic_string();
+				ImGui::InputText("Mesh", meshAssetPath.data(), meshAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
 
-			ImGui::SameLine(0.0f, 11.0f);
-
-			static bool s_ShowMessage = false;
-			if (ImGui::Button("Load"))
-			{
-				if (!std::filesystem::exists(std::filesystem::path(meshFilePath)))
-					s_ShowMessage = true;
-
-				else
+				if (ImGui::BeginDragDropTarget())
 				{
-					std::shared_ptr<Mesh> mesh = Mesh::LoadMesh(meshFilePath.c_str());
-					component.MeshInstance = mesh;
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					{
+						const wchar_t* path = (const wchar_t*)payload->Data;
+						std::filesystem::path assetPath = g_AssetPath / path;
 
-					s_ShowMessage = false;
+						sceneRenderer->UpdateMeshInstanceData(mesh, materialAsset);
+
+						std::shared_ptr<Mesh> newMesh = AssetManager::GetAsset<Mesh>(assetPath.string());
+						component.MeshHandle = newMesh->Handle;
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+
+				ImGui::Separator();
+
+				// Material Asset
+				AssetHandle materialHandle = component.MaterialTableHandle;
+				auto& materialAssetMetadata = AssetManager::GetMetadata(materialHandle);
+				auto materialAssetPath = materialAssetMetadata.FilePath.generic_string();
+				ImGui::InputText("Material", materialAssetPath.data(), materialAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					{
+						const wchar_t* path = (const wchar_t*)payload->Data;
+						std::filesystem::path assetPath = g_AssetPath / path;
+
+						sceneRenderer->UpdateMeshInstanceData(mesh, materialAsset);
+
+						std::shared_ptr<MaterialAsset> newMaterialAsset = AssetManager::GetAsset<MaterialAsset>(assetPath.string());
+						component.MaterialTableHandle = newMaterialAsset->Handle;
+						meshSource->SetMaterial(newMaterialAsset->GetMaterial());
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+
+				ImGui::Separator();
+
+				// Mesh Stats
+				ImGui::Text("Vertex Count: %d", meshSource->GetVertexCount());
+				ImGui::Text("Index Count: %d", meshSource->GetIndexCount());
+			}
+			else
+			{
+				ImVec2 buttonSize = ImVec2{ ImGui::GetContentRegionAvail().x - 20.0f, 0.0f };
+
+				// Import Mesh
+				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+				ImGui::Button("Import Mesh", buttonSize);
+				ImGui::PopItemFlag();
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					{
+						const wchar_t* path = (const wchar_t*)payload->Data;
+						std::filesystem::path assetPath = g_AssetPath / path;
+
+						std::shared_ptr<Mesh> newMesh = AssetManager::GetAsset<Mesh>(assetPath.string());
+						component.MeshHandle = newMesh->Handle;
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+
+				if (component.MeshHandle)
+				{
+					// Import Material Asset
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+					ImGui::Button("Import Material", buttonSize);
+					ImGui::PopItemFlag();
+
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+						{
+							const wchar_t* path = (const wchar_t*)payload->Data;
+							std::filesystem::path assetPath = g_AssetPath / path;
+
+							std::shared_ptr<MaterialAsset> newMaterialAsset = AssetManager::GetAsset<MaterialAsset>(assetPath.string());
+							component.MaterialTableHandle = newMaterialAsset->Handle;
+
+							auto meshSource = mesh->GetMeshSource();
+							meshSource->SetMaterial(newMaterialAsset->GetMaterial());
+						}
+
+						ImGui::EndDragDropTarget();
+					}
 				}
 			}
-
-			if (s_ShowMessage)
-			{
-				ImGui::TextColored(ImVec4{ 0.8f, 0.1f, 0.2f, 1.0f }, "File does not exist!");
-			}
-
-			ImGui::Text("Vertex Count: %d", component.MeshInstance->GetMeshSource()->GetVertexCount());
-			ImGui::Text("Index Count: %d", component.MeshInstance->GetMeshSource()->GetIndexCount());
 		});
 	}
 
