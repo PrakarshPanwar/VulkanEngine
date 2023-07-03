@@ -45,6 +45,8 @@ namespace VulkanCore {
 		operator entt::entity() const { return m_EntityHandle; }
 		operator uint32_t() const { return (uint32_t)m_EntityHandle; }
 
+		UUID GetUUID() { return GetComponent<IDComponent>().ID; }
+
 		bool operator==(const Entity& other)
 		{
 			return m_EntityHandle == other.m_EntityHandle && m_Scene == other.m_Scene;

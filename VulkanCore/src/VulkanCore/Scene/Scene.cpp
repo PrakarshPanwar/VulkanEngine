@@ -1,9 +1,10 @@
 #include "vulkanpch.h"
 #include "Scene.h"
 #include "Entity.h"
+#include "VulkanCore/Asset/AssetManager.h"
+#include "VulkanCore/Asset/MaterialAsset.h"
 #include "VulkanCore/Mesh/Mesh.h"
-#include "Platform/Vulkan/VulkanDescriptor.h"
-#include "VulkanCore/Renderer/Renderer.h"
+#include "VulkanCore/Core/UUID.h"
 #include "SceneRenderer.h"
 
 namespace VulkanCore {
@@ -18,7 +19,13 @@ namespace VulkanCore {
 
 	Entity Scene::CreateEntity(const std::string& name)
 	{
+		return CreateEntityWithUUID(UUID{}, name);
+	}
+
+	Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
+	{
 		Entity entity = { m_Registry.create(), this };
+		entity.AddComponent<IDComponent>(uuid);
 		entity.AddComponent<TagComponent>(name);
 		entity.AddComponent<TransformComponent>();
 
@@ -27,12 +34,16 @@ namespace VulkanCore {
 
 	void Scene::OnUpdateGeometry(SceneRenderer* renderer)
 	{
+		VK_CORE_PROFILE_FN("Submit-SubmitMeshes");
 		auto view = m_Registry.view<TransformComponent, MeshComponent>();
 
 		for (auto ent : view)
 		{
 			auto [transform, meshComponent] = view.get<TransformComponent, MeshComponent>(ent);
-			renderer->SubmitMesh(meshComponent.MeshInstance, meshComponent.MeshInstance->GetMeshSource()->GetMaterial(), transform.GetTransform());
+
+			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshComponent.MeshHandle);
+			std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(meshComponent.MaterialTableHandle);
+			renderer->SubmitMesh(mesh, materialAsset, transform.GetTransform());
 		}
 	}
 

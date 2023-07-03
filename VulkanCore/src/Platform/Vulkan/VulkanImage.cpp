@@ -76,7 +76,7 @@ namespace VulkanCore {
 
 		static bool IsMultisampled(ImageSpecification spec)
 		{
-			return spec.Samples > 1 ? true : false;
+			return spec.Samples > 1;
 		}
 
 		void InsertImageMemoryBarrier(VkCommandBuffer cmdBuf, VkImage image,
@@ -130,6 +130,7 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("Image2D");
 
+		bool multisampled = Utils::IsMultisampled(m_Specification);
 		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
 		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT; // TODO: This shouldn't(probably) be implied
 
@@ -163,7 +164,7 @@ namespace VulkanCore {
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCreateInfo.usage = usage;
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCreateInfo.mipLevels = Utils::IsMultisampled(m_Specification) ? 1 : m_Specification.MipLevels;
+		imageCreateInfo.mipLevels = multisampled ? 1 : m_Specification.MipLevels;
 
 		m_Info.MemoryAlloc = allocator.AllocateImage(imageCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_Info.Image);
 		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE, m_Specification.DebugName, m_Info.Image);
@@ -181,7 +182,7 @@ namespace VulkanCore {
 		viewCreateInfo.subresourceRange.layerCount = 1;
 
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &m_Info.ImageView), "Failed to Create Image View!");
-		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE_VIEW, fmt::format("{} default image view", m_Specification.DebugName), m_Info.ImageView);
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE_VIEW, std::format("{} default image view", m_Specification.DebugName), m_Info.ImageView);
 
 		VkSamplerAddressMode addressMode = Utils::VulkanSamplerWrap(m_Specification.SamplerWrap);
 
@@ -208,7 +209,7 @@ namespace VulkanCore {
 		sampler.maxLod = (float)m_Specification.MipLevels;
 
 		VK_CHECK_RESULT(vkCreateSampler(device->GetVulkanDevice(), &sampler, nullptr, &m_Info.Sampler), "Failed to Create Image Sampler!");
-		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_SAMPLER, fmt::format("{} default image sampler", m_Specification.DebugName), m_Info.Sampler);
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_SAMPLER, std::format("{} default image sampler", m_Specification.DebugName), m_Info.Sampler);
 
 		if (m_Specification.Usage == ImageUsage::Storage)
 		{

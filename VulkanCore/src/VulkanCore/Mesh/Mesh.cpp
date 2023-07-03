@@ -6,6 +6,7 @@
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/Timer.h"
 #include "VulkanCore/Core/Components.h"
+#include "VulkanCore/Asset/AssetManager.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -47,35 +48,14 @@ namespace VulkanCore {
 
 	}
 
-	std::map<uint64_t, std::shared_ptr<MeshSource>> Mesh::s_MeshSourcesMap;
-	std::map<uint64_t, std::shared_ptr<VulkanVertexBuffer>> Mesh::s_MeshTransformBuffer;
-
 	Mesh::Mesh(std::shared_ptr<MeshSource> meshSource)
+		: m_MeshSource(meshSource)
 	{
-		uint64_t meshHandle = meshSource->GetMeshHandle();
-
-		if (s_MeshSourcesMap.contains(meshHandle))
-			m_MeshSource = s_MeshSourcesMap[meshHandle];
-
-		else
-		{
-			m_MeshSource = meshSource;
-			s_MeshSourcesMap[meshHandle] = m_MeshSource;
-
-			// Allocating Vertex Buffer Set for Unique Mesh Sources
-			auto& transformBuffer = s_MeshTransformBuffer[meshHandle];
-			// TODO: In future this size will be increased
-			transformBuffer = std::make_shared<VulkanVertexBuffer>(10 * sizeof(TransformData));
-
-			AssimpMeshImporter::TraverseNodes(m_MeshSource, m_MeshSource->m_Scene->mRootNode, 0);
-			AssimpMeshImporter::InvalidateMesh(m_MeshSource);
-		}
-
 		InvalidateSubmeshes();
 	}
 
 	Mesh::Mesh()
-		: m_MeshSource(std::make_shared<MeshSource>())
+		: m_MeshSource(std::make_shared<MeshSource>(std::string{}))
 	{
 	}
 
@@ -88,19 +68,6 @@ namespace VulkanCore {
 		}
 	}
 
-	std::shared_ptr<Mesh> Mesh::LoadMesh(const char* filepath)
-	{
-		std::shared_ptr<MeshSource> meshSource = std::make_shared<MeshSource>(filepath);
-		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(meshSource);
-		return mesh;
-	}
-
-	void Mesh::ClearAllMeshes()
-	{
-		s_MeshTransformBuffer.clear();
-		s_MeshSourcesMap.clear();
-	}
-
 	Mesh::~Mesh()
 	{
 	}
@@ -111,22 +78,25 @@ namespace VulkanCore {
 		aiProcess_JoinIdenticalVertices | // For Index Buffer
 		aiProcess_GenUVCoords |           // Generate UV Coords
 		aiProcess_GenNormals |            // Generate Normals for Mesh
+		aiProcess_GlobalScale |			  // For FBX Mesh scaling
 		aiProcess_OptimizeMeshes |
 		aiProcess_SortByPType |
 		aiProcess_ValidateDataStructure
 	};
 
 	MeshSource::MeshSource(const std::string& filepath)
-		: m_FilePath(filepath)
 	{
+		if (filepath.empty())
+			return;
+
 		VK_CORE_INFO("Loading Mesh: {0}", filepath);
 
 		m_Importer = std::make_unique<Assimp::Importer>();
 
-		const aiScene* scene = m_Importer->ReadFile(filepath, s_MeshImportFlags);
+		const aiScene* scene = m_Importer->ReadFile(filepath.data(), s_MeshImportFlags);
 		if (!scene || !scene->HasMeshes())
 		{
-			VK_CORE_ERROR("Failed to load Mesh file: {0}", m_FilePath);
+			VK_CORE_ERROR("Failed to load Mesh file: {0}", filepath);
 			return;
 		}
 
@@ -143,155 +113,20 @@ namespace VulkanCore {
 			submesh.VertexCount = mesh->mNumVertices;
 			submesh.IndexCount = mesh->mNumFaces * 3;
 			submesh.MeshName = mesh->mName.C_Str();
+			submesh.MaterialIndex = mesh->mMaterialIndex;
 
 			vertexCount += mesh->mNumVertices;
 			indexCount += submesh.IndexCount;
 		}
 
-		m_MeshHandle = std::filesystem::hash_value(filepath);
-		m_Material = std::make_shared<VulkanMaterial>(std::filesystem::path(filepath).stem().string());
+		m_Materials.push_back(nullptr);
 
 		// Allocating Root Node
 		m_Nodes.emplace_back();
 	}
 
-	MeshSource::MeshSource()
-		: m_Material(std::make_shared<VulkanMaterial>("Default Material"))
-	{
-	}
-
 	MeshSource::~MeshSource()
 	{
 	}
-
-	void AssimpMeshImporter::InvalidateMesh(std::shared_ptr<MeshSource> meshSource)
-	{
-		for (uint32_t m = 0; m < (uint32_t)meshSource->m_Submeshes.size(); ++m)
-		{
-			aiMesh* mesh = meshSource->m_Scene->mMeshes[m];
-
-			for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
-			{
-				Vertex vertex;
-				glm::vec3 mVector;
-				mVector.x = mesh->mVertices[i].x;
-				mVector.y = mesh->mVertices[i].y;
-				mVector.z = mesh->mVertices[i].z;
-				vertex.Position = mVector;
-
-				if (mesh->HasNormals())
-				{
-					mVector.x = mesh->mNormals[i].x;
-					mVector.y = mesh->mNormals[i].y;
-					mVector.z = mesh->mNormals[i].z;
-					vertex.Normal = mVector;
-				}
-
-				if (mesh->HasTangentsAndBitangents())
-				{
-					mVector.x = mesh->mTangents[i].x;
-					mVector.y = mesh->mTangents[i].y;
-					mVector.z = mesh->mTangents[i].z;
-					vertex.Tangent = mVector;
-
-					mVector.x = mesh->mBitangents[i].x;
-					mVector.y = mesh->mBitangents[i].y;
-					mVector.z = mesh->mBitangents[i].z;
-					vertex.Binormal = mVector;
-				}
-
-				vertex.Color = glm::vec3{ 1.0f };
-
-				if (mesh->HasTextureCoords(0))
-				{
-					glm::vec2 mTexCoords = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
-					vertex.TexCoord = mTexCoords;
-				}
-
-				meshSource->m_Vertices.push_back(vertex);
-			}
-
-			for (uint32_t i = 0; i < mesh->mNumFaces; ++i)
-			{
-				aiFace face = mesh->mFaces[i];
-
-				for (uint32_t j = 0; j < face.mNumIndices; ++j)
-					meshSource->m_Indices.push_back(face.mIndices[j]);
-			}
-		}
-
-		meshSource->m_VertexBuffer = std::make_shared<VulkanVertexBuffer>(meshSource->m_Vertices.data(), (uint32_t)(meshSource->m_Vertices.size() * sizeof(Vertex)));
-		meshSource->m_IndexBuffer = std::make_shared<VulkanIndexBuffer>(meshSource->m_Indices.data(), (uint32_t)(meshSource->m_Indices.size() * 4));
-	}
-
-	void AssimpMeshImporter::TraverseNodes(std::shared_ptr<MeshSource> meshSource, aiNode* aNode, uint32_t nodeIndex)
-	{
-		MeshNode& node = meshSource->m_Nodes[nodeIndex];
-		node.Name = aNode->mName.C_Str();
-		node.LocalTransform = Utils::Mat4FromAIMatrix4(aNode->mTransformation);
-
-		for (uint32_t i = 0; i < aNode->mNumMeshes; ++i)
-		{
-			uint32_t submeshIndex = aNode->mMeshes[i];
-			auto& submesh = meshSource->m_Submeshes[submeshIndex];
-			submesh.NodeName = aNode->mName.C_Str();
-			submesh.LocalTransform = node.LocalTransform;
-
-			node.Submeshes.push_back(submeshIndex);
-		}
-
-		uint32_t parentNodeIndex = (uint32_t)meshSource->m_Nodes.size() - 1;
-		node.Children.resize(aNode->mNumChildren);
-		for (uint32_t i = 0; i < aNode->mNumChildren; ++i)
-		{
-			MeshNode& child = meshSource->m_Nodes.emplace_back();
-			uint32_t childIndex = (uint32_t)meshSource->m_Nodes.size() - 1;
-			child.Parent = parentNodeIndex;
-			meshSource->m_Nodes[nodeIndex].Children[i] = childIndex;
-			TraverseNodes(meshSource, aNode->mChildren[i], childIndex);
-		}
-	}
-
-#if 0
-	void AssimpMeshImporter::ProcessMesh(std::shared_ptr<MeshSource> meshSource, aiMesh* mesh, const aiScene* scene)
-	{
-		for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
-		{
-			Vertex vertex;
-			glm::vec3 mVector;
-			mVector.x = mesh->mVertices[i].x;
-			mVector.y = mesh->mVertices[i].y;
-			mVector.z = mesh->mVertices[i].z;
-			vertex.Position = mVector;
-
-			if (mesh->HasNormals())
-			{
-				mVector.x = mesh->mNormals[i].x;
-				mVector.y = mesh->mNormals[i].y;
-				mVector.z = mesh->mNormals[i].z;
-				vertex.Normal = mVector;
-			}
-
-			vertex.Color = glm::vec3{ 1.0f };
-
-			if (mesh->HasTextureCoords(0))
-			{
-				glm::vec2 mTexCoords = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
-				vertex.TexCoord = mTexCoords;
-			}
-
-			vertex.TexID = 0;
-			meshSource->m_Vertices.push_back(vertex);
-		}
-
-		for (uint32_t i = 0; i < mesh->mNumFaces; ++i)
-		{
-			aiFace face = mesh->mFaces[i];
-
-			for (uint32_t j = 0; j < face.mNumIndices; ++j)
-				meshSource->m_Indices.push_back(face.mIndices[j]);
-		}
-	}
-#endif
 
 }
