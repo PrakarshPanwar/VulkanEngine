@@ -5,6 +5,7 @@
 #include "VulkanCore/Asset/AssetManager.h"
 #include "VulkanCore/Asset/MaterialAsset.h"
 #include "Entity.h"
+#include "SceneRenderer.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
 
 #include <yaml-cpp/yaml.h>
@@ -166,6 +167,17 @@ namespace VulkanCore {
 			out << YAML::EndMap;
 		}
 
+		if (entity.HasComponent<SkyLightComponent>())
+		{
+			out << YAML::Key << "SkyLightComponent";
+			out << YAML::BeginMap;
+
+			auto& slc = entity.GetComponent<SkyLightComponent>();
+			out << YAML::Key << "TextureHandle" << YAML::Value << slc.TextureHandle;
+
+			out << YAML::EndMap;
+		}
+
 		if (entity.HasComponent<MeshComponent>())
 		{
 			out << YAML::Key << "MeshComponent";
@@ -249,6 +261,7 @@ namespace VulkanCore {
 				if (transformComponent)
 				{
 					auto& tc = deserializedEntity.GetComponent<TransformComponent>();
+
 					tc.Translation = transformComponent["Translation"].as<glm::vec3>();
 					tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
 					tc.Scale = transformComponent["Scale"].as<glm::vec3>();
@@ -275,6 +288,19 @@ namespace VulkanCore {
 					slc.OuterCutoff = spotLightComponent["OuterCutoff"].as<float>();
 					slc.Falloff = spotLightComponent["Falloff"].as<float>();
 					slc.Radius = spotLightComponent["Radius"].as<float>();
+				}
+
+				auto skyLightComponent = entity["SkyLightComponent"];
+				if (skyLightComponent)
+				{
+					auto& slc = deserializedEntity.AddComponent<SkyLightComponent>();
+
+					uint64_t textureHandle = skyLightComponent["TextureHandle"].as<uint64_t>();
+					slc.TextureHandle = textureHandle;
+
+					AssetMetadata metadata = AssetManager::GetMetadata(slc.TextureHandle);
+					auto sceneRenderer = SceneRenderer::GetSceneRenderer();
+					sceneRenderer->UpdateSkybox(metadata.FilePath.generic_string());
 				}
 
 				auto meshComponent = entity["MeshComponent"];

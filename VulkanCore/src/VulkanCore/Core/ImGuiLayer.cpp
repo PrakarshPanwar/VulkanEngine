@@ -180,6 +180,16 @@ namespace VulkanCore {
 			imageDescriptor.imageLayout);
 	}
 
+	VkDescriptorSet ImGuiLayer::AddTexture(VulkanTextureCube& textureCube)
+	{
+		VkImageView iconView = textureCube.CreateImageViewPerLayer(0);
+		auto imageDescriptor = textureCube.GetDescriptorImageInfo();
+
+		return ImGui_ImplVulkan_AddTexture(imageDescriptor.sampler,
+			iconView,
+			imageDescriptor.imageLayout);
+	}
+
 	void ImGuiLayer::UpdateDescriptor(VkDescriptorSet descriptorSet, const VulkanImage& image)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
@@ -206,6 +216,26 @@ namespace VulkanCore {
 		writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		writeDescriptor.dstBinding = 0;
 		writeDescriptor.pImageInfo = &texture.GetDescriptorImageInfo();
+		writeDescriptor.descriptorCount = 1;
+		writeDescriptor.dstArrayElement = 0;
+
+		vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
+	}
+
+	void ImGuiLayer::UpdateDescriptor(VkDescriptorSet descriptorSet, VulkanTextureCube& textureCube)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		VkImageView iconView = textureCube.CreateImageViewPerLayer(0);
+		VkDescriptorImageInfo descriptorInfo = textureCube.GetDescriptorImageInfo();
+		descriptorInfo.imageView = iconView;
+
+		VkWriteDescriptorSet writeDescriptor{};
+		writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptor.dstSet = descriptorSet;
+		writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptor.dstBinding = 0;
+		writeDescriptor.pImageInfo = &descriptorInfo;
 		writeDescriptor.descriptorCount = 1;
 		writeDescriptor.dstArrayElement = 0;
 

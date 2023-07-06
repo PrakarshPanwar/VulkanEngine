@@ -255,6 +255,7 @@ namespace VulkanCore {
 	// ---------------------------------------------------------------------------------------------------
 
 	VulkanTextureCube::VulkanTextureCube(uint32_t width, uint32_t height, ImageFormat format)
+		: m_Specification({ width, height, format, TextureWrap::Clamp, true })
 	{
 		m_Specification.Width = width;
 		m_Specification.Height = height;
@@ -363,15 +364,18 @@ namespace VulkanCore {
 	// TODO: Should be done in RenderThread
 	void VulkanTextureCube::Release()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-		VulkanAllocator allocator("TextureCube");
+		Renderer::SubmitResourceFree([mipRefs = m_MipReferences, imageInfo = m_Info]() mutable
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			VulkanAllocator allocator("TextureCube");
 
-		for (auto& mipReference : m_MipReferences)
-			vkDestroyImageView(device->GetVulkanDevice(), mipReference, nullptr);
+			for (auto& mipRef : mipRefs)
+				vkDestroyImageView(device->GetVulkanDevice(), mipRef, nullptr);
 
-		vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
-		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
-		allocator.DestroyImage(m_Info.Image, m_Info.MemoryAlloc);
+			vkDestroyImageView(device->GetVulkanDevice(), imageInfo.ImageView, nullptr);
+			vkDestroySampler(device->GetVulkanDevice(), imageInfo.Sampler, nullptr);
+			allocator.DestroyImage(imageInfo.Image, imageInfo.MemoryAlloc);
+		});
 	}
 
 	// NOTE: It should not be called inside Invalidate
@@ -483,6 +487,33 @@ namespace VulkanCore {
 		viewCreateInfo.subresourceRange.levelCount = 1;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		viewCreateInfo.subresourceRange.layerCount = 6;
+
+		VkImageView result;
+		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &result), "Failed to Create Image View!");
+
+		m_MipReferences.push_back(result);
+
+		return result;
+	}
+
+	VkImageView VulkanTextureCube::CreateImageViewPerLayer(uint32_t layer)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
+
+		// Create View for single mip
+		VkImageViewCreateInfo viewCreateInfo{};
+		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewCreateInfo.image = m_Info.Image;
+		viewCreateInfo.format = vulkanFormat;
+		viewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewCreateInfo.subresourceRange.baseMipLevel = 0;
+		viewCreateInfo.subresourceRange.levelCount = 1;
+		viewCreateInfo.subresourceRange.baseArrayLayer = layer;
+		viewCreateInfo.subresourceRange.layerCount = 1;
 
 		VkImageView result;
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &result), "Failed to Create Image View!");
