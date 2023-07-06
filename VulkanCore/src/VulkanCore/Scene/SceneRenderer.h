@@ -35,6 +35,7 @@ namespace VulkanCore {
 		void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
+		void UpdateSkybox(const std::string& filepath);
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 
@@ -44,6 +45,7 @@ namespace VulkanCore {
 		inline VkFramebuffer GetFinalVulkanFramebuffer(uint32_t index) const { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
 		inline std::shared_ptr<VulkanImage> GetFinalPassImage(uint32_t index) const { return m_SceneFramebuffer->GetAttachment(true)[index]; }
 		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
+		inline VkDescriptorSet GetTextureCubeID() const { return m_SkyboxTextureID; }
 
 		struct MeshKey
 		{
@@ -184,6 +186,7 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanImage> m_BRDFTexture;
 		std::shared_ptr<VulkanVertexBuffer> m_SkyboxVBData;
 		SkyboxSettings m_SkyboxSettings;
+		VkDescriptorSet m_SkyboxTextureID;
 
 		std::map<MeshKey, DrawCommand> m_MeshDrawList;
 		std::map<MeshKey, MeshTransform> m_MeshTransformMap;
