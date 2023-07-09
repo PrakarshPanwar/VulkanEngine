@@ -48,7 +48,8 @@ namespace VulkanCore {
 		static void BeginGPUPerfMarker(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::string& name, DebugLabelColor labelColor = DebugLabelColor::None);
 		static void EndGPUPerfMarker(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer);
 
-		static std::shared_ptr<VulkanTexture> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
+		static std::shared_ptr<Texture2D> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
+		static std::shared_ptr<TextureCube> GetBlackTextureCube(ImageFormat format);
 		static void SubmitFullscreenQuad(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanMaterial>& shaderMaterial);
 
 		static std::shared_ptr<Shader> GetShader(const std::string& name)

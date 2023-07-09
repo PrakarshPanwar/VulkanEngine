@@ -299,8 +299,9 @@ namespace VulkanCore {
 					slc.TextureHandle = textureHandle;
 
 					AssetMetadata metadata = AssetManager::GetMetadata(slc.TextureHandle);
-					auto sceneRenderer = SceneRenderer::GetSceneRenderer();
-					sceneRenderer->UpdateSkybox(metadata.FilePath.generic_string());
+
+					std::string filepath = metadata.FilePath.generic_string();
+					SceneRenderer::SetSkybox(filepath);
 				}
 
 				auto meshComponent = entity["MeshComponent"];
