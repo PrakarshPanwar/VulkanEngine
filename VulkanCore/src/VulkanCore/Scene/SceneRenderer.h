@@ -6,7 +6,6 @@
 #include "Platform/Vulkan/VulkanMaterial.h"
 #include "Platform/Vulkan/VulkanComputePipeline.h"
 #include "Platform/Vulkan/VulkanTexture.h"
-#include "Platform/Vulkan/VulkanBuffer.h"
 #include "Platform/Vulkan/VulkanVertexBuffer.h"
 #include "Platform/Vulkan/VulkanUniformBuffer.h"
 #include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
@@ -33,8 +32,11 @@ namespace VulkanCore {
 		void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
+		void UpdateSkybox(const std::string& filepath);
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
+		static inline VkDescriptorSet GetTextureCubeID() { return s_Instance->m_SkyboxTextureID; }
+		static void SetSkybox(const std::string& filepath);
 
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		inline std::shared_ptr<VulkanRenderCommandBuffer> GetCommandBuffer() const { return m_SceneCommandBuffer; }
@@ -182,6 +184,7 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanImage> m_BRDFTexture;
 		std::shared_ptr<VulkanVertexBuffer> m_SkyboxVBData;
 		SkyboxSettings m_SkyboxSettings;
+		VkDescriptorSet m_SkyboxTextureID;
 
 		std::map<MeshKey, DrawCommand> m_MeshDrawList;
 		std::map<MeshKey, MeshTransform> m_MeshTransformMap;

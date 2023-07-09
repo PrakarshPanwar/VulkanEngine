@@ -7,6 +7,7 @@
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/Timer.h"
+#include "VulkanCore/Core/ImGuiLayer.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
 #include "VulkanCore/Mesh/Mesh.h"
@@ -150,7 +151,7 @@ namespace VulkanCore {
 			compFramebufferSpec.Width = 1920;
 			compFramebufferSpec.Height = 1080;
 			compFramebufferSpec.Attachments = { ImageFormat::RGBA8_SRGB };
-			compFramebufferSpec.Samples = 8;
+			compFramebufferSpec.Samples = 1;
 
 			RenderPassSpecification compRenderPassSpec;
 			compRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(compFramebufferSpec);
@@ -219,7 +220,7 @@ namespace VulkanCore {
 		{
 			const uint32_t mipCount = m_BloomTextures[0]->GetSpecification().MipLevels;
 
-			// Set A : Prefiltering
+			// Set A: Prefiltering
 			// Binding 0(o_Image): BloomTex[0]
 			// Binding 1(u_Texture): RenderTex
 			// Binding 2(u_BloomTexture): RenderTex
@@ -320,7 +321,7 @@ namespace VulkanCore {
 		{
 			const uint32_t mipCount = m_BloomTextures[0]->GetSpecification().MipLevels;
 
-			// Set A : Prefiltering
+			// Set A: Prefiltering
 			// Binding 0(o_Image): BloomTex[0]
 			// Binding 1(u_Texture): RenderTex
 			// Binding 2(u_BloomTexture): RenderTex
@@ -487,10 +488,14 @@ namespace VulkanCore {
 
 		m_BloomDirtTexture = AssetManager::GetAsset<Texture2D>("assets/textures/LensDirt.png");
 
-		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
-		m_CubemapTexture = filteredMap;
-		m_PrefilteredTexture = filteredMap;
-		m_IrradianceTexture = irradianceMap;
+		auto blackTextureCube = std::dynamic_pointer_cast<VulkanTextureCube>(Renderer::GetBlackTextureCube(ImageFormat::RGBA8_UNORM));
+		blackTextureCube->Invalidate();
+
+		m_CubemapTexture = blackTextureCube;
+		m_PrefilteredTexture = blackTextureCube;
+		m_IrradianceTexture = blackTextureCube;
+
+		m_SkyboxTextureID = ImGuiLayer::AddTexture(*m_PrefilteredTexture);
 
 		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
 		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/PointLightIcon.png");
@@ -699,6 +704,7 @@ namespace VulkanCore {
 			return;
 
 		auto meshSource = mesh->GetMeshSource();
+		auto& submeshData = meshSource->GetSubmeshes();
 		uint64_t meshHandle = mesh->Handle;
 		uint64_t materialHandle = materialAsset->Handle;
 
@@ -709,9 +715,11 @@ namespace VulkanCore {
 		{
 			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
 			auto& transformBuffer = m_MeshTransformMap[meshKey].Transforms.emplace_back();
-			transformBuffer.MRow[0] = { transform[0][0], transform[1][0], transform[2][0], transform[3][0] };
-			transformBuffer.MRow[1] = { transform[0][1], transform[1][1], transform[2][1], transform[3][1] };
-			transformBuffer.MRow[2] = { transform[0][2], transform[1][2], transform[2][2], transform[3][2] };
+
+			glm::mat4 submeshTransform = transform * submeshData[submeshIndex].LocalTransform;
+			transformBuffer.MRow[0] = { submeshTransform[0][0], submeshTransform[1][0], submeshTransform[2][0], submeshTransform[3][0] };
+			transformBuffer.MRow[1] = { submeshTransform[0][1], submeshTransform[1][1], submeshTransform[2][1], submeshTransform[3][1] };
+			transformBuffer.MRow[2] = { submeshTransform[0][2], submeshTransform[1][2], submeshTransform[2][2], submeshTransform[3][2] };
 
 			auto& dc = m_MeshDrawList[meshKey];
 			dc.MeshInstance = mesh;
@@ -738,6 +746,30 @@ namespace VulkanCore {
 			m_MeshTransformMap.erase(meshKey);
 			m_MeshDrawList.erase(meshKey);
 		}
+	}
+
+	void SceneRenderer::UpdateSkybox(const std::string& filepath)
+	{
+		// Obtain Cubemaps
+		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap(filepath);
+		m_CubemapTexture = filteredMap;
+		m_PrefilteredTexture = filteredMap;
+		m_IrradianceTexture = irradianceMap;
+
+		// Update Materials
+		m_GeometryMaterial->SetTexture(6, m_IrradianceTexture);
+		m_GeometryMaterial->SetTexture(8, m_PrefilteredTexture);
+		m_GeometryMaterial->PrepareShaderMaterial();
+
+		m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
+		m_SkyboxMaterial->PrepareShaderMaterial();
+
+		ImGuiLayer::UpdateDescriptor(m_SkyboxTextureID, *m_PrefilteredTexture);
+	}
+
+	void SceneRenderer::SetSkybox(const std::string& filepath)
+	{
+		s_Instance->UpdateSkybox(filepath);
 	}
 
 	void SceneRenderer::CompositePass()

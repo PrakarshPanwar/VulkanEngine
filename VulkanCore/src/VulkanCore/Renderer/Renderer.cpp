@@ -173,9 +173,9 @@ namespace VulkanCore {
 		});
 	}
 
-	std::shared_ptr<VulkanTexture> Renderer::GetWhiteTexture(ImageFormat format)
+	std::shared_ptr<Texture2D> Renderer::GetWhiteTexture(ImageFormat format)
 	{
-		TextureSpecification whiteTexSpec;
+		TextureSpecification whiteTexSpec{};
 		whiteTexSpec.Width = 1;
 		whiteTexSpec.Height = 1;
 		whiteTexSpec.Format = format;
@@ -185,6 +185,21 @@ namespace VulkanCore {
 		*textureData = 0xffffffff;
 		auto whiteTexture = std::make_shared<VulkanTexture>(textureData, whiteTexSpec);
 		return whiteTexture;
+	}
+
+	std::shared_ptr<TextureCube> Renderer::GetBlackTextureCube(ImageFormat format)
+	{
+		TextureSpecification cubeTexSpec{};
+		cubeTexSpec.Width = 1;
+		cubeTexSpec.Height = 1;
+		cubeTexSpec.Format = format;
+		cubeTexSpec.GenerateMips = false;
+
+		uint32_t* textureData = new uint32_t[6];
+		for (uint32_t i = 0; i < 6; ++i)
+			textureData[i] = 0x0;
+
+		return std::make_shared<VulkanTextureCube>(textureData, cubeTexSpec);
 	}
 
 	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanMaterial>& shaderMaterial)
