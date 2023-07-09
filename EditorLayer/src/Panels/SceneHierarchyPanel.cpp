@@ -257,6 +257,7 @@ namespace VulkanCore {
 		{
 			DisplayAddComponentEntry<PointLightComponent>("Point Light");
 			DisplayAddComponentEntry<SpotLightComponent>("Spot Light");
+			DisplayAddComponentEntry<SkyLightComponent>("Skybox");
 			DisplayAddComponentEntry<MeshComponent>("Mesh");
 
 			ImGui::EndPopup();
@@ -296,6 +297,64 @@ namespace VulkanCore {
 			ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.001f, 1000.0f);
 		});
 
+		DrawComponent<SkyLightComponent>("Skybox", entity, [](auto& component)
+		{
+			auto skyboxAsset = AssetManager::GetAsset<Texture2D>(component.TextureHandle);
+
+			if (skyboxAsset)
+			{
+				ImTextureID iconID = SceneRenderer::GetTextureCubeID();
+				ImGui::Image(iconID, { 100.0f, 100.0f });
+
+				auto& skyboxMetadata = AssetManager::GetMetadata(skyboxAsset->Handle);
+				const auto& skyboxPath = skyboxMetadata.FilePath.generic_string();
+				ImGui::InputText("Path", (char*)skyboxPath.data(), skyboxPath.size(), ImGuiInputTextFlags_ReadOnly);
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					{
+						const wchar_t* path = (const wchar_t*)payload->Data;
+						std::filesystem::path assetPath = g_AssetPath / path;
+
+						std::string filepath = assetPath.generic_string();
+						SceneRenderer::SetSkybox(filepath);
+
+						auto newSkybox = AssetManager::GetAsset<Texture2D>(filepath);
+						component.TextureHandle = newSkybox->Handle;
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+			}
+			else
+			{
+				ImVec2 buttonSize = ImVec2{ ImGui::GetContentRegionAvail().x - 20.0f, 0.0f };
+
+				// Import Mesh
+				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+				ImGui::Button("Import Skybox", buttonSize);
+				ImGui::PopItemFlag();
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					{
+						const wchar_t* path = (const wchar_t*)payload->Data;
+						std::filesystem::path assetPath = g_AssetPath / path;
+
+						std::string filepath = assetPath.generic_string();
+						SceneRenderer::SetSkybox(filepath);
+
+						auto newSkybox = AssetManager::GetAsset<Texture2D>(filepath);
+						component.TextureHandle = newSkybox->Handle;
+					}
+
+					ImGui::EndDragDropTarget();
+				}
+			}
+		});
+
 		DrawComponent<MeshComponent>("Mesh", entity, [](auto& component)
 		{
 			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
@@ -308,8 +367,8 @@ namespace VulkanCore {
 				// Mesh Asset
 				auto meshSource = mesh->GetMeshSource();
 				auto& meshAssetMetadata = AssetManager::GetMetadata(meshSource->Handle);
-				auto meshAssetPath = meshAssetMetadata.FilePath.generic_string();
-				ImGui::InputText("Mesh", meshAssetPath.data(), meshAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
+				const auto& meshAssetPath = meshAssetMetadata.FilePath.generic_string();
+				ImGui::InputText("Mesh", (char*)meshAssetPath.data(), meshAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
 
 				if (ImGui::BeginDragDropTarget())
 				{
@@ -332,8 +391,8 @@ namespace VulkanCore {
 				// Material Asset
 				AssetHandle materialHandle = component.MaterialTableHandle;
 				auto& materialAssetMetadata = AssetManager::GetMetadata(materialHandle);
-				auto materialAssetPath = materialAssetMetadata.FilePath.generic_string();
-				ImGui::InputText("Material", materialAssetPath.data(), materialAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
+				const auto& materialAssetPath = materialAssetMetadata.FilePath.generic_string();
+				ImGui::InputText("Material", (char*)materialAssetPath.data(), materialAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
 
 				if (ImGui::BeginDragDropTarget())
 				{
