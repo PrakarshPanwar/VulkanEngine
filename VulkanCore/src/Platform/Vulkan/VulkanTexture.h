@@ -58,6 +58,7 @@ namespace VulkanCore {
 		VulkanImageInfo m_Info;
 		VkDescriptorImageInfo m_DescriptorImageInfo;
 
+		uint8_t* m_LocalStorage = nullptr;
 		bool m_IsLoaded = false;
 	};
 

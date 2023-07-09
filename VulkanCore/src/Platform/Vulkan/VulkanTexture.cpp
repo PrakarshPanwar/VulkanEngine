@@ -5,7 +5,6 @@
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
-#include "VulkanBuffer.h"
 #include "VulkanDescriptor.h"
 #include "VulkanAllocator.h"
 
@@ -123,12 +122,21 @@ namespace VulkanCore {
 
 		if (m_LocalStorage)
 		{
-			VulkanBuffer stagingBuffer{ imageSize, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
+			VulkanAllocator allocator("Texture2D");
 
-			stagingBuffer.Map();
-			stagingBuffer.WriteToBuffer(m_LocalStorage, imageSize);
-			stagingBuffer.Unmap();
+			// Staging Buffer
+			VkBufferCreateInfo bufferCreateInfo{};
+			bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			bufferCreateInfo.size = imageSize;
+			bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+			bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+			VkBuffer stagingBuffer;
+			VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, stagingBuffer);
+
+			uint8_t* dstData = allocator.MapMemory<uint8_t>(stagingBufferAlloc);
+			memcpy(dstData, m_LocalStorage, imageSize);
+			allocator.UnmapMemory(stagingBufferAlloc);
 
 			VkCommandBuffer copyCmd = device->GetCommandBuffer();
 			VkImageSubresourceRange subResourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
@@ -147,7 +155,7 @@ namespace VulkanCore {
 			region.imageExtent = { (uint32_t)m_Specification.Width, (uint32_t)m_Specification.Height, 1 };
 
 			vkCmdCopyBufferToImage(copyCmd,
-				stagingBuffer.GetBuffer(),
+				stagingBuffer,
 				m_Image->GetVulkanImageInfo().Image,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				1,
@@ -170,6 +178,8 @@ namespace VulkanCore {
 
 				device->FlushCommandBuffer(barrierCmd);
 			}
+
+			allocator.DestroyBuffer(stagingBuffer, stagingBufferAlloc);
 		}
 
 		m_IsLoaded = true;
@@ -265,7 +275,7 @@ namespace VulkanCore {
 	}
 
 	VulkanTextureCube::VulkanTextureCube(void* data, TextureSpecification spec)
-		: m_Specification(spec)
+		: m_Specification(spec), m_LocalStorage((uint8_t*)data)
 	{
 	}
 
@@ -278,12 +288,10 @@ namespace VulkanCore {
 	void VulkanTextureCube::Invalidate()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
+		VulkanAllocator allocator("TextureCube");
 
 		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
-
 		uint32_t mipCount = Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height);
-
-		VulkanAllocator allocator("TextureCube");
 
 		// Create Vulkan Image
 		VkImageCreateInfo imageCreateInfo{};
@@ -304,6 +312,80 @@ namespace VulkanCore {
 		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE, "Default TextureCube", m_Info.Image);
 
 		m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		if (m_LocalStorage)
+		{
+			VkDeviceSize imageSize = Utils::GetMemorySize(m_Specification.Format, m_Specification.Width, m_Specification.Height);
+
+			VkBufferCreateInfo bufferCreateInfo{};
+			bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			bufferCreateInfo.size = imageSize * 6;
+			bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+			bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+			VkBuffer stagingBuffer;
+			VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, stagingBuffer);
+
+			std::array<VkBufferImageCopy, 6> bufferCopyRegions{};
+			std::array<VkDeviceSize, 6> byteOffsets{};
+			VkDeviceSize byteOffset = 0;
+
+			uint8_t* dstData = allocator.MapMemory<uint8_t>(stagingBufferAlloc);
+			memcpy(dstData, m_LocalStorage, imageSize * 6);
+			allocator.UnmapMemory(stagingBufferAlloc);
+
+			for (uint32_t i = 0; i < 6; ++i)
+			{
+				byteOffsets[i] = byteOffset;
+				byteOffset += imageSize;
+			}
+
+			VkCommandBuffer copyCmd = device->GetCommandBuffer();
+
+			VkImageSubresourceRange subresourceRange{};
+			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.baseMipLevel = 0;
+			subresourceRange.baseArrayLayer = 0;
+			subresourceRange.levelCount = 1;
+			subresourceRange.layerCount = 6;
+
+			Utils::SetImageLayout(
+				copyCmd, m_Info.Image,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				subresourceRange);
+
+			for (uint32_t i = 0; i < byteOffsets.size(); ++i)
+			{
+				VkBufferImageCopy bufferCopyRegion{};
+				bufferCopyRegion.bufferOffset = byteOffsets[i];
+				bufferCopyRegion.bufferRowLength = 0;
+				bufferCopyRegion.bufferImageHeight = 0;
+
+				bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				bufferCopyRegion.imageSubresource.mipLevel = 0;
+				bufferCopyRegion.imageSubresource.baseArrayLayer = i;
+				bufferCopyRegion.imageSubresource.layerCount = 1;
+
+				bufferCopyRegion.imageOffset = { 0, 0, 0 };
+				bufferCopyRegion.imageExtent = { m_Specification.Width, m_Specification.Height, 1 };
+				bufferCopyRegions[i] = bufferCopyRegion;
+			}
+
+			vkCmdCopyBufferToImage(copyCmd,
+				stagingBuffer,
+				m_Info.Image,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				(uint32_t)bufferCopyRegions.size(),
+				bufferCopyRegions.data()
+			);
+
+			device->FlushCommandBuffer(copyCmd);
+
+			allocator.DestroyBuffer(stagingBuffer, stagingBufferAlloc);
+			free(m_LocalStorage);
+		}
+
 		// Create a view for Image
 		VkImageViewCreateInfo viewCreateInfo{};
 		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -351,7 +433,7 @@ namespace VulkanCore {
 
 		Utils::SetImageLayout(
 			layoutCmd, m_Info.Image,
-			VK_IMAGE_LAYOUT_UNDEFINED,
+			m_LocalStorage ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_GENERAL,
 			subresourceRange);
 
@@ -361,7 +443,6 @@ namespace VulkanCore {
 		m_DescriptorImageInfo.sampler = m_Info.Sampler;
 	}
 
-	// TODO: Should be done in RenderThread
 	void VulkanTextureCube::Release()
 	{
 		Renderer::SubmitResourceFree([mipRefs = m_MipReferences, imageInfo = m_Info]() mutable

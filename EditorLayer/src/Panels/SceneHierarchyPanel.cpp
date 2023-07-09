@@ -299,12 +299,11 @@ namespace VulkanCore {
 
 		DrawComponent<SkyLightComponent>("Skybox", entity, [](auto& component)
 		{
-			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 			auto skyboxAsset = AssetManager::GetAsset<Texture2D>(component.TextureHandle);
 
 			if (skyboxAsset)
 			{
-				ImTextureID iconID = sceneRenderer->GetTextureCubeID();
+				ImTextureID iconID = SceneRenderer::GetTextureCubeID();
 				ImGui::Image(iconID, { 100.0f, 100.0f });
 
 				auto& skyboxMetadata = AssetManager::GetMetadata(skyboxAsset->Handle);
@@ -319,7 +318,7 @@ namespace VulkanCore {
 						std::filesystem::path assetPath = g_AssetPath / path;
 
 						std::string filepath = assetPath.generic_string();
-						sceneRenderer->UpdateSkybox(filepath);
+						SceneRenderer::SetSkybox(filepath);
 
 						auto newSkybox = AssetManager::GetAsset<Texture2D>(filepath);
 						component.TextureHandle = newSkybox->Handle;
@@ -345,7 +344,7 @@ namespace VulkanCore {
 						std::filesystem::path assetPath = g_AssetPath / path;
 
 						std::string filepath = assetPath.generic_string();
-						sceneRenderer->UpdateSkybox(filepath);
+						SceneRenderer::SetSkybox(filepath);
 
 						auto newSkybox = AssetManager::GetAsset<Texture2D>(filepath);
 						component.TextureHandle = newSkybox->Handle;

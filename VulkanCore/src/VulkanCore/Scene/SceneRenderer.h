@@ -6,7 +6,6 @@
 #include "Platform/Vulkan/VulkanMaterial.h"
 #include "Platform/Vulkan/VulkanComputePipeline.h"
 #include "Platform/Vulkan/VulkanTexture.h"
-#include "Platform/Vulkan/VulkanBuffer.h"
 #include "Platform/Vulkan/VulkanVertexBuffer.h"
 #include "Platform/Vulkan/VulkanUniformBuffer.h"
 #include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
@@ -38,6 +37,8 @@ namespace VulkanCore {
 		void UpdateSkybox(const std::string& filepath);
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
+		static inline VkDescriptorSet GetTextureCubeID() { return s_Instance->m_SkyboxTextureID; }
+		static void SetSkybox(const std::string& filepath);
 
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		inline std::shared_ptr<VulkanRenderCommandBuffer> GetCommandBuffer() const { return m_SceneCommandBuffer; }
@@ -45,7 +46,6 @@ namespace VulkanCore {
 		inline VkFramebuffer GetFinalVulkanFramebuffer(uint32_t index) const { return m_SceneFramebuffer->GetVulkanFramebuffers()[index]; }
 		inline std::shared_ptr<VulkanImage> GetFinalPassImage(uint32_t index) const { return m_SceneFramebuffer->GetAttachment(true)[index]; }
 		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
-		inline VkDescriptorSet GetTextureCubeID() const { return m_SkyboxTextureID; }
 
 		struct MeshKey
 		{

@@ -488,10 +488,12 @@ namespace VulkanCore {
 
 		m_BloomDirtTexture = AssetManager::GetAsset<Texture2D>("assets/textures/LensDirt.png");
 
-		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap("assets/cubemaps/HDR/Birchwood4K.hdr");
-		m_CubemapTexture = filteredMap;
-		m_PrefilteredTexture = filteredMap;
-		m_IrradianceTexture = irradianceMap;
+		auto blackTextureCube = std::dynamic_pointer_cast<VulkanTextureCube>(Renderer::GetBlackTextureCube(ImageFormat::RGBA8_UNORM));
+		blackTextureCube->Invalidate();
+
+		m_CubemapTexture = blackTextureCube;
+		m_PrefilteredTexture = blackTextureCube;
+		m_IrradianceTexture = blackTextureCube;
 
 		m_SkyboxTextureID = ImGuiLayer::AddTexture(*m_PrefilteredTexture);
 
@@ -763,6 +765,11 @@ namespace VulkanCore {
 		m_SkyboxMaterial->PrepareShaderMaterial();
 
 		ImGuiLayer::UpdateDescriptor(m_SkyboxTextureID, *m_PrefilteredTexture);
+	}
+
+	void SceneRenderer::SetSkybox(const std::string& filepath)
+	{
+		s_Instance->UpdateSkybox(filepath);
 	}
 
 	void SceneRenderer::CompositePass()
