@@ -14,10 +14,10 @@ namespace glm
 		return Result;
 	}
 
-	template<typename T, qualifier Q1, qualifier Q2>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q1> translate(mat<4, 4, T, Q1> const& m, vec<3, T, Q2> const& v)
+	template<typename T, qualifier QA, qualifier QN>
+	GLM_FUNC_QUALIFIER mat<4, 4, T, QA> translate(mat<4, 4, T, QA> const& m, vec<3, T, QN> const& v)
 	{
-		mat<4, 4, T, Q1> Result(m);
+		mat<4, 4, T, QA> Result(m);
 		Result[3] = m[0] * v[0] + m[1] * v[1] + m[2] * v[2] + m[3];
 		return Result;
 	}
@@ -93,10 +93,10 @@ namespace glm
 		return Result;
 	}
 
-	template<typename T, qualifier Q1, qualifier Q2>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q1> scale(mat<4, 4, T, Q1> const& m, vec<3, T, Q2> const& v)
+	template<typename T, qualifier QA, qualifier QN>
+	GLM_FUNC_QUALIFIER mat<4, 4, T, QA> scale(mat<4, 4, T, QA> const& m, vec<3, T, QN> const& v)
 	{
-		mat<4, 4, T, Q1> Result;
+		mat<4, 4, T, QA> Result;
 		Result[0] = m[0] * v[0];
 		Result[1] = m[1] * v[1];
 		Result[2] = m[2] * v[2];

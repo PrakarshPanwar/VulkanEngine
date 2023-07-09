@@ -64,9 +64,9 @@ namespace glm
 	GLM_FUNC_DECL mat<4, 4, T, Q> translate(
 		mat<4, 4, T, Q> const& m, vec<3, T, Q> const& v);
 
-	template<typename T, qualifier Q1, qualifier Q2>
-	GLM_FUNC_DECL mat<4, 4, T, Q1> translate(
-		mat<4, 4, T, Q1> const& m, vec<3, T, Q2> const& v);
+	template<typename T, qualifier QA, qualifier QN>
+	GLM_FUNC_DECL mat<4, 4, T, QA> translate(
+		mat<4, 4, T, QA> const& m, vec<3, T, QN> const& v);
 
 	/// Builds a rotation 4 * 4 matrix created from an axis vector and an angle.
 	///

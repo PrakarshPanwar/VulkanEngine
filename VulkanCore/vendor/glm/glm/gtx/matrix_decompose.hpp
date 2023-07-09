@@ -40,10 +40,10 @@ namespace glm
 		mat<4, 4, T, Q> const& modelMatrix,
 		vec<3, T, Q> & scale, qua<T, Q> & orientation, vec<3, T, Q> & translation, vec<3, T, Q> & skew, vec<4, T, Q> & perspective);
 
-	template<typename T, qualifier Q1, qualifier Q2>
+	template<typename T, qualifier QA, qualifier QN>
 	GLM_FUNC_DECL bool decompose(
-		mat<4, 4, T, Q1> const& modelMatrix,
-		vec<3, T, Q1>& scale, qua<T, Q1>& orientation, vec<3, T, Q1>& translation, vec<3, T, Q1>& skew, vec<4, T, Q2>& perspective);
+		mat<4, 4, T, QA> const& modelMatrix,
+		vec<3, T, QA>& scale, qua<T, QA>& orientation, vec<3, T, QA>& translation, vec<3, T, QA>& skew, vec<4, T, QN>& perspective);
 
 	/// @}
 }//namespace glm

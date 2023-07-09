@@ -54,9 +54,9 @@ namespace glm
 	GLM_FUNC_DECL mat<4, 4, T, Q> scale(
 		vec<3, T, Q> const& v);
 
-	template<typename T, qualifier Q1, qualifier Q2>
-	GLM_FUNC_DECL mat<4, 4, T, Q1> scale(
-		vec<3, T, Q2> const& v);
+	template<typename T, qualifier QA, qualifier QN>
+	GLM_FUNC_DECL mat<4, 4, T, QA> scale(
+		vec<3, T, QN> const& v);
 
 	/// @}
 }// namespace glm
