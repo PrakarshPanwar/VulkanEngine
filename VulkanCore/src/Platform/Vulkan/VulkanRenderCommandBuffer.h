@@ -1,5 +1,6 @@
 #pragma once
 #include "VulkanContext.h"
+#include "VulkanCore/Renderer/RenderCommandBuffer.h"
 
 namespace VulkanCore {
 
@@ -9,15 +10,15 @@ namespace VulkanCore {
 		Secondary
 	};
 
-	class VulkanRenderCommandBuffer
+	class VulkanRenderCommandBuffer : public RenderCommandBuffer
 	{
 	public:
 		VulkanRenderCommandBuffer(VkCommandPool cmdPool, CommandBufferLevel cmdBufLevel = CommandBufferLevel::Primary, uint32_t queryCount = 0);
 		~VulkanRenderCommandBuffer();
 
-		void Begin();
+		void Begin() override;
 		void Begin(VkRenderPass renderPass, VkFramebuffer framebuffer);
-		void End();
+		void End() override;
 		void Execute(VkCommandBuffer secondaryCmdBuffers[], uint32_t count);
 
 		VkCommandBuffer GetActiveCommandBuffer() const;

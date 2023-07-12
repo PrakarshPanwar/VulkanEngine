@@ -1,9 +1,5 @@
 #pragma once
-#include <future>
-#include "Platform/Vulkan/VulkanDescriptor.h"
-#include "../Source/SPIRV-Reflect/spirv_reflect.h"
-
-#define USE_VULKAN_DESCRIPTOR 1
+#include "Resource.h"
 
 namespace VulkanCore {
 

@@ -1,10 +1,9 @@
 #pragma once
-#include "Platform/Vulkan/VulkanContext.h"
-#include "Platform/Vulkan/VulkanVertexBuffer.h"
-#include "Platform/Vulkan/VulkanIndexBuffer.h"
-#include "VulkanCore/Renderer/Material.h"
 #include "VulkanCore/Asset/Asset.h"
 #include "VulkanCore/Asset/AssetMetadata.h"
+#include "VulkanCore/Renderer/Material.h"
+#include "VulkanCore/Renderer/VertexBuffer.h"
+#include "VulkanCore/Renderer/IndexBuffer.h"
 
 #include <glm/glm.hpp>
 #include <assimp/Importer.hpp>
@@ -63,8 +62,8 @@ namespace VulkanCore {
 		// TODO: This method is temporary for now
 		inline void SetMaterial(std::shared_ptr<Material> material) { m_Materials[0] = material; }
 
-		inline std::shared_ptr<VulkanVertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
-		inline std::shared_ptr<VulkanIndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
+		inline std::shared_ptr<VertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
+		inline std::shared_ptr<IndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
 		inline uint32_t GetVertexCount() const { return (uint32_t)m_Vertices.size(); }
 		inline uint32_t GetIndexCount() const { return (uint32_t)m_Indices.size(); }
 
@@ -82,8 +81,8 @@ namespace VulkanCore {
 		// TODO: In future we will support separate material for each submesh
 		std::vector<std::shared_ptr<Material>> m_Materials;
 
-		std::shared_ptr<VulkanVertexBuffer> m_VertexBuffer;
-		std::shared_ptr<VulkanIndexBuffer> m_IndexBuffer;
+		std::shared_ptr<VertexBuffer> m_VertexBuffer;
+		std::shared_ptr<IndexBuffer> m_IndexBuffer;
 
 		friend class Mesh;
 		friend class MeshImporter;
