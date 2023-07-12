@@ -16,13 +16,13 @@ namespace VulkanCore {
 
 	struct VulkanImageInfo
 	{
-		VkImage pImage = nullptr;
+		VkImage Image = nullptr;
 		VkImageView ImageView = nullptr;
 		VkSampler Sampler = nullptr;
 		VmaAllocation MemoryAlloc = nullptr;
 	};
 
-	class VulkanImage : public Image
+	class VulkanImage : public Image2D
 	{
 	public:
 		VulkanImage(const ImageSpecification& spec);
@@ -31,13 +31,13 @@ namespace VulkanCore {
 
 		void Invalidate();
 		void CreateImageViewSingleMip(uint32_t mip);
-		void Resize(uint32_t width, uint32_t height, uint32_t mips = 1);
+		void Resize(uint32_t width, uint32_t height, uint32_t mips = 1) override;
 
 		glm::uvec2 GetMipSize(uint32_t mipLevel) const;
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_DescriptorImageInfo; }
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo(uint32_t mipLevel) const { return m_DescriptorMipImagesInfo.at(mipLevel); }
-		inline const ImageSpecification& GetSpecification() const { return m_Specification; }
+		inline const ImageSpecification& GetSpecification() const override { return m_Specification; }
 	private:
 		void UpdateImageDescriptor();
 		void Release();

@@ -46,9 +46,11 @@ namespace VulkanCore {
 		TextureWrap SamplerWrap = TextureWrap::Clamp;
 	};
 
-	class Image : public Resource
+	class Image2D : public Resource
 	{
-
+	public:
+		virtual void Resize(uint32_t width, uint32_t height, uint32_t mips) = 0;
+		virtual const ImageSpecification& GetSpecification() const = 0;
 	};
 
 }

@@ -303,7 +303,7 @@ namespace VulkanCore {
 			m_VertexShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Vertex]);
 			m_FragmentShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Fragment]);
 
-			const uint32_t shaderStageCount = shader->CheckIfGeometryShaderExists() ? 3 : 2;
+			const uint32_t shaderStageCount = shader->HasGeometryShader() ? 3 : 2;
 			VkPipelineShaderStageCreateInfo* shaderStages = new VkPipelineShaderStageCreateInfo[shaderStageCount];
 
 			shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -322,7 +322,7 @@ namespace VulkanCore {
 			shaderStages[1].pNext = nullptr;
 			shaderStages[1].pSpecializationInfo = nullptr;
 
-			if (shader->CheckIfGeometryShaderExists())
+			if (shader->HasGeometryShader())
 			{
 				const auto geometryShader = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Geometry]);
 
@@ -364,7 +364,7 @@ namespace VulkanCore {
 			graphicsPipelineInfo.pDynamicState = &pipelineInfo.DynamicStateInfo;
 
 			graphicsPipelineInfo.layout = m_PipelineLayout;
-			graphicsPipelineInfo.renderPass = m_Specification.RenderPass->GetRenderPass();
+			graphicsPipelineInfo.renderPass = std::dynamic_pointer_cast<VulkanRenderPass>(m_Specification.pRenderPass)->GetRenderPass();
 			graphicsPipelineInfo.subpass = pipelineInfo.Subpass;
 
 			graphicsPipelineInfo.basePipelineIndex = -1;

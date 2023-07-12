@@ -1,10 +1,7 @@
 #pragma once
 #include "Platform/Windows/WindowsWindow.h"
-#include "Platform/Vulkan/VulkanPipeline.h"
-#include "Platform/Vulkan/VulkanTexture.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
-#include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 #include "VulkanCore/Mesh/Mesh.h"
 
 #include "VulkanCore/Core/Core.h"
@@ -40,14 +37,20 @@ namespace VulkanCore {
 			return m_CommandBuffer->GetActiveCommandBuffer();
 		}
 
-		static std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> CreateEnviromentMap(const std::string& filepath);
-		static std::shared_ptr<VulkanImage> CreateBRDFTexture();
-		static void CopyVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage>& sourceImage, const std::shared_ptr<VulkanImage>& destImage);
-		static void BlitVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage>& image);
-		static void RenderMesh(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount);
-		static void RenderTransparentMesh(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount);
-		static RendererStats GetRendererStats() { return s_Data; }
-		static void ResetStats();
+		static std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> CreateEnviromentMap(const std::string& filepath);
+		static std::shared_ptr<Image2D> CreateBRDFTexture();
+		void BeginRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass);
+		void EndRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass);
+		void RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& skyboxVB, const std::shared_ptr<Material>& skyboxMaterial, void* pcData = nullptr);
+		void BeginTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer);
+		void EndTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer);
+		void BeginGPUPerfMarker(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::string& name, DebugLabelColor labelColor = DebugLabelColor::None);
+		void EndGPUPerfMarker(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer);
+		void CopyVulkanImage(const std::shared_ptr<RenderCommandBuffer>& commandBuffer, const std::shared_ptr<Image2D>& sourceImage, const std::shared_ptr<Image2D>& destImage);
+		void BlitVulkanImage(const std::shared_ptr<RenderCommandBuffer>& commandBuffer, const std::shared_ptr<Image2D>& image);
+		void RenderMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount);
+		void RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount);
+		void ResetStats();
 
 		inline VkRenderPass GetSwapChainRenderPass() const { return m_SwapChain->GetRenderPass(); }
 		inline int GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
@@ -56,6 +59,7 @@ namespace VulkanCore {
 		void RecreateSwapChain();
 		void FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers);
 		void SubmitAndPresent();
+		static RendererStats GetRendererStats() { return s_Data; }
 		static VulkanRenderer* Get() { return s_Instance; }
 	private:
 		void CreateCommandBuffers();

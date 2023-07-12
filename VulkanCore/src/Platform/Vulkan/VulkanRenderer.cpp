@@ -2,15 +2,16 @@
 #include "VulkanRenderer.h"
 
 #include "VulkanCore/Core/ImGuiLayer.h"
+#include "VulkanCore/Asset/AssetManager.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
-#include "Renderer.h"
+#include "VulkanCore/Renderer/Renderer.h"
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
 
 #include <glm/gtx/integer.hpp>
 #include "optick.h"
-#include "../Asset/AssetManager.h"
+#include "VulkanIndexBuffer.h"
 
 namespace VulkanCore {
 
@@ -114,15 +115,18 @@ namespace VulkanCore {
 		});
 	}
 
-	std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
+	std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
 	{
 		constexpr uint32_t cubemapSize = 1024;
 		constexpr uint32_t irradianceMapSize = 32;
 
 		std::shared_ptr<VulkanTexture> envEquirect = std::dynamic_pointer_cast<VulkanTexture>(AssetManager::GetAsset<Texture2D>(filepath));
 
-		std::shared_ptr<VulkanTextureCube> envFiltered = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
-		std::shared_ptr<VulkanTextureCube> envUnfiltered = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
+		std::shared_ptr<TextureCube> filteredMap = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
+		std::shared_ptr<TextureCube> unFilteredMap = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
+
+		std::shared_ptr<VulkanTextureCube> envFiltered = std::static_pointer_cast<VulkanTextureCube>(filteredMap);
+		std::shared_ptr<VulkanTextureCube> envUnfiltered = std::static_pointer_cast<VulkanTextureCube>(unFilteredMap);
 
 		envFiltered->Invalidate();
 		envUnfiltered->Invalidate();
@@ -239,15 +243,15 @@ namespace VulkanCore {
 		return { envFiltered, irradianceMap };
 	}
 
-	void VulkanRenderer::CopyVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage>& sourceImage, const std::shared_ptr<VulkanImage>& destImage)
+	void VulkanRenderer::CopyVulkanImage(const std::shared_ptr<RenderCommandBuffer>& commandBuffer, const std::shared_ptr<Image2D>& sourceImage, const std::shared_ptr<Image2D>& destImage)
 	{
 		Renderer::Submit([commandBuffer, sourceImage, destImage]
 		{
 			VK_CORE_PROFILE_FN("VulkanRenderer::CopyVulkanImage");
-			VkCommandBuffer vulkanCmdBuffer = commandBuffer->RT_GetActiveCommandBuffer();
+			VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(commandBuffer)->RT_GetActiveCommandBuffer();
 
-			VkImage srcImage = sourceImage->GetVulkanImageInfo().Image;
-			VkImage dstImage = destImage->GetVulkanImageInfo().Image;
+			VkImage srcImage = std::static_pointer_cast<VulkanImage>(sourceImage)->GetVulkanImageInfo().Image;
+			VkImage dstImage = std::static_pointer_cast<VulkanImage>(destImage)->GetVulkanImageInfo().Image;
 
 			// TODO: We cannot determine layout like this for image but we are doing this for now to get Bloom
 			// Changing Source Image Layout
@@ -289,15 +293,14 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::BlitVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage>& image)
+	void VulkanRenderer::BlitVulkanImage(const std::shared_ptr<RenderCommandBuffer>& commandBuffer, const std::shared_ptr<Image2D>& image)
 	{
 		Renderer::Submit([commandBuffer, image]
 		{
 			VK_CORE_PROFILE_FN("VulkanRenderer::BlitVulkanImage");
-			VkCommandBuffer vulkanCmdBuffer = commandBuffer->RT_GetActiveCommandBuffer();
+			VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(commandBuffer)->RT_GetActiveCommandBuffer();
 
-			VkImage vulkanImage = image->GetVulkanImageInfo().Image;
-
+			VkImage vulkanImage = std::static_pointer_cast<VulkanImage>(image)->GetVulkanImageInfo().Image;
 			const uint32_t mipLevels = image->GetSpecification().MipLevels;
 			const glm::uvec2 imgSize = { image->GetSpecification().Width, image->GetSpecification().Height };
 
@@ -377,7 +380,7 @@ namespace VulkanCore {
 		});
 	}		
 	
-	std::shared_ptr<VulkanImage> VulkanRenderer::CreateBRDFTexture()
+	std::shared_ptr<Image2D> VulkanRenderer::CreateBRDFTexture()
 	{
 		constexpr uint32_t textureSize = 512;
 
@@ -419,33 +422,72 @@ namespace VulkanCore {
 		return brdfTexture;
 	}
 
-	void VulkanRenderer::RenderMesh(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	void VulkanRenderer::BeginRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass)
+	{
+		std::static_pointer_cast<VulkanRenderPass>(renderPass)->Begin(cmdBuffer);
+	}
+
+	void VulkanRenderer::EndRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass)
+	{
+
+	}
+
+	void VulkanRenderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& skyboxVB, const std::shared_ptr<Material>& skyboxMaterial, void* pcData /*= nullptr*/)
+	{
+
+	}
+
+	void VulkanRenderer::BeginTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
+	{
+
+	}
+
+	void VulkanRenderer::EndTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
+	{
+
+	}
+
+	void VulkanRenderer::BeginGPUPerfMarker(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::string& name, DebugLabelColor labelColor /*= DebugLabelColor::None*/)
+	{
+
+	}
+
+	void VulkanRenderer::EndGPUPerfMarker(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
+	{
+
+	}
+
+	void VulkanRenderer::RenderMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 		Renderer::Submit([cmdBuffer, mesh, pipeline, material, transformBuffer, transformData, submeshIndex, instanceCount]
 		{
 			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMesh");
 
 			// Bind Vertex Buffer
-			auto drawCmd = cmdBuffer->RT_GetActiveCommandBuffer();
+			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
 
 			auto meshSource = mesh->GetMeshSource();
-			transformBuffer->WriteData((void*)transformData.data(), 0);
-			VkBuffer buffers[] = { meshSource->GetVertexBuffer()->GetVulkanBuffer(), transformBuffer->GetVulkanBuffer() };
+			auto vulkanMeshVB = std::static_pointer_cast<VulkanVertexBuffer>(meshSource->GetVertexBuffer());
+			auto vulkanMeshIB = std::static_pointer_cast<VulkanIndexBuffer>(meshSource->GetIndexBuffer());
+			auto vulkanTransformBuffer = std::static_pointer_cast<VulkanVertexBuffer>(transformBuffer);
+			vulkanTransformBuffer->WriteData((void*)transformData.data(), 0);
+			VkBuffer buffers[] = { vulkanMeshVB->GetVulkanBuffer(), vulkanTransformBuffer->GetVulkanBuffer() };
 			VkDeviceSize offsets[] = { 0, 0 };
 			vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
-			vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(drawCmd, vulkanMeshIB->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-			std::shared_ptr<VulkanMaterial> vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
+			std::shared_ptr<VulkanPipeline> vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
+			std::shared_ptr<VulkanMaterial> vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
 			VkDescriptorSet descriptorSets[1] = { vulkanMaterial->RT_GetVulkanMaterialDescriptorSet() };
 	
 			vkCmdBindDescriptorSets(drawCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipeline->GetVulkanPipelineLayout(),
+				vulkanPipeline->GetVulkanPipelineLayout(),
 				1, 1, descriptorSets,
 				0, nullptr);
 	
 			vkCmdPushConstants(drawCmd,
-				pipeline->GetVulkanPipelineLayout(),
+				vulkanPipeline->GetVulkanPipelineLayout(),
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				0,
 				sizeof(MaterialData),
@@ -460,7 +502,7 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::RenderTransparentMesh(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	void VulkanRenderer::RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 
 	}

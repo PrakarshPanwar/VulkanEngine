@@ -218,107 +218,9 @@ namespace VulkanCore {
 		// Bloom Materials
 		{
 			const uint32_t mipCount = m_BloomTextures[0]->GetSpecification().MipLevels;
-
-			// Set A : Prefiltering
-			// Binding 0(o_Image): BloomTex[0]
-			// Binding 1(u_Texture): RenderTex
-			// Binding 2(u_BloomTexture): RenderTex
-			m_BloomPrefilterShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Prefilter Shader Material");
-
-			m_BloomPrefilterShaderMaterial->SetImage(0, m_BloomTextures[0]);
-			m_BloomPrefilterShaderMaterial->SetImages(1, m_SceneRenderTextures);
-			m_BloomPrefilterShaderMaterial->SetImages(2, m_SceneRenderTextures);
-			m_BloomPrefilterShaderMaterial->PrepareShaderMaterial();
-
-			m_BloomPingShaderMaterials.resize(mipCount - 1);
-			m_BloomPongShaderMaterials.resize(mipCount - 1);
-			for (uint32_t i = 1; i < mipCount; ++i)
-			{
-				// Set B: Downsampling(Ping)
-				// Binding 0(o_Image): BloomTex[1]
-				// Binding 1(u_Texture): BloomTex[0]
-				// Binding 2(u_BloomTexture): RenderTex
-				auto bloomPingShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Ping Shader Material");
-
-				m_BloomTextures[1]->CreateImageViewSingleMip(i);
-				bloomPingShaderMaterial->SetImage(0, m_BloomTextures[1], i);
-				bloomPingShaderMaterial->SetImage(1, m_BloomTextures[0]);
-				bloomPingShaderMaterial->SetImages(2, m_SceneRenderTextures);
-				bloomPingShaderMaterial->PrepareShaderMaterial();
-
-				m_BloomPingShaderMaterials[i - 1] = bloomPingShaderMaterial;
-
-				// Set C: Downsampling(Pong)
-				// Binding 0(o_Image): BloomTex[0]
-				// Binding 1(u_Texture): BloomTex[1]
-				// Binding 2(u_BloomTexture): RenderTex
-				auto bloomPongShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Pong Shader Material");
-				
-				m_BloomTextures[0]->CreateImageViewSingleMip(i);
-				bloomPongShaderMaterial->SetImage(0, m_BloomTextures[0], i);
-				bloomPongShaderMaterial->SetImage(1, m_BloomTextures[1]);
-				bloomPongShaderMaterial->SetImages(2, m_SceneRenderTextures);
-				bloomPongShaderMaterial->PrepareShaderMaterial();
-
-				m_BloomPongShaderMaterials[i - 1] = bloomPongShaderMaterial;
-			}
-
-			// Set D: First Upsampling
-			// Binding 0(o_Image): BloomTex[2]
-			// Binding 1(u_Texture): BloomTex[0]
-			// Binding 2(u_BloomTexture): RenderTex
-			m_BloomUpsampleFirstShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample First Shader Material");
-
-			m_BloomTextures[2]->CreateImageViewSingleMip(mipCount - 1);
-			m_BloomUpsampleFirstShaderMaterial->SetImage(0, m_BloomTextures[2], mipCount - 1);
-			m_BloomUpsampleFirstShaderMaterial->SetImage(1, m_BloomTextures[0]);
-			m_BloomUpsampleFirstShaderMaterial->SetImages(2, m_SceneRenderTextures);
-			m_BloomUpsampleFirstShaderMaterial->PrepareShaderMaterial();
-
-			// Set E: Final Upsampling
-			// Binding 0(o_Image): BloomTex[2]
-			// Binding 1(u_Texture): BloomTex[0]
-			// Binding 2(u_BloomTexture): BloomTex[2]
-			m_BloomUpsampleShaderMaterials.resize(mipCount - 1);
-			for (int i = mipCount - 2; i >= 0; --i)
-			{
-				auto bloomUpsampleShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample Shader Material");
-
-				m_BloomTextures[2]->CreateImageViewSingleMip(i);
-				bloomUpsampleShaderMaterial->SetImage(0, m_BloomTextures[2], i);
-				bloomUpsampleShaderMaterial->SetImage(1, m_BloomTextures[0]);
-				bloomUpsampleShaderMaterial->SetImage(2, m_BloomTextures[2]);
-				bloomUpsampleShaderMaterial->PrepareShaderMaterial();
-
-				m_BloomUpsampleShaderMaterials[i] = bloomUpsampleShaderMaterial;
-			}
-		}
-
-		// Composite Material
-		{
-			m_CompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_CompositePipeline->GetSpecification().pShader, "Composite Shader Material");
-
-			m_CompositeShaderMaterial->SetImages(0, m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetAttachment(true));
-			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
-			m_CompositeShaderMaterial->SetTexture(2, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
-			m_CompositeShaderMaterial->PrepareShaderMaterial();
-		}
-
-		// Skybox Material
-		{
-			m_SkyboxMaterial = std::make_shared<VulkanMaterial>(m_SkyboxPipeline->GetSpecification().pShader, "Skybox Shader Material");
-
-			m_SkyboxMaterial->SetBuffers(0, m_UBCamera);
-			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
-			m_SkyboxMaterial->PrepareShaderMaterial();
-		}
-	}
-
-	void SceneRenderer::RecreateMaterials()
-	{
-		// Bloom Materials
-		{
-			const uint32_t mipCount = m_BloomTextures[0]->GetSpecification().MipLevels;
+			auto bloomTexture0 = std::static_pointer_cast<VulkanImage>(m_BloomTextures[0]);
+			auto bloomTexture1 = std::static_pointer_cast<VulkanImage>(m_BloomTextures[1]);
+			auto bloomTexture2 = std::static_pointer_cast<VulkanImage>(m_BloomTextures[2]);
 
 			// Set A: Prefiltering
 			// Binding 0(o_Image): BloomTex[0]
@@ -341,7 +243,7 @@ namespace VulkanCore {
 				// Binding 2(u_BloomTexture): RenderTex
 				auto bloomPingShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Ping Shader Material");
 
-				m_BloomTextures[1]->CreateImageViewSingleMip(i);
+				bloomTexture1->CreateImageViewSingleMip(i);
 				bloomPingShaderMaterial->SetImage(0, m_BloomTextures[1], i);
 				bloomPingShaderMaterial->SetImage(1, m_BloomTextures[0]);
 				bloomPingShaderMaterial->SetImages(2, m_SceneRenderTextures);
@@ -355,7 +257,7 @@ namespace VulkanCore {
 				// Binding 2(u_BloomTexture): RenderTex
 				auto bloomPongShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Pong Shader Material");
 
-				m_BloomTextures[0]->CreateImageViewSingleMip(i);
+				bloomTexture0->CreateImageViewSingleMip(i);
 				bloomPongShaderMaterial->SetImage(0, m_BloomTextures[0], i);
 				bloomPongShaderMaterial->SetImage(1, m_BloomTextures[1]);
 				bloomPongShaderMaterial->SetImages(2, m_SceneRenderTextures);
@@ -370,7 +272,7 @@ namespace VulkanCore {
 			// Binding 2(u_BloomTexture): RenderTex
 			m_BloomUpsampleFirstShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample First Shader Material");
 
-			m_BloomTextures[2]->CreateImageViewSingleMip(mipCount - 1);
+			bloomTexture2->CreateImageViewSingleMip(mipCount - 1);
 			m_BloomUpsampleFirstShaderMaterial->SetImage(0, m_BloomTextures[2], mipCount - 1);
 			m_BloomUpsampleFirstShaderMaterial->SetImage(1, m_BloomTextures[0]);
 			m_BloomUpsampleFirstShaderMaterial->SetImages(2, m_SceneRenderTextures);
@@ -385,7 +287,7 @@ namespace VulkanCore {
 			{
 				auto bloomUpsampleShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample Shader Material");
 
-				m_BloomTextures[2]->CreateImageViewSingleMip(i);
+				bloomTexture2->CreateImageViewSingleMip(i);
 				bloomUpsampleShaderMaterial->SetImage(0, m_BloomTextures[2], i);
 				bloomUpsampleShaderMaterial->SetImage(1, m_BloomTextures[0]);
 				bloomUpsampleShaderMaterial->SetImage(2, m_BloomTextures[2]);
@@ -397,7 +299,114 @@ namespace VulkanCore {
 
 		// Composite Material
 		{
-			m_CompositeShaderMaterial->SetImages(0, m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetAttachment(true));
+			m_CompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_CompositePipeline->GetSpecification().pShader, "Composite Shader Material");
+
+			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
+			m_CompositeShaderMaterial->SetImages(0, geomFB->GetAttachment(true));
+			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
+			m_CompositeShaderMaterial->SetTexture(2, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
+			m_CompositeShaderMaterial->PrepareShaderMaterial();
+		}
+
+		// Skybox Material
+		{
+			m_SkyboxMaterial = std::make_shared<VulkanMaterial>(m_SkyboxPipeline->GetSpecification().pShader, "Skybox Shader Material");
+
+			m_SkyboxMaterial->SetBuffers(0, m_UBCamera);
+			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
+			m_SkyboxMaterial->PrepareShaderMaterial();
+		}
+	}
+
+	void SceneRenderer::RecreateMaterials()
+	{
+		// Bloom Materials
+		{
+			const uint32_t mipCount = m_BloomTextures[0]->GetSpecification().MipLevels;
+			auto bloomTexture0 = std::static_pointer_cast<VulkanImage>(m_BloomTextures[0]);
+			auto bloomTexture1 = std::static_pointer_cast<VulkanImage>(m_BloomTextures[1]);
+			auto bloomTexture2 = std::static_pointer_cast<VulkanImage>(m_BloomTextures[2]);
+
+			// Set A: Prefiltering
+			// Binding 0(o_Image): BloomTex[0]
+			// Binding 1(u_Texture): RenderTex
+			// Binding 2(u_BloomTexture): RenderTex
+			m_BloomPrefilterShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Prefilter Shader Material");
+
+			m_BloomPrefilterShaderMaterial->SetImage(0, m_BloomTextures[0]);
+			m_BloomPrefilterShaderMaterial->SetImages(1, m_SceneRenderTextures);
+			m_BloomPrefilterShaderMaterial->SetImages(2, m_SceneRenderTextures);
+			m_BloomPrefilterShaderMaterial->PrepareShaderMaterial();
+
+			m_BloomPingShaderMaterials.resize(mipCount - 1);
+			m_BloomPongShaderMaterials.resize(mipCount - 1);
+			for (uint32_t i = 1; i < mipCount; ++i)
+			{
+				// Set B: Downsampling(Ping)
+				// Binding 0(o_Image): BloomTex[1]
+				// Binding 1(u_Texture): BloomTex[0]
+				// Binding 2(u_BloomTexture): RenderTex
+				auto bloomPingShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Ping Shader Material");
+
+				bloomTexture1->CreateImageViewSingleMip(i);
+				bloomPingShaderMaterial->SetImage(0, m_BloomTextures[1], i);
+				bloomPingShaderMaterial->SetImage(1, m_BloomTextures[0]);
+				bloomPingShaderMaterial->SetImages(2, m_SceneRenderTextures);
+				bloomPingShaderMaterial->PrepareShaderMaterial();
+
+				m_BloomPingShaderMaterials[i - 1] = bloomPingShaderMaterial;
+
+				// Set C: Downsampling(Pong)
+				// Binding 0(o_Image): BloomTex[0]
+				// Binding 1(u_Texture): BloomTex[1]
+				// Binding 2(u_BloomTexture): RenderTex
+				auto bloomPongShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Pong Shader Material");
+
+				bloomTexture0->CreateImageViewSingleMip(i);
+				bloomPongShaderMaterial->SetImage(0, m_BloomTextures[0], i);
+				bloomPongShaderMaterial->SetImage(1, m_BloomTextures[1]);
+				bloomPongShaderMaterial->SetImages(2, m_SceneRenderTextures);
+				bloomPongShaderMaterial->PrepareShaderMaterial();
+
+				m_BloomPongShaderMaterials[i - 1] = bloomPongShaderMaterial;
+			}
+
+			// Set D: First Upsampling
+			// Binding 0(o_Image): BloomTex[2]
+			// Binding 1(u_Texture): BloomTex[0]
+			// Binding 2(u_BloomTexture): RenderTex
+			m_BloomUpsampleFirstShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample First Shader Material");
+
+			bloomTexture2->CreateImageViewSingleMip(mipCount - 1);
+			m_BloomUpsampleFirstShaderMaterial->SetImage(0, m_BloomTextures[2], mipCount - 1);
+			m_BloomUpsampleFirstShaderMaterial->SetImage(1, m_BloomTextures[0]);
+			m_BloomUpsampleFirstShaderMaterial->SetImages(2, m_SceneRenderTextures);
+			m_BloomUpsampleFirstShaderMaterial->PrepareShaderMaterial();
+
+			// Set E: Final Upsampling
+			// Binding 0(o_Image): BloomTex[2]
+			// Binding 1(u_Texture): BloomTex[0]
+			// Binding 2(u_BloomTexture): BloomTex[2]
+			m_BloomUpsampleShaderMaterials.resize(mipCount - 1);
+			for (int i = mipCount - 2; i >= 0; --i)
+			{
+				auto bloomUpsampleShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample Shader Material");
+
+				bloomTexture2->CreateImageViewSingleMip(i);
+				bloomUpsampleShaderMaterial->SetImage(0, m_BloomTextures[2], i);
+				bloomUpsampleShaderMaterial->SetImage(1, m_BloomTextures[0]);
+				bloomUpsampleShaderMaterial->SetImage(2, m_BloomTextures[2]);
+				bloomUpsampleShaderMaterial->PrepareShaderMaterial();
+
+				m_BloomUpsampleShaderMaterials[i] = bloomUpsampleShaderMaterial;
+			}
+		}
+
+		// Composite Material
+		{
+			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
+
+			m_CompositeShaderMaterial->SetImages(0, geomFB->GetAttachment(true));
 			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
 			m_CompositeShaderMaterial->SetTexture(2, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
@@ -421,7 +430,10 @@ namespace VulkanCore {
 		m_SceneImages.resize(framesInFlight);
 
 		for (uint32_t i = 0; i < framesInFlight; ++i)
-			m_SceneImages[i] = ImGuiLayer::AddTexture(*GetFinalPassImage(i));
+		{
+			std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
+			m_SceneImages[i] = ImGuiLayer::AddTexture(*finalPassImage);
+		}
 
 		m_UBCamera.reserve(framesInFlight);
 		m_UBPointLight.reserve(framesInFlight);
@@ -453,10 +465,10 @@ namespace VulkanCore {
 
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
-			auto BloomTexture = m_BloomTextures.emplace_back(std::make_shared<VulkanImage>(bloomRTSpec));
+			auto BloomTexture = std::static_pointer_cast<VulkanImage>(m_BloomTextures.emplace_back(std::make_shared<VulkanImage>(bloomRTSpec)));
 			BloomTexture->Invalidate();
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, BloomTexture->GetVulkanImageInfo().pImage,
+			Utils::InsertImageMemoryBarrier(barrierCmd, BloomTexture->GetVulkanImageInfo().Image,
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -473,7 +485,7 @@ namespace VulkanCore {
 
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
-			auto SceneTexture = m_SceneRenderTextures.emplace_back(std::make_shared<VulkanImage>(sceneRTSpec));
+			auto SceneTexture = std::static_pointer_cast<VulkanImage>(m_SceneRenderTextures.emplace_back(std::make_shared<VulkanImage>(sceneRTSpec)));
 			SceneTexture->Invalidate();
 
 			Utils::InsertImageMemoryBarrier(barrierCmd, SceneTexture->GetVulkanImageInfo().Image,
@@ -521,9 +533,10 @@ namespace VulkanCore {
 
 			for (auto& BloomTexture : m_BloomTextures)
 			{
-				BloomTexture->Resize(m_BloomMipSize.x, m_BloomMipSize.y, Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2);
+				auto vulkanTexture = std::dynamic_pointer_cast<VulkanImage>(BloomTexture);
+				vulkanTexture->Resize(m_BloomMipSize.x, m_BloomMipSize.y, Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2);
 
-				Utils::InsertImageMemoryBarrier(barrierCmd, BloomTexture->GetVulkanImageInfo().pImage,
+				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanTexture->GetVulkanImageInfo().Image,
 					VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 					VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -532,9 +545,10 @@ namespace VulkanCore {
 
 			for (auto& SceneRenderTexture : m_SceneRenderTextures)
 			{
-				SceneRenderTexture->Resize(m_ViewportSize.x, m_ViewportSize.y, Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y));
+				auto vulkanTexture = std::dynamic_pointer_cast<VulkanImage>(SceneRenderTexture);
+				vulkanTexture->Resize(m_ViewportSize.x, m_ViewportSize.y, Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y));
 
-				Utils::InsertImageMemoryBarrier(barrierCmd, SceneRenderTexture->GetVulkanImageInfo().pImage,
+				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanTexture->GetVulkanImageInfo().Image,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -545,7 +559,10 @@ namespace VulkanCore {
 
 			// Update ImGui Viewport Image
 			for (uint32_t i = 0; i < framesInFlight; ++i)
-				ImGuiLayer::UpdateDescriptor(m_SceneImages[i], *GetFinalPassImage(i));
+			{
+				std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
+				ImGuiLayer::UpdateDescriptor(m_SceneImages[i], *finalPassImage);
+			}
 		}
 
 		// Recreate Shader Materials
@@ -738,6 +755,12 @@ namespace VulkanCore {
 			m_MeshTransformMap.erase(meshKey);
 			m_MeshDrawList.erase(meshKey);
 		}
+	}
+
+	std::shared_ptr<Image2D> SceneRenderer::GetFinalPassImage(uint32_t index) const
+	{
+		auto framebuffer = std::dynamic_pointer_cast<VulkanFramebuffer>(m_SceneFramebuffer);
+		return framebuffer->GetAttachment(true)[index];
 	}
 
 	void SceneRenderer::CompositePass()

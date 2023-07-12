@@ -3,6 +3,7 @@
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
+#include "VulkanShader.h"
 
 namespace VulkanCore {
 
@@ -102,13 +103,14 @@ namespace VulkanCore {
 		Renderer::Submit([this]()
 		{
 			auto device = VulkanContext::GetCurrentDevice();
+			auto shader = std::dynamic_pointer_cast<VulkanShader>(m_Shader);
 
-			auto& shaderSources = m_Shader->GetShaderModules();
+			auto& shaderSources = shader->GetShaderModules();
 
 			m_compShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Compute]);
 
-			m_DescriptorSetLayout = m_Shader->CreateDescriptorSetLayout();
-			m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, m_Shader->GetPushConstantSize());
+			m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
+			m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());
 
 			VkPipelineShaderStageCreateInfo shaderStage;
 			shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

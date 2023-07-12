@@ -1,9 +1,10 @@
 #pragma once
 #include "VulkanContext.h"
+#include "VulkanCore/Renderer/IndexBuffer.h"
 
 namespace VulkanCore {
 
-	class VulkanIndexBuffer
+	class VulkanIndexBuffer : public IndexBuffer
 	{
 	public:
 		VulkanIndexBuffer() = default;

@@ -264,11 +264,6 @@ namespace VulkanCore {
 		return m_DescriptorSetLayouts;
 	}
 
-	VkDescriptorSetLayout VulkanShader::CreateVulkanDescriptorSetLayout(uint32_t index)
-	{
-		return nullptr;
-	}
-
 #else
 #endif
 

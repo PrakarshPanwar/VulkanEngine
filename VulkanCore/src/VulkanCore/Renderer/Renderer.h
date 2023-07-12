@@ -1,7 +1,5 @@
 #pragma once
 #include "Platform/Vulkan/VulkanRenderer.h"
-#include "Platform/Vulkan/VulkanPipeline.h"
-#include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 #include "Platform/Vulkan/VulkanRenderPass.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Renderer/Shader.h"
@@ -34,24 +32,20 @@ namespace VulkanCore {
 	class Renderer
 	{
 	public:
-		static void SetRendererAPI(VulkanRenderer* vkRenderer);
+		static void BeginRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass);
+		static void EndRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass);
+		static void RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& skyboxVB, const std::shared_ptr<Material>& skyboxMaterial, void* pcData = nullptr);
+		static void BeginTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer);
+		static void EndTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer);
+		static void BeginGPUPerfMarker(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::string& name, DebugLabelColor labelColor = DebugLabelColor::None);
+		static void EndGPUPerfMarker(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer);
+
+		static std::shared_ptr<Texture2D> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
+		static void SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial);
+
 		static int GetCurrentFrameIndex();
 		static int RT_GetCurrentFrameIndex();
 		static RendererConfig GetConfig();
-		static void BeginRenderPass(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
-		static void EndRenderPass(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass);
-		static void BuildShaders();
-		static void ShutDown();
-
-		static void RenderSkybox(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& skyboxVB, const std::shared_ptr<VulkanMaterial>& skyboxMaterial, void* pcData = nullptr);
-		static void BeginTimestampsQuery(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer);
-		static void EndTimestampsQuery(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer);
-		static void BeginGPUPerfMarker(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::string& name, DebugLabelColor labelColor = DebugLabelColor::None);
-		static void EndGPUPerfMarker(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer);
-
-		static std::shared_ptr<VulkanTexture> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
-		static void SubmitFullscreenQuad(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanMaterial>& shaderMaterial);
-
 		static std::shared_ptr<Shader> GetShader(const std::string& name)
 		{
 			if (!m_Shaders.contains(name))
@@ -71,8 +65,11 @@ namespace VulkanCore {
 		{
 			RenderThread::SubmitToDeletion(func);
 		}
-
+	public:
 		static void Init();
+		static void ShutDown();
+		static void SetRendererAPI(VulkanRenderer* vkRenderer);
+		static void BuildShaders();
 		static void WaitAndRender();
 		static void WaitAndExecute();
 	private:

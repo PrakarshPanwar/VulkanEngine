@@ -1,5 +1,6 @@
 #pragma once
 #include "VulkanDevice.h"
+#include "VulkanDescriptor.h"
 #include "VulkanCore/Renderer/Pipeline.h"
 #include "VulkanCore/Renderer/Buffer.h"
 

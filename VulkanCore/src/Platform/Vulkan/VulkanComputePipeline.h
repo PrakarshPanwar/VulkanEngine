@@ -1,10 +1,12 @@
 #pragma once
 #include "VulkanContext.h"
+#include "VulkanDescriptor.h"
+#include "VulkanCore/Renderer/ComputePipeline.h"
 #include "VulkanCore/Renderer/Shader.h"
 
 namespace VulkanCore {
 
-	class VulkanComputePipeline
+	class VulkanComputePipeline : public ComputePipeline
 	{
 	public:
 		VulkanComputePipeline() = default;
@@ -17,7 +19,7 @@ namespace VulkanCore {
 		void Execute(VkCommandBuffer cmdBuf, VkDescriptorSet dstSet, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
 		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size, size_t offset = 0);
 
-		inline std::shared_ptr<Shader> GetShader() const { return m_Shader; }
+		inline std::shared_ptr<Shader> GetShader() const override { return m_Shader; }
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
 		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
 	private:
