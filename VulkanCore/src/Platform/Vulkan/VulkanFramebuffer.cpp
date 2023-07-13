@@ -31,6 +31,11 @@ namespace VulkanCore {
 			return spec.Samples > 1;
 		}
 
+		static bool IsMultisampled(ImageSpecification spec)
+		{
+			return spec.Samples > 1;
+		}
+
 	}
 
 	uint32_t VulkanFramebuffer::s_InstanceCount = 0;
@@ -244,10 +249,11 @@ namespace VulkanCore {
 		{
 			for (auto& fbImage : fbImages)
 			{
+				bool multisampled = Utils::IsMultisampled(fbImage->GetSpecification());
 				auto vulkanFBImage = std::static_pointer_cast<VulkanImage>(fbImage);
 				vulkanFBImage->Resize(width, height);
 
-				if (fbImage->GetSpecification().Samples == 1)
+				if (!multisampled)
 				{
 					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 

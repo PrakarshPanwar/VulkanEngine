@@ -88,7 +88,6 @@ namespace VulkanCore {
 			m_ShaderSources = Sources;
 			CompileOrGetVulkanBinaries(Sources);
 		}
-
 		else
 		{
 			auto [VertexSrc, FragmentSrc, GeometrySrc] = ParseShader(vsfilepath, fsfilepath, gsfilepath);
