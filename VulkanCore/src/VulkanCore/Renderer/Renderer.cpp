@@ -143,7 +143,6 @@ namespace VulkanCore {
 		return s_Renderer->GetWhiteTexture(format);
 	}
 
-
 	std::shared_ptr<TextureCube> Renderer::GetBlackTextureCube(ImageFormat format)
 	{
 		return s_Renderer->GetBlackTextureCube(format);
