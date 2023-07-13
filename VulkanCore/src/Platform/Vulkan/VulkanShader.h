@@ -23,11 +23,13 @@ namespace VulkanCore {
 		inline uint32_t GetPushConstantSize() const { return (uint32_t)m_PushConstantSize; }
 		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout(uint32_t index = 0) const { return m_DescriptorSetLayouts[index]; }
 
+		void Reload() override;
 		inline bool HasGeometryShader() const override { return !m_GeometryFilePath.empty(); }
 	private:
 		std::tuple<std::string, std::string> ParseShader(const std::string& vsfilepath, const std::string& fsfilepath);
 		std::tuple<std::string, std::string, std::string> ParseShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath);
 		std::string ParseShader(const std::string& cmpfilepath);
+		void ParseShader();
 		void CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources);
 		void ReflectShaderData();
 		void InvalidateDescriptors();

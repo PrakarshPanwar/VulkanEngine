@@ -676,7 +676,6 @@ namespace VulkanCore {
 		{
 			m_SwapChain = std::make_unique<VulkanSwapChain>(extent);
 		}
-
 		else
 		{
 			std::shared_ptr<VulkanSwapChain> oldSwapChain = std::move(m_SwapChain);
@@ -687,7 +686,6 @@ namespace VulkanCore {
 				VK_CORE_ASSERT(false, "Swap Chain Image(or Depth) Format has changed!");
 			}
 		}
-
 	}
 
 	void VulkanRenderer::SubmitAndPresent()
@@ -709,7 +707,6 @@ namespace VulkanCore {
 			m_Window->ResetWindowResizeFlag();
 			RecreateSwapChain();
 		}
-
 		else if (result != VK_SUCCESS)
 			VK_CORE_ERROR("Failed to Present Swap Chain Image!");
 	}

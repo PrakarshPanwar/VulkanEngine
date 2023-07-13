@@ -426,6 +426,11 @@ namespace VulkanCore {
 		}
 	}
 
+	void SceneRenderer::RecreatePipelines()
+	{
+		m_GeometryPipeline->ReloadPipeline(Renderer::GetShader("CorePBR"));
+	}
+
 	void SceneRenderer::CreateResources()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
@@ -583,7 +588,7 @@ namespace VulkanCore {
 	{
 		ImGui::Begin("Scene Renderer");
 
-		ImGuiTreeNodeFlags treeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
+		const ImGuiTreeNodeFlags treeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
 		if (ImGui::TreeNodeEx("Scene Settings", treeFlags))
 		{
 			ImGui::DragFloat("Exposure Intensity", &m_SceneSettings.Exposure, 0.01f, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
@@ -610,6 +615,21 @@ namespace VulkanCore {
 		{
 			ImGui::DragFloat("Threshold", &m_BloomParams.Threshold, 0.01f, 0.0f, 1000.0f);
 			ImGui::DragFloat("Knee", &m_BloomParams.Knee, 0.01f, 0.001f, 1.0f);
+			ImGui::TreePop();
+		}
+
+		if (ImGui::TreeNodeEx("Scene Shader Map", treeFlags))
+		{
+			auto& shaderMap = Renderer::GetShaderMap();
+			for (auto&& [name, shader] : shaderMap)
+			{
+				if (ImGui::Button(name.c_str()))
+				{
+					shader->Reload();
+					RecreatePipelines();
+				}
+			}
+
 			ImGui::TreePop();
 		}
 

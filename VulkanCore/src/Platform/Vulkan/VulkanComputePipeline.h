@@ -22,7 +22,8 @@ namespace VulkanCore {
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
 		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
 	private:
-		void CreateComputePipeline();
+		void InvalidateComputePipeline();
+		void RT_InvalidateComputePipeline();
 	private:
 		std::string m_DebugName;
 
