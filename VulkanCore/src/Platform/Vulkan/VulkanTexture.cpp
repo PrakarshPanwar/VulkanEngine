@@ -5,7 +5,6 @@
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
-#include "VulkanBuffer.h"
 #include "VulkanDescriptor.h"
 #include "VulkanAllocator.h"
 
@@ -123,12 +122,21 @@ namespace VulkanCore {
 
 		if (m_LocalStorage)
 		{
-			VulkanBuffer stagingBuffer{ imageSize, 1, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
+			VulkanAllocator allocator("Texture2D");
 
-			stagingBuffer.Map();
-			stagingBuffer.WriteToBuffer(m_LocalStorage, imageSize);
-			stagingBuffer.Unmap();
+			// Staging Buffer
+			VkBufferCreateInfo bufferCreateInfo{};
+			bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			bufferCreateInfo.size = imageSize;
+			bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+			bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+			VkBuffer stagingBuffer;
+			VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, stagingBuffer);
+
+			uint8_t* dstData = allocator.MapMemory<uint8_t>(stagingBufferAlloc);
+			memcpy(dstData, m_LocalStorage, imageSize);
+			allocator.UnmapMemory(stagingBufferAlloc);
 
 			VkCommandBuffer copyCmd = device->GetCommandBuffer();
 			VkImageSubresourceRange subResourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
@@ -147,7 +155,7 @@ namespace VulkanCore {
 			region.imageExtent = { (uint32_t)m_Specification.Width, (uint32_t)m_Specification.Height, 1 };
 
 			vkCmdCopyBufferToImage(copyCmd,
-				stagingBuffer.GetBuffer(),
+				stagingBuffer,
 				m_Image->GetVulkanImageInfo().Image,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				1,
@@ -170,12 +178,14 @@ namespace VulkanCore {
 
 				device->FlushCommandBuffer(barrierCmd);
 			}
+
+			allocator.DestroyBuffer(stagingBuffer, stagingBufferAlloc);
 		}
 
 		m_IsLoaded = true;
 	}
 
-	void VulkanTexture::Release() // TODO: Could be used otherwise will be removed in future
+	void VulkanTexture::Release()
 	{
 		if (m_LocalStorage)
 			free(m_LocalStorage);
@@ -255,6 +265,7 @@ namespace VulkanCore {
 	// ---------------------------------------------------------------------------------------------------
 
 	VulkanTextureCube::VulkanTextureCube(uint32_t width, uint32_t height, ImageFormat format)
+		: m_Specification({ width, height, format, TextureWrap::Clamp, true })
 	{
 		m_Specification.Width = width;
 		m_Specification.Height = height;
@@ -264,7 +275,7 @@ namespace VulkanCore {
 	}
 
 	VulkanTextureCube::VulkanTextureCube(void* data, TextureSpecification spec)
-		: m_Specification(spec)
+		: m_Specification(spec), m_LocalStorage((uint8_t*)data)
 	{
 	}
 
@@ -277,12 +288,10 @@ namespace VulkanCore {
 	void VulkanTextureCube::Invalidate()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
+		VulkanAllocator allocator("TextureCube");
 
 		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
-
 		uint32_t mipCount = Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height);
-
-		VulkanAllocator allocator("TextureCube");
 
 		// Create Vulkan Image
 		VkImageCreateInfo imageCreateInfo{};
@@ -303,6 +312,80 @@ namespace VulkanCore {
 		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE, "Default TextureCube", m_Info.Image);
 
 		m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		if (m_LocalStorage)
+		{
+			VkDeviceSize imageSize = Utils::GetMemorySize(m_Specification.Format, m_Specification.Width, m_Specification.Height);
+
+			VkBufferCreateInfo bufferCreateInfo{};
+			bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			bufferCreateInfo.size = imageSize * 6;
+			bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+			bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+			VkBuffer stagingBuffer;
+			VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, stagingBuffer);
+
+			std::array<VkBufferImageCopy, 6> bufferCopyRegions{};
+			std::array<VkDeviceSize, 6> byteOffsets{};
+			VkDeviceSize byteOffset = 0;
+
+			uint8_t* dstData = allocator.MapMemory<uint8_t>(stagingBufferAlloc);
+			memcpy(dstData, m_LocalStorage, imageSize * 6);
+			allocator.UnmapMemory(stagingBufferAlloc);
+
+			for (uint32_t i = 0; i < 6; ++i)
+			{
+				byteOffsets[i] = byteOffset;
+				byteOffset += imageSize;
+			}
+
+			VkCommandBuffer copyCmd = device->GetCommandBuffer();
+
+			VkImageSubresourceRange subresourceRange{};
+			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.baseMipLevel = 0;
+			subresourceRange.baseArrayLayer = 0;
+			subresourceRange.levelCount = 1;
+			subresourceRange.layerCount = 6;
+
+			Utils::SetImageLayout(
+				copyCmd, m_Info.Image,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				subresourceRange);
+
+			for (uint32_t i = 0; i < byteOffsets.size(); ++i)
+			{
+				VkBufferImageCopy bufferCopyRegion{};
+				bufferCopyRegion.bufferOffset = byteOffsets[i];
+				bufferCopyRegion.bufferRowLength = 0;
+				bufferCopyRegion.bufferImageHeight = 0;
+
+				bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				bufferCopyRegion.imageSubresource.mipLevel = 0;
+				bufferCopyRegion.imageSubresource.baseArrayLayer = i;
+				bufferCopyRegion.imageSubresource.layerCount = 1;
+
+				bufferCopyRegion.imageOffset = { 0, 0, 0 };
+				bufferCopyRegion.imageExtent = { m_Specification.Width, m_Specification.Height, 1 };
+				bufferCopyRegions[i] = bufferCopyRegion;
+			}
+
+			vkCmdCopyBufferToImage(copyCmd,
+				stagingBuffer,
+				m_Info.Image,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				(uint32_t)bufferCopyRegions.size(),
+				bufferCopyRegions.data()
+			);
+
+			device->FlushCommandBuffer(copyCmd);
+
+			allocator.DestroyBuffer(stagingBuffer, stagingBufferAlloc);
+			free(m_LocalStorage);
+		}
+
 		// Create a view for Image
 		VkImageViewCreateInfo viewCreateInfo{};
 		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -350,7 +433,7 @@ namespace VulkanCore {
 
 		Utils::SetImageLayout(
 			layoutCmd, m_Info.Image,
-			VK_IMAGE_LAYOUT_UNDEFINED,
+			m_LocalStorage ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_GENERAL,
 			subresourceRange);
 
@@ -360,18 +443,20 @@ namespace VulkanCore {
 		m_DescriptorImageInfo.sampler = m_Info.Sampler;
 	}
 
-	// TODO: Should be done in RenderThread
 	void VulkanTextureCube::Release()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-		VulkanAllocator allocator("TextureCube");
+		Renderer::SubmitResourceFree([mipRefs = m_MipReferences, imageInfo = m_Info]() mutable
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			VulkanAllocator allocator("TextureCube");
 
-		for (auto& mipReference : m_MipReferences)
-			vkDestroyImageView(device->GetVulkanDevice(), mipReference, nullptr);
+			for (auto& mipRef : mipRefs)
+				vkDestroyImageView(device->GetVulkanDevice(), mipRef, nullptr);
 
-		vkDestroyImageView(device->GetVulkanDevice(), m_Info.ImageView, nullptr);
-		vkDestroySampler(device->GetVulkanDevice(), m_Info.Sampler, nullptr);
-		allocator.DestroyImage(m_Info.Image, m_Info.MemoryAlloc);
+			vkDestroyImageView(device->GetVulkanDevice(), imageInfo.ImageView, nullptr);
+			vkDestroySampler(device->GetVulkanDevice(), imageInfo.Sampler, nullptr);
+			allocator.DestroyImage(imageInfo.Image, imageInfo.MemoryAlloc);
+		});
 	}
 
 	// NOTE: It should not be called inside Invalidate
@@ -483,6 +568,33 @@ namespace VulkanCore {
 		viewCreateInfo.subresourceRange.levelCount = 1;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		viewCreateInfo.subresourceRange.layerCount = 6;
+
+		VkImageView result;
+		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &result), "Failed to Create Image View!");
+
+		m_MipReferences.push_back(result);
+
+		return result;
+	}
+
+	VkImageView VulkanTextureCube::CreateImageViewPerLayer(uint32_t layer)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
+
+		// Create View for single mip
+		VkImageViewCreateInfo viewCreateInfo{};
+		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewCreateInfo.image = m_Info.Image;
+		viewCreateInfo.format = vulkanFormat;
+		viewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewCreateInfo.subresourceRange.baseMipLevel = 0;
+		viewCreateInfo.subresourceRange.levelCount = 1;
+		viewCreateInfo.subresourceRange.baseArrayLayer = layer;
+		viewCreateInfo.subresourceRange.layerCount = 1;
 
 		VkImageView result;
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &result), "Failed to Create Image View!");

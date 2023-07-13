@@ -49,6 +49,7 @@ namespace VulkanCore {
 		static std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> CreateEnviromentMap(const std::string& filepath);
 		std::shared_ptr<Image2D> CreateBRDFTexture();
 		std::shared_ptr<Texture2D> GetWhiteTexture(ImageFormat format);
+		std::shared_ptr<TextureCube> GetBlackTextureCube(ImageFormat format);
 		inline VkRenderPass GetSwapChainRenderPass() const { return m_SwapChain->GetRenderPass(); }
 		inline int GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
 		inline std::shared_ptr<VulkanDescriptorPool> GetDescriptorPool() const { return m_GlobalDescriptorPool; }

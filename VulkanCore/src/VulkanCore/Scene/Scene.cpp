@@ -106,7 +106,7 @@ namespace VulkanCore {
 		for (auto ent : view)
 		{
 			auto [transform, lightComponent] = view.get<TransformComponent, SpotLightComponent>(ent);
-			glm::vec3 direction = -glm::normalize(glm::mat3(transform.GetTransform()) * glm::vec3(1.0f));
+			glm::vec3 direction = glm::normalize(transform.Rotation);
 			ubo.SpotLights[lightIndex++] =
 			{
 				glm::vec4(transform.Translation, 1.0f),
