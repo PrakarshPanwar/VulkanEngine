@@ -463,6 +463,21 @@ namespace VulkanCore {
 		return whiteTexture;
 	}
 
+	std::shared_ptr<TextureCube> VulkanRenderer::GetBlackTextureCube(ImageFormat format)
+	{
+		TextureSpecification cubeTexSpec{};
+		cubeTexSpec.Width = 1;
+		cubeTexSpec.Height = 1;
+		cubeTexSpec.Format = format;
+		cubeTexSpec.GenerateMips = false;
+
+		uint32_t* textureData = new uint32_t[6];
+		for (uint32_t i = 0; i < 6; ++i)
+			textureData[i] = 0x0;
+
+		return std::make_shared<VulkanTextureCube>(textureData, cubeTexSpec);
+	}
+
 	void VulkanRenderer::BeginRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass)
 	{
 		auto vulkanRenderPass = std::static_pointer_cast<VulkanRenderPass>(renderPass);

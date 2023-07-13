@@ -136,6 +136,12 @@ namespace VulkanCore {
 		float Padding = 0.0f;
 	};
 
+	// TODO: More variables will be added
+	struct SkyLightComponent
+	{
+		AssetHandle TextureHandle = 0;
+	};
+
 	struct UBCamera
 	{
 		glm::mat4 Projection{ 1.0f };

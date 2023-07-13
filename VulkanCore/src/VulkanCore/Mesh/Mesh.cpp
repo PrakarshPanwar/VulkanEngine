@@ -78,6 +78,7 @@ namespace VulkanCore {
 		aiProcess_JoinIdenticalVertices | // For Index Buffer
 		aiProcess_GenUVCoords |           // Generate UV Coords
 		aiProcess_GenNormals |            // Generate Normals for Mesh
+		aiProcess_GlobalScale |			  // For FBX Mesh scaling
 		aiProcess_OptimizeMeshes |
 		aiProcess_SortByPType |
 		aiProcess_ValidateDataStructure

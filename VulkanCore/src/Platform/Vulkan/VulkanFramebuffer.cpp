@@ -65,15 +65,17 @@ namespace VulkanCore {
 
 	const std::vector<std::shared_ptr<Image2D>>& VulkanFramebuffer::GetAttachment(bool resolve, uint32_t index) const
 	{
+		bool multisampled = Utils::IsMultisampled(m_Specification);
 		uint32_t attachmentSize = static_cast<uint32_t>(m_ColorAttachmentSpecifications.size());
-		return m_ColorAttachments[resolve ? attachmentSize + index : index];
+		return m_ColorAttachments[resolve && multisampled ? attachmentSize + index : index];
 	}
 
 	void VulkanFramebuffer::Invalidate()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		uint32_t attachmentSize = static_cast<uint32_t>(m_Specification.Samples > 1 ? (m_ColorAttachmentSpecifications.size() + 1) : m_ColorAttachmentSpecifications.size());
+		bool multisampled = Utils::IsMultisampled(m_Specification);
+		uint32_t attachmentSize = static_cast<uint32_t>(multisampled ? (m_ColorAttachmentSpecifications.size() + 1) : m_ColorAttachmentSpecifications.size());
 		m_ColorAttachments.reserve(attachmentSize);
 
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
@@ -100,7 +102,7 @@ namespace VulkanCore {
 
 				AttachmentImages.push_back(attachmentColorImage);
 
-				if (!Utils::IsMultisampled(m_Specification))
+				if (!multisampled)
 				{
 					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
@@ -119,7 +121,7 @@ namespace VulkanCore {
 		}
 
 		// Image Creation for Resolve Attachment
-		if (Utils::IsMultisampled(m_Specification))
+		if (multisampled)
 		{
 			for (auto& attachment : m_ColorAttachmentSpecifications)
 			{

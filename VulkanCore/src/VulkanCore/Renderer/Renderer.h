@@ -46,6 +46,7 @@ namespace VulkanCore {
 
 		static std::shared_ptr<Image2D> CreateBRDFTexture();
 		static std::shared_ptr<Texture2D> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
+		static std::shared_ptr<TextureCube> GetBlackTextureCube(ImageFormat format);
 
 		static int GetCurrentFrameIndex();
 		static int RT_GetCurrentFrameIndex();
