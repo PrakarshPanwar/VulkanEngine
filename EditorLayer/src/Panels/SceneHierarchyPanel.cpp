@@ -5,7 +5,6 @@
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
-#include "Platform/Vulkan/VulkanMaterial.h"
 
 #include <filesystem>
 

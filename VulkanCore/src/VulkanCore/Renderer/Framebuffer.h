@@ -38,7 +38,7 @@ namespace VulkanCore {
 	class Framebuffer : public Resource
 	{
 	public:
-		virtual const std::vector<std::shared_ptr<Image2D>>& GetAttachment(bool resolve, uint32_t index) const = 0;
+		virtual const std::vector<std::shared_ptr<Image2D>>& GetAttachment(bool resolve, uint32_t index = 0) const = 0;
 		virtual const std::vector<FramebufferTextureSpecification>& GetColorAttachmentsTextureSpec() const = 0;
 		virtual const FramebufferTextureSpecification& GetDepthAttachmentTextureSpec() const = 0;
 

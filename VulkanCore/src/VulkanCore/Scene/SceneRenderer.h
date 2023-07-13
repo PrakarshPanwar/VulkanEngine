@@ -95,12 +95,10 @@ namespace VulkanCore {
 
 		struct MeshTransform
 		{
-			MeshTransform()
-				: Transforms(std::vector<TransformData>{ 10 })
-				, TransformBuffer(std::make_shared<VulkanVertexBuffer>(10 * sizeof(TransformData))) {}
+			MeshTransform() = default;
 
-			std::vector<TransformData> Transforms;
-			std::shared_ptr<VulkanVertexBuffer> TransformBuffer;
+			std::vector<TransformData> Transforms = std::vector<TransformData>{ 10 };
+			std::shared_ptr<VertexBuffer> TransformBuffer = std::make_shared<VulkanVertexBuffer>(10 * sizeof(TransformData));
 		};
 
 		struct LodAndMode
@@ -140,6 +138,8 @@ namespace VulkanCore {
 		std::shared_ptr<Pipeline> m_SkyboxPipeline;
 		std::shared_ptr<ComputePipeline> m_BloomPipeline;
 
+		// TODO: In future we have to setup Material Table
+		// Material Resources
 		// Material per Shader set
 		std::shared_ptr<Material> m_GeometryMaterial;
 		std::shared_ptr<Material> m_PointLightShaderMaterial;
@@ -156,8 +156,6 @@ namespace VulkanCore {
 
 		VkDescriptorSet m_BloomDebugImage;
 
-		// TODO: In future we have to setup Material Table
-		// Material Resources
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBCamera;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBPointLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSpotLight;

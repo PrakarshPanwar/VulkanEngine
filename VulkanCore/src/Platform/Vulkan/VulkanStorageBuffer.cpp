@@ -34,10 +34,10 @@ namespace VulkanCore {
 		allocator.DestroyBuffer(m_VulkanBuffer, m_MemoryAllocation);
 	}
 
-	void VulkanStorageBuffer::WriteandFlushBuffer(void* data, VkDeviceSize offset)
+	void VulkanStorageBuffer::WriteAndFlushBuffer(void* data, uint32_t offset)
 	{
 		memcpy(m_dstData, data, m_Size);
-		vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, offset, (VkDeviceSize)m_Size);
+		vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, (VkDeviceSize)offset, (VkDeviceSize)m_Size);
 	}
 
 }

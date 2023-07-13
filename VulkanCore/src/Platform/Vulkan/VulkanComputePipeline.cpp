@@ -60,7 +60,7 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		vkDestroyShaderModule(device->GetVulkanDevice(), m_compShaderModule, nullptr);
+		vkDestroyShaderModule(device->GetVulkanDevice(), m_ComputeShaderModule, nullptr);
 
 		if (m_PipelineLayout)
 			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
@@ -107,7 +107,7 @@ namespace VulkanCore {
 
 			auto& shaderSources = shader->GetShaderModules();
 
-			m_compShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Compute]);
+			m_ComputeShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Compute]);
 
 			m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
 			m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());
@@ -115,7 +115,7 @@ namespace VulkanCore {
 			VkPipelineShaderStageCreateInfo shaderStage;
 			shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 			shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-			shaderStage.module = m_compShaderModule;
+			shaderStage.module = m_ComputeShaderModule;
 			shaderStage.pName = "main";
 			shaderStage.flags = 0;
 			shaderStage.pNext = nullptr;

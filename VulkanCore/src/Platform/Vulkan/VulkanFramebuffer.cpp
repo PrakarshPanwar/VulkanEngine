@@ -81,7 +81,7 @@ namespace VulkanCore {
 		// Image Creation for Color Attachments
 		for (auto& attachment : m_ColorAttachmentSpecifications)
 		{
-			std::vector<std::shared_ptr<VulkanImage>> AttachmentImages;
+			std::vector<std::shared_ptr<Image2D>> AttachmentImages;
 			AttachmentImages.reserve(framesInFlight);
 
 			// Adding Images in Flight
@@ -123,7 +123,7 @@ namespace VulkanCore {
 		{
 			for (auto& attachment : m_ColorAttachmentSpecifications)
 			{
-				std::vector<std::shared_ptr<VulkanImage>> ResolveImages;
+				std::vector<std::shared_ptr<Image2D>> ResolveImages;
 				ResolveImages.reserve(framesInFlight);
 
 				for (uint32_t i = 0; i < framesInFlight; ++i)

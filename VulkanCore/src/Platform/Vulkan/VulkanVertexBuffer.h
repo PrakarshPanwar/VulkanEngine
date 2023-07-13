@@ -10,10 +10,9 @@ namespace VulkanCore {
 		VulkanVertexBuffer() = default;
 		VulkanVertexBuffer(void* data, uint32_t size);
 		VulkanVertexBuffer(uint32_t size);
-
 		~VulkanVertexBuffer();
 
-		void WriteData(void* data, uint32_t offset);
+		void WriteData(void* data, uint32_t offset) override;
 		inline VkBuffer GetVulkanBuffer() const { return m_VulkanBuffer; }
 	private:
 		VkBuffer m_VulkanBuffer = nullptr;
