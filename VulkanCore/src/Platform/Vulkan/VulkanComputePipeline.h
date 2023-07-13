@@ -11,7 +11,6 @@ namespace VulkanCore {
 	public:
 		VulkanComputePipeline() = default;
 		VulkanComputePipeline(std::shared_ptr<Shader> shader, const std::string& debugName = {});
-
 		~VulkanComputePipeline();
 
 		void Bind(VkCommandBuffer commandBuffer);
@@ -29,7 +28,7 @@ namespace VulkanCore {
 
 		VkPipeline m_ComputePipeline;
 		VkPipelineLayout m_PipelineLayout = nullptr;
-		VkShaderModule m_compShaderModule = nullptr;
+		VkShaderModule m_ComputeShaderModule = nullptr;
 		std::shared_ptr<Shader> m_Shader;
 		std::shared_ptr<VulkanDescriptorSetLayout> m_DescriptorSetLayout;
 	};

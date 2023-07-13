@@ -5,6 +5,7 @@
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanShader.h"
+#include "VulkanRenderPass.h"
 
 namespace VulkanCore {
 
@@ -272,22 +273,18 @@ namespace VulkanCore {
 	// TODO: Do this process in Render Thread
 	VulkanPipeline::~VulkanPipeline()
 	{
-		std::shared_ptr<VulkanPipeline> instance = std::static_pointer_cast<VulkanPipeline>(shared_from_this());
-		Renderer::SubmitResourceFree([instance]
-		{
-			auto device = VulkanContext::GetCurrentDevice();
+		auto device = VulkanContext::GetCurrentDevice();
 
-			vkDestroyShaderModule(device->GetVulkanDevice(), instance->m_VertexShaderModule, nullptr);
-			vkDestroyShaderModule(device->GetVulkanDevice(), instance->m_FragmentShaderModule, nullptr);
+		vkDestroyShaderModule(device->GetVulkanDevice(), m_VertexShaderModule, nullptr);
+		vkDestroyShaderModule(device->GetVulkanDevice(), m_FragmentShaderModule, nullptr);
 
-			if (instance->m_GeometryShaderModule != VK_NULL_HANDLE)
-				vkDestroyShaderModule(device->GetVulkanDevice(), instance->m_GeometryShaderModule, nullptr);
+		if (m_GeometryShaderModule != VK_NULL_HANDLE)
+			vkDestroyShaderModule(device->GetVulkanDevice(), m_GeometryShaderModule, nullptr);
 
-			if (instance->m_PipelineLayout)
-				vkDestroyPipelineLayout(device->GetVulkanDevice(), instance->m_PipelineLayout, nullptr);
+		if (m_PipelineLayout)
+			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 
-			vkDestroyPipeline(device->GetVulkanDevice(), instance->m_GraphicsPipeline, nullptr);
-		});
+		vkDestroyPipeline(device->GetVulkanDevice(), m_GraphicsPipeline, nullptr);
 	}
 
 	// For Pipeline Specification
@@ -364,7 +361,7 @@ namespace VulkanCore {
 			graphicsPipelineInfo.pDynamicState = &pipelineInfo.DynamicStateInfo;
 
 			graphicsPipelineInfo.layout = m_PipelineLayout;
-			graphicsPipelineInfo.renderPass = std::dynamic_pointer_cast<VulkanRenderPass>(m_Specification.pRenderPass)->GetRenderPass();
+			graphicsPipelineInfo.renderPass = std::dynamic_pointer_cast<VulkanRenderPass>(m_Specification.pRenderPass)->GetVulkanRenderPass();
 			graphicsPipelineInfo.subpass = pipelineInfo.Subpass;
 
 			graphicsPipelineInfo.basePipelineIndex = -1;

@@ -1,13 +1,12 @@
 #include "vulkanpch.h"
 #include "ImGuiLayer.h"
 
-#include "Platform/Vulkan/VulkanSwapChain.h"
-#include "Platform/Vulkan/VulkanTexture.h"
-#include "Platform/Vulkan/VulkanContext.h"
 #include "Application.h"
-
-#include "VulkanCore/Core/Core.h"
+#include "Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
+
+#include "Platform/Vulkan/VulkanContext.h"
+#include "Platform/Vulkan/VulkanSwapChain.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -134,7 +133,7 @@ namespace VulkanCore {
 
 		auto swapChain = VulkanSwapChain::GetSwapChain();
 		auto cmdBuffer = VulkanRenderer::Get()->GetRendererCommandBuffer();
-		VkCommandBuffer vulkanCmdBuffer = cmdBuffer->RT_GetActiveCommandBuffer();
+		VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
 
 #if IMGUI_VIEWPORTS
 		ImGuiIO& io = ImGui::GetIO();

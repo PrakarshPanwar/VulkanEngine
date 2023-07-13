@@ -9,7 +9,6 @@ namespace VulkanCore {
 	public:
 		VulkanIndexBuffer() = default;
 		VulkanIndexBuffer(void* data, uint32_t size);
-
 		~VulkanIndexBuffer();
 
 		inline VkBuffer GetVulkanBuffer() const { return m_VulkanBuffer; }

@@ -11,6 +11,7 @@
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
 #include <spirv_cross/spirv_glsl.hpp>
+#include "../Source/SPIRV-Reflect/spirv_reflect.h"
 
 namespace VulkanCore {
 
@@ -92,7 +93,6 @@ namespace VulkanCore {
 		{
 			auto [VertexSrc, FragmentSrc, GeometrySrc] = ParseShader(vsfilepath, fsfilepath, gsfilepath);
 
-			m_HasGeometryShader = true;
 			Utils::CreateCacheDirectoryIfRequired();
 
 			std::unordered_map<uint32_t, std::string> Sources;
@@ -130,7 +130,6 @@ namespace VulkanCore {
 
 	}
 
-#if USE_VULKAN_DESCRIPTOR
 	std::shared_ptr<VulkanDescriptorSetLayout> VulkanShader::CreateDescriptorSetLayout(int index)
 	{
 		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
@@ -263,9 +262,6 @@ namespace VulkanCore {
 
 		return m_DescriptorSetLayouts;
 	}
-
-#else
-#endif
 
 	std::vector<VkDescriptorSet> VulkanShader::AllocateDescriptorSets(uint32_t index)
 	{

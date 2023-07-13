@@ -1,17 +1,22 @@
 #include "vulkanpch.h"
 #include "SceneRenderer.h"
 
-#include "VulkanCore/Asset/AssetManager.h"
-#include "VulkanCore/Asset/TextureImporter.h"
-#include "VulkanCore/Asset/MaterialAsset.h"
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/Timer.h"
+#include "VulkanCore/Asset/AssetManager.h"
+#include "VulkanCore/Asset/TextureImporter.h"
+#include "VulkanCore/Asset/MaterialAsset.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
 #include "VulkanCore/Mesh/Mesh.h"
 #include "Platform/Vulkan/VulkanAllocator.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
+#include "Platform/Vulkan/VulkanFramebuffer.h"
+#include "Platform/Vulkan/VulkanRenderPass.h"
+#include "Platform/Vulkan/VulkanPipeline.h"
+#include "Platform/Vulkan/VulkanComputePipeline.h"
+#include "Platform/Vulkan/VulkanUniformBuffer.h"
 
 #include <imgui.h>
 
@@ -442,9 +447,9 @@ namespace VulkanCore {
 		// Uniform Buffers
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
-			m_UBCamera.emplace_back(sizeof(UBCamera));
-			m_UBPointLight.emplace_back(sizeof(UBPointLights));
-			m_UBSpotLight.emplace_back(sizeof(UBSpotLights));
+			m_UBCamera.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBCamera)));
+			m_UBPointLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBPointLights)));
+			m_UBSpotLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBSpotLights)));
 		}
 
 		m_BloomMipSize = (glm::uvec2(m_ViewportSize.x, m_ViewportSize.y) + 1u) / 2u;
@@ -504,7 +509,7 @@ namespace VulkanCore {
 		m_PrefilteredTexture = filteredMap;
 		m_IrradianceTexture = irradianceMap;
 
-		m_BRDFTexture = VulkanRenderer::CreateBRDFTexture();
+		m_BRDFTexture = Renderer::CreateBRDFTexture();
 		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/PointLightIcon.png");
 		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/SpotLightIcon.png");
 
@@ -533,10 +538,10 @@ namespace VulkanCore {
 
 			for (auto& BloomTexture : m_BloomTextures)
 			{
-				auto vulkanTexture = std::dynamic_pointer_cast<VulkanImage>(BloomTexture);
-				vulkanTexture->Resize(m_BloomMipSize.x, m_BloomMipSize.y, Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2);
+				auto vulkanBloomTexture = std::dynamic_pointer_cast<VulkanImage>(BloomTexture);
+				vulkanBloomTexture->Resize(m_BloomMipSize.x, m_BloomMipSize.y, Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2);
 
-				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanTexture->GetVulkanImageInfo().Image,
+				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanBloomTexture->GetVulkanImageInfo().Image,
 					VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 					VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -545,10 +550,10 @@ namespace VulkanCore {
 
 			for (auto& SceneRenderTexture : m_SceneRenderTextures)
 			{
-				auto vulkanTexture = std::dynamic_pointer_cast<VulkanImage>(SceneRenderTexture);
-				vulkanTexture->Resize(m_ViewportSize.x, m_ViewportSize.y, Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y));
+				auto vulkanSceneTexture = std::dynamic_pointer_cast<VulkanImage>(SceneRenderTexture);
+				vulkanSceneTexture->Resize(m_ViewportSize.x, m_ViewportSize.y, Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y));
 
-				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanTexture->GetVulkanImageInfo().Image,
+				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanSceneTexture->GetVulkanImageInfo().Image,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -586,12 +591,13 @@ namespace VulkanCore {
 
 		if (ImGui::TreeNodeEx("Scene Renderer Stats##GPUPerf", treeFlags))
 		{
-			m_SceneCommandBuffer->RetrieveQueryPoolResults();
+			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
+			vulkanCmdBuffer->RetrieveQueryPoolResults();
 
-			ImGui::Text("Geometry Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(1));
-			ImGui::Text("Skybox Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(0));
-			ImGui::Text("Composite Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(4));
-			ImGui::Text("Bloom Compute Pass: %lluns", m_SceneCommandBuffer->GetQueryTime(3));
+			ImGui::Text("Geometry Pass: %lluns", vulkanCmdBuffer->GetQueryTime(1));
+			ImGui::Text("Skybox Pass: %lluns", vulkanCmdBuffer->GetQueryTime(0));
+			ImGui::Text("Composite Pass: %lluns", vulkanCmdBuffer->GetQueryTime(4));
+			ImGui::Text("Bloom Compute Pass: %lluns", vulkanCmdBuffer->GetQueryTime(3));
 			ImGui::TreePop();
 		}
 
@@ -644,16 +650,16 @@ namespace VulkanCore {
 		cameraUB.Projection = camera.GetProjectionMatrix();
 		cameraUB.View = camera.GetViewMatrix();
 		cameraUB.InverseView = glm::inverse(camera.GetViewMatrix());
-		m_UBCamera[frameIndex].WriteandFlushBuffer(&cameraUB);
+		m_UBCamera[frameIndex]->WriteAndFlushBuffer(&cameraUB);
 
 		// Point Light
 		UBPointLights pointLightUB{};
 		m_Scene->UpdatePointLightUB(pointLightUB);
-		m_UBPointLight[frameIndex].WriteandFlushBuffer(&pointLightUB);
+		m_UBPointLight[frameIndex]->WriteAndFlushBuffer(&pointLightUB);
 
 		UBSpotLights spotLightUB{};
 		m_Scene->UpdateSpotLightUB(spotLightUB);
-		m_UBSpotLight[frameIndex].WriteandFlushBuffer(&spotLightUB);
+		m_UBSpotLight[frameIndex]->WriteAndFlushBuffer(&spotLightUB);
 
 		m_SceneCommandBuffer->Begin();
 
@@ -670,8 +676,9 @@ namespace VulkanCore {
 	{ 
 		Renderer::Submit([this]
 		{
-			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
-			m_LightPipeline->Bind(bindCmd);
+			VkCommandBuffer bindCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer)->RT_GetActiveCommandBuffer();
+			auto vulkanLightPipeline = std::static_pointer_cast<VulkanPipeline>(m_LightPipeline);
+			vulkanLightPipeline->Bind(bindCmd);
 
 			// Binding Point Light Descriptor Set
 			m_PointLightShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_LightPipeline);
@@ -684,9 +691,10 @@ namespace VulkanCore {
 			{
 				VK_CORE_PROFILE_FN("Render-PointLights");
 
-				VkCommandBuffer drawCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
+				VkCommandBuffer drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer)->RT_GetActiveCommandBuffer();
 
-				m_LightPipeline->SetPushConstants(drawCmd, (void*)&pointLightPosition, sizeof(glm::vec4));
+				auto vulkanLightPipeline = std::static_pointer_cast<VulkanPipeline>(m_LightPipeline);
+				vulkanLightPipeline->SetPushConstants(drawCmd, (void*)&pointLightPosition, sizeof(glm::vec4));
 				vkCmdDraw(drawCmd, 6, 1, 0, 0);
 			});
 		}
@@ -700,9 +708,10 @@ namespace VulkanCore {
 			{
 				VK_CORE_PROFILE_FN("Render-SpotLights");
 
-				VkCommandBuffer drawCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
+				VkCommandBuffer drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer)->RT_GetActiveCommandBuffer();
 
-				m_LightPipeline->SetPushConstants(drawCmd, (void*)&spotLightPosition, sizeof(glm::vec4));
+				auto vulkanLightPipeline = std::static_pointer_cast<VulkanPipeline>(m_LightPipeline);
+				vulkanLightPipeline->SetPushConstants(drawCmd, (void*)&spotLightPosition, sizeof(glm::vec4));
 				vkCmdDraw(drawCmd, 6, 1, 0, 0);
 			});
 		}
@@ -770,7 +779,14 @@ namespace VulkanCore {
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().pRenderPass);
 
-		Renderer::Submit([this] { m_CompositePipeline->SetPushConstants(m_SceneCommandBuffer->RT_GetActiveCommandBuffer(), &m_SceneSettings, sizeof(SceneSettings)); });
+		Renderer::Submit([this]
+		{
+			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
+			auto vulkanCompPipeline = std::static_pointer_cast<VulkanPipeline>(m_CompositePipeline);
+
+			vulkanCompPipeline->SetPushConstants(vulkanCmdBuffer->RT_GetActiveCommandBuffer(), &m_SceneSettings, sizeof(SceneSettings));
+		});
+
 		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_CompositePipeline, m_CompositeShaderMaterial);
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().pRenderPass);
 
@@ -799,15 +815,16 @@ namespace VulkanCore {
 
 		Renderer::Submit([this]
 		{
-			VkCommandBuffer bindCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
-			m_GeometryPipeline->Bind(bindCmd);
+			VkCommandBuffer bindCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer)->RT_GetActiveCommandBuffer();
+			auto vulkanGeometryPipeline = std::static_pointer_cast<VulkanPipeline>(m_GeometryPipeline);
+			vulkanGeometryPipeline->Bind(bindCmd);
 
 			// Binding Static Geometry Descriptor Sets
 			m_GeometryMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_GeometryPipeline);
 		});
 
 		for (auto& [mk, dc] : m_MeshDrawList)
-			VulkanRenderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk].Transforms, dc.InstanceCount);
+			Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk].Transforms, dc.InstanceCount);
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
@@ -828,11 +845,11 @@ namespace VulkanCore {
 		// Copying Image for Bloom
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
-		VulkanRenderer::CopyVulkanImage(m_SceneCommandBuffer,
+		Renderer::CopyVulkanImage(m_SceneCommandBuffer,
 			m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetAttachment(true)[frameIndex],
 			m_SceneRenderTextures[frameIndex]);
 
-		VulkanRenderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
+		Renderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
 	}
 
 	void SceneRenderer::BloomCompute()
@@ -844,8 +861,11 @@ namespace VulkanCore {
 		{
 			VK_CORE_PROFILE_FN("SceneRenderer::BloomCompute");
 
-			VkCommandBuffer dispatchCmd = m_SceneCommandBuffer->RT_GetActiveCommandBuffer();
-			m_BloomPipeline->Bind(dispatchCmd);
+			auto vulkanBloomPipeline = std::static_pointer_cast<VulkanComputePipeline>(m_BloomPipeline);
+			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
+
+			VkCommandBuffer dispatchCmd = vulkanCmdBuffer->RT_GetActiveCommandBuffer();
+			vulkanBloomPipeline->Bind(dispatchCmd);
 
 			// Prefilter
 			m_LodAndMode.LOD = 0.0f;
@@ -856,9 +876,9 @@ namespace VulkanCore {
 			const uint32_t mips = m_BloomTextures[0]->GetSpecification().MipLevels;
 			glm::uvec2 bloomMipSize = m_BloomMipSize;
 
-			m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
-			m_BloomPipeline->SetPushConstants(dispatchCmd, &m_BloomParams, sizeof(glm::vec2), sizeof(glm::vec2));
-			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
+			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
+			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_BloomParams, sizeof(glm::vec2), sizeof(glm::vec2));
+			vulkanBloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
 			for (uint32_t i = 1; i < mips; i++)
 			{
@@ -870,15 +890,15 @@ namespace VulkanCore {
 				m_BloomPingShaderMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 				bloomMipSize = m_BloomTextures[0]->GetMipSize(i);
 
-				m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
-				m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
+				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
+				vulkanBloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
 				m_LodAndMode.LOD = (float)i;
 				
 				m_BloomPongShaderMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
-				m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
-				m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
+				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
+				vulkanBloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 			}
 
 			// Upsample First
@@ -890,8 +910,8 @@ namespace VulkanCore {
 
 			bloomMipSize = m_BloomTextures[2]->GetMipSize(mips - 1);
 
-			m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
-			m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
+			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
+			vulkanBloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
 			// Upsample Final
 			for (int i = mips - 2; i >= 0; --i)
@@ -903,8 +923,8 @@ namespace VulkanCore {
 
 				bloomMipSize = m_BloomTextures[2]->GetMipSize(i);
 
-				m_BloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
-				m_BloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
+				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
+				vulkanBloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 			}
 		});
 

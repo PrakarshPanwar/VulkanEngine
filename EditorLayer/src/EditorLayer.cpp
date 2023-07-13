@@ -6,16 +6,11 @@
 #include "VulkanCore/Asset/EditorAssetManager.h"
 #include "VulkanCore/Asset/AssetManager.h"
 #include "VulkanCore/Asset/TextureImporter.h"
-#include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Events/Input.h"
-#include "VulkanCore/Renderer/VulkanRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Scene/SceneSerializer.h"
 #include "VulkanCore/Utils/PlatformUtils.h"
-
-#include "Platform/Vulkan/VulkanSwapChain.h"
-#include "Platform/Vulkan/VulkanContext.h"
 
 #include <ImGuizmo.h>
 #include <imgui_internal.h>

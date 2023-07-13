@@ -5,15 +5,42 @@
 #include "VulkanCore/Asset/AssetManager.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
-#include "Platform/Vulkan/VulkanContext.h"
-#include "Platform/Vulkan/VulkanDescriptor.h"
-#include "Platform/Vulkan/VulkanMaterial.h"
+#include "VulkanContext.h"
+#include "VulkanDescriptor.h"
+#include "VulkanMaterial.h"
+#include "VulkanIndexBuffer.h"
+#include "VulkanRenderPass.h"
+#include "VulkanPipeline.h"
+#include "VulkanComputePipeline.h"
 
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/integer.hpp>
 #include "optick.h"
-#include "VulkanIndexBuffer.h"
 
 namespace VulkanCore {
+
+	namespace Utils {
+
+		static glm::vec4 GetLabelColor(DebugLabelColor labelColor)
+		{
+			switch (labelColor)
+			{
+			case DebugLabelColor::None:	  return { 0.1f, 0.1f, 0.1f, 1.0f };
+			case DebugLabelColor::Grey:	  return { 0.66f, 0.66f, 0.66f, 1.0f };
+			case DebugLabelColor::Red:	  return { 1.0f, 0.0f, 0.0f, 1.0f };
+			case DebugLabelColor::Blue:	  return { 0.0f, 0.58f, 1.0f, 1.0f };
+			case DebugLabelColor::Gold:	  return { 0.76f, 0.7f, 0.32f, 1.0f };
+			case DebugLabelColor::Orange: return { 1.0f, 0.34f, 0.2f, 1.0f };
+			case DebugLabelColor::Pink:	  return { 0.972f, 0.784f, 0.862f, 1.0f };
+			case DebugLabelColor::Aqua:	  return { 0.0f, 1.0f, 1.0f, 1.0f };
+			case DebugLabelColor::Green:  return { 0.486f, 0.988f, 0.0f, 1.0f };
+			default:
+				VK_CORE_ASSERT(false, "Label Color is undefined!");
+				return { 0.3f, 0.3f, 0.3f, 1.0f };
+			}
+		}
+
+	}
 
 	VulkanRenderer* VulkanRenderer::s_Instance;
 	RendererStats VulkanRenderer::s_Data;
@@ -72,7 +99,7 @@ namespace VulkanCore {
 	
 		Renderer::Submit([this]
 		{
-			VkCommandBuffer commandBuffer = m_CommandBuffer->RT_GetActiveCommandBuffer();
+			VkCommandBuffer commandBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_CommandBuffer)->RT_GetActiveCommandBuffer();
 
 			VkRenderPassBeginInfo renderPassInfo{};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -110,7 +137,7 @@ namespace VulkanCore {
 
 		Renderer::Submit([this]
 		{
-			VkCommandBuffer commandBuffer =	m_CommandBuffer->RT_GetActiveCommandBuffer();
+			VkCommandBuffer commandBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_CommandBuffer)->RT_GetActiveCommandBuffer();
 			vkCmdEndRenderPass(commandBuffer);
 		});
 	}
@@ -422,39 +449,105 @@ namespace VulkanCore {
 		return brdfTexture;
 	}
 
+	std::shared_ptr<Texture2D> VulkanRenderer::GetWhiteTexture(ImageFormat format)
+	{
+		TextureSpecification whiteTexSpec;
+		whiteTexSpec.Width = 1;
+		whiteTexSpec.Height = 1;
+		whiteTexSpec.Format = format;
+		whiteTexSpec.GenerateMips = false;
+
+		uint32_t* textureData = new uint32_t;
+		*textureData = 0xffffffff;
+		auto whiteTexture = std::make_shared<VulkanTexture>(textureData, whiteTexSpec);
+		return whiteTexture;
+	}
+
 	void VulkanRenderer::BeginRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass)
 	{
-		std::static_pointer_cast<VulkanRenderPass>(renderPass)->Begin(cmdBuffer);
+		auto vulkanRenderPass = std::static_pointer_cast<VulkanRenderPass>(renderPass);
+		vulkanRenderPass->Begin(std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer));
 	}
 
 	void VulkanRenderer::EndRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass)
 	{
-
+		auto vulkanRenderPass = std::static_pointer_cast<VulkanRenderPass>(renderPass);
+		vulkanRenderPass->End(std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer));
 	}
 
 	void VulkanRenderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& skyboxVB, const std::shared_ptr<Material>& skyboxMaterial, void* pcData /*= nullptr*/)
 	{
+		Renderer::Submit([cmdBuffer, pipeline, skyboxMaterial, pcData, skyboxVB]
+		{
+			VK_CORE_PROFILE_FN("Renderer::RenderSkybox");
 
+			VkCommandBuffer vulkanDrawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
+			vulkanPipeline->Bind(vulkanDrawCmd);
+
+			auto vulkanSkyboxVB = std::static_pointer_cast<VulkanVertexBuffer>(skyboxVB);
+			auto vulkanSkyboxMaterial = std::static_pointer_cast<VulkanMaterial>(skyboxMaterial);
+			vkCmdBindDescriptorSets(vulkanDrawCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				vulkanPipeline->GetVulkanPipelineLayout(),
+				0, 1, &vulkanSkyboxMaterial->RT_GetVulkanMaterialDescriptorSet(),
+				0, nullptr);
+
+			vkCmdPushConstants(vulkanDrawCmd,
+				vulkanPipeline->GetVulkanPipelineLayout(),
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				(uint32_t)sizeof(glm::vec2),
+				pcData);
+
+			VkBuffer skyboxBuffer[] = { vulkanSkyboxVB->GetVulkanBuffer() };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(vulkanDrawCmd, 0, 1, skyboxBuffer, offsets);
+			vkCmdDraw(vulkanDrawCmd, 36, 1, 0, 0);
+		});
 	}
 
 	void VulkanRenderer::BeginTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
 	{
-
+		Renderer::Submit([cmdBuffer]
+		{
+			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer);
+			vkCmdWriteTimestamp(vulkanCmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+				vulkanCmdBuffer->m_TimestampQueryPool, vulkanCmdBuffer->m_TimestampsQueryIndex);
+		});
 	}
 
 	void VulkanRenderer::EndTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
 	{
+		Renderer::Submit([cmdBuffer]
+		{
+			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer);
+			vkCmdWriteTimestamp(vulkanCmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+				vulkanCmdBuffer->m_TimestampQueryPool, vulkanCmdBuffer->m_TimestampsQueryIndex + 1);
 
+			vulkanCmdBuffer->m_TimestampsQueryIndex += 2;
+			vulkanCmdBuffer->m_TimestampsQueryIndex = vulkanCmdBuffer->m_TimestampsQueryIndex % vulkanCmdBuffer->m_TimestampQueryBufferSize;
+		});
 	}
 
 	void VulkanRenderer::BeginGPUPerfMarker(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::string& name, DebugLabelColor labelColor /*= DebugLabelColor::None*/)
 	{
+		Renderer::Submit([cmdBuffer, name, labelColor]
+		{
+			VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
 
+			glm::vec4 color = Utils::GetLabelColor(labelColor);
+			VKUtils::SetCommandBufferLabel(vulkanCmdBuffer, name.c_str(), glm::value_ptr(color));
+		});
 	}
 
 	void VulkanRenderer::EndGPUPerfMarker(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
 	{
-
+		Renderer::Submit([cmdBuffer]
+		{
+			VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+			VKUtils::EndCommandBufferLabel(vulkanCmdBuffer);
+		});
 	}
 
 	void VulkanRenderer::RenderMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
@@ -505,6 +598,27 @@ namespace VulkanCore {
 	void VulkanRenderer::RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 
+	}
+
+	void VulkanRenderer::SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial)
+	{
+		Renderer::Submit([cmdBuffer, pipeline, shaderMaterial]
+		{
+			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad");
+
+			VkCommandBuffer vulkanDrawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
+			vulkanPipeline->Bind(vulkanDrawCmd);
+
+			auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(shaderMaterial);
+			vkCmdBindDescriptorSets(vulkanDrawCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				vulkanPipeline->GetVulkanPipelineLayout(),
+				0, 1, &vulkanMaterial->RT_GetVulkanMaterialDescriptorSet(),
+				0, nullptr);
+
+			vkCmdDraw(vulkanDrawCmd, 3, 1, 0, 0);
+		});
 	}
 
 	void VulkanRenderer::ResetStats()

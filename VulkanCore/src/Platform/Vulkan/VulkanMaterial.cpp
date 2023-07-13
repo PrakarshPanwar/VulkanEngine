@@ -6,6 +6,8 @@
 #include "VulkanCore/Scene/SceneRenderer.h"
 #include "VulkanShader.h"
 #include "VulkanUniformBuffer.h"
+#include "VulkanPipeline.h"
+#include "VulkanComputePipeline.h"
 
 namespace VulkanCore {
 
@@ -325,7 +327,7 @@ namespace VulkanCore {
 
 	void VulkanMaterial::RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<ComputePipeline>& pipeline, uint32_t setIndex)
 	{
-		auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
+		auto vulkanPipeline = std::static_pointer_cast<VulkanComputePipeline>(pipeline);
 		auto vulkanRenderCB = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer);
 
 		VkCommandBuffer bindCmd = vulkanRenderCB->RT_GetActiveCommandBuffer();
