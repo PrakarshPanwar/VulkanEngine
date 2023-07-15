@@ -31,7 +31,7 @@ namespace VulkanCore {
 
 		void Bind(VkCommandBuffer commandBuffer);
 		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size);
-		void ReloadPipeline(const std::shared_ptr<Shader>& shader) override;
+		void ReloadPipeline() override;
 
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
 		inline PipelineSpecification GetSpecification() const override { return m_Specification; }

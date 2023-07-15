@@ -328,20 +328,35 @@ namespace VulkanCore {
 
 	void VulkanShader::ParseShader()
 	{
-		std::ifstream VertexSource(m_VertexFilePath, std::ios::binary);
-		std::ifstream FragmentSource(m_FragmentFilePath, std::ios::binary);
-
-		VK_CORE_ASSERT(VertexSource.is_open(), "Failed to Open Vertex Shader File!");
-		VK_CORE_ASSERT(FragmentSource.is_open(), "Failed to Open Fragment Shader File!");
-
-		std::stringstream VertexStream, FragmentStream;
-
-		VertexStream << VertexSource.rdbuf();
-		FragmentStream << FragmentSource.rdbuf();
-
 		std::unordered_map<uint32_t, std::string> Sources;
-		Sources[(uint32_t)ShaderType::Vertex] = VertexStream.str();
-		Sources[(uint32_t)ShaderType::Fragment] = FragmentStream.str();
+
+		if (!(m_VertexFilePath.empty() || m_FragmentFilePath.empty()))
+		{
+			std::ifstream VertexSource(m_VertexFilePath, std::ios::binary);
+			std::ifstream FragmentSource(m_FragmentFilePath, std::ios::binary);
+
+			VK_CORE_ASSERT(VertexSource.is_open(), "Failed to Open Vertex Shader File!");
+			VK_CORE_ASSERT(FragmentSource.is_open(), "Failed to Open Fragment Shader File!");
+
+			std::stringstream VertexStream, FragmentStream;
+
+			VertexStream << VertexSource.rdbuf();
+			FragmentStream << FragmentSource.rdbuf();
+
+			Sources[(uint32_t)ShaderType::Vertex] = VertexStream.str();
+			Sources[(uint32_t)ShaderType::Fragment] = FragmentStream.str();
+		}
+		else
+		{
+			std::ifstream ComputeSource(m_ComputeFilePath, std::ios::binary);
+
+			VK_CORE_ASSERT(ComputeSource.is_open(), "Failed to Open Compute Shader File!");
+
+			std::stringstream ComputeStream;
+			ComputeStream << ComputeSource.rdbuf();
+
+			Sources[(uint32_t)ShaderType::Compute] = ComputeStream.str();
+		}
 
 		m_ShaderSources = Sources;
 	}
@@ -529,6 +544,7 @@ namespace VulkanCore {
 			future.wait();
 
 		VK_CORE_TRACE("Total Shader Async Threads: {0}", m_Futures.size());
+		SetReloadFlag();
 	}
 
 	void VulkanShader::ReflectShaderData()

@@ -58,6 +58,11 @@ namespace VulkanCore {
 	// TODO: Do this process in Render Thread
 	VulkanComputePipeline::~VulkanComputePipeline()
 	{
+		Release();
+	}
+
+	void VulkanComputePipeline::Release()
+	{
 		auto device = VulkanContext::GetCurrentDevice();
 
 		vkDestroyShaderModule(device->GetVulkanDevice(), m_ComputeShaderModule, nullptr);
@@ -66,6 +71,8 @@ namespace VulkanCore {
 			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 
 		vkDestroyPipeline(device->GetVulkanDevice(), m_ComputePipeline, nullptr);
+
+		m_ComputePipeline = nullptr;
 	}
 
 	void VulkanComputePipeline::Bind(VkCommandBuffer commandBuffer)
@@ -96,6 +103,16 @@ namespace VulkanCore {
 			(uint32_t)offset,
 			(uint32_t)size,
 			pcData);
+	}
+
+	void VulkanComputePipeline::ReloadPipeline()
+	{
+		if (m_Shader->GetReloadFlag())
+		{
+			Release();
+			InvalidateComputePipeline();
+			m_Shader->ResetReloadFlag();
+		}
 	}
 
 	void VulkanComputePipeline::InvalidateComputePipeline()

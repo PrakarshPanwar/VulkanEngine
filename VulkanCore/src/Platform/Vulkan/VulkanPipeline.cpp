@@ -364,7 +364,6 @@ namespace VulkanCore {
 		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_Specification.DebugName, m_GraphicsPipeline);
 	}
 
-	// For Pipeline Specification
 	void VulkanPipeline::RT_InvalidateGraphicsPipeline()
 	{
 		Renderer::Submit([this]()
@@ -525,14 +524,15 @@ namespace VulkanCore {
 			pcData);
 	}
 
-	void VulkanPipeline::ReloadPipeline(const std::shared_ptr<Shader>& shader)
+	void VulkanPipeline::ReloadPipeline()
 	{
-		m_Specification.pShader = shader;
-
-		if (m_GraphicsPipeline)
+		auto shader = m_Specification.pShader;
+		if (shader->GetReloadFlag())
+		{
 			Release();
-
-		InvalidateGraphicsPipeline();
+			InvalidateGraphicsPipeline();
+			shader->ResetReloadFlag();
+		}
 	}
 
 }
