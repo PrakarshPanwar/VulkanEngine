@@ -31,6 +31,11 @@ namespace VulkanCore {
 			return spec.Samples > 1;
 		}
 
+		static bool IsMultisampled(ImageSpecification spec)
+		{
+			return spec.Samples > 1;
+		}
+
 	}
 
 	uint32_t VulkanFramebuffer::s_InstanceCount = 0;
@@ -63,14 +68,14 @@ namespace VulkanCore {
 		Release();
 	}
 
-	const std::vector<std::shared_ptr<VulkanImage>>& VulkanFramebuffer::GetAttachment(bool resolve, uint32_t index) const
+	const std::vector<std::shared_ptr<Image2D>>& VulkanFramebuffer::GetAttachment(bool resolve, uint32_t index) const
 	{
 		bool multisampled = Utils::IsMultisampled(m_Specification);
 		uint32_t attachmentSize = static_cast<uint32_t>(m_ColorAttachmentSpecifications.size());
 		return m_ColorAttachments[resolve && multisampled ? attachmentSize + index : index];
 	}
 
-	const std::vector< std::shared_ptr<VulkanImage>>& VulkanFramebuffer::GetDepthAttachment(bool resolve) const
+	const std::vector< std::shared_ptr<Image2D>>& VulkanFramebuffer::GetDepthAttachment(bool resolve) const
 	{
 		bool multisampled = Utils::IsMultisampled(m_Specification);
 		return resolve && multisampled ? m_DepthAttachmentResolve : m_DepthAttachment;
@@ -89,11 +94,11 @@ namespace VulkanCore {
 		// Image Creation for Color Attachments
 		for (auto& attachment : m_ColorAttachmentSpecifications)
 		{
-			std::vector<std::shared_ptr<VulkanImage>> AttachmentImages;
+			std::vector<std::shared_ptr<Image2D>> AttachmentImages;
 			AttachmentImages.reserve(framesInFlight);
 
-			// Adding 3 Images in Flight(Only for this system)
-			for (int i = 0; i < framesInFlight; ++i)
+			// Adding Images in Flight
+			for (uint32_t i = 0; i < framesInFlight; ++i)
 			{
 				ImageSpecification spec;
 				spec.DebugName = "Framebuffer Color Attachment";
@@ -103,8 +108,10 @@ namespace VulkanCore {
 				spec.Format = attachment.ImgFormat;
 				spec.Usage = ImageUsage::Attachment;
 
-				auto attachmentColorImage = AttachmentImages.emplace_back(std::make_shared<VulkanImage>(spec));
+				auto attachmentColorImage = std::make_shared<VulkanImage>(spec);
 				attachmentColorImage->Invalidate();
+
+				AttachmentImages.push_back(attachmentColorImage);
 
 				if (!multisampled)
 				{
@@ -129,10 +136,10 @@ namespace VulkanCore {
 		{
 			for (auto& attachment : m_ColorAttachmentSpecifications)
 			{
-				std::vector<std::shared_ptr<VulkanImage>> ResolveImages;
+				std::vector<std::shared_ptr<Image2D>> ResolveImages;
 				ResolveImages.reserve(framesInFlight);
 
-				for (int i = 0; i < framesInFlight; i++)
+				for (uint32_t i = 0; i < framesInFlight; ++i)
 				{
 					ImageSpecification spec;
 					spec.DebugName = "Framebuffer Color Resolve";
@@ -143,8 +150,10 @@ namespace VulkanCore {
 					spec.Format = attachment.ImgFormat;
 					spec.Usage = ImageUsage::Attachment;
 
-					auto resolveColorImage = ResolveImages.emplace_back(std::make_shared<VulkanImage>(spec));
+					auto resolveColorImage = std::make_shared<VulkanImage>(spec);
 					resolveColorImage->Invalidate();
+
+					ResolveImages.push_back(resolveColorImage);
 
 					// Resolve Transition
 					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
@@ -167,7 +176,7 @@ namespace VulkanCore {
 		{
 			m_DepthAttachment.reserve(framesInFlight);
 
-			for (int i = 0; i < framesInFlight; i++)
+			for (uint32_t i = 0; i < framesInFlight; ++i)
 			{
 				ImageSpecification spec;
 				spec.DebugName = "Framebuffer Depth Attachment";
@@ -177,15 +186,17 @@ namespace VulkanCore {
 				spec.Format = m_DepthAttachmentSpecification.ImgFormat;
 				spec.Usage = ImageUsage::Attachment;
 
-				auto depthImage = m_DepthAttachment.emplace_back(std::make_shared<VulkanImage>(spec));
+				auto depthImage = std::make_shared<VulkanImage>(spec);
 				depthImage->Invalidate();
+
+				m_DepthAttachment.push_back(depthImage);
 			}
 
 			if (m_Specification.ReadDepthTexture)
 			{
 				m_DepthAttachmentResolve.reserve(framesInFlight);
 
-				for (int i = 0; i < framesInFlight; ++i)
+				for (uint32_t i = 0; i < framesInFlight; ++i)
 				{
 					ImageSpecification spec;
 					spec.DebugName = "Framebuffer Depth Resolve";
@@ -195,13 +206,15 @@ namespace VulkanCore {
 					spec.Format = m_DepthAttachmentSpecification.ImgFormat;
 					spec.Usage = ImageUsage::Attachment;
 
-					auto depthImage = m_DepthAttachmentResolve.emplace_back(std::make_shared<VulkanImage>(spec));
-					depthImage->Invalidate();
+					auto depthResolveImage = std::make_shared<VulkanImage>(spec);
+					depthResolveImage->Invalidate();
+
+					m_DepthAttachmentResolve.push_back(depthResolveImage);
 
 					// Depth Resolve Transition
 					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
-					Utils::InsertImageMemoryBarrier(barrierCmd, depthImage->GetVulkanImageInfo().Image,
+					Utils::InsertImageMemoryBarrier(barrierCmd, depthResolveImage->GetVulkanImageInfo().Image,
 						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
 						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -223,21 +236,29 @@ namespace VulkanCore {
 
 		m_Framebuffers.resize(framesInFlight);
 
-		for (int i = 0; i < framesInFlight; i++)
+		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
 			std::vector<VkImageView> Attachments;
 
-			for (const auto& attachment : m_ColorAttachments)
-				Attachments.push_back(attachment[i]->GetVulkanImageInfo().ImageView);
+			for (const auto& colorAttachment : m_ColorAttachments)
+			{
+				auto attachment = std::static_pointer_cast<VulkanImage>(colorAttachment[i]);
+				Attachments.push_back(attachment->GetVulkanImageInfo().ImageView);
+			}
 
 			if (HasDepthAttachment() && m_Specification.ReadDepthTexture)
 			{
-				Attachments.push_back(m_DepthAttachment[i]->GetVulkanImageInfo().ImageView);
-				Attachments.push_back(m_DepthAttachmentResolve[i]->GetVulkanImageInfo().ImageView);
+				auto depthAttachment = std::static_pointer_cast<VulkanImage>(m_DepthAttachment[i]);				
+				Attachments.push_back(depthAttachment->GetVulkanImageInfo().ImageView);
+				
+				auto depthAttachmentResolve = std::static_pointer_cast<VulkanImage>(m_DepthAttachmentResolve[i]);
+				Attachments.push_back(depthAttachmentResolve->GetVulkanImageInfo().ImageView);
 			}
-
 			else if (HasDepthAttachment())
-				Attachments.push_back(m_DepthAttachment[i]->GetVulkanImageInfo().ImageView);
+			{
+				auto depthAttachment = std::static_pointer_cast<VulkanImage>(m_DepthAttachment[i]);
+				Attachments.push_back(depthAttachment->GetVulkanImageInfo().ImageView);
+			}
 
 			VkFramebufferCreateInfo framebufferInfo{};
 			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -274,13 +295,15 @@ namespace VulkanCore {
 		{
 			for (auto& fbImage : fbImages)
 			{
-				fbImage->Resize(width, height);
+				bool multisampled = Utils::IsMultisampled(fbImage->GetSpecification());
+				auto vulkanFBImage = std::static_pointer_cast<VulkanImage>(fbImage);
+				vulkanFBImage->Resize(width, height);
 
-				if (fbImage->GetSpecification().Samples == 1)
+				if (!multisampled)
 				{
 					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
-					Utils::InsertImageMemoryBarrier(barrierCmd, fbImage->GetVulkanImageInfo().Image,
+					Utils::InsertImageMemoryBarrier(barrierCmd, vulkanFBImage->GetVulkanImageInfo().Image,
 						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
 						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -292,7 +315,10 @@ namespace VulkanCore {
 		}
 
 		for (auto& depthImage : m_DepthAttachment)
-			depthImage->Resize(width, height);
+		{
+			auto vulkanDepthImage = std::static_pointer_cast<VulkanImage>(depthImage);
+			vulkanDepthImage->Resize(width, height);
+		}
 	}
 
 }

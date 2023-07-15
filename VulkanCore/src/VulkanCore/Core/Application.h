@@ -2,9 +2,9 @@
 
 #include "Platform/Windows/WindowsWindow.h"
 #include "Platform/Vulkan/VulkanContext.h"
+#include "Platform/Vulkan/VulkanRenderer.h"
 
 #include "VulkanCore/Events/ApplicationEvent.h"
-#include "VulkanCore/Renderer/VulkanRenderer.h"
 
 #include "ImGuiLayer.h"
 #include "LayerStack.h"

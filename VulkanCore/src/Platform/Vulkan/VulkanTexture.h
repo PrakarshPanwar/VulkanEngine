@@ -47,6 +47,7 @@ namespace VulkanCore {
 		void Invalidate();
 		void GenerateMipMaps(bool readonly);
 		VkImageView CreateImageViewSingleMip(uint32_t mip);
+		VkImageView CreateImageViewPerLayer(uint32_t layer);
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_DescriptorImageInfo; }
 	private:
 		void Release();
@@ -57,6 +58,7 @@ namespace VulkanCore {
 		VulkanImageInfo m_Info;
 		VkDescriptorImageInfo m_DescriptorImageInfo;
 
+		uint8_t* m_LocalStorage = nullptr;
 		bool m_IsLoaded = false;
 	};
 

@@ -1,9 +1,8 @@
 #include "vulkanpch.h"
 #include "VulkanRenderCommandBuffer.h"
-#include "VulkanSwapChain.h"
 
 #include "VulkanCore/Core/Core.h"
-#include "VulkanCore/Renderer/Renderer.h"
+#include "VulkanRenderer.h"
 
 namespace VulkanCore {
 
@@ -127,16 +126,6 @@ namespace VulkanCore {
 	void VulkanRenderCommandBuffer::Execute(VkCommandBuffer secondaryCmdBuffers[], uint32_t count)
 	{
 		vkCmdExecuteCommands(RT_GetActiveCommandBuffer(), count, secondaryCmdBuffers);
-	}
-
-	VkCommandBuffer VulkanRenderCommandBuffer::GetActiveCommandBuffer() const
-	{
-		return m_CommandBuffers[Renderer::GetCurrentFrameIndex()];
-	}
-
-	VkCommandBuffer VulkanRenderCommandBuffer::RT_GetActiveCommandBuffer() const
-	{
-		return m_CommandBuffers[Renderer::RT_GetCurrentFrameIndex()];
 	}
 
 	void VulkanRenderCommandBuffer::RetrieveQueryPoolResults()

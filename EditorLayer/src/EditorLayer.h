@@ -1,12 +1,11 @@
 #pragma once
 #include "VulkanCore/Core/Layer.h"
+#include "VulkanCore/Asset/AssetManagerBase.h"
 #include "VulkanCore/Events/KeyEvent.h"
 #include "VulkanCore/Events/MouseEvent.h"
 #include "VulkanCore/Scene/Scene.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
-#include "VulkanCore/Asset/AssetManagerBase.h"
-
 #include "VulkanCore/Renderer/Texture.h"
 
 #include <imgui.h>

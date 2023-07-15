@@ -2,16 +2,12 @@
 #include "VulkanDevice.h"
 #include "VulkanFramebuffer.h"
 #include "VulkanRenderCommandBuffer.h"
+#include "VulkanCore/Renderer/RenderPass.h"
 
 namespace VulkanCore {
 
-	struct RenderPassSpecification
-	{
-		std::shared_ptr<VulkanFramebuffer> TargetFramebuffer;
-	};
-
 	// TODO: To read Depth Image we have to also create its resolve form
-	class VulkanRenderPass
+	class VulkanRenderPass : public RenderPass
 	{
 	public:
 		VulkanRenderPass(const RenderPassSpecification& spec);
@@ -19,15 +15,13 @@ namespace VulkanCore {
 
 		void Invalidate();
 		void InvalidateWithDepthTexture();
-		void RecreateFramebuffers(uint32_t width, uint32_t height);
+		void RecreateFramebuffers(uint32_t width, uint32_t height) override;
 
-		void Begin(VkCommandBuffer beginCmd);
-		void End(VkCommandBuffer endCmd);
-		void Begin(std::shared_ptr<VulkanRenderCommandBuffer> beginCmd);
-		void End(std::shared_ptr<VulkanRenderCommandBuffer> endCmd);
+		void Begin(const std::shared_ptr<VulkanRenderCommandBuffer>& beginCmd);
+		void End(const std::shared_ptr<VulkanRenderCommandBuffer>& endCmd);
 
-		inline VkRenderPass GetRenderPass() const { return m_RenderPass; }
-		inline const RenderPassSpecification& GetSpecification() const { return m_Specification; }
+		inline VkRenderPass GetVulkanRenderPass() const { return m_RenderPass; }
+		inline const RenderPassSpecification& GetSpecification() const override { return m_Specification; }
 	private:
 		RenderPassSpecification m_Specification;
 

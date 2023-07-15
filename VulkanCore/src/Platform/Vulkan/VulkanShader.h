@@ -1,36 +1,21 @@
 #pragma once
-#include <future>
-#include "Platform/Vulkan/VulkanDescriptor.h"
-#include "../Source/SPIRV-Reflect/spirv_reflect.h"
+#include "VulkanCore/Renderer/Shader.h"
+#include "VulkanDescriptor.h"
 
-#define USE_VULKAN_DESCRIPTOR 1
+#include <future>
 
 namespace VulkanCore {
 
-	// Based on OpenGL Macros
-	enum class ShaderType
-	{
-		Vertex = 0x8B31,
-		Fragment = 0x8B30,
-		Geometry = 0x8DD9,
-		Compute = 0x91B9
-	};
-
-	class Shader
+	class VulkanShader : public Shader
 	{
 	public:
-		Shader() = default;
+		VulkanShader() = default;
+		VulkanShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath = "");
+		VulkanShader(const std::string& cmpfilepath);
+		~VulkanShader();
 
-		Shader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath = "");
-		Shader(const std::string& cmpfilepath);
-		~Shader();
-
-#if USE_VULKAN_DESCRIPTOR
 		std::shared_ptr<VulkanDescriptorSetLayout> CreateDescriptorSetLayout(int index = 0);
 		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> CreateAllDescriptorSetsLayout();
-		
-		VkDescriptorSetLayout CreateVulkanDescriptorSetLayout(uint32_t index = 0);
-#endif
 		std::vector<VkDescriptorSet> AllocateDescriptorSets(uint32_t index = 0);
 		std::vector<VkDescriptorSet> AllocateAllDescriptorSets();
 
@@ -38,11 +23,13 @@ namespace VulkanCore {
 		inline uint32_t GetPushConstantSize() const { return (uint32_t)m_PushConstantSize; }
 		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout(uint32_t index = 0) const { return m_DescriptorSetLayouts[index]; }
 
-		inline bool CheckIfGeometryShaderExists() const { return m_HasGeometryShader; };
+		void Reload() override;
+		inline bool HasGeometryShader() const override { return !m_GeometryFilePath.empty(); }
 	private:
 		std::tuple<std::string, std::string> ParseShader(const std::string& vsfilepath, const std::string& fsfilepath);
 		std::tuple<std::string, std::string, std::string> ParseShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath);
 		std::string ParseShader(const std::string& cmpfilepath);
+		void ParseShader();
 		void CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources);
 		void ReflectShaderData();
 		void InvalidateDescriptors();
@@ -54,7 +41,6 @@ namespace VulkanCore {
 		size_t m_PushConstantSize = 0;
 
 		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> m_DescriptorSetLayouts;
-		bool m_HasGeometryShader = false;
 	};
 
 }
