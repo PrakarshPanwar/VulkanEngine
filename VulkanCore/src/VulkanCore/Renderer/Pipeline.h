@@ -23,7 +23,7 @@ namespace VulkanCore {
 	class Pipeline : public Resource
 	{
 	public:
-		virtual void ReloadPipeline(const std::shared_ptr<Shader>& shader) = 0;
+		virtual void ReloadPipeline() = 0;
 		virtual PipelineSpecification GetSpecification() const = 0;
 	};
 

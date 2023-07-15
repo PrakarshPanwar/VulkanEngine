@@ -428,7 +428,11 @@ namespace VulkanCore {
 
 	void SceneRenderer::RecreatePipelines()
 	{
-		m_GeometryPipeline->ReloadPipeline(Renderer::GetShader("CorePBR"));
+		m_GeometryPipeline->ReloadPipeline();
+		m_LightPipeline->ReloadPipeline();
+		m_CompositePipeline->ReloadPipeline();
+		m_SkyboxPipeline->ReloadPipeline();
+		m_BloomPipeline->ReloadPipeline();
 	}
 
 	void SceneRenderer::CreateResources()
@@ -621,13 +625,22 @@ namespace VulkanCore {
 		if (ImGui::TreeNodeEx("Scene Shader Map", treeFlags))
 		{
 			auto& shaderMap = Renderer::GetShaderMap();
+
+			int buttonID = 0;
 			for (auto&& [name, shader] : shaderMap)
 			{
-				if (ImGui::Button(name.c_str()))
+				ImGui::Selectable(name.c_str(), false, ImGuiSelectableFlags_AllowItemOverlap, ImVec2{ 0.0f, 24.5f });
+				ImGui::SetItemAllowOverlap();
+
+				ImGui::SameLine(ImGui::GetContentRegionAvail().x - 20.0f);
+				ImGui::PushID(buttonID++);
+				if (ImGui::Button("Reload", ImVec2{ 0.0f, 24.5f }))
 				{
 					shader->Reload();
 					RecreatePipelines();
 				}
+
+				ImGui::PopID();
 			}
 
 			ImGui::TreePop();
