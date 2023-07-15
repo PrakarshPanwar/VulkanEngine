@@ -3,6 +3,7 @@
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
+#include "VulkanShader.h"
 
 namespace VulkanCore {
 
@@ -51,20 +52,27 @@ namespace VulkanCore {
 	VulkanComputePipeline::VulkanComputePipeline(std::shared_ptr<Shader> shader, const std::string& debugName)
 		: m_DebugName(debugName), m_Shader(shader)
 	{
-		CreateComputePipeline();
+		RT_InvalidateComputePipeline();
 	}
 
 	// TODO: Do this process in Render Thread
 	VulkanComputePipeline::~VulkanComputePipeline()
 	{
+		Release();
+	}
+
+	void VulkanComputePipeline::Release()
+	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		vkDestroyShaderModule(device->GetVulkanDevice(), m_compShaderModule, nullptr);
+		vkDestroyShaderModule(device->GetVulkanDevice(), m_ComputeShaderModule, nullptr);
 
 		if (m_PipelineLayout)
 			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 
 		vkDestroyPipeline(device->GetVulkanDevice(), m_ComputePipeline, nullptr);
+
+		m_ComputePipeline = nullptr;
 	}
 
 	void VulkanComputePipeline::Bind(VkCommandBuffer commandBuffer)
@@ -97,23 +105,75 @@ namespace VulkanCore {
 			pcData);
 	}
 
-	void VulkanComputePipeline::CreateComputePipeline()
+	void VulkanComputePipeline::ReloadPipeline()
+	{
+		if (m_Shader->GetReloadFlag())
+		{
+			Release();
+			InvalidateComputePipeline();
+			m_Shader->ResetReloadFlag();
+		}
+	}
+
+	void VulkanComputePipeline::InvalidateComputePipeline()
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+		auto shader = std::static_pointer_cast<VulkanShader>(m_Shader);
+
+		auto& shaderSources = shader->GetShaderModules();
+
+		m_ComputeShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Compute]);
+
+		m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
+		m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());
+
+		VkPipelineShaderStageCreateInfo shaderStage;
+		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		shaderStage.module = m_ComputeShaderModule;
+		shaderStage.pName = "main";
+		shaderStage.flags = 0;
+		shaderStage.pNext = nullptr;
+		shaderStage.pSpecializationInfo = nullptr;
+
+		VkComputePipelineCreateInfo computePipelineInfo{};
+		computePipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		computePipelineInfo.stage = shaderStage;
+		computePipelineInfo.layout = m_PipelineLayout;
+
+		computePipelineInfo.basePipelineIndex = -1;
+		computePipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+		VK_CHECK_RESULT(vkCreateComputePipelines(
+			device->GetVulkanDevice(),
+			VK_NULL_HANDLE,
+			1,
+			&computePipelineInfo,
+			nullptr,
+			&m_ComputePipeline),
+			"Failed to Create Compute Pipeline!");
+
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_DebugName, m_ComputePipeline);
+	}
+
+	void VulkanComputePipeline::RT_InvalidateComputePipeline()
 	{
 		Renderer::Submit([this]()
 		{
 			auto device = VulkanContext::GetCurrentDevice();
+			auto shader = std::static_pointer_cast<VulkanShader>(m_Shader);
 
-			auto& shaderSources = m_Shader->GetShaderModules();
+			auto& shaderSources = shader->GetShaderModules();
 
-			m_compShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Compute]);
+			m_ComputeShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Compute]);
 
-			m_DescriptorSetLayout = m_Shader->CreateDescriptorSetLayout();
-			m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, m_Shader->GetPushConstantSize());
+			m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
+			m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());
 
 			VkPipelineShaderStageCreateInfo shaderStage;
 			shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 			shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-			shaderStage.module = m_compShaderModule;
+			shaderStage.module = m_ComputeShaderModule;
 			shaderStage.pName = "main";
 			shaderStage.flags = 0;
 			shaderStage.pNext = nullptr;

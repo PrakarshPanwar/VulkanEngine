@@ -63,8 +63,8 @@ namespace VulkanCore {
 		VulkanDescriptorPool(const VulkanDescriptorPool&) = delete;
 		VulkanDescriptorPool& operator=(const VulkanDescriptorPool&) = delete;
 
-		bool AllocateDescriptorSet(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const;
-		bool AllocateDescriptorSet(const std::vector<VkDescriptorSetLayout>& descriptorSetsLayout, const std::vector<VkDescriptorSet>& descriptorSets);
+		void AllocateDescriptorSet(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const;
+		void AllocateDescriptorSet(const std::vector<VkDescriptorSetLayout>& descriptorSetsLayout, const std::vector<VkDescriptorSet>& descriptorSets);
 		void FreeDescriptors(std::vector<VkDescriptorSet>& descriptors) const;
 		void ResetPool();
 
@@ -84,7 +84,7 @@ namespace VulkanCore {
 		VulkanDescriptorWriter& WriteImage(uint32_t binding, const VkDescriptorImageInfo* imageInfo);
 		VulkanDescriptorWriter& WriteImage(uint32_t binding, const std::vector<VkDescriptorImageInfo>& imagesInfo);
 
-		bool Build(VkDescriptorSet& set);
+		void Build(VkDescriptorSet& set);
 		void Overwrite(VkDescriptorSet& set);
 	private:
 		VulkanDescriptorSetLayout& m_SetLayout;

@@ -1,53 +1,24 @@
 #pragma once
+#include "VulkanCore/Renderer/Framebuffer.h"
 #include "VulkanImage.h"
 
 #include <glm/glm.hpp>
 
 namespace VulkanCore {
 
-	struct FramebufferTextureSpecification
-	{
-		FramebufferTextureSpecification() = default;
-		FramebufferTextureSpecification(ImageFormat format)
-			: ImgFormat(format) {}
-
-		ImageFormat ImgFormat = ImageFormat::None;
-
-		operator bool() const { return ImgFormat != ImageFormat::None; }
-	};
-
-	struct FramebufferAttachmentSpecification
-	{
-		FramebufferAttachmentSpecification() = default;
-		FramebufferAttachmentSpecification(std::initializer_list<FramebufferTextureSpecification> attachments)
-			: Attachments(attachments) {}
-
-		std::vector<FramebufferTextureSpecification> Attachments;
-	};
-
-	struct FramebufferSpecification
-	{
-		uint32_t Width = 0, Height = 0;
-		FramebufferAttachmentSpecification Attachments;
-		uint32_t Samples = 1;
-		glm::vec4 ClearColor = { 0.01f, 0.01f, 0.01f, 1.0f };
-		bool Transfer = false;
-		bool ReadDepthTexture = false;
-	};
-
-	class VulkanFramebuffer
+	class VulkanFramebuffer : public Framebuffer
 	{
 	public:
 		VulkanFramebuffer(const FramebufferSpecification& spec);
 		~VulkanFramebuffer();
 
 		inline const std::vector<VkFramebuffer>& GetVulkanFramebuffers() const { return m_Framebuffers; }
-		inline const FramebufferSpecification& GetSpecification() const { return m_Specification; }
-		inline const std::vector<FramebufferTextureSpecification>& GetColorAttachmentsTextureSpec() const { return m_ColorAttachmentSpecifications; }
-		inline const FramebufferTextureSpecification& GetDepthAttachmentTextureSpec() const { return m_DepthAttachmentSpecification; }
+		inline const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
+		inline const std::vector<FramebufferTextureSpecification>& GetColorAttachmentsTextureSpec() const override { return m_ColorAttachmentSpecifications; }
+		inline const FramebufferTextureSpecification& GetDepthAttachmentTextureSpec() const override { return m_DepthAttachmentSpecification; }
 		inline bool HasDepthAttachment() const { return m_DepthAttachmentSpecification; }
-		const std::vector<std::shared_ptr<VulkanImage>>& GetAttachment(bool resolve = false, uint32_t index = 0) const;
-		const std::vector<std::shared_ptr<VulkanImage>>& GetDepthAttachment(bool resolve = false) const;
+		const std::vector<std::shared_ptr<Image2D>>& GetAttachment(bool resolve = false, uint32_t index = 0) const override;
+		const std::vector<std::shared_ptr<Image2D>>& GetDepthAttachment(bool resolve = false) const;
 
 		void Invalidate();
 		void CreateFramebuffer(VkRenderPass renderPass);
@@ -59,9 +30,9 @@ namespace VulkanCore {
 		std::vector<FramebufferTextureSpecification> m_ColorAttachmentSpecifications;
 		FramebufferTextureSpecification m_DepthAttachmentSpecification;
 
-		std::vector<std::vector<std::shared_ptr<VulkanImage>>> m_ColorAttachments;
-		std::vector<std::shared_ptr<VulkanImage>> m_DepthAttachment;
-		std::vector<std::shared_ptr<VulkanImage>> m_DepthAttachmentResolve;
+		std::vector<std::vector<std::shared_ptr<Image2D>>> m_ColorAttachments;
+		std::vector<std::shared_ptr<Image2D>> m_DepthAttachment;
+		std::vector<std::shared_ptr<Image2D>> m_DepthAttachmentResolve;
 
 		std::vector<VkFramebuffer> m_Framebuffers;
 
