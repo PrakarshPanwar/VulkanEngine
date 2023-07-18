@@ -181,7 +181,7 @@ namespace VulkanCore {
 
 		std::vector<std::shared_ptr<Image2D>> m_BloomTextures;
 		std::vector<std::shared_ptr<Image2D>> m_SceneRenderTextures;
-		std::vector<std::shared_ptr<Image2D>> m_DOFOutputTextures;
+		std::vector<std::shared_ptr<Image2D>> m_DOFComputeTextures;
 
 		std::shared_ptr<Texture2D> m_BloomDirtTexture;
 		std::shared_ptr<Texture2D> m_PointLightTextureIcon, m_SpotLightTextureIcon;
