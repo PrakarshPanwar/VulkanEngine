@@ -347,7 +347,7 @@ namespace VulkanCore {
 
 			auto geomFB = std::static_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
 			auto extCompFB = std::static_pointer_cast<VulkanFramebuffer>(m_ExternalCompositePipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
-			m_DOFMaterial->SetImages(0, m_DOFOutputTextures);
+			m_DOFMaterial->SetImages(0, m_DOFComputeTextures);
 			m_DOFMaterial->SetBuffers(1, m_UBCamera);
 			m_DOFMaterial->SetImages(2, extCompFB->GetAttachment(true));
 			m_DOFMaterial->SetImages(3, geomFB->GetDepthAttachment(true));
@@ -359,7 +359,7 @@ namespace VulkanCore {
 		{
 			m_CompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_CompositePipeline->GetSpecification().pShader, "Composite Shader Material");
 
-			m_CompositeShaderMaterial->SetImages(0, m_DOFOutputTextures);
+			m_CompositeShaderMaterial->SetImages(0, m_DOFComputeTextures);
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -472,7 +472,7 @@ namespace VulkanCore {
 			auto geomFB = std::static_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
 			auto extCompFB = std::static_pointer_cast<VulkanFramebuffer>(m_ExternalCompositePipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
 
-			m_DOFMaterial->SetImages(0, m_DOFOutputTextures);
+			m_DOFMaterial->SetImages(0, m_DOFComputeTextures);
 			m_DOFMaterial->SetBuffers(1, m_UBCamera);
 			m_DOFMaterial->SetImages(2, extCompFB->GetAttachment(true));
 			m_DOFMaterial->SetImages(3, geomFB->GetDepthAttachment(true));
@@ -482,7 +482,7 @@ namespace VulkanCore {
 
 		// Composite Material
 		{
-			m_CompositeShaderMaterial->SetImages(0, m_DOFOutputTextures);
+			m_CompositeShaderMaterial->SetImages(0, m_DOFComputeTextures);
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -588,11 +588,11 @@ namespace VulkanCore {
 		dofImageSpec.Usage = ImageUsage::Storage;
 		dofImageSpec.Transfer = true;
 
-		m_DOFOutputTextures.reserve(framesInFlight);
+		m_DOFComputeTextures.reserve(framesInFlight);
 
 		for (int i = 0; i < framesInFlight; i++)
 		{
-			auto DOFTexture = std::static_pointer_cast<VulkanImage>(m_DOFOutputTextures.emplace_back(std::make_shared<VulkanImage>(dofImageSpec)));
+			auto DOFTexture = std::static_pointer_cast<VulkanImage>(m_DOFComputeTextures.emplace_back(std::make_shared<VulkanImage>(dofImageSpec)));
 			DOFTexture->Invalidate();
 
 			Utils::InsertImageMemoryBarrier(barrierCmd, DOFTexture->GetVulkanImageInfo().Image,
@@ -667,7 +667,7 @@ namespace VulkanCore {
 					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRenderTexture->GetSpecification().MipLevels, 0, 1 });
 			}
 
-			for (auto& DOFTexture : m_DOFOutputTextures)
+			for (auto& DOFTexture : m_DOFComputeTextures)
 			{
 				auto vulkanDOFTexture = std::dynamic_pointer_cast<VulkanImage>(DOFTexture);
 				vulkanDOFTexture->Resize(m_ViewportSize.x, m_ViewportSize.y);
@@ -721,8 +721,11 @@ namespace VulkanCore {
 
 			ImGui::Text("Geometry Pass: %lluns", vulkanCmdBuffer->GetQueryTime(1));
 			ImGui::Text("Skybox Pass: %lluns", vulkanCmdBuffer->GetQueryTime(0));
-			ImGui::Text("Composite Pass: %lluns", vulkanCmdBuffer->GetQueryTime(4));
+			ImGui::Text("Light Pass: %lluns", vulkanCmdBuffer->GetQueryTime(2));
+			ImGui::Text("Composite Pass: %lluns", vulkanCmdBuffer->GetQueryTime(6));
 			ImGui::Text("Bloom Compute Pass: %lluns", vulkanCmdBuffer->GetQueryTime(3));
+			ImGui::Text("Depth of Field Compute Pass: %lluns", vulkanCmdBuffer->GetQueryTime(5));
+			ImGui::Text("External Composite Pass: %lluns", vulkanCmdBuffer->GetQueryTime(4));
 			ImGui::TreePop();
 		}
 
@@ -1050,7 +1053,8 @@ namespace VulkanCore {
 
 	void SceneRenderer::ExternalCompositePass()
 	{
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "External-Composite-Pass");
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "External-Composite-Pass", DebugLabelColor::Aqua);
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_ExternalCompositePipeline->GetSpecification().pRenderPass);
 
@@ -1066,6 +1070,7 @@ namespace VulkanCore {
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_ExternalCompositePipeline->GetSpecification().pRenderPass);
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 	}
 
 	void SceneRenderer::BloomCompute()
@@ -1148,10 +1153,10 @@ namespace VulkanCore {
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 	}
 
-
 	void SceneRenderer::DOFCompute()
 	{
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "DOF");
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "DOF", DebugLabelColor::Green);
 
 		Renderer::Submit([this]
 		{
@@ -1162,7 +1167,7 @@ namespace VulkanCore {
 			vulkanDOFPipeline->Bind(dispatchCmd);
 
 			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
-			auto dofTexture = std::static_pointer_cast<VulkanImage>(m_DOFOutputTextures[frameIndex]);
+			auto dofTexture = std::static_pointer_cast<VulkanImage>(m_DOFComputeTextures[frameIndex]);
 
 			VkImageSubresourceRange subresourceRange{};
 			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1183,12 +1188,13 @@ namespace VulkanCore {
 		});
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 	}
 
 	void SceneRenderer::CreateCommandBuffers()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-		m_SceneCommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary, 5);
+		m_SceneCommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary, 7);
 	}
 
 	void SceneRenderer::ResetDrawCommands()
