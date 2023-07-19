@@ -37,7 +37,7 @@ namespace VulkanCore {
 		CommandBufferLevel m_CommandBufferLevel;
 		std::vector<VkCommandBuffer> m_CommandBuffers;
 
-		VkQueryPool m_TimestampQueryPool = nullptr;
+		std::vector<VkQueryPool> m_TimestampQueryPools;
 		uint32_t m_TimestampQueryBufferSize = 0, m_TimestampsQueryIndex = 0;
 		std::vector<uint64_t> m_TimestampQueryPoolBuffer;
 

@@ -717,7 +717,6 @@ namespace VulkanCore {
 		if (ImGui::TreeNodeEx("Scene Renderer Stats##GPUPerf", treeFlags))
 		{
 			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
-			vulkanCmdBuffer->RetrieveQueryPoolResults();
 
 			ImGui::Text("Geometry Pass: %lluns", vulkanCmdBuffer->GetQueryTime(1));
 			ImGui::Text("Skybox Pass: %lluns", vulkanCmdBuffer->GetQueryTime(0));
