@@ -35,7 +35,10 @@ namespace VulkanCore {
 	void VulkanRenderCommandBuffer::InvalidateQueryPool()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+
 		m_TimestampQueryPoolBuffer.resize(m_TimestampQueryBufferSize);
+		m_TimestampQueryPools.resize(framesInFlight);
 
 		// Creating Query Pool
 		VkQueryPoolCreateInfo queryPoolCreateInfo{};
@@ -43,7 +46,8 @@ namespace VulkanCore {
 		queryPoolCreateInfo.queryCount = m_TimestampQueryBufferSize;
 		queryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
 
-		vkCreateQueryPool(device->GetVulkanDevice(), &queryPoolCreateInfo, nullptr, &m_TimestampQueryPool);
+		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
+			vkCreateQueryPool(device->GetVulkanDevice(), &queryPoolCreateInfo, nullptr, &m_TimestampQueryPools[i]);
 	}
 
 	void VulkanRenderCommandBuffer::InvalidateCommandBuffers()
@@ -73,8 +77,11 @@ namespace VulkanCore {
 		vkFreeCommandBuffers(device->GetVulkanDevice(), m_CommandPool,
 			(uint32_t)m_CommandBuffers.size(), m_CommandBuffers.data());
 
-		if (m_TimestampQueryPool)
-			vkDestroyQueryPool(device->GetVulkanDevice(), m_TimestampQueryPool, nullptr);
+		if (m_TimestampQueryBufferSize)
+		{
+			for (auto& queryPool : m_TimestampQueryPools)
+				vkDestroyQueryPool(device->GetVulkanDevice(), queryPool, nullptr);
+		}
 
 		m_CommandBuffers.clear();
 	}
@@ -93,14 +100,20 @@ namespace VulkanCore {
 
 			vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-			if (m_TimestampQueryPool)
-				vkCmdResetQueryPool(commandBuffer, m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
+			if (m_TimestampQueryBufferSize)
+			{
+				RetrieveQueryPoolResults();
+
+				VkQueryPool queryPool = m_TimestampQueryPools[Renderer::RT_GetCurrentFrameIndex()];
+				vkCmdResetQueryPool(commandBuffer, queryPool, 0, m_TimestampQueryBufferSize);
+			}
 		});
 	}
 
 	void VulkanRenderCommandBuffer::Begin(VkRenderPass renderPass, VkFramebuffer framebuffer)
 	{
 		VkCommandBuffer commandBuffer = RT_GetActiveCommandBuffer();
+		VkQueryPool queryPool = m_TimestampQueryPools[Renderer::RT_GetCurrentFrameIndex()];
 
 		VkCommandBufferInheritanceInfo inheritanceInfo{};
 		inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
@@ -114,8 +127,8 @@ namespace VulkanCore {
 
 		vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-		if (m_TimestampQueryPool)
-			vkCmdResetQueryPool(commandBuffer, m_TimestampQueryPool, 0, m_TimestampQueryBufferSize);
+		if (queryPool)
+			vkCmdResetQueryPool(commandBuffer, queryPool, 0, m_TimestampQueryBufferSize);
 	}
 
 	void VulkanRenderCommandBuffer::End()
@@ -132,12 +145,14 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		vkGetQueryPoolResults(device->GetVulkanDevice(),
-			m_TimestampQueryPool,
+		VkQueryPool queryPool = m_TimestampQueryPools[Renderer::RT_GetCurrentFrameIndex()];
+		VK_CHECK_WARN(vkGetQueryPoolResults(device->GetVulkanDevice(),
+			queryPool,
 			0,
 			m_TimestampQueryBufferSize, sizeof(uint64_t) * m_TimestampQueryBufferSize,
 			(void*)m_TimestampQueryPoolBuffer.data(), sizeof(uint64_t),
-			VK_QUERY_RESULT_64_BIT);
+			VK_QUERY_RESULT_64_BIT),
+			"Failed to Retrieve Query Results!");
 	}
 
 	uint64_t VulkanRenderCommandBuffer::GetQueryTime(uint32_t index) const
