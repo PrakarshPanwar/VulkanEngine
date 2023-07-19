@@ -51,12 +51,10 @@ namespace VulkanCore {
 		static int GetCurrentFrameIndex();
 		static int RT_GetCurrentFrameIndex();
 		static RendererConfig GetConfig();
+		static std::unordered_map<std::string, std::shared_ptr<Shader>>& GetShaderMap();
 		static std::shared_ptr<Shader> GetShader(const std::string& name)
 		{
-			if (!m_Shaders.contains(name))
-				return nullptr;
-
-			return m_Shaders[name];
+			return m_Shaders.contains(name) ? m_Shaders[name] : nullptr;
 		}
 		
 		template<typename FuncT>

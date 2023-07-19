@@ -16,7 +16,7 @@ namespace VulkanCore {
 
 		std::shared_ptr<Shader> MakeShader(const std::string& path)
 		{
-			const std::filesystem::path shaderPath = "assets/shaders";
+			const std::filesystem::path shaderPath = "assets\\shaders";
 			std::filesystem::path vertexShaderPath = shaderPath / path, fragmentShaderPath = shaderPath / path, computeShaderPath = shaderPath / path;
 			vertexShaderPath.replace_extension(".vert");
 			fragmentShaderPath.replace_extension(".frag");
@@ -52,6 +52,11 @@ namespace VulkanCore {
 	RendererConfig Renderer::GetConfig()
 	{
 		return s_RendererConfig;
+	}
+
+	std::unordered_map<std::string, std::shared_ptr<Shader>>& Renderer::GetShaderMap()
+	{
+		return m_Shaders;
 	}
 
 	void Renderer::BeginRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass)

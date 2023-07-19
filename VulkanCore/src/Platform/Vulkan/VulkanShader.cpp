@@ -47,7 +47,7 @@ namespace VulkanCore {
 
 		static const char* GetCacheDirectory()
 		{
-			return "assets/cache";
+			return "assets\\cache";
 		}
 
 		static void CreateCacheDirectoryIfRequired()
@@ -326,6 +326,41 @@ namespace VulkanCore {
 		return ComputeStream.str();
 	}
 
+	void VulkanShader::ParseShader()
+	{
+		std::unordered_map<uint32_t, std::string> Sources;
+
+		if (!(m_VertexFilePath.empty() || m_FragmentFilePath.empty()))
+		{
+			std::ifstream VertexSource(m_VertexFilePath, std::ios::binary);
+			std::ifstream FragmentSource(m_FragmentFilePath, std::ios::binary);
+
+			VK_CORE_ASSERT(VertexSource.is_open(), "Failed to Open Vertex Shader File!");
+			VK_CORE_ASSERT(FragmentSource.is_open(), "Failed to Open Fragment Shader File!");
+
+			std::stringstream VertexStream, FragmentStream;
+
+			VertexStream << VertexSource.rdbuf();
+			FragmentStream << FragmentSource.rdbuf();
+
+			Sources[(uint32_t)ShaderType::Vertex] = VertexStream.str();
+			Sources[(uint32_t)ShaderType::Fragment] = FragmentStream.str();
+		}
+		else
+		{
+			std::ifstream ComputeSource(m_ComputeFilePath, std::ios::binary);
+
+			VK_CORE_ASSERT(ComputeSource.is_open(), "Failed to Open Compute Shader File!");
+
+			std::stringstream ComputeStream;
+			ComputeStream << ComputeSource.rdbuf();
+
+			Sources[(uint32_t)ShaderType::Compute] = ComputeStream.str();
+		}
+
+		m_ShaderSources = Sources;
+	}
+
 	void VulkanShader::CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources)
 	{
 		shaderc::Compiler compiler;
@@ -336,7 +371,6 @@ namespace VulkanCore {
 
 		if (optimize)
 			options.SetOptimizationLevel(shaderc_optimization_level_performance);
-
 		else
 			options.SetOptimizationLevel(shaderc_optimization_level_zero);
 
@@ -374,16 +408,13 @@ namespace VulkanCore {
 			}
 		};
 
-		bool ShaderCreationRequired = false;
-
 		Timer timer("Whole Shader Creation Process");
 
 		for (auto&& [stage, source] : shaderSources)
 		{
-			ShaderType shaderType = (ShaderType)stage;
-
 			std::filesystem::path shaderFilePath;
 
+			ShaderType shaderType = (ShaderType)stage;
 			switch (shaderType)
 			{
 			case ShaderType::Vertex:
@@ -417,19 +448,103 @@ namespace VulkanCore {
 				data.resize(size / sizeof(uint32_t));
 				in.read((char*)data.data(), size);
 			}
-
 			else
-			{
-				ShaderCreationRequired = true;
 				m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderFilePath, source, shaderType));
-			}
 		}
 
 		for (auto& future : m_Futures)
 			future.wait();
 
-		if (ShaderCreationRequired)
+		if (!m_Futures.empty())
 			VK_CORE_TRACE("Total Shader Async Threads: {0}", m_Futures.size());
+	}
+
+	void VulkanShader::Reload()
+	{
+		ParseShader();
+
+		shaderc::Compiler compiler;
+		shaderc::CompileOptions options;
+
+		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
+		const bool optimize = true;
+
+		if (optimize)
+			options.SetOptimizationLevel(shaderc_optimization_level_performance);
+		else
+			options.SetOptimizationLevel(shaderc_optimization_level_zero);
+
+		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
+
+		auto& shaderSources = m_ShaderSources;
+		auto& shaderData = m_VulkanSPIRV;
+		shaderData.clear();
+		m_Futures.clear();
+
+		std::mutex MapMutexLock;
+
+		auto CreateShader = [&](const std::filesystem::path& shaderFilePath, const std::string& source, ShaderType stage)
+		{
+			Timer timer(Utils::GLShaderTypeToString(stage) + " Shader Creation");
+
+			shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, Utils::GLShaderStageToShaderC(stage), shaderFilePath.string().c_str(), options);
+
+			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
+			{
+				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
+				__debugbreak();
+			}
+
+			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
+
+			std::scoped_lock ShaderMutexLock(MapMutexLock);
+			shaderData[(uint32_t)stage] = std::vector<uint32_t>(module.cbegin(), module.cend());
+
+			std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
+			if (out.is_open())
+			{
+				auto& data = shaderData[(uint32_t)stage];
+				out.write((char*)data.data(), data.size() * sizeof(uint32_t));
+				out.flush();
+				out.close();
+			}
+		};
+
+		Timer timer("Shader Recreation Process");
+
+		for (auto&& [stage, source] : shaderSources)
+		{
+			std::filesystem::path shaderFilePath;
+
+			ShaderType shaderType = (ShaderType)stage;
+			switch (shaderType)
+			{
+			case ShaderType::Vertex:
+				shaderFilePath = m_VertexFilePath;
+				break;
+			case ShaderType::Fragment:
+				shaderFilePath = m_FragmentFilePath;
+				break;
+			case ShaderType::Geometry:
+				shaderFilePath = m_GeometryFilePath;
+				break;
+			case ShaderType::Compute:
+				shaderFilePath = m_ComputeFilePath;
+				break;
+			default:
+				VK_CORE_ASSERT(false, "Cannot find Shader Type!");
+				break;
+			}
+
+			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(shaderType));
+			m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderFilePath, source, shaderType));
+		}
+
+		for (auto& future : m_Futures)
+			future.wait();
+
+		VK_CORE_TRACE("Total Shader Async Threads: {0}", m_Futures.size());
+		SetReloadFlag();
 	}
 
 	void VulkanShader::ReflectShaderData()

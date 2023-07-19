@@ -31,20 +31,22 @@ namespace VulkanCore {
 
 		void Bind(VkCommandBuffer commandBuffer);
 		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size);
-		void ReloadPipeline(const std::shared_ptr<Shader>& shader);
+		void ReloadPipeline() override;
 
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
 		inline PipelineSpecification GetSpecification() const override { return m_Specification; }
 		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout(uint32_t index = 0) const { return m_DescriptorSetLayout[index]; }
 	private:
-		void CreateGraphicsPipeline();
+		void InvalidateGraphicsPipeline();
+		void RT_InvalidateGraphicsPipeline();
 		void CreateShaderModule(const std::string& shaderSource, VkShaderModule* shaderModule);
 		void CreateShaderModule(const std::vector<uint32_t>& shaderSource, VkShaderModule* shaderModule);
 		void CreatePipelineCache();
+		void Release();
 	private:
 		PipelineSpecification m_Specification;
 
-		VkPipeline m_GraphicsPipeline;
+		VkPipeline m_GraphicsPipeline = nullptr;
 		VkPipelineLayout m_PipelineLayout = nullptr;
 		VkShaderModule m_VertexShaderModule, m_FragmentShaderModule, m_GeometryShaderModule = nullptr;
 		std::shared_ptr<Shader> m_Shader;

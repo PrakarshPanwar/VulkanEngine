@@ -23,6 +23,7 @@ namespace VulkanCore {
 	class Pipeline : public Resource
 	{
 	public:
+		virtual void ReloadPipeline() = 0;
 		virtual PipelineSpecification GetSpecification() const = 0;
 	};
 
