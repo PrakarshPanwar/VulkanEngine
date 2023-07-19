@@ -15,7 +15,14 @@ namespace VulkanCore {
 	class Shader
 	{
 	public:
+		virtual void Reload() = 0;
 		virtual bool HasGeometryShader() const = 0;
+	public:
+		virtual void SetReloadFlag() { m_ReloadFlag = true; }
+		virtual void ResetReloadFlag() { m_ReloadFlag = false; }
+		virtual bool GetReloadFlag() { return m_ReloadFlag; }
+	protected:
+		bool m_ReloadFlag = false;
 	};
 
 }

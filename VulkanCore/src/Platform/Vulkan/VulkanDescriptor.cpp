@@ -88,7 +88,7 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkCreateDescriptorPool(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), &descriptorPoolInfo, nullptr, &m_DescriptorPool), "Failed to Create Descriptor Pool!");
 	}
 
-	bool VulkanDescriptorPool::AllocateDescriptorSet(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const
+	void VulkanDescriptorPool::AllocateDescriptorSet(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
@@ -100,17 +100,10 @@ namespace VulkanCore {
 
 		// TODO: Might want to create a "DescriptorPoolManager" class that handles this case, and builds
 		// a new pool whenever an old pool fills up. But this is beyond our current scope
-		auto allocResult = vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, &descriptor);
-		if (allocResult != VK_SUCCESS)
-		{
-			VK_CORE_ERROR("Error occured in allocating Descriptors!");
-			return false;
-		}
-
-		return true;
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, &descriptor), "Error occured in allocating Descriptor!");
 	}
 
-	bool VulkanDescriptorPool::AllocateDescriptorSet(const std::vector<VkDescriptorSetLayout>& descriptorSetsLayout, const std::vector<VkDescriptorSet>& descriptorSets)
+	void VulkanDescriptorPool::AllocateDescriptorSet(const std::vector<VkDescriptorSetLayout>& descriptorSetsLayout, const std::vector<VkDescriptorSet>& descriptorSets)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
@@ -118,18 +111,11 @@ namespace VulkanCore {
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = m_DescriptorPool;
 		allocInfo.pSetLayouts = descriptorSetsLayout.data();
-		allocInfo.descriptorSetCount = descriptorSetsLayout.size();
+		allocInfo.descriptorSetCount = (uint32_t)descriptorSetsLayout.size();
 
 		// TODO: Might want to create a "DescriptorPoolManager" class that handles this case, and builds
 		// a new pool whenever an old pool fills up. But this is beyond our current scope
-		auto allocResult = vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, (VkDescriptorSet*)descriptorSets.data());
-		if (allocResult != VK_SUCCESS)
-		{
-			VK_CORE_ERROR("Error occured in allocating Descriptors!");
-			return false;
-		}
-
-		return true;
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, (VkDescriptorSet*)descriptorSets.data()), "Error occured in allocating Descriptors!");
 	}
 
 	void VulkanDescriptorPool::FreeDescriptors(std::vector<VkDescriptorSet>& descriptors) const
@@ -206,15 +192,10 @@ namespace VulkanCore {
 		return *this;
 	}
 
-	bool VulkanDescriptorWriter::Build(VkDescriptorSet& set)
+	void VulkanDescriptorWriter::Build(VkDescriptorSet& set)
 	{
-		bool success = m_Pool.AllocateDescriptorSet(m_SetLayout.GetVulkanDescriptorSetLayout(), set);
-
-		if (!success)
-			return false;
-
+		m_Pool.AllocateDescriptorSet(m_SetLayout.GetVulkanDescriptorSetLayout(), set);
 		Overwrite(set);
-		return true;
 	}
 
 	void VulkanDescriptorWriter::Overwrite(VkDescriptorSet& set)
