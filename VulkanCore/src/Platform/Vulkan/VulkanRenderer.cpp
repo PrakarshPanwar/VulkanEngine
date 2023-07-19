@@ -528,7 +528,7 @@ namespace VulkanCore {
 		{
 			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer);
 			vkCmdWriteTimestamp(vulkanCmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-				vulkanCmdBuffer->m_TimestampQueryPool, vulkanCmdBuffer->m_TimestampsQueryIndex);
+				vulkanCmdBuffer->m_TimestampQueryPools[Renderer::RT_GetCurrentFrameIndex()], vulkanCmdBuffer->m_TimestampsQueryIndex);
 		});
 	}
 
@@ -538,7 +538,7 @@ namespace VulkanCore {
 		{
 			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer);
 			vkCmdWriteTimestamp(vulkanCmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-				vulkanCmdBuffer->m_TimestampQueryPool, vulkanCmdBuffer->m_TimestampsQueryIndex + 1);
+				vulkanCmdBuffer->m_TimestampQueryPools[Renderer::RT_GetCurrentFrameIndex()], vulkanCmdBuffer->m_TimestampsQueryIndex + 1);
 
 			vulkanCmdBuffer->m_TimestampsQueryIndex += 2;
 			vulkanCmdBuffer->m_TimestampsQueryIndex = vulkanCmdBuffer->m_TimestampsQueryIndex % vulkanCmdBuffer->m_TimestampQueryBufferSize;

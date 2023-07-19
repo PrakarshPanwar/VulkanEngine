@@ -33,6 +33,7 @@ namespace VulkanCore {
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 		static inline VkDescriptorSet GetTextureCubeID() { return s_Instance->m_SkyboxTextureID; }
+		static std::shared_ptr<RenderCommandBuffer> GetRenderCommandBuffer() { return s_Instance->m_SceneCommandBuffer; }
 		static void SetSkybox(const std::string& filepath);
 
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
