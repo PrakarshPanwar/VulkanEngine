@@ -24,6 +24,7 @@ namespace VulkanCore {
 
 		inline VkCommandBuffer GetActiveCommandBuffer() const { return m_CommandBuffers[Renderer::GetCurrentFrameIndex()]; }
 		inline VkCommandBuffer RT_GetActiveCommandBuffer() const { return m_CommandBuffers[Renderer::RT_GetCurrentFrameIndex()]; }
+		inline VkQueryPool RT_GetCurrentTimestampQueryPool() const { return m_TimestampQueryPools[Renderer::RT_GetCurrentFrameIndex()]; }
 
 		void RetrieveQueryPoolResults();
 		uint64_t GetQueryTime(uint32_t index) const;

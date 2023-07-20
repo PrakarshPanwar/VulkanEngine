@@ -104,7 +104,7 @@ namespace VulkanCore {
 			{
 				RetrieveQueryPoolResults();
 
-				VkQueryPool queryPool = m_TimestampQueryPools[Renderer::RT_GetCurrentFrameIndex()];
+				VkQueryPool queryPool = RT_GetCurrentTimestampQueryPool();
 				vkCmdResetQueryPool(commandBuffer, queryPool, 0, m_TimestampQueryBufferSize);
 			}
 		});
@@ -113,7 +113,7 @@ namespace VulkanCore {
 	void VulkanRenderCommandBuffer::Begin(VkRenderPass renderPass, VkFramebuffer framebuffer)
 	{
 		VkCommandBuffer commandBuffer = RT_GetActiveCommandBuffer();
-		VkQueryPool queryPool = m_TimestampQueryPools[Renderer::RT_GetCurrentFrameIndex()];
+		VkQueryPool queryPool = RT_GetCurrentTimestampQueryPool();
 
 		VkCommandBufferInheritanceInfo inheritanceInfo{};
 		inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
@@ -145,7 +145,7 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		VkQueryPool queryPool = m_TimestampQueryPools[Renderer::RT_GetCurrentFrameIndex()];
+		VkQueryPool queryPool = RT_GetCurrentTimestampQueryPool();
 		VK_CHECK_WARN(vkGetQueryPoolResults(device->GetVulkanDevice(),
 			queryPool,
 			0,
