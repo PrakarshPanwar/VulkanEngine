@@ -590,7 +590,7 @@ namespace VulkanCore {
 
 		m_DOFComputeTextures.reserve(framesInFlight);
 
-		for (int i = 0; i < framesInFlight; i++)
+		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
 			auto DOFTexture = std::static_pointer_cast<VulkanImage>(m_DOFComputeTextures.emplace_back(std::make_shared<VulkanImage>(dofImageSpec)));
 			DOFTexture->Invalidate();
@@ -1056,8 +1056,8 @@ namespace VulkanCore {
 
 	void SceneRenderer::ExternalCompositePass()
 	{
-		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "External-Composite-Pass", DebugLabelColor::Aqua);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_ExternalCompositePipeline->GetSpecification().pRenderPass);
 
@@ -1072,8 +1072,8 @@ namespace VulkanCore {
 		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_ExternalCompositePipeline, m_ExternalCompositeShaderMaterial);
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_ExternalCompositePipeline->GetSpecification().pRenderPass);
 
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 	}
 
 	void SceneRenderer::BloomCompute()
@@ -1099,10 +1099,11 @@ namespace VulkanCore {
 
 			const uint32_t mips = m_BloomTextures[0]->GetSpecification().MipLevels;
 			glm::uvec2 bloomMipSize = m_BloomMipSize;
+			glm::uvec2 bloomWorkGroups = glm::max(bloomMipSize / 16u, 1u);
 
 			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_BloomParams, sizeof(glm::vec2), sizeof(glm::vec2));
-			vulkanBloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
+			vulkanBloomPipeline->Dispatch(dispatchCmd, bloomWorkGroups.x, bloomWorkGroups.y, 1);
 
 			for (uint32_t i = 1; i < mips; i++)
 			{
@@ -1113,16 +1114,17 @@ namespace VulkanCore {
 
 				m_BloomPingShaderMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 				bloomMipSize = m_BloomTextures[0]->GetMipSize(i);
+				bloomWorkGroups = glm::max(bloomMipSize / 16u, 1u);
 
 				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
-				vulkanBloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
+				vulkanBloomPipeline->Dispatch(dispatchCmd, bloomWorkGroups.x, bloomWorkGroups.y, 1);
 
 				m_LodAndMode.LOD = (float)i;
 				
 				m_BloomPongShaderMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
 				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
-				vulkanBloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
+				vulkanBloomPipeline->Dispatch(dispatchCmd, bloomWorkGroups.x, bloomWorkGroups.y, 1);
 			}
 
 			// Upsample First
@@ -1133,9 +1135,10 @@ namespace VulkanCore {
 			m_BloomUpsampleFirstShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
 			bloomMipSize = m_BloomTextures[2]->GetMipSize(mips - 1);
+			bloomWorkGroups = glm::max(bloomMipSize / 16u, 1u);
 
 			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
-			vulkanBloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
+			vulkanBloomPipeline->Dispatch(dispatchCmd, bloomWorkGroups.x, bloomWorkGroups.y, 1);
 
 			// Upsample Final
 			for (int i = mips - 2; i >= 0; --i)
@@ -1146,9 +1149,10 @@ namespace VulkanCore {
 				m_BloomUpsampleShaderMaterials[i]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
 				bloomMipSize = m_BloomTextures[2]->GetMipSize(i);
+				bloomWorkGroups = glm::max(bloomMipSize / 16u, 1u);
 
 				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
-				vulkanBloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
+				vulkanBloomPipeline->Dispatch(dispatchCmd, bloomWorkGroups.x, bloomWorkGroups.y, 1);
 			}
 		});
 
@@ -1158,8 +1162,8 @@ namespace VulkanCore {
 
 	void SceneRenderer::DOFCompute()
 	{
-		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "DOF", DebugLabelColor::Green);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::Submit([this]
 		{
@@ -1190,8 +1194,8 @@ namespace VulkanCore {
 			vulkanDOFPipeline->Dispatch(dispatchCmd, dofImageSize.x / 16, dofImageSize.y / 16, 1);
 		});
 
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 	}
 
 	void SceneRenderer::CreateCommandBuffers()
