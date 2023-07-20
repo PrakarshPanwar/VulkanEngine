@@ -116,7 +116,7 @@ namespace VulkanCore {
 
 	VulkanImage::~VulkanImage()
 	{
-		if (m_Info.Image == nullptr)
+		if (!m_Info.Image)
 			return;
 
 		Release();
@@ -124,7 +124,7 @@ namespace VulkanCore {
 
 	void VulkanImage::Invalidate()
 	{
-		if (m_Info.Image != nullptr)
+		if (m_Info.Image)
 			Release();
 
 		auto device = VulkanContext::GetCurrentDevice();
