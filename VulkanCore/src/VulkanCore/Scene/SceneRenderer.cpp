@@ -971,8 +971,8 @@ namespace VulkanCore {
 
 	void SceneRenderer::CompositePass()
 	{
-		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Composite-Pass", DebugLabelColor::Red);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().pRenderPass);
 
@@ -987,8 +987,8 @@ namespace VulkanCore {
 		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_CompositePipeline, m_CompositeShaderMaterial);
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().pRenderPass);
 
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 	}
 
 	void SceneRenderer::GeometryPass()
@@ -998,17 +998,17 @@ namespace VulkanCore {
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().pRenderPass);
 
-		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Skybox", DebugLabelColor::Orange);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		// Rendering Skybox
 		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxMaterial, &m_SkyboxSettings);
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 
 		// Rendering Geometry
-		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Geometry-Pass", DebugLabelColor::Gold);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::Submit([this]
 		{
@@ -1023,21 +1023,23 @@ namespace VulkanCore {
 		for (auto& [mk, dc] : m_MeshDrawList)
 			Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk].Transforms, dc.InstanceCount);
 
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 
 		// TODO: Render Transparent Meshes
 
 		// Rendering Point Lights
-		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Lights", DebugLabelColor::Grey);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		RenderLights();
 
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().pRenderPass);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Copy-Image", DebugLabelColor::Pink);
 
 		// Copying Image for Bloom
 		int frameIndex = Renderer::GetCurrentFrameIndex();
@@ -1047,6 +1049,8 @@ namespace VulkanCore {
 			m_SceneRenderTextures[frameIndex]);
 
 		Renderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
+
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 	}
 
 
@@ -1074,8 +1078,8 @@ namespace VulkanCore {
 
 	void SceneRenderer::BloomCompute()
 	{
-		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Bloom", DebugLabelColor::Blue);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::Submit([this]
 		{
@@ -1148,8 +1152,8 @@ namespace VulkanCore {
 			}
 		});
 
-		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 	}
 
 	void SceneRenderer::DOFCompute()
