@@ -949,7 +949,7 @@ namespace VulkanCore {
 			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_BloomParams, sizeof(glm::vec2), sizeof(glm::vec2));
 			vulkanBloomPipeline->Dispatch(dispatchCmd, bloomMipSize.x / 16, bloomMipSize.y / 16, 1);
 
-			for (uint32_t i = 1; i < mips; i++)
+			for (uint32_t i = 1; i < mips; ++i)
 			{
 				m_LodAndMode.LOD = float(i - 1);
 				m_LodAndMode.Mode = 1.0f;
