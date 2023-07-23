@@ -259,6 +259,14 @@ namespace VulkanCore {
 
 		auto sampleCount = m_DeviceProperties.limits.framebufferColorSampleCounts & m_DeviceProperties.limits.framebufferDepthSampleCounts;
 		m_MSAASamples = VK_SAMPLE_COUNT_8_BIT; // TODO: Get this through some function
+
+		// Ray Tracing Properties
+		m_RayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+
+		VkPhysicalDeviceProperties2 deviceProperties2{};
+		deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		deviceProperties2.pNext = &m_RayTracingProperties;
+		vkGetPhysicalDeviceProperties2(m_PhysicalDevice, &deviceProperties2);
 	}
 
 	void VulkanDevice::CreateLogicalDevice()

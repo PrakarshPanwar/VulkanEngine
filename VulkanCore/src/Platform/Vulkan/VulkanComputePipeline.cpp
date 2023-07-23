@@ -118,8 +118,8 @@ namespace VulkanCore {
 	void VulkanComputePipeline::InvalidateComputePipeline()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-		auto shader = std::static_pointer_cast<VulkanShader>(m_Shader);
 
+		auto shader = std::static_pointer_cast<VulkanShader>(m_Shader);
 		auto& shaderSources = shader->GetShaderModules();
 
 		m_ComputeShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Compute]);
@@ -140,7 +140,6 @@ namespace VulkanCore {
 		computePipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 		computePipelineInfo.stage = shaderStage;
 		computePipelineInfo.layout = m_PipelineLayout;
-
 		computePipelineInfo.basePipelineIndex = -1;
 		computePipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 

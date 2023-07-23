@@ -14,19 +14,35 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		std::shared_ptr<Shader> MakeShader(const std::string& path)
+		std::shared_ptr<Shader> MakeShader(const std::string& path, bool rayTraceShader = false)
 		{
-			const std::filesystem::path shaderPath = "assets\\shaders";
-			std::filesystem::path vertexShaderPath = shaderPath / path, fragmentShaderPath = shaderPath / path, computeShaderPath = shaderPath / path;
-			vertexShaderPath.replace_extension(".vert");
-			fragmentShaderPath.replace_extension(".frag");
-			computeShaderPath.replace_extension(".comp");
+			if (rayTraceShader)
+			{
+				const std::filesystem::path shaderPath = "assets\\shaders";
+				std::filesystem::path rayGenShaderPath = shaderPath / path,
+					rayClosestHitShaderPath = shaderPath / path,
+					rayMissShaderPath = shaderPath / path;
 
-			if (std::filesystem::exists(vertexShaderPath) && std::filesystem::exists(fragmentShaderPath))
-				return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string());
+				rayGenShaderPath.replace_extension(".rgen");
+				rayClosestHitShaderPath.replace_extension(".rchit");
+				rayMissShaderPath.replace_extension(".rmiss");
 
-			if (std::filesystem::exists(computeShaderPath))
-				return std::make_shared<VulkanShader>(computeShaderPath.string());
+				return std::make_shared<VulkanShader>(rayGenShaderPath.string(), rayClosestHitShaderPath.string(), rayMissShaderPath.string(), "");
+			}
+			else
+			{
+				const std::filesystem::path shaderPath = "assets\\shaders";
+				std::filesystem::path vertexShaderPath = shaderPath / path, fragmentShaderPath = shaderPath / path, computeShaderPath = shaderPath / path;
+				vertexShaderPath.replace_extension(".vert");
+				fragmentShaderPath.replace_extension(".frag");
+				computeShaderPath.replace_extension(".comp");
+
+				if (std::filesystem::exists(vertexShaderPath) && std::filesystem::exists(fragmentShaderPath))
+					return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string());
+
+				if (std::filesystem::exists(computeShaderPath))
+					return std::make_shared<VulkanShader>(computeShaderPath.string());
+			}
 
 			VK_CORE_ASSERT(false, "Shader: {} does not exist!", path);
 			return std::make_shared<VulkanShader>();

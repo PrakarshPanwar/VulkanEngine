@@ -344,11 +344,9 @@ namespace VulkanCore {
 		graphicsPipelineInfo.pDepthStencilState = &pipelineInfo.DepthStencilInfo;
 		graphicsPipelineInfo.pMultisampleState = &pipelineInfo.MultisampleInfo;
 		graphicsPipelineInfo.pDynamicState = &pipelineInfo.DynamicStateInfo;
-
 		graphicsPipelineInfo.layout = m_PipelineLayout;
 		graphicsPipelineInfo.renderPass = std::dynamic_pointer_cast<VulkanRenderPass>(m_Specification.pRenderPass)->GetVulkanRenderPass();
 		graphicsPipelineInfo.subpass = pipelineInfo.Subpass;
-
 		graphicsPipelineInfo.basePipelineIndex = -1;
 		graphicsPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
