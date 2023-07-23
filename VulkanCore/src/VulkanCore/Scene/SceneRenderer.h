@@ -4,6 +4,7 @@
 #include "VulkanCore/Renderer/UniformBuffer.h"
 #include "VulkanCore/Renderer/VertexBuffer.h"
 #include "VulkanCore/Renderer/RenderCommandBuffer.h"
+#include "VulkanCore/Renderer/AccelerationStructure.h"
 #include "Platform/Vulkan/VulkanVertexBuffer.h"
 
 #include <glm/glm.hpp>
@@ -103,7 +104,7 @@ namespace VulkanCore {
 			MeshTransform() = default;
 
 			std::vector<TransformData> Transforms = std::vector<TransformData>{ 10 };
-			std::shared_ptr<VertexBuffer> TransformBuffer = std::make_shared<VulkanVertexBuffer>(10 * sizeof(TransformData));
+			std::shared_ptr<VertexBuffer> TransformBuffer = std::make_shared<VulkanVertexBuffer>(10 * sizeof(VkTransformMatrixKHR));
 		};
 
 		struct LodAndMode
@@ -133,6 +134,7 @@ namespace VulkanCore {
 		std::shared_ptr<Scene> m_Scene;
 
 		std::shared_ptr<RenderCommandBuffer> m_SceneCommandBuffer;
+		std::shared_ptr<AccelerationStructure> m_SceneAccelerationStructure;
 		std::shared_ptr<Framebuffer> m_SceneFramebuffer;
 		std::vector<VkDescriptorSet> m_SceneImages;
 

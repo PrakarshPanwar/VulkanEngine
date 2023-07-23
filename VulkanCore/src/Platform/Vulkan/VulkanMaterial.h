@@ -3,6 +3,8 @@
 #include "VulkanCore/Renderer/Material.h"
 #include "VulkanCore/Renderer/Renderer.h"
 #include "Platform/Vulkan/VulkanTexture.h"
+#include "Platform/Vulkan/VulkanRayTracingPipeline.h"
+#include "Platform/Vulkan/VulkanAccelerationStructure.h"
 
 namespace VulkanCore {
 
@@ -32,9 +34,11 @@ namespace VulkanCore {
 		void SetTextures(uint32_t binding, const std::vector<std::shared_ptr<Texture2D>>& textures) override;
 		void SetBuffer(uint32_t binding, std::shared_ptr<UniformBuffer> uniformBuffer) override;
 		void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<UniformBuffer>>& uniformBuffers) override;
+		void SetAccelerationStructure(uint32_t binding, const std::shared_ptr<AccelerationStructure>& accelerationStructure) override;
 
 		void RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, uint32_t setIndex = 0) override;
 		void RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<ComputePipeline>& pipeline, uint32_t setIndex = 0) override;
+		void RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, uint32_t setIndex) override;
 
 		void UpdateMaterials() override;
 		void PrepareShaderMaterial() override;

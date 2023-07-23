@@ -11,6 +11,7 @@ namespace VulkanCore {
 	public:
 		VulkanShader() = default;
 		VulkanShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath = "");
+		VulkanShader(const std::string& rtgenfilepath, const std::string& rthitfilepath, const std::string& rtmissfilepath, const std::string& rtintfilepath);
 		VulkanShader(const std::string& cmpfilepath);
 		~VulkanShader();
 
@@ -25,16 +26,21 @@ namespace VulkanCore {
 
 		void Reload() override;
 		inline bool HasGeometryShader() const override { return !m_GeometryFilePath.empty(); }
+		inline bool IsRayTraced() const override { return !m_RayTraceGenFilePath.empty(); }
+		inline bool HasRayIntersectionShader() const override { return !m_RayTraceIntersectionFilePath.empty(); }
 	private:
 		std::tuple<std::string, std::string> ParseShader(const std::string& vsfilepath, const std::string& fsfilepath);
 		std::tuple<std::string, std::string, std::string> ParseShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath);
+		std::tuple<std::string, std::string, std::string, std::string> ParseShader(const std::string & rtgenfilepath, const std::string & rthitfilepath, const std::string & rtmissfilepath, const std::string & rtintfilepath);
 		std::string ParseShader(const std::string& cmpfilepath);
 		void ParseShader();
 		void CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources);
+		void CompileOrGetVulkanRTBinaries(std::unordered_map<uint32_t, std::string>& shaderSources);
 		void ReflectShaderData();
 		void InvalidateDescriptors();
 	private:
 		std::string m_VertexFilePath, m_FragmentFilePath, m_GeometryFilePath, m_ComputeFilePath;
+		std::string m_RayTraceGenFilePath, m_RayTraceHitFilePath, m_RayTraceMissFilePath, m_RayTraceIntersectionFilePath;
 		std::unordered_map<uint32_t, std::string> m_ShaderSources;
 		std::unordered_map<uint32_t, std::vector<uint32_t>> m_VulkanSPIRV;
 		std::vector<std::future<void>> m_Futures;

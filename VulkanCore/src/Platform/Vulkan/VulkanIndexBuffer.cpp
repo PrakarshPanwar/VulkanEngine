@@ -28,10 +28,13 @@ namespace VulkanCore {
 		memcpy(dstData, data, size);
 		allocator.UnmapMemory(stagingBufferAlloc);
 
+		VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+			VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT; // Acceleration Structure
+
 		VkBufferCreateInfo indexBufferCreateInfo{};
 		indexBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		indexBufferCreateInfo.size = m_Size;
-		indexBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		indexBufferCreateInfo.usage = usage;
 		m_MemoryAllocation = allocator.AllocateBuffer(indexBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_VulkanBuffer);
 
 		VkCommandBuffer copyCmd = device->GetCommandBuffer();

@@ -307,6 +307,29 @@ namespace VulkanCore {
 		m_MaterialDescriptorWriter[binding] = writeDescriptors;
 	}
 
+	void VulkanMaterial::SetAccelerationStructure(uint32_t binding, const std::shared_ptr<AccelerationStructure>& accelerationStructure)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+		auto vulkanAS = std::static_pointer_cast<VulkanAccelerationStructure>(accelerationStructure);
+
+		std::vector<VkWriteDescriptorSet> writeDescriptors{};
+		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
+		{
+			VkWriteDescriptorSet writeDescriptor{};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
+			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+			writeDescriptor.dstBinding = binding;
+			writeDescriptor.descriptorCount = 1;
+			writeDescriptor.dstArrayElement = 0;
+			writeDescriptor.pNext = &vulkanAS->GetDescriptorAccelerationStructureInfo();
+
+			writeDescriptors.push_back(writeDescriptor);
+		}
+
+		m_MaterialDescriptorWriter[binding] = writeDescriptors;
+	}
+
 	void VulkanMaterial::RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, uint32_t setIndex)
 	{
 		auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
@@ -328,6 +351,24 @@ namespace VulkanCore {
 	void VulkanMaterial::RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<ComputePipeline>& pipeline, uint32_t setIndex)
 	{
 		auto vulkanPipeline = std::static_pointer_cast<VulkanComputePipeline>(pipeline);
+		auto vulkanRenderCB = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer);
+
+		VkCommandBuffer bindCmd = vulkanRenderCB->RT_GetActiveCommandBuffer();
+		VkDescriptorSet descriptorSet[1] = { RT_GetVulkanMaterialDescriptorSet() };
+
+		vkCmdBindDescriptorSets(bindCmd,
+			VK_PIPELINE_BIND_POINT_COMPUTE,
+			vulkanPipeline->GetVulkanPipelineLayout(),
+			setIndex,
+			1,
+			descriptorSet,
+			0,
+			nullptr);
+	}
+
+	void VulkanMaterial::RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, uint32_t setIndex)
+	{
+		auto vulkanPipeline = std::static_pointer_cast<VulkanRayTracingPipeline>(pipeline);
 		auto vulkanRenderCB = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer);
 
 		VkCommandBuffer bindCmd = vulkanRenderCB->RT_GetActiveCommandBuffer();

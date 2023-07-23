@@ -3,6 +3,8 @@
 #include "VulkanCore/Renderer/Texture.h"
 #include "VulkanCore/Renderer/UniformBuffer.h"
 #include "RenderCommandBuffer.h"
+#include "AccelerationStructure.h"
+#include "RayTracingPipeline.h"
 #include "ComputePipeline.h"
 #include "Pipeline.h"
 
@@ -46,9 +48,11 @@ namespace VulkanCore {
 		virtual void SetTextures(uint32_t binding, const std::vector<std::shared_ptr<Texture2D>>& textures) = 0;
 		virtual void SetBuffer(uint32_t binding, std::shared_ptr<UniformBuffer> uniformBuffer) = 0;
 		virtual void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<UniformBuffer>>& uniformBuffers) = 0;
+		virtual void SetAccelerationStructure(uint32_t binding, const std::shared_ptr<AccelerationStructure>& accelerationStructure) = 0;
 
 		virtual void RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, uint32_t setIndex = 0) = 0;
 		virtual void RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<ComputePipeline>& pipeline, uint32_t setIndex = 0) = 0;
+		virtual void RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, uint32_t setIndex) = 0;
 
 		virtual void UpdateMaterials() = 0;
 		virtual void PrepareShaderMaterial() = 0;
