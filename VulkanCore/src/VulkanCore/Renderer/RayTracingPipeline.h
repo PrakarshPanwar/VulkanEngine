@@ -7,6 +7,7 @@ namespace VulkanCore {
 	{
 	public:
 		virtual void CreateShaderBindingTable() = 0;
+		virtual std::shared_ptr<Shader> GetShader() const = 0;
 	};
 
 }

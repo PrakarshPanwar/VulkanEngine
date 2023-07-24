@@ -100,7 +100,7 @@ namespace VulkanCore {
 
 		// TODO: Might want to create a "DescriptorPoolManager" class that handles this case, and builds
 		// a new pool whenever an old pool fills up. But this is beyond our current scope
-		VK_CHECK_RESULT(vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, &descriptor), "Error occured in allocating Descriptor!");
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, &descriptor), "Failed in Allocating Descriptors!");
 	}
 
 	void VulkanDescriptorPool::AllocateDescriptorSet(const std::vector<VkDescriptorSetLayout>& descriptorSetsLayout, const std::vector<VkDescriptorSet>& descriptorSets)
@@ -115,7 +115,7 @@ namespace VulkanCore {
 
 		// TODO: Might want to create a "DescriptorPoolManager" class that handles this case, and builds
 		// a new pool whenever an old pool fills up. But this is beyond our current scope
-		VK_CHECK_RESULT(vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, (VkDescriptorSet*)descriptorSets.data()), "Error occured in allocating Descriptors!");
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(device->GetVulkanDevice(), &allocInfo, (VkDescriptorSet*)descriptorSets.data()), "Failed in Allocating Descriptors!");
 	}
 
 	void VulkanDescriptorPool::FreeDescriptors(std::vector<VkDescriptorSet>& descriptors) const

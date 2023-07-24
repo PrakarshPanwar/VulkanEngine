@@ -662,7 +662,6 @@ namespace VulkanCore {
 				height,
 				1);
 		});
-
 	}
 
 	void VulkanRenderer::ResetStats()
@@ -682,8 +681,10 @@ namespace VulkanCore {
 	{
 		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
 		descriptorPoolBuilder.SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
-		descriptorPoolBuilder.SetMaxSets(100).AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10);
-		descriptorPoolBuilder.SetMaxSets(1000).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10);
+		descriptorPoolBuilder.SetMaxSets(1000);
+		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10);
+		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10);
+		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 10);
 		m_GlobalDescriptorPool = descriptorPoolBuilder.Build();
 	}
 

@@ -6,7 +6,7 @@
 
 namespace VulkanCore {
 
-	struct VulkanShaderBindingInfo
+	struct VulkanSBTInfo
 	{
 		VkBuffer Buffer = nullptr;
 		VmaAllocation MemoryAlloc = nullptr;
@@ -26,6 +26,7 @@ namespace VulkanCore {
 		void CreateShaderBindingTable() override;
 
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
+		inline std::shared_ptr<Shader> GetShader() const override { return m_Shader; }
 		inline const VkStridedDeviceAddressRegionKHR& GetRayGenStridedDeviceAddressRegion() const { return m_RayGenBindingInfo.DeviceAddressRegion; }
 		inline const VkStridedDeviceAddressRegionKHR& GetRayClosestHitStridedDeviceAddressRegion() const { return m_RayClosestHitBindingInfo.DeviceAddressRegion; }
 		inline const VkStridedDeviceAddressRegionKHR& GetRayMissStridedDeviceAddressRegion() const { return m_RayMissBindingInfo.DeviceAddressRegion; }
@@ -41,7 +42,7 @@ namespace VulkanCore {
 		std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_ShaderGroups{};
 		std::shared_ptr<Shader> m_Shader;
 
-		VulkanShaderBindingInfo m_RayGenBindingInfo, m_RayClosestHitBindingInfo, m_RayMissBindingInfo, m_RayIntersectionBindingInfo{};
+		VulkanSBTInfo m_RayGenBindingInfo, m_RayClosestHitBindingInfo, m_RayMissBindingInfo, m_RayIntersectionBindingInfo{};
 		std::shared_ptr<VulkanDescriptorSetLayout> m_DescriptorSetLayout;
 	};
 

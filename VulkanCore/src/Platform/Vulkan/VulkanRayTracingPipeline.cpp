@@ -71,7 +71,7 @@ namespace VulkanCore {
 	VulkanRayTracingPipeline::VulkanRayTracingPipeline(std::shared_ptr<Shader> shader, const std::string& debugName)
 		: m_DebugName(debugName), m_Shader(shader)
 	{
-
+		InvalidateRayTracingPipeline();
 	}
 
 	VulkanRayTracingPipeline::~VulkanRayTracingPipeline()
