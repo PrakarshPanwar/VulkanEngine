@@ -49,7 +49,7 @@ namespace VulkanCore {
 		inline VkQueue GetGraphicsQueue() { return m_GraphicsQueue; }
 		inline VkQueue GetPresentQueue() { return m_PresentQueue; }
 		inline VkPhysicalDeviceProperties& GetPhysicalDeviceProperties() { return m_DeviceProperties; }
-		inline VkPhysicalDeviceRayTracingPipelinePropertiesKHR& GetPhysicalDeviceRayTracingPipelineProperties() { return m_RayTracingProperties; }
+		inline VkPhysicalDeviceRayTracingPipelinePropertiesKHR& GetPhysicalDeviceRayTracingPipelineProperties() { return m_RayTracingPipelineProperties; }
 		inline VkSampleCountFlagBits GetMSAASampleCount() { return m_MSAASamples; }
 
 		void Init();
@@ -74,7 +74,7 @@ namespace VulkanCore {
 		VkAllocationCallbacks m_AllocationCallbacks;
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 		VkPhysicalDeviceProperties m_DeviceProperties;
-		VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_RayTracingProperties;
+		VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_RayTracingPipelineProperties{};
 		VkSampleCountFlagBits m_MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 		VkCommandPool m_CommandPool, m_RTCommandPool, m_ComputeCommandPool;
 

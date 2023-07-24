@@ -636,6 +636,35 @@ namespace VulkanCore {
 		});
 	}
 
+	void VulkanRenderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial, uint32_t width, uint32_t height)
+	{
+		Renderer::Submit([cmdBuffer, pipeline, shaderMaterial, width, height]
+		{
+			VK_CORE_PROFILE_FN("Renderer::TraceRays");
+
+			VkCommandBuffer vulkanTraceCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+			auto vulkanPipeline = std::static_pointer_cast<VulkanRayTracingPipeline>(pipeline);
+			vulkanPipeline->Bind(vulkanTraceCmd);
+
+			auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(shaderMaterial);
+			vkCmdBindDescriptorSets(vulkanTraceCmd,
+				VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
+				vulkanPipeline->GetVulkanPipelineLayout(),
+				0, 1, &vulkanMaterial->RT_GetVulkanMaterialDescriptorSet(),
+				0, nullptr);
+
+			vkCmdTraceRaysKHR(vulkanTraceCmd,
+				&vulkanPipeline->GetRayGenStridedDeviceAddressRegion(),
+				&vulkanPipeline->GetRayMissStridedDeviceAddressRegion(),
+				&vulkanPipeline->GetRayClosestHitStridedDeviceAddressRegion(),
+				nullptr,
+				width,
+				height,
+				1);
+		});
+
+	}
+
 	void VulkanRenderer::ResetStats()
 	{
 		s_Data.DrawCalls = 0;

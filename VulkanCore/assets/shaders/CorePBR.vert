@@ -28,6 +28,7 @@ layout(set = 0, binding = 0) uniform Camera
 {
 	mat4 Projection;
 	mat4 View;
+    mat4 InverseProjection;
 	mat4 InverseView;
 } u_Camera;
 
