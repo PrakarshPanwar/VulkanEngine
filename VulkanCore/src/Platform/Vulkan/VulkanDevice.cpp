@@ -259,14 +259,6 @@ namespace VulkanCore {
 
 		auto sampleCount = m_DeviceProperties.limits.framebufferColorSampleCounts & m_DeviceProperties.limits.framebufferDepthSampleCounts;
 		m_MSAASamples = VK_SAMPLE_COUNT_8_BIT; // TODO: Get this through some function
-
-		// Ray Tracing Properties
-		m_RayTracingProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
-
-		VkPhysicalDeviceProperties2 deviceProperties2{};
-		deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-		deviceProperties2.pNext = &m_RayTracingProperties;
-		vkGetPhysicalDeviceProperties2(m_PhysicalDevice, &deviceProperties2);
 	}
 
 	void VulkanDevice::CreateLogicalDevice()
@@ -296,7 +288,6 @@ namespace VulkanCore {
 
 		VkDeviceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
@@ -313,22 +304,54 @@ namespace VulkanCore {
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
 		createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-		// Might not really be Necessary anymore because device specific Validation Layers
-		// have been deprecated
+		// Might not really be Necessary anymore because device specific Validation Layers have been deprecated
 		if (VulkanContext::GetCurrentContext()->m_EnableValidation)
 		{
 			createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 			createInfo.ppEnabledLayerNames = validationLayers.data();
 		}
-
 		else
 			createInfo.enabledLayerCount = 0;
+
+		VkPhysicalDeviceBufferDeviceAddressFeatures physicalDeviceBufferDeviceAddressFeatures{};
+		physicalDeviceBufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+		physicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
+
+		VkPhysicalDeviceRayTracingPipelineFeaturesKHR physicalDeviceRayTracingPipelineFeatures{};
+		physicalDeviceRayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+		physicalDeviceRayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
+		physicalDeviceRayTracingPipelineFeatures.pNext = &physicalDeviceBufferDeviceAddressFeatures;
+
+		VkPhysicalDeviceAccelerationStructureFeaturesKHR physicalDeviceAccelerationStructureFeatures{};
+		physicalDeviceAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+		physicalDeviceAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
+		physicalDeviceAccelerationStructureFeatures.pNext = &physicalDeviceRayTracingPipelineFeatures;
+
+		void* pNextChain = &physicalDeviceAccelerationStructureFeatures;
+
+		VkPhysicalDeviceFeatures2 physicalDeviceFeatures{};
+		physicalDeviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		if (pNextChain)
+		{
+			physicalDeviceFeatures.features = deviceFeatures;
+			physicalDeviceFeatures.pNext = pNextChain;
+			createInfo.pEnabledFeatures = nullptr;
+			createInfo.pNext = &physicalDeviceFeatures;
+		}
 
 		VK_CHECK_RESULT(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_LogicalDevice), "Failed to Create Logical Device!");
 
 		vkGetDeviceQueue(m_LogicalDevice, indices.GraphicsFamily, 0, &m_GraphicsQueue);
 		vkGetDeviceQueue(m_LogicalDevice, indices.ComputeFamily, 0, &m_ComputeQueue);
 		vkGetDeviceQueue(m_LogicalDevice, indices.PresentFamily, 0, &m_PresentQueue);
+
+		// Ray Tracing Properties
+		m_RayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+
+		VkPhysicalDeviceProperties2 deviceProperties2{};
+		deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		deviceProperties2.pNext = &m_RayTracingPipelineProperties;
+		vkGetPhysicalDeviceProperties2(m_PhysicalDevice, &deviceProperties2);
 	}
 
 	void VulkanDevice::CreateCommandPools()

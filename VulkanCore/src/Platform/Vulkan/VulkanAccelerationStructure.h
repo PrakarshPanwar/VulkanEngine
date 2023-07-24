@@ -1,6 +1,7 @@
 #pragma once
 #include "VulkanContext.h"
 #include "VulkanCore/Renderer/AccelerationStructure.h"
+#include "VulkanCore/Mesh/Mesh.h"
 
 namespace VulkanCore {
 
@@ -20,7 +21,7 @@ namespace VulkanCore {
 
 		void BuildTopLevelAccelerationStructure() override;
 		void BuildBottomLevelAccelerationStructure() override;
-		void SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<VertexBuffer> transformBuffer, uint32_t transformOffset) override;
+		void SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<VertexBuffer> transformBuffer, uint32_t transformOffset);
 
 		inline const VkWriteDescriptorSetAccelerationStructureKHR& GetDescriptorAccelerationStructureInfo() const
 		{

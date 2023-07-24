@@ -88,6 +88,7 @@ namespace VulkanCore {
 	void Renderer::BuildShaders()
 	{
 		m_Shaders["CorePBR"] = Utils::MakeShader("CorePBR");
+		m_Shaders["CoreRT"] = Utils::MakeShader("CoreRT", true);
 		m_Shaders["LightShader"] = Utils::MakeShader("LightShader");
 		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
 		m_Shaders["Bloom"] = Utils::MakeShader("Bloom");
@@ -152,6 +153,11 @@ namespace VulkanCore {
 	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial)
 	{
 		s_Renderer->SubmitFullscreenQuad(cmdBuffer, pipeline, shaderMaterial);
+	}
+
+	void Renderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial, uint32_t width, uint32_t height)
+	{
+		s_Renderer->TraceRays(cmdBuffer, pipeline, shaderMaterial, width, height);
 	}
 
 	std::shared_ptr<Image2D> Renderer::CreateBRDFTexture()

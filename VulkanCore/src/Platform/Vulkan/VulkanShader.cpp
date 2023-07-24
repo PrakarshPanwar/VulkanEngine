@@ -152,6 +152,8 @@ namespace VulkanCore {
 
 		m_ShaderSources = Sources;
 		CompileOrGetVulkanRTBinaries(Sources);
+
+		ReflectShaderData();
 	}
 
 	VulkanShader::~VulkanShader()
@@ -520,7 +522,8 @@ namespace VulkanCore {
 		shaderc::Compiler compiler;
 		shaderc::CompileOptions options;
 
-		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
+		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+		options.SetTargetSpirv(shaderc_spirv_version_1_4);
 		const bool optimize = true;
 
 		if (optimize)
@@ -544,6 +547,7 @@ namespace VulkanCore {
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 			{
 				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
+				//shaderc_compilation_status compileStat = module.GetCompilationStatus();
 				__debugbreak();
 			}
 
@@ -706,6 +710,8 @@ namespace VulkanCore {
 		std::filesystem::path shaderFilePath = m_VertexFilePath;
 		if (!std::filesystem::exists(shaderFilePath))
 			shaderFilePath = m_ComputeFilePath;
+		if (IsRayTraced())
+			shaderFilePath = m_RayTraceGenFilePath;
 
 		VK_CORE_INFO("In {0}:", shaderFilePath.stem());
 

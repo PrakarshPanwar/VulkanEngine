@@ -26,6 +26,9 @@ namespace VulkanCore {
 		void CreateShaderBindingTable() override;
 
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
+		inline const VkStridedDeviceAddressRegionKHR& GetRayGenStridedDeviceAddressRegion() const { return m_RayGenBindingInfo.DeviceAddressRegion; }
+		inline const VkStridedDeviceAddressRegionKHR& GetRayClosestHitStridedDeviceAddressRegion() const { return m_RayClosestHitBindingInfo.DeviceAddressRegion; }
+		inline const VkStridedDeviceAddressRegionKHR& GetRayMissStridedDeviceAddressRegion() const { return m_RayMissBindingInfo.DeviceAddressRegion; }
 	private:
 		void InvalidateRayTracingPipeline();
 		void RT_InvalidateRayTracingPipeline();

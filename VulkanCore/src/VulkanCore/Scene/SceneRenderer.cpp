@@ -687,6 +687,7 @@ namespace VulkanCore {
 		UBCamera cameraUB{};
 		cameraUB.Projection = camera.GetProjectionMatrix();
 		cameraUB.View = camera.GetViewMatrix();
+		cameraUB.InverseProjection = glm::inverse(camera.GetProjectionMatrix());
 		cameraUB.InverseView = glm::inverse(camera.GetViewMatrix());
 		m_UBCamera[frameIndex]->WriteAndFlushBuffer(&cameraUB);
 
