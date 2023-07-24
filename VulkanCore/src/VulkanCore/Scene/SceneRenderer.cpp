@@ -190,6 +190,12 @@ namespace VulkanCore {
 		{
 			m_BloomPipeline = std::make_shared<VulkanComputePipeline>(Renderer::GetShader("Bloom"), "Bloom Pipeline");
 		}
+
+		// Ray Tracing Pipeline
+		{
+			m_RayTracingPipeline = std::make_shared<VulkanRayTracingPipeline>(Renderer::GetShader("CoreRT"), "Ray Tracing Pipeline");
+			m_RayTracingPipeline->CreateShaderBindingTable();
+		}
 	}
 
 	void SceneRenderer::CreateMaterials()
@@ -322,6 +328,16 @@ namespace VulkanCore {
 			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
 			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
+
+		// Ray Tracing Material
+		{
+			m_RayTracingMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Shader Material");
+
+			m_RayTracingMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
+			m_RayTracingMaterial->SetImages(0, m_SceneRTOutputImages);
+			m_RayTracingMaterial->SetBuffers(2, m_UBCamera);
+			m_RayTracingMaterial->PrepareShaderMaterial();
+		}
 	}
 
 	void SceneRenderer::RecreateMaterials()
@@ -424,6 +440,12 @@ namespace VulkanCore {
 			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
 			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
+
+		// Ray Tracing Material
+		{
+			m_RayTracingMaterial->SetImages(0, m_SceneRTOutputImages);
+			m_RayTracingMaterial->PrepareShaderMaterial();
+		}
 	}
 
 	void SceneRenderer::RecreatePipelines()
@@ -490,17 +512,17 @@ namespace VulkanCore {
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, BloomTexture->GetSpecification().MipLevels, 0, 1 });
 		}
 
-		ImageSpecification sceneRTSpec = {};
-		sceneRTSpec.DebugName = "Scene Render Texture";
-		sceneRTSpec.Width = m_ViewportSize.x;
-		sceneRTSpec.Height = m_ViewportSize.y;
-		sceneRTSpec.Format = ImageFormat::RGBA32F;
-		sceneRTSpec.Usage = ImageUsage::Texture;
-		sceneRTSpec.MipLevels = Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y);
+		ImageSpecification sceneRenderTextureSpec = {};
+		sceneRenderTextureSpec.DebugName = "Scene Render Texture";
+		sceneRenderTextureSpec.Width = m_ViewportSize.x;
+		sceneRenderTextureSpec.Height = m_ViewportSize.y;
+		sceneRenderTextureSpec.Format = ImageFormat::RGBA32F;
+		sceneRenderTextureSpec.Usage = ImageUsage::Texture;
+		sceneRenderTextureSpec.MipLevels = Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y);
 
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
-			auto SceneTexture = std::static_pointer_cast<VulkanImage>(m_SceneRenderTextures.emplace_back(std::make_shared<VulkanImage>(sceneRTSpec)));
+			auto SceneTexture = std::static_pointer_cast<VulkanImage>(m_SceneRenderTextures.emplace_back(std::make_shared<VulkanImage>(sceneRenderTextureSpec)));
 			SceneTexture->Invalidate();
 
 			Utils::InsertImageMemoryBarrier(barrierCmd, SceneTexture->GetVulkanImageInfo().Image,
@@ -508,6 +530,26 @@ namespace VulkanCore {
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneTexture->GetSpecification().MipLevels, 0, 1 });
+		}
+
+		ImageSpecification sceneRTOutputSpec = {};
+		sceneRTOutputSpec.DebugName = "Scene Ray Tracing Output";
+		sceneRTOutputSpec.Width = m_ViewportSize.x;
+		sceneRTOutputSpec.Height = m_ViewportSize.y;
+		// TODO: Render in HDR Format then Tonemap in post(when material system is supported in Ray Tracing Pipeline)
+		sceneRTOutputSpec.Format = ImageFormat::RGBA8_SRGB;
+		sceneRTOutputSpec.Usage = ImageUsage::Storage;
+
+		for (uint32_t i = 0; i < framesInFlight; ++i)
+		{
+			auto SceneRTOutputTexture = std::static_pointer_cast<VulkanImage>(m_SceneRTOutputImages.emplace_back(std::make_shared<VulkanImage>(sceneRTOutputSpec)));
+			SceneRTOutputTexture->Invalidate();
+
+			Utils::InsertImageMemoryBarrier(barrierCmd, SceneRTOutputTexture->GetVulkanImageInfo().Image,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
+				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRTOutputTexture->GetSpecification().MipLevels, 0, 1 });
 		}
 
 		device->FlushCommandBuffer(barrierCmd);
@@ -526,6 +568,8 @@ namespace VulkanCore {
 		m_BRDFTexture = Renderer::CreateBRDFTexture();
 		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/PointLightIcon.png");
 		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/SpotLightIcon.png");
+
+		m_SceneAccelerationStructure = std::make_shared<VulkanAccelerationStructure>();
 
 		m_SkyboxVBData = Utils::CreateCubeModel();
 	}
@@ -572,6 +616,18 @@ namespace VulkanCore {
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRenderTexture->GetSpecification().MipLevels, 0, 1 });
+			}
+
+			for (auto& SceneRTOutputTexture : m_SceneRTOutputImages)
+			{
+				auto vulkanRTOutputImage = std::static_pointer_cast<VulkanImage>(SceneRTOutputTexture);
+				vulkanRTOutputImage->Resize(m_ViewportSize.x, m_ViewportSize.y);
+
+				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanRTOutputImage->GetVulkanImageInfo().Image,
+					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
+					VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRTOutputTexture->GetSpecification().MipLevels, 0, 1 });
 			}
 
 			device->FlushCommandBuffer(barrierCmd);
@@ -677,10 +733,34 @@ namespace VulkanCore {
 		RecreateScene();
 	}
 
-	void SceneRenderer::RenderScene(EditorCamera& camera)
+	void SceneRenderer::RasterizeScene()
 	{
 		VK_CORE_PROFILE_FN("Submit-SceneRenderer");
 
+		m_SceneCommandBuffer->Begin();
+
+		GeometryPass();
+		BloomCompute();
+		CompositePass();
+
+		ResetDrawCommands();
+
+		m_SceneCommandBuffer->End();
+	}
+
+	void SceneRenderer::TraceScene()
+	{
+		VK_CORE_PROFILE_FN("Submit-SceneRenderer");
+
+		m_SceneCommandBuffer->Begin();
+
+		// TODO: Ray Tracing Pass
+
+		m_SceneCommandBuffer->End();
+	}
+
+	void SceneRenderer::SetBuffersData(EditorCamera& camera)
+	{
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
 		// Camera
@@ -699,16 +779,6 @@ namespace VulkanCore {
 		UBSpotLights spotLightUB{};
 		m_Scene->UpdateSpotLightUB(spotLightUB);
 		m_UBSpotLight[frameIndex]->WriteAndFlushBuffer(&spotLightUB);
-
-		m_SceneCommandBuffer->Begin();
-
-		GeometryPass();
-		BloomCompute();
-		CompositePass();
-
-		ResetDrawCommands();
-
-		m_SceneCommandBuffer->End();
 	}
 
 	void SceneRenderer::RenderLights()
@@ -810,6 +880,9 @@ namespace VulkanCore {
 
 	std::shared_ptr<Image2D> SceneRenderer::GetFinalPassImage(uint32_t index) const
 	{
+		if (Application::Get()->GetSpecification().RayTracing)
+			return m_SceneRTOutputImages[index];
+
 		auto framebuffer = std::dynamic_pointer_cast<VulkanFramebuffer>(m_SceneFramebuffer);
 		return framebuffer->GetAttachment(true)[index];
 	}

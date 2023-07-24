@@ -6,6 +6,7 @@
 #include "VulkanCore/Renderer/RenderCommandBuffer.h"
 #include "VulkanCore/Renderer/AccelerationStructure.h"
 #include "Platform/Vulkan/VulkanVertexBuffer.h"
+#include "Platform/Vulkan/VulkanRayTracingPipeline.h"
 
 #include <glm/glm.hpp>
 #include "Scene.h"
@@ -25,7 +26,9 @@ namespace VulkanCore {
 
 		void SetActiveScene(std::shared_ptr<Scene> scene);
 		void SetViewportSize(uint32_t width, uint32_t height);
-		void RenderScene(EditorCamera& camera);
+		void SetBuffersData(EditorCamera& camera);
+		void RasterizeScene();
+		void TraceScene();
 		void RenderLights();
 		void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
@@ -144,6 +147,7 @@ namespace VulkanCore {
 		std::shared_ptr<Pipeline> m_CompositePipeline;
 		std::shared_ptr<Pipeline> m_SkyboxPipeline;
 		std::shared_ptr<ComputePipeline> m_BloomPipeline;
+		std::shared_ptr<RayTracingPipeline> m_RayTracingPipeline;
 
 		// TODO: In future we have to setup Material Table
 		// Material Resources
@@ -161,8 +165,10 @@ namespace VulkanCore {
 		std::shared_ptr<Material> m_BloomUpsampleFirstShaderMaterial;
 		std::vector<std::shared_ptr<Material>> m_BloomUpsampleShaderMaterials;
 
-		VkDescriptorSet m_BloomDebugImage;
+		// Ray Tracing Pipeline Material
+		std::shared_ptr<Material> m_RayTracingMaterial;
 
+		// Resources
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBCamera;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBPointLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSpotLight;
@@ -171,6 +177,7 @@ namespace VulkanCore {
 
 		std::vector<std::shared_ptr<Image2D>> m_BloomTextures;
 		std::vector<std::shared_ptr<Image2D>> m_SceneRenderTextures;
+		std::vector<std::shared_ptr<Image2D>> m_SceneRTOutputImages;
 
 		std::shared_ptr<Texture2D> m_BloomDirtTexture;
 		std::shared_ptr<Texture2D> m_PointLightTextureIcon, m_SpotLightTextureIcon;

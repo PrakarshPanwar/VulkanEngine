@@ -75,7 +75,13 @@ namespace VulkanCore {
 		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
 			m_EditorCamera.OnUpdate();
 
-		m_SceneRenderer->RenderScene(m_EditorCamera);
+		m_SceneRenderer->SetBuffersData(m_EditorCamera);
+
+		auto appPtr = Application::Get();
+		if (appPtr->GetSpecification().RayTracing)
+			m_SceneRenderer->TraceScene();
+		else
+			m_SceneRenderer->RasterizeScene();
 	}
 
 	void EditorLayer::OnEvent(Event& e)

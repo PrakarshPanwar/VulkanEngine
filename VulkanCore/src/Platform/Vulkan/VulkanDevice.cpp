@@ -352,6 +352,8 @@ namespace VulkanCore {
 		deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 		deviceProperties2.pNext = &m_RayTracingPipelineProperties;
 		vkGetPhysicalDeviceProperties2(m_PhysicalDevice, &deviceProperties2);
+
+		InitRayTracingVulkanFunctions(m_LogicalDevice);
 	}
 
 	void VulkanDevice::CreateCommandPools()
