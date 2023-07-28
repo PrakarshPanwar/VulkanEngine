@@ -74,15 +74,15 @@ namespace VulkanCore {
 		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Top Level Acceleration Structure");
 
 		// Batch all instance data from BLAS Input
-		std::vector<VkAccelerationStructureInstanceKHR> tlasInstanceData{};
+		std::vector<VkAccelerationStructureInstanceKHR> tlasInstancesData{};
 		for (auto& [mk, blasInput] : m_BLASInputData)
-			tlasInstanceData.insert(tlasInstanceData.end(), blasInput.InstanceData.begin(), blasInput.InstanceData.end());
+			tlasInstancesData.insert(tlasInstancesData.end(), blasInput.InstanceData.begin(), blasInput.InstanceData.end());
 
 		// Buffer for Instance Data
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAlloc;
 
-		uint32_t instanceBufferSize = tlasInstanceData.size() * sizeof(VkAccelerationStructureInstanceKHR);
+		uint32_t instanceBufferSize = tlasInstancesData.size() * sizeof(VkAccelerationStructureInstanceKHR);
 
 		VkBufferCreateInfo stagingBufferCreateInfo{};
 		stagingBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -102,7 +102,7 @@ namespace VulkanCore {
 
 		// Copy Instance Data to Staging(Host) Buffer
 		uint8_t* stagingDstData = allocator.MapMemory<uint8_t>(stagingBufferAlloc);
-		memcpy(stagingDstData, tlasInstanceData.data(), instanceBufferSize);
+		memcpy(stagingDstData, tlasInstancesData.data(), instanceBufferSize);
 		allocator.UnmapMemory(stagingBufferAlloc);
 
 		// Copy Instance Data to Device Buffer
@@ -147,7 +147,7 @@ namespace VulkanCore {
 		VkAccelerationStructureBuildSizesInfoKHR buildSizesInfo{};
 		buildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 
-		uint32_t instanceCount = (uint32_t)tlasInstanceData.size();
+		uint32_t instanceCount = (uint32_t)tlasInstancesData.size();
 		vkGetAccelerationStructureBuildSizesKHR(device->GetVulkanDevice(),
 			VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
 			&asBuildGeometryInfo,
@@ -214,7 +214,7 @@ namespace VulkanCore {
 
 		VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo{};
 		buildRangeInfo.firstVertex = 0;
-		buildRangeInfo.primitiveCount = (uint32_t)tlasInstanceData.size();
+		buildRangeInfo.primitiveCount = (uint32_t)tlasInstancesData.size();
 		buildRangeInfo.primitiveOffset = 0;
 		buildRangeInfo.transformOffset = 0;
 
