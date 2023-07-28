@@ -20,20 +20,30 @@ namespace VulkanCore {
 		~VulkanAccelerationStructure();
 
 		void BuildTopLevelAccelerationStructure() override;
-		void BuildBottomLevelAccelerationStructure() override;
-		void SubmitMesh(std::shared_ptr<Mesh> mesh, std::shared_ptr<VertexBuffer> transformBuffer, uint32_t transformOffset);
+		void BuildBottomLevelAccelerationStructures() override;
+		void SubmitMeshDrawData(const MeshKey& meshKey, const std::vector<TransformData>& transformData, uint32_t instanceCount) override;
 
 		inline const VkWriteDescriptorSetAccelerationStructureKHR& GetDescriptorAccelerationStructureInfo() const
 		{
 			return m_DescriptorAccelerationStructureInfo;
 		}
 	private:
-		VulkanAccelerationStructureInfo m_TopLevelAccelerationStructureInfo{};
-		VulkanAccelerationStructureInfo m_BottomLevelAccelerationStructureInfo{};
+		struct BLASInput
+		{
+			VkAccelerationStructureGeometryKHR GeometryData{};
+			VkAccelerationStructureBuildRangeInfoKHR BuildRangeInfo{};
+			VulkanAccelerationStructureInfo BLASInfo{};
+			std::vector<VkAccelerationStructureInstanceKHR> InstanceData{};
+			uint32_t InstanceCount = 0;
+		};
+	private:
+		VulkanAccelerationStructureInfo m_TLASInfo{};
+		//std::vector<VulkanAccelerationStructureInfo> m_BLASInfoData{};
 
-		std::vector<VkAccelerationStructureGeometryKHR> m_AccelerationStructuresGeometries;
-		std::vector<VkAccelerationStructureBuildRangeInfoKHR> m_AccelerationStructuresBuildRanges;
-		std::vector<uint32_t> m_GeometryCount;
+		//std::vector<VkAccelerationStructureGeometryKHR> m_BLASGeometryData;
+		//std::vector<VkAccelerationStructureBuildRangeInfoKHR> m_BLASBuildRanges;
+		//std::vector<VkAccelerationStructureInstanceKHR> m_TLASInstancesData;
+		std::map<MeshKey, BLASInput> m_BLASInputData;
 
 		VkWriteDescriptorSetAccelerationStructureKHR m_DescriptorAccelerationStructureInfo{};
 	};

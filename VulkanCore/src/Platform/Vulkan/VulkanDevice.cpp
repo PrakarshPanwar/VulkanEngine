@@ -190,8 +190,9 @@ namespace VulkanCore {
 		VkFence fence;
 		VK_CHECK_RESULT(vkCreateFence(m_LogicalDevice, &fenceCreateInfo, nullptr, &fence), "Failed to Create Fence!");
 
+		VkResult submitResult = vkQueueSubmit(compute ? m_ComputeQueue : m_GraphicsQueue, 1, &submitInfo, fence);
 		// Submit to Queue
-		VK_CHECK_RESULT(vkQueueSubmit(compute ? m_ComputeQueue : m_GraphicsQueue, 1, &submitInfo, fence), "Failed to Submit to Queue!");
+		VK_CHECK_RESULT(submitResult, "Failed to Submit to Queue!");
 		// Wait for the fence to signal
 		VK_CHECK_RESULT(vkWaitForFences(m_LogicalDevice, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT), "Failed to Wait for Fence to signal!");
 

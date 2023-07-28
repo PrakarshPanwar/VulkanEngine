@@ -30,6 +30,43 @@ namespace VulkanCore {
 		}
 	};
 
+	struct MeshKey
+	{
+		uint64_t MeshHandle;
+		uint64_t MaterialHandle;
+		uint32_t SubmeshIndex;
+
+		bool operator==(const MeshKey& other)
+		{
+			return MeshHandle == other.MeshHandle &&
+				SubmeshIndex == other.SubmeshIndex &&
+				MaterialHandle == other.MaterialHandle;
+		}
+
+		bool operator<(const MeshKey& other) const
+		{
+			if (MeshHandle < other.MeshHandle)
+				return true;
+
+			if (MeshHandle > other.MeshHandle)
+				return false;
+
+			if (SubmeshIndex < other.SubmeshIndex)
+				return true;
+
+			if (SubmeshIndex > other.SubmeshIndex)
+				return false;
+
+			if (MaterialHandle < other.MaterialHandle)
+				return true;
+
+			if (MaterialHandle > other.MaterialHandle)
+				return false;
+
+			return false;
+		}
+	};
+
 	struct MeshNode
 	{
 		std::string Name;

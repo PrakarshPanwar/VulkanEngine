@@ -90,6 +90,8 @@ namespace VulkanCore {
 
 		MeshComponent() = default;
 		MeshComponent(const MeshComponent&) = default;
+		MeshComponent(AssetHandle meshHandle, AssetHandle materialHandle)
+			: MeshHandle(meshHandle), MaterialTableHandle(materialHandle) {}
 	};
 
 	struct TransformData

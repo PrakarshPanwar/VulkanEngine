@@ -127,4 +127,50 @@ namespace VulkanCore {
 		m_Registry.destroy(entity);
 	}
 
+	template<typename T>
+	void Scene::OnComponentAdded(Entity entity, T& component)
+	{
+		static_assert(sizeof(T) == 0);
+	}
+
+	template<>
+	void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component)
+	{
+	}
+
+	template<>
+	void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent& component)
+	{
+	}
+
+	template<>
+	void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component)
+	{
+	}
+
+	template<>
+	void Scene::OnComponentAdded<MeshComponent>(Entity entity, MeshComponent& component)
+	{
+		auto renderer = SceneRenderer::GetSceneRenderer();
+
+		auto mesh = AssetManager::GetAsset<Mesh>(component.MeshHandle);
+		auto materialAsset = AssetManager::GetAsset<MaterialAsset>(component.MaterialTableHandle);
+		renderer->SubmitRayTracedMesh(mesh, materialAsset, entity.GetComponent<TransformComponent>().GetTransform());
+	}
+
+	template<>
+	void Scene::OnComponentAdded<PointLightComponent>(Entity entity, PointLightComponent& component)
+	{
+	}
+
+	template<>
+	void Scene::OnComponentAdded<SpotLightComponent>(Entity entity, SpotLightComponent& component)
+	{
+	}
+
+	template<>
+	void Scene::OnComponentAdded<SkyLightComponent>(Entity entity, SkyLightComponent& component)
+	{
+	}
+
 }

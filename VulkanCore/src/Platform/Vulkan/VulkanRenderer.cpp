@@ -653,11 +653,12 @@ namespace VulkanCore {
 				0, 1, &vulkanMaterial->RT_GetVulkanMaterialDescriptorSet(),
 				0, nullptr);
 
+			VkStridedDeviceAddressRegionKHR emptySBTEntry{};
 			vkCmdTraceRaysKHR(vulkanTraceCmd,
 				&vulkanPipeline->GetRayGenStridedDeviceAddressRegion(),
 				&vulkanPipeline->GetRayMissStridedDeviceAddressRegion(),
 				&vulkanPipeline->GetRayClosestHitStridedDeviceAddressRegion(),
-				nullptr,
+				&emptySBTEntry,
 				width,
 				height,
 				1);
