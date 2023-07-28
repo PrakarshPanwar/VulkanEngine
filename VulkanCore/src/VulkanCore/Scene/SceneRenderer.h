@@ -23,6 +23,7 @@ namespace VulkanCore {
 		void Release();
 		void RecreateScene();
 		void OnImGuiRender();
+		void CreateRayTraceResources();
 
 		void SetActiveScene(std::shared_ptr<Scene> scene);
 		void SetViewportSize(uint32_t width, uint32_t height);
@@ -32,6 +33,7 @@ namespace VulkanCore {
 		void RenderLights();
 		void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
+		void SubmitRayTracedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset> materialAsset, const glm::mat4& transform);
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
 		void UpdateSkybox(const std::string& filepath);
 
@@ -43,43 +45,6 @@ namespace VulkanCore {
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		std::shared_ptr<Image2D> GetFinalPassImage(uint32_t index) const;
 		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
-
-		struct MeshKey
-		{
-			uint64_t MeshHandle;
-			uint64_t MaterialHandle;
-			uint32_t SubmeshIndex;
-
-			bool operator==(const MeshKey& other)
-			{
-				return MeshHandle == other.MeshHandle &&
-					SubmeshIndex == other.SubmeshIndex &&
-					MaterialHandle == other.MaterialHandle;
-			}
-
-			bool operator<(const MeshKey& other) const
-			{
-				if (MeshHandle < other.MeshHandle)
-					return true;
-
-				if (MeshHandle > other.MeshHandle)
-					return false;
-
-				if (SubmeshIndex < other.SubmeshIndex)
-					return true;
-
-				if (SubmeshIndex > other.SubmeshIndex)
-					return false;
-
-				if (MaterialHandle < other.MaterialHandle)
-					return true;
-
-				if (MaterialHandle > other.MaterialHandle)
-					return false;
-				
-				return false;
-			}
-		};
 	private:
 		void CreateCommandBuffers();
 		void CreatePipelines();
@@ -91,6 +56,7 @@ namespace VulkanCore {
 		void GeometryPass();
 		void CompositePass();
 		void BloomCompute();
+		void RayTracePass();
 		void ResetDrawCommands();
 	private:
 		struct DrawCommand
@@ -201,24 +167,6 @@ namespace VulkanCore {
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;
-	};
-
-}
-
-namespace std {
-
-	template<>
-	struct hash<VulkanCore::SceneRenderer::MeshKey>
-	{
-		size_t operator()(const VulkanCore::SceneRenderer::MeshKey& other)
-		{
-			std::hash<uint64_t> h{};
-			size_t hashVal = 0;
-			hashVal ^= h(other.MeshHandle) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
-			hashVal ^= h(other.SubmeshIndex) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
-
-			return hashVal;
-		}
 	};
 
 }

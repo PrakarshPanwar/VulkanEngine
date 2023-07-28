@@ -103,6 +103,26 @@ namespace VulkanCore {
 		CreateMaterials();
 	}
 
+	// This one will be called after we have serialized our scene
+	void SceneRenderer::CreateRayTraceResources()
+	{
+		for (auto& [mk, dc] : m_MeshDrawList)
+			m_SceneAccelerationStructure->SubmitMeshDrawData(mk, m_MeshTransformMap[mk].Transforms, dc.InstanceCount);
+
+		m_SceneAccelerationStructure->BuildBottomLevelAccelerationStructures();
+		m_SceneAccelerationStructure->BuildTopLevelAccelerationStructure();
+
+		// Ray Tracing Material
+		{
+			m_RayTracingMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Shader Material");
+
+			m_RayTracingMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
+			m_RayTracingMaterial->SetImages(1, m_SceneRTOutputImages);
+			m_RayTracingMaterial->SetBuffers(2, m_UBCamera);
+			m_RayTracingMaterial->PrepareShaderMaterial();
+		}
+	}
+
 	void SceneRenderer::CreatePipelines()
 	{
 		VertexBufferLayout vertexLayout = {
@@ -328,16 +348,6 @@ namespace VulkanCore {
 			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
 			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
-
-		// Ray Tracing Material
-		{
-			m_RayTracingMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Shader Material");
-
-			m_RayTracingMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
-			m_RayTracingMaterial->SetImages(0, m_SceneRTOutputImages);
-			m_RayTracingMaterial->SetBuffers(2, m_UBCamera);
-			m_RayTracingMaterial->PrepareShaderMaterial();
-		}
 	}
 
 	void SceneRenderer::RecreateMaterials()
@@ -443,7 +453,7 @@ namespace VulkanCore {
 
 		// Ray Tracing Material
 		{
-			m_RayTracingMaterial->SetImages(0, m_SceneRTOutputImages);
+			m_RayTracingMaterial->SetImages(1, m_SceneRTOutputImages);
 			m_RayTracingMaterial->PrepareShaderMaterial();
 		}
 	}
@@ -463,14 +473,6 @@ namespace VulkanCore {
 
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		Renderer::WaitAndExecute();
-
-		m_SceneImages.resize(framesInFlight);
-
-		for (uint32_t i = 0; i < framesInFlight; ++i)
-		{
-			std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
-			m_SceneImages[i] = ImGuiLayer::AddTexture(*finalPassImage);
-		}
 
 		m_UBCamera.reserve(framesInFlight);
 		m_UBPointLight.reserve(framesInFlight);
@@ -537,7 +539,7 @@ namespace VulkanCore {
 		sceneRTOutputSpec.Width = m_ViewportSize.x;
 		sceneRTOutputSpec.Height = m_ViewportSize.y;
 		// TODO: Render in HDR Format then Tonemap in post(when material system is supported in Ray Tracing Pipeline)
-		sceneRTOutputSpec.Format = ImageFormat::RGBA8_SRGB;
+		sceneRTOutputSpec.Format = ImageFormat::RGBA8_UNORM;
 		sceneRTOutputSpec.Usage = ImageUsage::Storage;
 
 		for (uint32_t i = 0; i < framesInFlight; ++i)
@@ -546,13 +548,21 @@ namespace VulkanCore {
 			SceneRTOutputTexture->Invalidate();
 
 			Utils::InsertImageMemoryBarrier(barrierCmd, SceneRTOutputTexture->GetVulkanImageInfo().Image,
-				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
-				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
+				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 				VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRTOutputTexture->GetSpecification().MipLevels, 0, 1 });
 		}
 
 		device->FlushCommandBuffer(barrierCmd);
+
+		m_SceneImages.resize(framesInFlight);
+
+		for (uint32_t i = 0; i < framesInFlight; ++i)
+		{
+			std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
+			m_SceneImages[i] = ImGuiLayer::AddTexture(*finalPassImage);
+		}
 
 		m_BloomDirtTexture = AssetManager::GetAsset<Texture2D>("assets/textures/LensDirt.png");
 
@@ -624,8 +634,8 @@ namespace VulkanCore {
 				vulkanRTOutputImage->Resize(m_ViewportSize.x, m_ViewportSize.y);
 
 				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanRTOutputImage->GetVulkanImageInfo().Image,
-					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
-					VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
+					VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
 					VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRTOutputTexture->GetSpecification().MipLevels, 0, 1 });
 			}
@@ -721,8 +731,8 @@ namespace VulkanCore {
 	{
 		m_Scene = scene;
 
-		m_MeshDrawList.clear();
-		m_MeshTransformMap.clear();
+		//m_MeshDrawList.clear();
+		//m_MeshTransformMap.clear();
 	}
 
 	void SceneRenderer::SetViewportSize(uint32_t width, uint32_t height)
@@ -754,7 +764,7 @@ namespace VulkanCore {
 
 		m_SceneCommandBuffer->Begin();
 
-		// TODO: Ray Tracing Pass
+		RayTracePass();
 
 		m_SceneCommandBuffer->End();
 	}
@@ -863,6 +873,32 @@ namespace VulkanCore {
 	void SceneRenderer::SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform)
 	{
 
+	}
+
+	void SceneRenderer::SubmitRayTracedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset> materialAsset, const glm::mat4& transform)
+	{
+		auto meshSource = mesh->GetMeshSource();
+		auto& submeshData = meshSource->GetSubmeshes();
+		uint64_t meshHandle = mesh->Handle;
+		uint64_t materialHandle = materialAsset->Handle;
+
+		for (uint32_t submeshIndex : mesh->GetSubmeshes())
+		{
+			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
+			auto& transformBuffer = m_MeshTransformMap[meshKey].Transforms.emplace_back();
+
+			glm::mat4 submeshTransform = transform * submeshData[submeshIndex].LocalTransform;
+			transformBuffer.MRow[0] = { submeshTransform[0][0], submeshTransform[1][0], submeshTransform[2][0], submeshTransform[3][0] };
+			transformBuffer.MRow[1] = { submeshTransform[0][1], submeshTransform[1][1], submeshTransform[2][1], submeshTransform[3][1] };
+			transformBuffer.MRow[2] = { submeshTransform[0][2], submeshTransform[1][2], submeshTransform[2][2], submeshTransform[3][2] };
+
+			auto& dc = m_MeshDrawList[meshKey];
+			dc.MeshInstance = mesh;
+			dc.MaterialInstance = materialAsset->GetMaterial();
+			dc.SubmeshIndex = submeshIndex;
+			dc.TransformBuffer = m_MeshTransformMap[meshKey].TransformBuffer;
+			dc.InstanceCount++;
+		}
 	}
 
 	void SceneRenderer::UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset)
@@ -1072,6 +1108,15 @@ namespace VulkanCore {
 		});
 
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+	}
+
+	void SceneRenderer::RayTracePass()
+	{
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "RayTrace");
+
+		Renderer::TraceRays(m_SceneCommandBuffer, m_RayTracingPipeline, m_RayTracingMaterial, m_ViewportSize.x, m_ViewportSize.y);
+
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 	}
 

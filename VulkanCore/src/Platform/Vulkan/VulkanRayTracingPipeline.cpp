@@ -100,9 +100,9 @@ namespace VulkanCore {
 		m_RayTracingPipeline = nullptr;
 
 		// Destroy SBT
-		allocator.DestroyBuffer(m_RayGenBindingInfo.Buffer, m_RayGenBindingInfo.MemoryAlloc);
-		allocator.DestroyBuffer(m_RayClosestHitBindingInfo.Buffer, m_RayClosestHitBindingInfo.MemoryAlloc);
-		allocator.DestroyBuffer(m_RayMissBindingInfo.Buffer, m_RayMissBindingInfo.MemoryAlloc);
+		allocator.DestroyBuffer(m_RayGenSBTInfo.Buffer, m_RayGenSBTInfo.MemoryAlloc);
+		allocator.DestroyBuffer(m_RayClosestHitSBTInfo.Buffer, m_RayClosestHitSBTInfo.MemoryAlloc);
+		allocator.DestroyBuffer(m_RayMissSBTInfo.Buffer, m_RayMissSBTInfo.MemoryAlloc);
 	}
 
 	void VulkanRayTracingPipeline::Bind(VkCommandBuffer commandBuffer)
@@ -140,28 +140,28 @@ namespace VulkanCore {
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
 		// Ray Gen
-		m_RayGenBindingInfo.MemoryAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_RayGenBindingInfo.Buffer);
-		m_RayGenBindingInfo.DeviceAddressRegion = Utils::GetSBTStridedDeviceAddressRegion(m_RayGenBindingInfo.Buffer);
+		m_RayGenSBTInfo.MemoryAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_RayGenSBTInfo.Buffer);
+		m_RayGenSBTInfo.DeviceAddressRegion = Utils::GetSBTStridedDeviceAddressRegion(m_RayGenSBTInfo.Buffer);
 
-		uint8_t* rayGenDst = allocator.MapMemory<uint8_t>(m_RayGenBindingInfo.MemoryAlloc);
+		uint8_t* rayGenDst = allocator.MapMemory<uint8_t>(m_RayGenSBTInfo.MemoryAlloc);
 		memcpy(rayGenDst, shaderHandleStorage.data(), shaderGroupHandleSize);
-		allocator.UnmapMemory(m_RayGenBindingInfo.MemoryAlloc);
+		allocator.UnmapMemory(m_RayGenSBTInfo.MemoryAlloc);
 
 		// Closest Hit
-		m_RayClosestHitBindingInfo.MemoryAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_RayClosestHitBindingInfo.Buffer);
-		m_RayClosestHitBindingInfo.DeviceAddressRegion = Utils::GetSBTStridedDeviceAddressRegion(m_RayClosestHitBindingInfo.Buffer);
+		m_RayClosestHitSBTInfo.MemoryAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_RayClosestHitSBTInfo.Buffer);
+		m_RayClosestHitSBTInfo.DeviceAddressRegion = Utils::GetSBTStridedDeviceAddressRegion(m_RayClosestHitSBTInfo.Buffer);
 
-		uint8_t* closestHitDst = allocator.MapMemory<uint8_t>(m_RayClosestHitBindingInfo.MemoryAlloc);
+		uint8_t* closestHitDst = allocator.MapMemory<uint8_t>(m_RayClosestHitSBTInfo.MemoryAlloc);
 		memcpy(closestHitDst, shaderHandleStorage.data() + shaderHandleSizeAligned, shaderGroupHandleSize);
-		allocator.UnmapMemory(m_RayClosestHitBindingInfo.MemoryAlloc);
+		allocator.UnmapMemory(m_RayClosestHitSBTInfo.MemoryAlloc);
 
 		// Miss
-		m_RayMissBindingInfo.MemoryAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_RayMissBindingInfo.Buffer);
-		m_RayMissBindingInfo.DeviceAddressRegion = Utils::GetSBTStridedDeviceAddressRegion(m_RayMissBindingInfo.Buffer);
+		m_RayMissSBTInfo.MemoryAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_RayMissSBTInfo.Buffer);
+		m_RayMissSBTInfo.DeviceAddressRegion = Utils::GetSBTStridedDeviceAddressRegion(m_RayMissSBTInfo.Buffer);
 
-		uint8_t* missDst = allocator.MapMemory<uint8_t>(m_RayMissBindingInfo.MemoryAlloc);
+		uint8_t* missDst = allocator.MapMemory<uint8_t>(m_RayMissSBTInfo.MemoryAlloc);
 		memcpy(missDst, shaderHandleStorage.data() + shaderHandleSizeAligned * 2, shaderGroupHandleSize);
-		allocator.UnmapMemory(m_RayMissBindingInfo.MemoryAlloc);
+		allocator.UnmapMemory(m_RayMissSBTInfo.MemoryAlloc);
 	}
 
 	void VulkanRayTracingPipeline::InvalidateRayTracingPipeline()
@@ -254,6 +254,7 @@ namespace VulkanCore {
 		rayTracingPipelineInfo.pStages = shaderStages.data();
 		rayTracingPipelineInfo.groupCount = (uint32_t)m_ShaderGroups.size();
 		rayTracingPipelineInfo.pGroups = m_ShaderGroups.data();
+		rayTracingPipelineInfo.maxPipelineRayRecursionDepth = 1;
 		rayTracingPipelineInfo.layout = m_PipelineLayout;
 		rayTracingPipelineInfo.basePipelineIndex = -1;
 		rayTracingPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;

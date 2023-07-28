@@ -43,7 +43,5 @@ void main()
 		tMax,
 		0);
 
-	o_RayPayload.Color = vec3(0.0);
-
 	imageStore(o_Image, ivec2(gl_LaunchIDEXT.xy), vec4(o_RayPayload.Color, 1.0));
 }

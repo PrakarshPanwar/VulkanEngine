@@ -307,13 +307,10 @@ namespace VulkanCore {
 				auto meshComponent = entity["MeshComponent"];
 				if (meshComponent)
 				{
-					auto& mc = deserializedEntity.AddComponent<MeshComponent>();
-
 					uint64_t meshHandle = meshComponent["MeshHandle"].as<uint64_t>();
-					mc.MeshHandle = meshHandle;
-
 					uint64_t materialHandle = meshComponent["MaterialHandle"].as<uint64_t>();
-					mc.MaterialTableHandle = materialHandle;
+
+					auto& mc = deserializedEntity.AddComponent<MeshComponent>(meshHandle, materialHandle);
 
 					std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(mc.MeshHandle);
 					std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(mc.MaterialTableHandle);

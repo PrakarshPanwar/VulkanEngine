@@ -25,11 +25,11 @@ namespace VulkanCore {
 		void Bind(VkCommandBuffer commandBuffer);
 		void CreateShaderBindingTable() override;
 
-		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
 		inline std::shared_ptr<Shader> GetShader() const override { return m_Shader; }
-		inline const VkStridedDeviceAddressRegionKHR& GetRayGenStridedDeviceAddressRegion() const { return m_RayGenBindingInfo.DeviceAddressRegion; }
-		inline const VkStridedDeviceAddressRegionKHR& GetRayClosestHitStridedDeviceAddressRegion() const { return m_RayClosestHitBindingInfo.DeviceAddressRegion; }
-		inline const VkStridedDeviceAddressRegionKHR& GetRayMissStridedDeviceAddressRegion() const { return m_RayMissBindingInfo.DeviceAddressRegion; }
+		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
+		inline const VkStridedDeviceAddressRegionKHR& GetRayGenStridedDeviceAddressRegion() const { return m_RayGenSBTInfo.DeviceAddressRegion; }
+		inline const VkStridedDeviceAddressRegionKHR& GetRayClosestHitStridedDeviceAddressRegion() const { return m_RayClosestHitSBTInfo.DeviceAddressRegion; }
+		inline const VkStridedDeviceAddressRegionKHR& GetRayMissStridedDeviceAddressRegion() const { return m_RayMissSBTInfo.DeviceAddressRegion; }
 	private:
 		void InvalidateRayTracingPipeline();
 		void RT_InvalidateRayTracingPipeline();
@@ -42,7 +42,7 @@ namespace VulkanCore {
 		std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_ShaderGroups{};
 		std::shared_ptr<Shader> m_Shader;
 
-		VulkanSBTInfo m_RayGenBindingInfo, m_RayClosestHitBindingInfo, m_RayMissBindingInfo, m_RayIntersectionBindingInfo{};
+		VulkanSBTInfo m_RayGenSBTInfo{}, m_RayClosestHitSBTInfo{}, m_RayMissSBTInfo{}, m_RayIntersectionSBTInfo{};
 		std::shared_ptr<VulkanDescriptorSetLayout> m_DescriptorSetLayout;
 	};
 

@@ -300,6 +300,7 @@ namespace VulkanCore {
 
 		VmaAllocatorCreateInfo allocatorInfo;
 		allocatorInfo.device = m_Device->GetVulkanDevice();
+		allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 		allocatorInfo.instance = m_VkInstance;
 		allocatorInfo.physicalDevice = physicalDevice;
 		allocatorInfo.pVulkanFunctions = &vulkanFunctions;
