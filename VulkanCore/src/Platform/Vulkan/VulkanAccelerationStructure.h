@@ -38,11 +38,9 @@ namespace VulkanCore {
 		};
 	private:
 		VulkanAccelerationStructureInfo m_TLASInfo{};
-		//std::vector<VulkanAccelerationStructureInfo> m_BLASInfoData{};
+		VkBuffer m_InstanceBuffer = nullptr;
+		VmaAllocation m_InstanceBufferAlloc = nullptr;
 
-		//std::vector<VkAccelerationStructureGeometryKHR> m_BLASGeometryData;
-		//std::vector<VkAccelerationStructureBuildRangeInfoKHR> m_BLASBuildRanges;
-		//std::vector<VkAccelerationStructureInstanceKHR> m_TLASInstancesData;
 		std::map<MeshKey, BLASInput> m_BLASInputData;
 
 		VkWriteDescriptorSetAccelerationStructureKHR m_DescriptorAccelerationStructureInfo{};

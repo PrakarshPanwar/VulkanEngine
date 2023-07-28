@@ -33,7 +33,7 @@ namespace VulkanCore {
 		void RenderLights();
 		void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
-		void SubmitRayTracedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset> materialAsset, const glm::mat4& transform);
+		void SubmitRayTracedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
 		void UpdateSkybox(const std::string& filepath);
 
@@ -70,9 +70,12 @@ namespace VulkanCore {
 
 		struct MeshTransform
 		{
-			MeshTransform() = default;
+			MeshTransform()
+			{
+				Transforms.reserve(10);
+			}
 
-			std::vector<TransformData> Transforms = std::vector<TransformData>{ 10 };
+			std::vector<TransformData> Transforms;
 			std::shared_ptr<VertexBuffer> TransformBuffer = std::make_shared<VulkanVertexBuffer>(10 * sizeof(VkTransformMatrixKHR));
 		};
 
