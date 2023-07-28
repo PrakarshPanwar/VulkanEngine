@@ -875,7 +875,7 @@ namespace VulkanCore {
 
 	}
 
-	void SceneRenderer::SubmitRayTracedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset> materialAsset, const glm::mat4& transform)
+	void SceneRenderer::SubmitRayTracedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform)
 	{
 		auto meshSource = mesh->GetMeshSource();
 		auto& submeshData = meshSource->GetSubmeshes();
