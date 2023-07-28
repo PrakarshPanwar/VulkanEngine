@@ -190,9 +190,8 @@ namespace VulkanCore {
 		VkFence fence;
 		VK_CHECK_RESULT(vkCreateFence(m_LogicalDevice, &fenceCreateInfo, nullptr, &fence), "Failed to Create Fence!");
 
-		VkResult submitResult = vkQueueSubmit(compute ? m_ComputeQueue : m_GraphicsQueue, 1, &submitInfo, fence);
 		// Submit to Queue
-		VK_CHECK_RESULT(submitResult, "Failed to Submit to Queue!");
+		VK_CHECK_RESULT(vkQueueSubmit(compute ? m_ComputeQueue : m_GraphicsQueue, 1, &submitInfo, fence), "Failed to Submit to Queue!");
 		// Wait for the fence to signal
 		VK_CHECK_RESULT(vkWaitForFences(m_LogicalDevice, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT), "Failed to Wait for Fence to signal!");
 
@@ -328,17 +327,13 @@ namespace VulkanCore {
 		physicalDeviceAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
 		physicalDeviceAccelerationStructureFeatures.pNext = &physicalDeviceRayTracingPipelineFeatures;
 
-		void* pNextChain = &physicalDeviceAccelerationStructureFeatures;
-
 		VkPhysicalDeviceFeatures2 physicalDeviceFeatures{};
 		physicalDeviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		if (pNextChain)
-		{
-			physicalDeviceFeatures.features = deviceFeatures;
-			physicalDeviceFeatures.pNext = pNextChain;
-			createInfo.pEnabledFeatures = nullptr;
-			createInfo.pNext = &physicalDeviceFeatures;
-		}
+		physicalDeviceFeatures.features = deviceFeatures;
+		physicalDeviceFeatures.pNext = &physicalDeviceAccelerationStructureFeatures;
+
+		createInfo.pEnabledFeatures = nullptr;
+		createInfo.pNext = &physicalDeviceFeatures;
 
 		VK_CHECK_RESULT(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_LogicalDevice), "Failed to Create Logical Device!");
 

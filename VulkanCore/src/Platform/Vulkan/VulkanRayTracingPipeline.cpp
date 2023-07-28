@@ -28,7 +28,7 @@ namespace VulkanCore {
 			auto device = VulkanContext::GetCurrentDevice();
 
 			VkPushConstantRange pushConstantRange{};
-			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			pushConstantRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 			pushConstantRange.offset = 0;
 			pushConstantRange.size = (uint32_t)pushConstantSize;
 
