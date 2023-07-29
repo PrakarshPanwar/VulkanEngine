@@ -28,7 +28,7 @@ void main()
 	vec4 target = u_Camera.InverseProjection * vec4(d.x, d.y, 1.0, 1.0);
 	vec4 direction = u_Camera.InverseView * vec4(normalize(target.xyz), 0.0);
 
-	float tMin = 0.0;
+	float tMin = 0.1;
 	float tMax = 1000.0;
 
 	traceRayEXT(u_TopLevelAS,

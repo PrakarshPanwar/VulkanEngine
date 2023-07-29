@@ -2,6 +2,7 @@
 #include "VulkanCore/Renderer/EditorCamera.h"
 #include "VulkanCore/Renderer/ComputePipeline.h"
 #include "VulkanCore/Renderer/UniformBuffer.h"
+#include "VulkanCore/Renderer/StorageBuffer.h"
 #include "VulkanCore/Renderer/VertexBuffer.h"
 #include "VulkanCore/Renderer/RenderCommandBuffer.h"
 #include "VulkanCore/Renderer/AccelerationStructure.h"
@@ -64,6 +65,14 @@ namespace VulkanCore {
 			std::shared_ptr<Mesh> MeshInstance;
 			std::shared_ptr<Material> MaterialInstance;
 			std::shared_ptr<VertexBuffer> TransformBuffer;
+			uint32_t SubmeshIndex;
+			uint32_t InstanceCount;
+		};
+
+		struct TraceCommand
+		{
+			std::shared_ptr<Mesh> MeshInstance;
+			std::shared_ptr<MaterialAsset> MaterialInstance;
 			uint32_t SubmeshIndex;
 			uint32_t InstanceCount;
 		};
@@ -142,6 +151,9 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBPointLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSpotLight;
 
+		std::vector<std::shared_ptr<StorageBuffer>> m_SBVertexData;
+		std::vector<std::shared_ptr<StorageBuffer>> m_SBIndexData;
+
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 
 		std::vector<std::shared_ptr<Image2D>> m_BloomTextures;
@@ -159,6 +171,7 @@ namespace VulkanCore {
 		VkDescriptorSet m_SkyboxTextureID;
 
 		std::map<MeshKey, DrawCommand> m_MeshDrawList;
+		std::map<MeshKey, TraceCommand> m_MeshTraceList;
 		std::map<MeshKey, MeshTransform> m_MeshTransformMap;
 
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };

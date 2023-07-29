@@ -9,7 +9,6 @@ namespace VulkanCore {
 	public:
 		VulkanStorageBuffer() = default;
 		VulkanStorageBuffer(uint32_t size);
-
 		~VulkanStorageBuffer();
 
 		void WriteAndFlushBuffer(void* data, uint32_t offset) override;

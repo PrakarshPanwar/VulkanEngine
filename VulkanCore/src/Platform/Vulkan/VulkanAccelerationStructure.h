@@ -2,6 +2,7 @@
 #include "VulkanContext.h"
 #include "VulkanCore/Renderer/AccelerationStructure.h"
 #include "VulkanCore/Mesh/Mesh.h"
+#include "VulkanCore/Asset/MaterialAsset.h"
 
 namespace VulkanCore {
 
@@ -21,7 +22,7 @@ namespace VulkanCore {
 
 		void BuildTopLevelAccelerationStructure() override;
 		void BuildBottomLevelAccelerationStructures() override;
-		void SubmitMeshDrawData(const MeshKey& meshKey, const std::vector<TransformData>& transformData, uint32_t instanceCount) override;
+		void SubmitMeshDrawData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex, uint32_t instanceCount) override;
 
 		inline const VkWriteDescriptorSetAccelerationStructureKHR& GetDescriptorAccelerationStructureInfo() const
 		{

@@ -18,6 +18,7 @@
 #include "Platform/Vulkan/VulkanPipeline.h"
 #include "Platform/Vulkan/VulkanComputePipeline.h"
 #include "Platform/Vulkan/VulkanUniformBuffer.h"
+#include "Platform/Vulkan/VulkanStorageBuffer.h"
 
 #include <imgui.h>
 
@@ -106,21 +107,46 @@ namespace VulkanCore {
 	// This one will be called after we have serialized our scene
 	void SceneRenderer::CreateRayTraceResources()
 	{
-		for (auto& [mk, dc] : m_MeshDrawList)
-			m_SceneAccelerationStructure->SubmitMeshDrawData(mk, m_MeshTransformMap[mk].Transforms, dc.InstanceCount);
+		auto device = VulkanContext::GetCurrentDevice();
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+
+		for (auto& [mk, tc] : m_MeshTraceList)
+			m_SceneAccelerationStructure->SubmitMeshDrawData(tc.MeshInstance, tc.MaterialInstance, m_MeshTransformMap[mk].Transforms, tc.SubmeshIndex, tc.InstanceCount);
 
 		m_SceneAccelerationStructure->BuildBottomLevelAccelerationStructures();
 		m_SceneAccelerationStructure->BuildTopLevelAccelerationStructure();
 
-		// Ray Tracing Material
-		{
-			m_RayTracingMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Shader Material");
+		auto& verticesCache = MeshSource::GetVerticesCache();
+		auto& indicesCache = MeshSource::GetIndicesCache();
 
-			m_RayTracingMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
-			m_RayTracingMaterial->SetImages(1, m_SceneRTOutputImages);
-			m_RayTracingMaterial->SetBuffers(2, m_UBCamera);
-			m_RayTracingMaterial->PrepareShaderMaterial();
+		// Write Data in Storage Buffers
+		for (uint32_t i = 0; i < framesInFlight; ++i)
+		{
+			auto vulkanSBVerticesBuffer = std::make_shared<VulkanStorageBuffer>(sizeof(Vertex) * verticesCache.size());
+			auto vulkanSBIndicesBuffer = std::make_shared<VulkanStorageBuffer>(indicesCache.size() * 4);
+
+			m_SBVertexData.emplace_back(vulkanSBVerticesBuffer);
+			m_SBIndexData.emplace_back(vulkanSBIndicesBuffer);
+
+			// Set Debug Names
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(),
+				VK_OBJECT_TYPE_BUFFER,
+				std::format("Vertex Storage Buffer: {}", i),
+				vulkanSBVerticesBuffer->GetDescriptorBufferInfo().buffer);
+
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(),
+				VK_OBJECT_TYPE_BUFFER,
+				std::format("Index Storage Buffer: {}", i),
+				vulkanSBIndicesBuffer->GetDescriptorBufferInfo().buffer);
+
+			vulkanSBVerticesBuffer->WriteAndFlushBuffer((void*)verticesCache.data(), 0);
+			vulkanSBIndicesBuffer->WriteAndFlushBuffer((void*)indicesCache.data(), 0);
 		}
+
+		m_RayTracingMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
+		m_RayTracingMaterial->SetBuffers(3, m_SBVertexData);
+		m_RayTracingMaterial->SetBuffers(4, m_SBIndexData);
+		m_RayTracingMaterial->PrepareShaderMaterial();
 	}
 
 	void SceneRenderer::CreatePipelines()
@@ -348,6 +374,15 @@ namespace VulkanCore {
 			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
 			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
+
+		// Ray Tracing Material
+		{
+			m_RayTracingMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Shader Material");
+
+			m_RayTracingMaterial->SetImages(1, m_SceneRTOutputImages);
+			m_RayTracingMaterial->SetBuffers(2, m_UBCamera);
+			m_RayTracingMaterial->PrepareShaderMaterial();
+		}
 	}
 
 	void SceneRenderer::RecreateMaterials()
@@ -477,6 +512,8 @@ namespace VulkanCore {
 		m_UBCamera.reserve(framesInFlight);
 		m_UBPointLight.reserve(framesInFlight);
 		m_UBSpotLight.reserve(framesInFlight);
+		m_SBVertexData.reserve(framesInFlight);
+		m_SBIndexData.reserve(framesInFlight);
 
 		// Uniform Buffers
 		for (uint32_t i = 0; i < framesInFlight; ++i)
@@ -892,11 +929,10 @@ namespace VulkanCore {
 			transformBuffer.MRow[1] = { submeshTransform[0][1], submeshTransform[1][1], submeshTransform[2][1], submeshTransform[3][1] };
 			transformBuffer.MRow[2] = { submeshTransform[0][2], submeshTransform[1][2], submeshTransform[2][2], submeshTransform[3][2] };
 
-			auto& dc = m_MeshDrawList[meshKey];
+			auto& dc = m_MeshTraceList[meshKey];
 			dc.MeshInstance = mesh;
-			dc.MaterialInstance = materialAsset->GetMaterial();
+			dc.MaterialInstance = materialAsset;
 			dc.SubmeshIndex = submeshIndex;
-			dc.TransformBuffer = m_MeshTransformMap[meshKey].TransformBuffer;
 			dc.InstanceCount++;
 		}
 	}
