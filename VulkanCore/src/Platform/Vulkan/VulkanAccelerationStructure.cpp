@@ -463,9 +463,8 @@ namespace VulkanCore {
 #endif
 	}
 
-	void VulkanAccelerationStructure::SubmitMeshDrawData(const MeshKey& meshKey, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	void VulkanAccelerationStructure::SubmitMeshDrawData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex, uint32_t instanceCount)
 	{
-		auto mesh = AssetManager::GetAsset<Mesh>(meshKey.MeshHandle);
 		auto meshSource = mesh->GetMeshSource();
 
 		auto vulkanMeshVB = std::static_pointer_cast<VulkanVertexBuffer>(meshSource->GetVertexBuffer());
@@ -490,7 +489,6 @@ namespace VulkanCore {
 		geometryData.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
 		geometryData.geometry.triangles = trianglesData;
 
-		uint32_t submeshIndex = meshKey.SubmeshIndex;
 		auto& submeshData = meshSource->GetSubmeshes();
 		const Submesh& submesh = submeshData[submeshIndex];
 
@@ -500,14 +498,11 @@ namespace VulkanCore {
 		buildRangeInfo.primitiveOffset = submesh.BaseIndex;
 		buildRangeInfo.transformOffset = 0;
 
+		MeshKey meshKey = { mesh->Handle, materialAsset->Handle, submeshIndex };
 		auto& blasInput = m_BLASInputData[meshKey];
-		blasInput.GeometryData = geometryData;
-		blasInput.BuildRangeInfo = buildRangeInfo;
-		blasInput.InstanceCount = instanceCount;
 
 		uint32_t index = 0;
-		std::vector<VkAccelerationStructureInstanceKHR> instances{};
-		instances.resize(instanceCount);
+		std::vector<VkAccelerationStructureInstanceKHR> instances{ instanceCount };
 
 		for (uint32_t i = 0; i < instanceCount; ++i)
 		{
@@ -525,6 +520,9 @@ namespace VulkanCore {
 			instances[i] = instanceData;
 		}
 
+		blasInput.GeometryData = geometryData;
+		blasInput.BuildRangeInfo = buildRangeInfo;
+		blasInput.InstanceCount = instanceCount;
 		blasInput.InstanceData = instances;
 	}
 

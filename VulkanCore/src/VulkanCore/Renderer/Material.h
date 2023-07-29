@@ -1,7 +1,8 @@
 #pragma once
-#include "VulkanCore/Renderer/Image.h"
-#include "VulkanCore/Renderer/Texture.h"
-#include "VulkanCore/Renderer/UniformBuffer.h"
+#include "Image.h"
+#include "Texture.h"
+#include "UniformBuffer.h"
+#include "StorageBuffer.h"
 #include "RenderCommandBuffer.h"
 #include "AccelerationStructure.h"
 #include "RayTracingPipeline.h"
@@ -47,7 +48,9 @@ namespace VulkanCore {
 		virtual void SetTexture(uint32_t binding, std::shared_ptr<TextureCube> textureCube) = 0;
 		virtual void SetTextures(uint32_t binding, const std::vector<std::shared_ptr<Texture2D>>& textures) = 0;
 		virtual void SetBuffer(uint32_t binding, std::shared_ptr<UniformBuffer> uniformBuffer) = 0;
+		virtual void SetBuffer(uint32_t binding, std::shared_ptr<StorageBuffer> storageBuffer) = 0;
 		virtual void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<UniformBuffer>>& uniformBuffers) = 0;
+		virtual void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<StorageBuffer>>& storageBuffers) = 0;
 		virtual void SetAccelerationStructure(uint32_t binding, const std::shared_ptr<AccelerationStructure>& accelerationStructure) = 0;
 
 		virtual void RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, uint32_t setIndex = 0) = 0;
