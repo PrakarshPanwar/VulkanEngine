@@ -257,9 +257,6 @@ namespace VulkanCore {
 
 		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Bottom Level Acceleration Structure");
 
-#define USE_BLAS_MAP 1
-#if USE_BLAS_MAP
-		uint32_t inputSize = (uint32_t)m_BLASInputData.size();
 		for (auto& [mk, blasInput] : m_BLASInputData)
 		{
 			// Get Sizes Info
@@ -358,109 +355,6 @@ namespace VulkanCore {
 
 			allocator.DestroyBuffer(scratchBuffer, scratchBufferAlloc);
 		}
-#else
-		// BLAS Info Resize
-		m_BLASInfoData.resize(m_BLASGeometryData.size());
-
-		for (uint32_t i = 0; i < m_BLASGeometryData.size(); ++i)
-		{
-			// Get Sizes Info
-			VkAccelerationStructureBuildGeometryInfoKHR asBuildGeometryInfo{};
-			asBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
-			asBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-			asBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-			asBuildGeometryInfo.geometryCount = 1;
-			asBuildGeometryInfo.pGeometries = &m_BLASGeometryData[i];
-
-			VkAccelerationStructureBuildSizesInfoKHR buildSizesInfo{};
-			buildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-
-			vkGetAccelerationStructureBuildSizesKHR(device->GetVulkanDevice(),
-				VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-				&asBuildGeometryInfo,
-				&m_BLASBuildRanges[i].primitiveCount,
-				&buildSizesInfo);
-
-			// Create Acceleration Structure
-			VkBufferCreateInfo bufferCreateInfo{};
-			bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			bufferCreateInfo.size = buildSizesInfo.accelerationStructureSize;
-			bufferCreateInfo.usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-
-			VkBuffer buffer;
-			VmaAllocation memAlloc;
-			memAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, buffer);
-
-			VulkanAccelerationStructureInfo& blasInfo = m_BLASInfoData[i];
-			blasInfo.Buffer = buffer;
-			blasInfo.MemoryAlloc = memAlloc;
-
-			// Acceleration Structure
-			VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{};
-			accelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
-			accelerationStructureCreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-			accelerationStructureCreateInfo.buffer = buffer;
-			accelerationStructureCreateInfo.size = buildSizesInfo.accelerationStructureSize;
-
-			vkCreateAccelerationStructureKHR(device->GetVulkanDevice(),
-				&accelerationStructureCreateInfo,
-				nullptr,
-				&blasInfo.Handle);
-
-			// AS Device Address(Will be used as reference in creating Top Level AS)
-			VkAccelerationStructureDeviceAddressInfoKHR deviceAddressInfo{};
-			deviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
-			deviceAddressInfo.accelerationStructure = blasInfo.Handle;
-			blasInfo.DeviceAddress = vkGetAccelerationStructureDeviceAddressKHR(device->GetVulkanDevice(), &deviceAddressInfo);
-
-			// Create a Small Scratch Buffer used during build of the Bottom Level Acceleration Structure
-			VkBuffer scratchBuffer;
-			VmaAllocation scratchBufferAlloc;
-
-			VkBufferCreateInfo scratchBufferCreateInfo{};
-			scratchBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			scratchBufferCreateInfo.size = buildSizesInfo.buildScratchSize;
-			scratchBufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-
-			scratchBufferAlloc = allocator.AllocateBuffer(scratchBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, scratchBuffer);
-
-			// Scratch Buffer Device Address
-			VkBufferDeviceAddressInfoKHR bufferDeviceAddressInfo{};
-			bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-			bufferDeviceAddressInfo.buffer = scratchBuffer;
-			VkDeviceAddress scratchBufferDeviceAddress = vkGetBufferDeviceAddressKHR(device->GetVulkanDevice(), &bufferDeviceAddressInfo);
-
-			// Build Acceleration Structure
-			VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo{};
-			buildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
-			buildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-			buildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-			buildGeometryInfo.geometryCount = (uint32_t)m_BLASGeometryData.size();
-			buildGeometryInfo.pGeometries = m_BLASGeometryData.data();
-			buildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-			buildGeometryInfo.dstAccelerationStructure = blasInfo.Handle;
-			buildGeometryInfo.scratchData.deviceAddress = scratchBufferDeviceAddress;
-
-			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> pBuildRangeInfo = { &m_BLASBuildRanges[i] };
-
-			// Build the acceleration structure on the device via a one-time command buffer submission
-			// Some implementations may support acceleration structure building on the host (VkPhysicalDeviceAccelerationStructureFeaturesKHR->accelerationStructureHostCommands), but we prefer device builds
-			VkCommandBuffer buildCmd = device->GetCommandBuffer();
-
-			vkCmdBuildAccelerationStructuresKHR(buildCmd,
-				1,
-				&buildGeometryInfo,
-				pBuildRangeInfo.data());
-
-			device->FlushCommandBuffer(buildCmd);
-
-			allocator.DestroyBuffer(scratchBuffer, scratchBufferAlloc);
-		}
-
-		// Clear Geometry Data
-		m_BLASGeometryData.clear();
-		m_BLASBuildRanges.clear();
-#endif
 	}
 
 	void VulkanAccelerationStructure::SubmitMeshDrawData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex, uint32_t instanceCount)
@@ -498,12 +392,7 @@ namespace VulkanCore {
 		buildRangeInfo.primitiveOffset = submesh.BaseIndex;
 		buildRangeInfo.transformOffset = 0;
 
-		MeshKey meshKey = { mesh->Handle, materialAsset->Handle, submeshIndex };
-		auto& blasInput = m_BLASInputData[meshKey];
-
-		uint32_t index = 0;
 		std::vector<VkAccelerationStructureInstanceKHR> instances{ instanceCount };
-
 		for (uint32_t i = 0; i < instanceCount; ++i)
 		{
 			VkTransformMatrixKHR vulkanTransform = Utils::VulkanTransformFromTransformData(transformData[i]);
@@ -511,19 +400,21 @@ namespace VulkanCore {
 			// NOTE: BLAS Reference should be updated after BLAS Build(i.e. accelerationStructureReference)
 			VkAccelerationStructureInstanceKHR instanceData{};
 			instanceData.transform = vulkanTransform;
-			instanceData.instanceCustomIndex = index++;
+			instanceData.instanceCustomIndex = m_InstanceIndex;
 			instanceData.mask = 0xFF;
 			instanceData.instanceShaderBindingTableRecordOffset = 0;
 			instanceData.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-			instanceData.accelerationStructureReference = blasInput.BLASInfo.DeviceAddress;
 
 			instances[i] = instanceData;
 		}
 
+		MeshKey meshKey = { mesh->Handle, materialAsset->Handle, submeshIndex };
+		auto& blasInput = m_BLASInputData[meshKey];
 		blasInput.GeometryData = geometryData;
 		blasInput.BuildRangeInfo = buildRangeInfo;
 		blasInput.InstanceCount = instanceCount;
 		blasInput.InstanceData = instances;
+		m_InstanceIndex++;
 	}
 
 }

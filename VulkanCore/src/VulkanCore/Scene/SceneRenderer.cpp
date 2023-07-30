@@ -17,6 +17,7 @@
 #include "Platform/Vulkan/VulkanRenderPass.h"
 #include "Platform/Vulkan/VulkanPipeline.h"
 #include "Platform/Vulkan/VulkanComputePipeline.h"
+#include "Platform/Vulkan/VulkanIndexBuffer.h"
 #include "Platform/Vulkan/VulkanUniformBuffer.h"
 #include "Platform/Vulkan/VulkanStorageBuffer.h"
 
@@ -80,6 +81,17 @@ namespace VulkanCore {
 			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
 		}
 
+		static VkDeviceAddress GetBufferDeviceAddress(VkBuffer buffer)
+		{
+			auto vulkanDevice = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
+
+			VkBufferDeviceAddressInfoKHR bufferDeviceAddressInfo{};
+			bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+			bufferDeviceAddressInfo.buffer = buffer;
+			
+			return vkGetBufferDeviceAddressKHR(vulkanDevice, &bufferDeviceAddressInfo);
+		}
+
 	}
 
 	SceneRenderer* SceneRenderer::s_Instance = nullptr;
@@ -110,42 +122,43 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
+		std::vector<MeshBuffersData> meshBuffersData;
 		for (auto& [mk, tc] : m_MeshTraceList)
+		{
+			// Submit Mesh Buffers Data
+			auto meshSource = tc.MeshInstance->GetMeshSource();
+
+			auto vulkanMeshVB = std::static_pointer_cast<VulkanVertexBuffer>(meshSource->GetVertexBuffer());
+			auto vulkanMeshIB = std::static_pointer_cast<VulkanIndexBuffer>(meshSource->GetIndexBuffer());
+
+			auto& bufferData = meshBuffersData.emplace_back();
+			bufferData.VertexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshVB->GetVulkanBuffer());
+			bufferData.IndexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshIB->GetVulkanBuffer());
+
+			// Submit Mesh Data to AS
 			m_SceneAccelerationStructure->SubmitMeshDrawData(tc.MeshInstance, tc.MaterialInstance, m_MeshTransformMap[mk].Transforms, tc.SubmeshIndex, tc.InstanceCount);
+		}
 
 		m_SceneAccelerationStructure->BuildBottomLevelAccelerationStructures();
 		m_SceneAccelerationStructure->BuildTopLevelAccelerationStructure();
 
-		auto& verticesCache = MeshSource::GetVerticesCache();
-		auto& indicesCache = MeshSource::GetIndicesCache();
-
 		// Write Data in Storage Buffers
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
-			auto vulkanSBVerticesBuffer = std::make_shared<VulkanStorageBuffer>(sizeof(Vertex) * verticesCache.size());
-			auto vulkanSBIndicesBuffer = std::make_shared<VulkanStorageBuffer>(indicesCache.size() * 4);
-
-			m_SBVertexData.emplace_back(vulkanSBVerticesBuffer);
-			m_SBIndexData.emplace_back(vulkanSBIndicesBuffer);
+			auto vulkanSBMeshBuffersData = std::make_shared<VulkanStorageBuffer>(sizeof(MeshBuffersData) * m_MeshTraceList.size());
+			m_SBMeshBuffersData.emplace_back(vulkanSBMeshBuffersData);
 
 			// Set Debug Names
 			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(),
 				VK_OBJECT_TYPE_BUFFER,
-				std::format("Vertex Storage Buffer: {}", i),
-				vulkanSBVerticesBuffer->GetDescriptorBufferInfo().buffer);
+				std::format("Mesh Data Storage Buffer: {}", i),
+				vulkanSBMeshBuffersData->GetDescriptorBufferInfo().buffer);
 
-			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(),
-				VK_OBJECT_TYPE_BUFFER,
-				std::format("Index Storage Buffer: {}", i),
-				vulkanSBIndicesBuffer->GetDescriptorBufferInfo().buffer);
-
-			vulkanSBVerticesBuffer->WriteAndFlushBuffer((void*)verticesCache.data(), 0);
-			vulkanSBIndicesBuffer->WriteAndFlushBuffer((void*)indicesCache.data(), 0);
+			vulkanSBMeshBuffersData->WriteAndFlushBuffer(meshBuffersData.data(), 0);
 		}
 
 		m_RayTracingMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
-		m_RayTracingMaterial->SetBuffers(3, m_SBVertexData);
-		m_RayTracingMaterial->SetBuffers(4, m_SBIndexData);
+		m_RayTracingMaterial->SetBuffers(4, m_SBMeshBuffersData);
 		m_RayTracingMaterial->PrepareShaderMaterial();
 	}
 
@@ -381,6 +394,7 @@ namespace VulkanCore {
 
 			m_RayTracingMaterial->SetImages(1, m_SceneRTOutputImages);
 			m_RayTracingMaterial->SetBuffers(2, m_UBCamera);
+			m_RayTracingMaterial->SetBuffers(3, m_UBPointLight);
 			m_RayTracingMaterial->PrepareShaderMaterial();
 		}
 	}
@@ -512,8 +526,7 @@ namespace VulkanCore {
 		m_UBCamera.reserve(framesInFlight);
 		m_UBPointLight.reserve(framesInFlight);
 		m_UBSpotLight.reserve(framesInFlight);
-		m_SBVertexData.reserve(framesInFlight);
-		m_SBIndexData.reserve(framesInFlight);
+		m_SBMeshBuffersData.reserve(framesInFlight);
 
 		// Uniform Buffers
 		for (uint32_t i = 0; i < framesInFlight; ++i)
