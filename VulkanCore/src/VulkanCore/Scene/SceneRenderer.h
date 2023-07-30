@@ -181,6 +181,7 @@ namespace VulkanCore {
 
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
+		bool m_RayTraced = false;
 
 		SceneSettings m_SceneSettings;
 		LodAndMode m_LodAndMode;

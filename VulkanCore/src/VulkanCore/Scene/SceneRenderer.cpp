@@ -97,7 +97,7 @@ namespace VulkanCore {
 	SceneRenderer* SceneRenderer::s_Instance = nullptr;
 
 	SceneRenderer::SceneRenderer(std::shared_ptr<Scene> scene)
-		: m_Scene(scene)
+		: m_Scene(scene), m_RayTraced(Application::Get()->GetSpecification().RayTracing)
 	{
 		s_Instance = this;
 		Init();
@@ -159,6 +159,7 @@ namespace VulkanCore {
 
 		m_RayTracingMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
 		m_RayTracingMaterial->SetBuffers(4, m_SBMeshBuffersData);
+		m_RayTracingMaterial->SetTexture(5, m_CubemapTexture);
 		m_RayTracingMaterial->PrepareShaderMaterial();
 	}
 
@@ -589,8 +590,9 @@ namespace VulkanCore {
 		sceneRTOutputSpec.Width = m_ViewportSize.x;
 		sceneRTOutputSpec.Height = m_ViewportSize.y;
 		// TODO: Render in HDR Format then Tonemap in post(when material system is supported in Ray Tracing Pipeline)
-		sceneRTOutputSpec.Format = ImageFormat::RGBA8_UNORM;
+		sceneRTOutputSpec.Format = ImageFormat::RGBA32F;
 		sceneRTOutputSpec.Usage = ImageUsage::Storage;
+		sceneRTOutputSpec.Transfer = true;
 
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
@@ -723,11 +725,21 @@ namespace VulkanCore {
 		{
 			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
 
-			ImGui::Text("Geometry Pass: %lluns", vulkanCmdBuffer->GetQueryTime(1));
-			ImGui::Text("Skybox Pass: %lluns", vulkanCmdBuffer->GetQueryTime(0));
-			ImGui::Text("Lights Pass: %lluns", vulkanCmdBuffer->GetQueryTime(2));
-			ImGui::Text("Composite Pass: %lluns", vulkanCmdBuffer->GetQueryTime(4));
-			ImGui::Text("Bloom Compute Pass: %lluns", vulkanCmdBuffer->GetQueryTime(3));
+			if (m_RayTraced)
+			{
+				ImGui::Text("RayTrace Pass: %lluns", vulkanCmdBuffer->GetQueryTime(0));
+				ImGui::Text("Composite Pass: %lluns", vulkanCmdBuffer->GetQueryTime(2));
+				ImGui::Text("Bloom Compute Pass: %lluns", vulkanCmdBuffer->GetQueryTime(3));
+			}
+			else
+			{
+				ImGui::Text("Geometry Pass: %lluns", vulkanCmdBuffer->GetQueryTime(1));
+				ImGui::Text("Skybox Pass: %lluns", vulkanCmdBuffer->GetQueryTime(0));
+				ImGui::Text("Lights Pass: %lluns", vulkanCmdBuffer->GetQueryTime(2));
+				ImGui::Text("Composite Pass: %lluns", vulkanCmdBuffer->GetQueryTime(4));
+				ImGui::Text("Bloom Compute Pass: %lluns", vulkanCmdBuffer->GetQueryTime(3));
+			}
+
 			ImGui::TreePop();
 		}
 
@@ -815,6 +827,8 @@ namespace VulkanCore {
 		m_SceneCommandBuffer->Begin();
 
 		RayTracePass();
+		BloomCompute();
+		CompositePass();
 
 		m_SceneCommandBuffer->End();
 	}
@@ -965,9 +979,6 @@ namespace VulkanCore {
 
 	std::shared_ptr<Image2D> SceneRenderer::GetFinalPassImage(uint32_t index) const
 	{
-		if (Application::Get()->GetSpecification().RayTracing)
-			return m_SceneRTOutputImages[index];
-
 		auto framebuffer = std::dynamic_pointer_cast<VulkanFramebuffer>(m_SceneFramebuffer);
 		return framebuffer->GetAttachment(true)[index];
 	}
@@ -1162,10 +1173,27 @@ namespace VulkanCore {
 
 	void SceneRenderer::RayTracePass()
 	{
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "RayTrace");
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "RayTrace", DebugLabelColor::Aqua);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		Renderer::TraceRays(m_SceneCommandBuffer, m_RayTracingPipeline, m_RayTracingMaterial, m_ViewportSize.x, m_ViewportSize.y);
 
+		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+
+		// Copy Ray Tracing Output
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Copy-RTOutput", DebugLabelColor::Green);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
+
+		int frameIndex = Renderer::GetCurrentFrameIndex();
+
+		Renderer::CopyVulkanImage(m_SceneCommandBuffer,
+			m_SceneRTOutputImages[frameIndex],
+			m_SceneRenderTextures[frameIndex]);
+
+		Renderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
+
+		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 	}
 
