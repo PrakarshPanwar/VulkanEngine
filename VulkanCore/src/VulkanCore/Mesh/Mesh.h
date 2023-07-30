@@ -105,9 +105,6 @@ namespace VulkanCore {
 		inline uint32_t GetIndexCount() const { return (uint32_t)m_Indices.size(); }
 
 		inline AssetType GetType() const override { return AssetType::MeshAsset; }
-
-		static inline const std::vector<Vertex>& GetVerticesCache() { return s_VerticesCache; }
-		static inline const std::vector<uint32_t>& GetIndicesCache() { return s_IndicesCache; }
 	private:
 		aiScene* m_Scene;
 		std::unique_ptr<Assimp::Importer> m_Importer;
@@ -123,9 +120,6 @@ namespace VulkanCore {
 
 		std::shared_ptr<VertexBuffer> m_VertexBuffer;
 		std::shared_ptr<IndexBuffer> m_IndexBuffer;
-
-		static std::vector<Vertex> s_VerticesCache;
-		static std::vector<uint32_t> s_IndicesCache;
 
 		friend class Mesh;
 		friend class MeshImporter;

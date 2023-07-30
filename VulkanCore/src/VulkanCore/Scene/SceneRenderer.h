@@ -77,6 +77,12 @@ namespace VulkanCore {
 			uint32_t InstanceCount;
 		};
 
+		struct MeshBuffersData
+		{
+			uint64_t VertexBufferAddress = 0;
+			uint64_t IndexBufferAddress = 0;
+		};
+
 		struct MeshTransform
 		{
 			MeshTransform()
@@ -151,8 +157,7 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBPointLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSpotLight;
 
-		std::vector<std::shared_ptr<StorageBuffer>> m_SBVertexData;
-		std::vector<std::shared_ptr<StorageBuffer>> m_SBIndexData;
+		std::vector<std::shared_ptr<StorageBuffer>> m_SBMeshBuffersData;
 
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 

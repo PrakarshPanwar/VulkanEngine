@@ -42,6 +42,7 @@ namespace VulkanCore {
 		VkBuffer m_InstanceBuffer = nullptr;
 		VmaAllocation m_InstanceBufferAlloc = nullptr;
 
+		uint32_t m_InstanceIndex = 0;
 		std::map<MeshKey, BLASInput> m_BLASInputData;
 
 		VkWriteDescriptorSetAccelerationStructureKHR m_DescriptorAccelerationStructureInfo{};

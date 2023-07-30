@@ -42,6 +42,7 @@ namespace VulkanCore {
 		std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_ShaderGroups{};
 		std::shared_ptr<Shader> m_Shader;
 
+		// TODO: Abstract this in separate class ShaderBindingTable
 		VulkanSBTInfo m_RayGenSBTInfo{}, m_RayClosestHitSBTInfo{}, m_RayMissSBTInfo{}, m_RayIntersectionSBTInfo{};
 		std::shared_ptr<VulkanDescriptorSetLayout> m_DescriptorSetLayout;
 	};

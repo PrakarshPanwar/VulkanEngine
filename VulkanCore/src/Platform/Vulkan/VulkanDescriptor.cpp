@@ -17,7 +17,9 @@ namespace VulkanCore {
 		layoutBinding.descriptorCount = count;
 		layoutBinding.stageFlags = stageFlags;
 
-		m_Bindings[binding] = layoutBinding;
+		if (!m_Bindings.contains(binding))
+			m_Bindings[binding] = layoutBinding;
+
 		return *this;
 	}
 

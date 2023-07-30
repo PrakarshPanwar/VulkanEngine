@@ -84,9 +84,6 @@ namespace VulkanCore {
 		aiProcess_ValidateDataStructure
 	};
 
-	std::vector<Vertex> MeshSource::s_VerticesCache;
-	std::vector<uint32_t> MeshSource::s_IndicesCache;
-
 	MeshSource::MeshSource(const std::string& filepath)
 	{
 		if (filepath.empty())
