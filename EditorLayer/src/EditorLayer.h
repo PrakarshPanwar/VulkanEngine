@@ -49,7 +49,7 @@ namespace VulkanCore {
 
 		std::shared_ptr<AssetManagerBase> m_AssetManagerBase;
 
-		bool m_ImGuiShowWindow = true, m_ViewportHovered = false, m_ViewportFocused = false, m_WindowResized = false;
+		bool m_ImGuiShowWindow = true, m_ViewportHovered = false, m_ViewportFocused = false, m_WindowResized = false, m_RayTraced = false;
 		ImVec2 m_ViewportSize = { 1904.0f, 991.0f }; // TODO: Calculate this by function
 
 		glm::vec2 m_ViewportBounds[2];

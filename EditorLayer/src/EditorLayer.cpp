@@ -53,15 +53,15 @@ namespace VulkanCore {
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
 		m_ContentBrowserPanel = ContentBrowserPanel();
 
-		auto appPtr = Application::Get();
-		auto commandLineArgs = appPtr->GetSpecification().CommandLineArgs;
+		auto commandLineArgs = Application::Get()->GetSpecification().CommandLineArgs;
 		if (commandLineArgs.Count > 1)
 		{
 			std::string sceneFilePath = commandLineArgs[1];
 			OpenScene(sceneFilePath);
 		}
 
-		if (appPtr->GetSpecification().RayTracing)
+		m_RayTraced = Application::Get()->GetSpecification().RayTracing;
+		if (m_RayTraced)
 			m_SceneRenderer->CreateRayTraceResources();
 
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
@@ -82,7 +82,7 @@ namespace VulkanCore {
 		m_SceneRenderer->SetBuffersData(m_EditorCamera);
 
 		auto appPtr = Application::Get();
-		if (appPtr->GetSpecification().RayTracing)
+		if (m_RayTraced)
 			m_SceneRenderer->TraceScene();
 		else
 			m_SceneRenderer->RasterizeScene();
@@ -208,7 +208,9 @@ namespace VulkanCore {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
-		ImGui::Image(m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImVec2 uv0 = m_RayTraced ? ImVec2{ 0, 0 } : ImVec2{ 0, 1 };
+		ImVec2 uv1 = m_RayTraced ? ImVec2{ 1, 1 } : ImVec2{ 1, 0 };
+		ImGui::Image(m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, uv0, uv1);
 		ImGui::SetItemAllowOverlap();
 
 		if (ImGui::BeginDragDropTarget())

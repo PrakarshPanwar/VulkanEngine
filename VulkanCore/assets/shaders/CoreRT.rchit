@@ -61,12 +61,12 @@ layout(binding = 4) readonly buffer MeshData
 layout(buffer_reference, scalar) buffer Vertices
 {
 	VertexSSBOLayout v[];
-} r_VertexData;
+};
 
 layout(buffer_reference, scalar) buffer Indices
 {
 	uint idx[];
-} r_IndexData;
+};
 
 Vertex Unpack(int index)
 {
