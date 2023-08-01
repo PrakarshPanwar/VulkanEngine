@@ -44,7 +44,7 @@ namespace VulkanCore {
 
 		// TODO: Abstract this in separate class ShaderBindingTable
 		VulkanSBTInfo m_RayGenSBTInfo{}, m_RayClosestHitSBTInfo{}, m_RayMissSBTInfo{}, m_RayIntersectionSBTInfo{};
-		std::shared_ptr<VulkanDescriptorSetLayout> m_DescriptorSetLayout;
+		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> m_DescriptorSetLayout;
 	};
 
 }

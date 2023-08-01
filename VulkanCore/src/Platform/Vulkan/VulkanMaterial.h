@@ -12,7 +12,7 @@ namespace VulkanCore {
 	{
 	public:
 		VulkanMaterial(const std::string& debugName);
-		VulkanMaterial(std::shared_ptr<Shader> shader, const std::string& debugName);
+		VulkanMaterial(std::shared_ptr<Shader> shader, const std::string& debugName, uint32_t setIndex = 0);
 		~VulkanMaterial();
 
 		inline const VkDescriptorSet& GetVulkanMaterialDescriptorSet() const { return m_MaterialDescriptorSets[Renderer::GetCurrentFrameIndex()]; }
@@ -32,6 +32,8 @@ namespace VulkanCore {
 		void SetTexture(uint32_t binding, std::shared_ptr<Texture2D> texture) override;
 		void SetTexture(uint32_t binding, std::shared_ptr<TextureCube> textureCube) override;
 		void SetTextures(uint32_t binding, const std::vector<std::shared_ptr<Texture2D>>& textures) override;
+		void SetTextureArray(uint32_t binding, const std::vector<std::shared_ptr<Texture2D>>& textureArray) override;
+		void SetTextureArrayElement(uint32_t binding, std::shared_ptr<Texture2D> texture, uint32_t dstIndex) override;
 		void SetBuffer(uint32_t binding, std::shared_ptr<UniformBuffer> uniformBuffer) override;
 		void SetBuffer(uint32_t binding, std::shared_ptr<StorageBuffer> storageBuffer) override;
 		void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<UniformBuffer>>& uniformBuffers) override;
@@ -56,6 +58,7 @@ namespace VulkanCore {
 		void UpdateARMMap(std::shared_ptr<VulkanTexture> arm);
 	private:
 		std::string m_DebugName;
+		uint32_t m_SetIndex = 0;
 
 		std::shared_ptr<Shader> m_Shader;
 		// NOTE: We are using material per shader set, so if shader has 5 sets then 5 material objects are required

@@ -23,21 +23,23 @@ namespace VulkanCore {
 			return shaderModule;
 		}
 
-		static VkPipelineLayout CreatePipelineLayout(VulkanDescriptorSetLayout& descriptorLayout, size_t pushConstantSize = 0)
+		static VkPipelineLayout CreatePipelineLayout(std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> descriptorSetLayouts, size_t pushConstantSize = 0)
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 
 			VkPushConstantRange pushConstantRange{};
-			pushConstantRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
+			pushConstantRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
 			pushConstantRange.offset = 0;
 			pushConstantRange.size = (uint32_t)pushConstantSize;
 
-			std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ descriptorLayout.GetVulkanDescriptorSetLayout() };
+			std::vector<VkDescriptorSetLayout> vulkanDescriptorSetsLayout;
+			for (auto& descriptorSetLayout : descriptorSetLayouts)
+				vulkanDescriptorSetsLayout.push_back(descriptorSetLayout->GetVulkanDescriptorSetLayout());
 
 			VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 			pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-			pipelineLayoutInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
-			pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+			pipelineLayoutInfo.setLayoutCount = (uint32_t)vulkanDescriptorSetsLayout.size();
+			pipelineLayoutInfo.pSetLayouts = vulkanDescriptorSetsLayout.data();
 			pipelineLayoutInfo.pushConstantRangeCount = pushConstantSize == 0 ? 0 : 1;
 			pipelineLayoutInfo.pPushConstantRanges = pushConstantSize == 0 ? nullptr : &pushConstantRange;
 
@@ -245,8 +247,8 @@ namespace VulkanCore {
 		}
 #endif
 
-		m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
-		m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());
+		m_DescriptorSetLayout = shader->CreateAllDescriptorSetsLayout();
+		m_PipelineLayout = Utils::CreatePipelineLayout(m_DescriptorSetLayout, shader->GetPushConstantSize());
 
 		VkRayTracingPipelineCreateInfoKHR rayTracingPipelineInfo{};
 		rayTracingPipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
@@ -355,8 +357,8 @@ namespace VulkanCore {
 			}
 #endif
 
-			m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
-			m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());
+			m_DescriptorSetLayout = shader->CreateAllDescriptorSetsLayout();
+			m_PipelineLayout = Utils::CreatePipelineLayout(m_DescriptorSetLayout, shader->GetPushConstantSize());
 
 			VkRayTracingPipelineCreateInfoKHR rayTracingPipelineInfo{};
 			rayTracingPipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;

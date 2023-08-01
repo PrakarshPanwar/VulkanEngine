@@ -8,9 +8,9 @@ struct RayPayload
 
 layout(location = 0) rayPayloadInEXT RayPayload o_RayPayload;
 
-layout(binding = 5) uniform samplerCube u_CubeMap;
+layout(set = 2, binding = 3) uniform samplerCube u_CubeMap;
 
-layout(binding = 6) uniform SkyboxData
+layout(set = 2, binding = 4) uniform SkyboxData
 {
 	float Intensity;
 	float LOD;
@@ -18,6 +18,8 @@ layout(binding = 6) uniform SkyboxData
 
 void main()
 {
-	vec3 color = textureLod(u_CubeMap, gl_WorldRayDirectionEXT, 0.0).rgb;
+	vec3 color = textureLod(u_CubeMap, gl_WorldRayDirectionEXT, u_Skybox.LOD).rgb;
+	color *= u_Skybox.Intensity;
+
 	o_RayPayload.Color = color;
 }
