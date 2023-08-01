@@ -19,8 +19,8 @@ namespace VulkanCore {
 		InvalidateMaterialDescriptorSets();
 	}
 
-	VulkanMaterial::VulkanMaterial(std::shared_ptr<Shader> shader, const std::string& debugName)
-		: m_DebugName(debugName), m_Shader(shader)
+	VulkanMaterial::VulkanMaterial(std::shared_ptr<Shader> shader, const std::string& debugName, uint32_t setIndex)
+		: m_DebugName(debugName), m_SetIndex(setIndex), m_Shader(shader)
 	{
 		Invalidate();
 	}
@@ -71,7 +71,7 @@ namespace VulkanCore {
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
 		auto shader = std::dynamic_pointer_cast<VulkanShader>(m_Shader);
-		auto materialSetLayout = shader->GetDescriptorSetLayout(0);
+		auto materialSetLayout = shader->GetDescriptorSetLayout(m_SetIndex);
 		VkDescriptorSetLayout vulkanMaterialSetLayout = materialSetLayout->GetVulkanDescriptorSetLayout();
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
@@ -131,6 +131,7 @@ namespace VulkanCore {
 	{
 		auto shader = std::dynamic_pointer_cast<VulkanShader>(m_Shader);
 		auto vulkanImage = std::dynamic_pointer_cast<VulkanImage>(image);
+		auto vulkanDescriptorSetLayout = shader->GetDescriptorSetLayout(m_SetIndex);
 
 		std::vector<VkWriteDescriptorSet> writeDescriptors{};
 		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
@@ -138,7 +139,7 @@ namespace VulkanCore {
 			VkWriteDescriptorSet writeDescriptor{};
 			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
-			writeDescriptor.descriptorType = shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
+			writeDescriptor.descriptorType = vulkanDescriptorSetLayout->GetVulkanDescriptorType(binding);
 			writeDescriptor.dstBinding = binding;
 			writeDescriptor.pImageInfo = &vulkanImage->GetDescriptorImageInfo();
 			writeDescriptor.descriptorCount = 1;
@@ -154,6 +155,7 @@ namespace VulkanCore {
 	{
 		auto shader = std::dynamic_pointer_cast<VulkanShader>(m_Shader);
 		auto vulkanImage = std::dynamic_pointer_cast<VulkanImage>(image);
+		auto vulkanDescriptorSetLayout = shader->GetDescriptorSetLayout(m_SetIndex);
 
 		std::vector<VkWriteDescriptorSet> writeDescriptors{};
 		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
@@ -161,7 +163,7 @@ namespace VulkanCore {
 			VkWriteDescriptorSet writeDescriptor{};
 			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
-			writeDescriptor.descriptorType = shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
+			writeDescriptor.descriptorType = vulkanDescriptorSetLayout->GetVulkanDescriptorType(binding);
 			writeDescriptor.dstBinding = binding;
 			writeDescriptor.pImageInfo = &vulkanImage->GetDescriptorImageInfo(mipLevel);
 			writeDescriptor.descriptorCount = 1;
@@ -265,6 +267,7 @@ namespace VulkanCore {
 	void VulkanMaterial::SetImages(uint32_t binding, const std::vector<std::shared_ptr<Image2D>>& images)
 	{
 		auto shader = std::dynamic_pointer_cast<VulkanShader>(m_Shader);
+		auto vulkanDescriptorSetLayout = shader->GetDescriptorSetLayout(m_SetIndex);
 
 		std::vector<VkWriteDescriptorSet> writeDescriptors{};
 		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
@@ -274,7 +277,7 @@ namespace VulkanCore {
 			VkWriteDescriptorSet writeDescriptor{};
 			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
-			writeDescriptor.descriptorType = shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
+			writeDescriptor.descriptorType = vulkanDescriptorSetLayout->GetVulkanDescriptorType(binding);
 			writeDescriptor.dstBinding = binding;
 			writeDescriptor.pImageInfo = &vulkanImage->GetDescriptorImageInfo();
 			writeDescriptor.descriptorCount = 1;
@@ -306,6 +309,43 @@ namespace VulkanCore {
 		}
 
 		m_MaterialDescriptorWriter[binding] = writeDescriptors;
+	}
+
+	void VulkanMaterial::SetTextureArray(uint32_t binding, const std::vector<std::shared_ptr<Texture2D>>& textureArray)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		// Create Descriptor Image Info Array
+		std::vector<VkDescriptorImageInfo> textureArrayInfo{};
+		for (auto& texture : textureArray)
+		{
+			auto vulkanTexture = std::static_pointer_cast<VulkanTexture>(texture);
+			textureArrayInfo.push_back(vulkanTexture->GetDescriptorImageInfo());
+		}
+
+		// Write Descriptor Sets
+		std::vector<VkWriteDescriptorSet> writeDescriptors{};
+		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
+		{
+			VkWriteDescriptorSet writeDescriptor{};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
+			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptor.dstBinding = binding;
+			writeDescriptor.pImageInfo = textureArrayInfo.data();
+			writeDescriptor.descriptorCount = (uint32_t)textureArray.size();
+			writeDescriptor.dstArrayElement = 0;
+
+			writeDescriptors.push_back(writeDescriptor);
+		}
+
+		// Reason we do this as info vector cannot be preserved when Invalidating
+		vkUpdateDescriptorSets(device->GetVulkanDevice(), (uint32_t)writeDescriptors.size(), writeDescriptors.data(), 0, nullptr);
+	}
+
+	void VulkanMaterial::SetTextureArrayElement(uint32_t binding, std::shared_ptr<Texture2D> texture, uint32_t dstIndex)
+	{
+
 	}
 
 	void VulkanMaterial::SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<UniformBuffer>>& uniformBuffers)

@@ -14,7 +14,7 @@ namespace VulkanCore {
 		VkDescriptorSetLayoutBinding layoutBinding{};
 		layoutBinding.binding = binding;
 		layoutBinding.descriptorType = descriptorType;
-		layoutBinding.descriptorCount = count;
+		layoutBinding.descriptorCount = count ? count : 10;
 		layoutBinding.stageFlags = stageFlags;
 
 		m_Bindings[binding] = layoutBinding;
@@ -59,14 +59,24 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 
 		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings{};
+		std::vector<VkDescriptorBindingFlags> bindingFlags;
 
-		for (const auto& kv : m_Bindings)
-			setLayoutBindings.push_back(kv.second);
+		for (auto&& [binding, setLayoutBinding] : m_Bindings)
+		{
+			setLayoutBindings.push_back(setLayoutBinding);
+			bindingFlags.push_back(setLayoutBinding.descriptorCount > 1 ? VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT : 0);
+		}
+
+		VkDescriptorSetLayoutBindingFlagsCreateInfo setLayoutBindingFlags{};
+		setLayoutBindingFlags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+		setLayoutBindingFlags.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
+		setLayoutBindingFlags.pBindingFlags = bindingFlags.data();
 
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
 		descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
 		descriptorSetLayoutInfo.pBindings = setLayoutBindings.data();
+		descriptorSetLayoutInfo.pNext = &setLayoutBindingFlags;
 
 		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device->GetVulkanDevice(), &descriptorSetLayoutInfo, nullptr, &m_DescriptorSetLayout), "Failed to Create Descriptor Set Layout!");
 	}

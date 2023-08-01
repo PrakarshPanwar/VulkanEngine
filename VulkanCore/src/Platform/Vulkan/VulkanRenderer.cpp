@@ -641,9 +641,9 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial, uint32_t width, uint32_t height)
+	void VulkanRenderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height)
 	{
-		Renderer::Submit([cmdBuffer, pipeline, shaderMaterial, width, height]
+		Renderer::Submit([cmdBuffer, pipeline, shaderMaterials, width, height]
 		{
 			VK_CORE_PROFILE_FN("Renderer::TraceRays");
 
@@ -651,11 +651,18 @@ namespace VulkanCore {
 			auto vulkanPipeline = std::static_pointer_cast<VulkanRayTracingPipeline>(pipeline);
 			vulkanPipeline->Bind(vulkanTraceCmd);
 
-			auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(shaderMaterial);
+			auto vulkanRTBaseMaterial = std::static_pointer_cast<VulkanMaterial>(shaderMaterials[0]);
+			auto vulkanRTPBRMaterial = std::static_pointer_cast<VulkanMaterial>(shaderMaterials[1]);
+			auto vulkanRTSkyboxMaterial = std::static_pointer_cast<VulkanMaterial>(shaderMaterials[2]);
+
+			VkDescriptorSet descriptorSets[] = { vulkanRTBaseMaterial->RT_GetVulkanMaterialDescriptorSet(),
+				vulkanRTPBRMaterial->RT_GetVulkanMaterialDescriptorSet(),
+				vulkanRTSkyboxMaterial->RT_GetVulkanMaterialDescriptorSet() };
+
 			vkCmdBindDescriptorSets(vulkanTraceCmd,
 				VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
 				vulkanPipeline->GetVulkanPipelineLayout(),
-				0, 1, &vulkanMaterial->RT_GetVulkanMaterialDescriptorSet(),
+				0, 3, descriptorSets,
 				0, nullptr);
 
 			VkStridedDeviceAddressRegionKHR emptySBTEntry{};
@@ -686,7 +693,7 @@ namespace VulkanCore {
 	void VulkanRenderer::InitDescriptorPool()
 	{
 		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
-		descriptorPoolBuilder.SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
+		descriptorPoolBuilder.SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT | VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT);
 		descriptorPoolBuilder.SetMaxSets(1000);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10);

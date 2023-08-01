@@ -122,7 +122,9 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
-		std::vector<MeshBuffersData> meshBuffersData;
+		std::vector<MeshBuffersAddress> meshBuffersData;
+		std::vector<MaterialData> meshMaterialData;
+
 		for (auto& [mk, tc] : m_MeshTraceList)
 		{
 			// Submit Mesh Buffers Data
@@ -135,6 +137,13 @@ namespace VulkanCore {
 			bufferData.VertexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshVB->GetVulkanBuffer());
 			bufferData.IndexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshIB->GetVulkanBuffer());
 
+			// Submit Mesh Material Data
+			meshMaterialData.push_back(tc.MaterialInstance->GetMaterial()->GetMaterialData());
+
+			m_DiffuseTextureArray.push_back(tc.MaterialInstance->GetMaterial()->GetDiffuseTexture());
+			m_NormalTextureArray.push_back(tc.MaterialInstance->GetMaterial()->GetNormalTexture());
+			m_ARMTextureArray.push_back(tc.MaterialInstance->GetMaterial()->GetARMTexture());
+
 			// Submit Mesh Data to AS
 			m_SceneAccelerationStructure->SubmitMeshDrawData(tc.MeshInstance, tc.MaterialInstance, m_MeshTransformMap[mk].Transforms, tc.SubmeshIndex, tc.InstanceCount);
 		}
@@ -145,8 +154,11 @@ namespace VulkanCore {
 		// Write Data in Storage Buffers
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
-			auto vulkanSBMeshBuffersData = std::make_shared<VulkanStorageBuffer>(sizeof(MeshBuffersData) * m_MeshTraceList.size());
+			auto vulkanSBMeshBuffersData = std::make_shared<VulkanStorageBuffer>(sizeof(MeshBuffersAddress) * m_MeshTraceList.size());
+			auto vulkanSBMeshMaterialData = std::make_shared<VulkanStorageBuffer>(sizeof(MaterialData) * m_MeshTraceList.size());
+
 			m_SBMeshBuffersData.emplace_back(vulkanSBMeshBuffersData);
+			m_SBMaterialDataBuffer.emplace_back(vulkanSBMeshMaterialData);
 
 			// Set Debug Names
 			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(),
@@ -154,13 +166,55 @@ namespace VulkanCore {
 				std::format("Mesh Data Storage Buffer: {}", i),
 				vulkanSBMeshBuffersData->GetDescriptorBufferInfo().buffer);
 
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(),
+				VK_OBJECT_TYPE_BUFFER,
+				std::format("Mesh Material Storage Buffer: {}", i),
+				vulkanSBMeshMaterialData->GetDescriptorBufferInfo().buffer);
+
 			vulkanSBMeshBuffersData->WriteAndFlushBuffer(meshBuffersData.data(), 0);
+			vulkanSBMeshMaterialData->WriteAndFlushBuffer(meshMaterialData.data(), 0);
 		}
 
-		m_RayTracingMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
-		m_RayTracingMaterial->SetBuffers(4, m_SBMeshBuffersData);
-		m_RayTracingMaterial->SetTexture(5, m_CubemapTexture);
-		m_RayTracingMaterial->PrepareShaderMaterial();
+		CreateRTMaterials();
+	}
+
+	void SceneRenderer::CreateRTMaterials()
+	{
+		// Ray Tracing Material
+		{
+			m_RayTracingBaseMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Base Shader Material", 0);
+
+			m_RayTracingBaseMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
+			m_RayTracingBaseMaterial->SetImages(1, m_SceneRTOutputImages);
+			m_RayTracingBaseMaterial->SetBuffers(2, m_UBCamera);
+			m_RayTracingBaseMaterial->SetBuffers(3, m_UBPointLight);
+			m_RayTracingBaseMaterial->SetBuffers(4, m_UBSpotLight);
+			m_RayTracingBaseMaterial->SetBuffers(5, m_SBMeshBuffersData);
+			m_RayTracingBaseMaterial->PrepareShaderMaterial();
+		}
+
+		// Ray Tracing PBR Material
+		{
+			m_RayTracingPBRMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing PBR Material", 1);
+
+			m_RayTracingPBRMaterial->SetTextureArray(0, m_DiffuseTextureArray);
+			m_RayTracingPBRMaterial->SetTextureArray(1, m_NormalTextureArray);
+			m_RayTracingPBRMaterial->SetTextureArray(2, m_ARMTextureArray);
+			m_RayTracingPBRMaterial->SetBuffers(3, m_SBMaterialDataBuffer);
+			m_RayTracingPBRMaterial->PrepareShaderMaterial();
+		}
+
+		// Ray Tracing Skybox Material
+		{
+			m_RayTracingSkyboxMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Skybox Material", 2);
+
+			m_RayTracingSkyboxMaterial->SetTexture(0, m_PrefilteredTexture);
+			m_RayTracingSkyboxMaterial->SetTexture(1, m_IrradianceTexture);
+			m_RayTracingSkyboxMaterial->SetImage(2, m_BRDFTexture);
+			m_RayTracingSkyboxMaterial->SetTexture(3, m_CubemapTexture);
+			m_RayTracingSkyboxMaterial->SetBuffers(4, m_UBSkyboxSettings);
+			m_RayTracingSkyboxMaterial->PrepareShaderMaterial();
+		}
 	}
 
 	void SceneRenderer::CreatePipelines()
@@ -374,9 +428,9 @@ namespace VulkanCore {
 			m_CompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_CompositePipeline->GetSpecification().pShader, "Composite Shader Material");
 
 			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
-			m_CompositeShaderMaterial->SetImages(0, geomFB->GetAttachment(true));
+			m_CompositeShaderMaterial->SetImages(0, m_RayTraced ? m_SceneRTOutputImages : geomFB->GetAttachment(true));
 			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
-			m_CompositeShaderMaterial->SetTexture(2, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
+			m_CompositeShaderMaterial->SetTexture(2, m_BloomDirtTexture);
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -387,16 +441,6 @@ namespace VulkanCore {
 			m_SkyboxMaterial->SetBuffers(0, m_UBCamera);
 			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
 			m_SkyboxMaterial->PrepareShaderMaterial();
-		}
-
-		// Ray Tracing Material
-		{
-			m_RayTracingMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Shader Material");
-
-			m_RayTracingMaterial->SetImages(1, m_SceneRTOutputImages);
-			m_RayTracingMaterial->SetBuffers(2, m_UBCamera);
-			m_RayTracingMaterial->SetBuffers(3, m_UBPointLight);
-			m_RayTracingMaterial->PrepareShaderMaterial();
 		}
 	}
 
@@ -488,9 +532,9 @@ namespace VulkanCore {
 		{
 			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
 
-			m_CompositeShaderMaterial->SetImages(0, geomFB->GetAttachment(true));
+			m_CompositeShaderMaterial->SetImages(0, m_RayTraced ? m_SceneRTOutputImages : geomFB->GetAttachment(true));
 			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
-			m_CompositeShaderMaterial->SetTexture(2, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
+			m_CompositeShaderMaterial->SetTexture(2, m_BloomDirtTexture);
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -501,10 +545,10 @@ namespace VulkanCore {
 			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
 
-		// Ray Tracing Material
+		// Ray Tracing Base Material
 		{
-			m_RayTracingMaterial->SetImages(1, m_SceneRTOutputImages);
-			m_RayTracingMaterial->PrepareShaderMaterial();
+			m_RayTracingBaseMaterial->SetImages(1, m_SceneRTOutputImages);
+			m_RayTracingBaseMaterial->PrepareShaderMaterial();
 		}
 	}
 
@@ -527,7 +571,9 @@ namespace VulkanCore {
 		m_UBCamera.reserve(framesInFlight);
 		m_UBPointLight.reserve(framesInFlight);
 		m_UBSpotLight.reserve(framesInFlight);
+		m_UBSkyboxSettings.reserve(framesInFlight);
 		m_SBMeshBuffersData.reserve(framesInFlight);
+		m_SBMaterialDataBuffer.reserve(framesInFlight);
 
 		// Uniform Buffers
 		for (uint32_t i = 0; i < framesInFlight; ++i)
@@ -535,6 +581,7 @@ namespace VulkanCore {
 			m_UBCamera.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBCamera)));
 			m_UBPointLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBPointLights)));
 			m_UBSpotLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBSpotLights)));
+			m_UBSkyboxSettings.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(SkyboxSettings)));
 		}
 
 		m_BloomMipSize = (glm::uvec2(m_ViewportSize.x, m_ViewportSize.y) + 1u) / 2u;
@@ -853,6 +900,9 @@ namespace VulkanCore {
 		UBSpotLights spotLightUB{};
 		m_Scene->UpdateSpotLightUB(spotLightUB);
 		m_UBSpotLight[frameIndex]->WriteAndFlushBuffer(&spotLightUB);
+
+		// Skybox Data
+		m_UBSkyboxSettings[frameIndex]->WriteAndFlushBuffer(&m_SkyboxSettings);
 	}
 
 	void SceneRenderer::RenderLights()
@@ -1176,7 +1226,9 @@ namespace VulkanCore {
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "RayTrace", DebugLabelColor::Aqua);
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
-		Renderer::TraceRays(m_SceneCommandBuffer, m_RayTracingPipeline, m_RayTracingMaterial, m_ViewportSize.x, m_ViewportSize.y);
+		Renderer::TraceRays(m_SceneCommandBuffer, m_RayTracingPipeline,
+			{ m_RayTracingBaseMaterial, m_RayTracingPBRMaterial, m_RayTracingSkyboxMaterial },
+			m_ViewportSize.x, m_ViewportSize.y);
 
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);

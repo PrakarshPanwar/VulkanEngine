@@ -35,6 +35,10 @@ namespace VulkanCore {
 		void SetRoughness(float roughness);
 		void SetMaterialData(MaterialData materialData);
 
+		std::shared_ptr<Texture2D> GetDiffuseTexture() const { return m_DiffuseTexture; }
+		std::shared_ptr<Texture2D> GetNormalTexture() const { return m_NormalTexture; }
+		std::shared_ptr<Texture2D> GetARMTexture() const { return m_ARMTexture; }
+
 		std::tuple<AssetHandle, AssetHandle, AssetHandle> GetMaterialHandles() const;
 
 		virtual void SetDiffuseTexture(std::shared_ptr<Texture2D> texture);
@@ -47,6 +51,8 @@ namespace VulkanCore {
 		virtual void SetTexture(uint32_t binding, std::shared_ptr<Texture2D> texture) = 0;
 		virtual void SetTexture(uint32_t binding, std::shared_ptr<TextureCube> textureCube) = 0;
 		virtual void SetTextures(uint32_t binding, const std::vector<std::shared_ptr<Texture2D>>& textures) = 0;
+		virtual void SetTextureArray(uint32_t binding, const std::vector<std::shared_ptr<Texture2D>>& textureArray) = 0;
+		virtual void SetTextureArrayElement(uint32_t binding, std::shared_ptr<Texture2D> texture, uint32_t dstIndex) = 0;
 		virtual void SetBuffer(uint32_t binding, std::shared_ptr<UniformBuffer> uniformBuffer) = 0;
 		virtual void SetBuffer(uint32_t binding, std::shared_ptr<StorageBuffer> storageBuffer) = 0;
 		virtual void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<UniformBuffer>>& uniformBuffers) = 0;

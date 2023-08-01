@@ -51,6 +51,7 @@ namespace VulkanCore {
 		void CreatePipelines();
 		void CreateResources();
 		void CreateMaterials();
+		void CreateRTMaterials();
 		void RecreateMaterials();
 		void RecreatePipelines();
 
@@ -77,7 +78,7 @@ namespace VulkanCore {
 			uint32_t InstanceCount;
 		};
 
-		struct MeshBuffersData
+		struct MeshBuffersAddress
 		{
 			uint64_t VertexBufferAddress = 0;
 			uint64_t IndexBufferAddress = 0;
@@ -149,15 +150,19 @@ namespace VulkanCore {
 		std::shared_ptr<Material> m_BloomUpsampleFirstShaderMaterial;
 		std::vector<std::shared_ptr<Material>> m_BloomUpsampleShaderMaterials;
 
-		// Ray Tracing Pipeline Material
-		std::shared_ptr<Material> m_RayTracingMaterial;
+		// Ray Tracing Materials
+		std::shared_ptr<Material> m_RayTracingBaseMaterial;
+		std::shared_ptr<Material> m_RayTracingPBRMaterial;
+		std::shared_ptr<Material> m_RayTracingSkyboxMaterial;
 
 		// Resources
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBCamera;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBPointLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSpotLight;
+		std::vector<std::shared_ptr<UniformBuffer>> m_UBSkyboxSettings;
 
 		std::vector<std::shared_ptr<StorageBuffer>> m_SBMeshBuffersData;
+		std::vector<std::shared_ptr<StorageBuffer>> m_SBMaterialDataBuffer;
 
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 
@@ -167,6 +172,11 @@ namespace VulkanCore {
 
 		std::shared_ptr<Texture2D> m_BloomDirtTexture;
 		std::shared_ptr<Texture2D> m_PointLightTextureIcon, m_SpotLightTextureIcon;
+
+		// Ray Tracing Resources
+		std::vector<std::shared_ptr<Texture2D>> m_DiffuseTextureArray;
+		std::vector<std::shared_ptr<Texture2D>> m_NormalTextureArray;
+		std::vector<std::shared_ptr<Texture2D>> m_ARMTextureArray;
 
 		// Skybox Resources
 		std::shared_ptr<TextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;

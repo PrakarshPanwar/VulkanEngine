@@ -155,9 +155,9 @@ namespace VulkanCore {
 		s_Renderer->SubmitFullscreenQuad(cmdBuffer, pipeline, shaderMaterial);
 	}
 
-	void Renderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial, uint32_t width, uint32_t height)
+	void Renderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height)
 	{
-		s_Renderer->TraceRays(cmdBuffer, pipeline, shaderMaterial, width, height);
+		s_Renderer->TraceRays(cmdBuffer, pipeline, shaderMaterials, width, height);
 	}
 
 	std::shared_ptr<Image2D> Renderer::CreateBRDFTexture()

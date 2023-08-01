@@ -322,10 +322,18 @@ namespace VulkanCore {
 		physicalDeviceRayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
 		physicalDeviceRayTracingPipelineFeatures.pNext = &physicalDeviceBufferDeviceAddressFeatures;
 
+		VkPhysicalDeviceDescriptorIndexingFeatures physicalDeviceDescriptorIndexingFeatures{};
+		physicalDeviceDescriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+		physicalDeviceDescriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+		physicalDeviceDescriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+		physicalDeviceDescriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+		physicalDeviceDescriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
+		physicalDeviceDescriptorIndexingFeatures.pNext = &physicalDeviceRayTracingPipelineFeatures;
+
 		VkPhysicalDeviceAccelerationStructureFeaturesKHR physicalDeviceAccelerationStructureFeatures{};
 		physicalDeviceAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 		physicalDeviceAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
-		physicalDeviceAccelerationStructureFeatures.pNext = &physicalDeviceRayTracingPipelineFeatures;
+		physicalDeviceAccelerationStructureFeatures.pNext = &physicalDeviceDescriptorIndexingFeatures;
 
 		VkPhysicalDeviceFeatures2 physicalDeviceFeatures{};
 		physicalDeviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
