@@ -42,6 +42,7 @@ namespace VulkanCore {
 		static inline VkDescriptorSet GetTextureCubeID() { return s_Instance->m_SkyboxTextureID; }
 		static std::shared_ptr<RenderCommandBuffer> GetRenderCommandBuffer() { return s_Instance->m_SceneCommandBuffer; }
 		static void SetSkybox(const std::string& filepath);
+		static void ResetAccumulationFrameIndex();
 
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		std::shared_ptr<Image2D> GetFinalPassImage(uint32_t index) const;
@@ -92,32 +93,40 @@ namespace VulkanCore {
 			}
 
 			std::vector<TransformData> Transforms;
-			std::shared_ptr<VertexBuffer> TransformBuffer = std::make_shared<VulkanVertexBuffer>(10 * sizeof(VkTransformMatrixKHR));
+			std::shared_ptr<VertexBuffer> TransformBuffer = std::make_shared<VulkanVertexBuffer>(10 * sizeof(TransformData));
 		};
 
 		struct LodAndMode
 		{
 			float LOD = 1.0f;
 			float Mode = 1.0f; // 0->PreFilter, 1->Downsample, 2->Upsample-First, 3->Upsample
-		};
+		} m_LodAndMode;
 
 		struct SceneSettings
 		{
 			float Exposure = 1.0f;
 			float DirtIntensity = 5.0f;
-		};
+		} m_SceneSettings;
 
 		struct BloomParams
 		{
 			float Threshold = 1.0f;
 			float Knee = 0.5f;
-		};
+		} m_BloomParams;
 
 		struct SkyboxSettings
 		{
 			float Intensity = 0.05f;
 			float LOD = 0.0f;
-		};
+		} m_SkyboxSettings;
+
+		struct RTSettings
+		{
+			uint32_t SampleCount = 8;
+			uint32_t Bounces = 4;
+			uint32_t RandomSeed = 0;
+			uint32_t AccumulateFrameIndex = 1;
+		} m_RTSettings;
 	private:
 		std::shared_ptr<Scene> m_Scene;
 
@@ -169,6 +178,7 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<Image2D>> m_BloomTextures;
 		std::vector<std::shared_ptr<Image2D>> m_SceneRenderTextures;
 		std::vector<std::shared_ptr<Image2D>> m_SceneRTOutputImages;
+		std::vector<std::shared_ptr<Image2D>> m_SceneRTAccumulationImages;
 
 		std::shared_ptr<Texture2D> m_BloomDirtTexture;
 		std::shared_ptr<Texture2D> m_PointLightTextureIcon, m_SpotLightTextureIcon;
@@ -182,7 +192,6 @@ namespace VulkanCore {
 		std::shared_ptr<TextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;
 		std::shared_ptr<Image2D> m_BRDFTexture;
 		std::shared_ptr<VertexBuffer> m_SkyboxVBData;
-		SkyboxSettings m_SkyboxSettings;
 		VkDescriptorSet m_SkyboxTextureID;
 
 		std::map<MeshKey, DrawCommand> m_MeshDrawList;
@@ -191,11 +200,8 @@ namespace VulkanCore {
 
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
-		bool m_RayTraced = false;
-
-		SceneSettings m_SceneSettings;
-		LodAndMode m_LodAndMode;
-		BloomParams m_BloomParams;
+		uint32_t m_MaxAccumulateFrameCount = 10000;
+		bool m_RayTraced = false, m_Accumulate = false;
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;

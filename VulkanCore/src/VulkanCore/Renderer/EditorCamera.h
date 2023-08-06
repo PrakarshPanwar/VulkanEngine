@@ -11,7 +11,7 @@ namespace VulkanCore {
 		EditorCamera() = default;
 		EditorCamera(float fov, float aspectRatio, float nearClip, float farClip);
 
-		void OnUpdate();
+		bool OnUpdate();
 		void OnEvent(Event& e);
 
 		inline float GetDistance() const { return m_Distance; }

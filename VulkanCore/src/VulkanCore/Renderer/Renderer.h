@@ -43,7 +43,7 @@ namespace VulkanCore {
 		static void RenderMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount);
 		static void RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount);
 		static void SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial);
-		static void TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height);
+		static void TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height, void* pcData, uint32_t pcSize);
 
 		static std::shared_ptr<Image2D> CreateBRDFTexture();
 		static std::shared_ptr<Texture2D> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);

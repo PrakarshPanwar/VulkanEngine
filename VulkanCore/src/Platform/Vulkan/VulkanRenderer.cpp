@@ -641,15 +641,16 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height)
+	void VulkanRenderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height, void* pcData, uint32_t pcSize)
 	{
-		Renderer::Submit([cmdBuffer, pipeline, shaderMaterials, width, height]
+		Renderer::Submit([cmdBuffer, pipeline, shaderMaterials, width, height, pcData, pcSize]
 		{
 			VK_CORE_PROFILE_FN("Renderer::TraceRays");
 
 			VkCommandBuffer vulkanTraceCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
 			auto vulkanPipeline = std::static_pointer_cast<VulkanRayTracingPipeline>(pipeline);
 			vulkanPipeline->Bind(vulkanTraceCmd);
+			vulkanPipeline->SetPushConstants(vulkanTraceCmd, pcData, pcSize);
 
 			auto vulkanRTBaseMaterial = std::static_pointer_cast<VulkanMaterial>(shaderMaterials[0]);
 			auto vulkanRTPBRMaterial = std::static_pointer_cast<VulkanMaterial>(shaderMaterials[1]);
