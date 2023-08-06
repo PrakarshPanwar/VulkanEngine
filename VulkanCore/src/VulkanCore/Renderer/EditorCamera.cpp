@@ -96,7 +96,7 @@ namespace VulkanCore {
 
 			moved = true;
 		}
-		else if (Input::IsMouseButtonPressed(Mouse::ButtonLeft))
+		else
 		{
 			auto mousePosition = Input::GetMousePosition();
 
@@ -104,8 +104,11 @@ namespace VulkanCore {
 			glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
 			m_InitialMousePosition = mouse;
 
-			MouseDrag(delta);
-			moved = true;
+			if (Input::IsMouseButtonPressed(Mouse::ButtonLeft))
+			{
+				MouseDrag(delta);
+				moved = true;
+			}
 		}
 
 		UpdateView();

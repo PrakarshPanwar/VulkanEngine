@@ -169,7 +169,7 @@ namespace VulkanCore {
 			m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
 			m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());
 
-			VkPipelineShaderStageCreateInfo shaderStage;
+			VkPipelineShaderStageCreateInfo shaderStage{};
 			shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 			shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
 			shaderStage.module = m_ComputeShaderModule;

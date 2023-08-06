@@ -95,10 +95,6 @@ namespace VulkanCore {
 
 	}
 
-	static std::random_device s_RandomDevice;
-	static std::mt19937_64 s_Engine(s_RandomDevice());
-	static std::uniform_int_distribution<uint32_t> s_UniformDistribution;
-
 	SceneRenderer* SceneRenderer::s_Instance = nullptr;
 
 	SceneRenderer::SceneRenderer(std::shared_ptr<Scene> scene)
@@ -551,8 +547,9 @@ namespace VulkanCore {
 			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
 
-		// Ray Tracing Base Material
+		if (m_RayTraced)
 		{
+			// Ray Tracing Base Material
 			m_RayTracingBaseMaterial->SetImages(1, m_SceneRTOutputImages);
 			m_RayTracingBaseMaterial->SetImages(2, m_SceneRTAccumulationImages);
 			m_RayTracingBaseMaterial->PrepareShaderMaterial();
@@ -878,8 +875,7 @@ namespace VulkanCore {
 				ImGui::TreePop();
 			}
 		}
-
-		if (ImGui::TreeNodeEx("Scene Draw Stats", treeFlags))
+		else if (ImGui::TreeNodeEx("Scene Draw Stats", treeFlags))
 		{
 			auto renderStats = VulkanRenderer::GetRendererStats();
 
@@ -898,7 +894,7 @@ namespace VulkanCore {
 	{
 		m_Scene = scene;
 
-		//m_MeshDrawList.clear();
+		m_MeshDrawList.clear();
 		//m_MeshTransformMap.clear();
 	}
 
@@ -1300,7 +1296,7 @@ namespace VulkanCore {
 		Renderer::Submit([this]
 		{
 			// Ray Tracing Data
-			m_RTSettings.RandomSeed = s_UniformDistribution(s_Engine);
+			m_RTSettings.RandomSeed = 1;
 			if (m_Accumulate)
 			{
 				m_RTSettings.AccumulateFrameIndex++;

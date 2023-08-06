@@ -56,7 +56,7 @@ uint RandomInt(inout uint seed)
 
 float RandomFloat(inout uint seed)
 {
-	//// Float version using bitmask from Numerical Recipes
+	// Float version using bitmask from Numerical Recipes
 	const uint one = 0x3f800000;
 	const uint msk = 0x007fffff;
 	return uintBitsToFloat(one | (msk & (RandomInt(seed) >> 9))) - 1;
@@ -88,9 +88,9 @@ vec3 RandomInUnitSphere(inout uint seed)
 
 void main()
 {
-	o_RayPayload.Seed = InitRandomSeed(InitRandomSeed(gl_LaunchIDEXT.x, gl_LaunchIDEXT.y), u_RTSettings.SampleCount);
+	o_RayPayload.Seed = InitRandomSeed(InitRandomSeed(gl_LaunchIDEXT.x, gl_LaunchIDEXT.y), u_RTSettings.FrameIndex);
 
-	uint pixelRandomSeed = InitRandomSeed(u_RTSettings.RandomSeed, u_RTSettings.FrameIndex);
+	uint pixelRandomSeed = u_RTSettings.RandomSeed;
 	vec3 pixelColor = vec3(0.0);
 
 	// Accumulate all rays for pixels
