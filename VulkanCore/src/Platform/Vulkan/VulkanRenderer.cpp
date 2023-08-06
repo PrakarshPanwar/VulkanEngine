@@ -670,7 +670,7 @@ namespace VulkanCore {
 			vkCmdTraceRaysKHR(vulkanTraceCmd,
 				&vulkanPipeline->GetRayGenStridedDeviceAddressRegion(),
 				&vulkanPipeline->GetRayMissStridedDeviceAddressRegion(),
-				&vulkanPipeline->GetRayClosestHitStridedDeviceAddressRegion(),
+				&vulkanPipeline->GetRayHitStridedDeviceAddressRegion(),
 				&emptySBTEntry,
 				width,
 				height,

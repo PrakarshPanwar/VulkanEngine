@@ -12,6 +12,7 @@ namespace VulkanCore {
 		VulkanRayTraceShader() = default;
 		VulkanRayTraceShader(const std::string& rayGenPath, const std::string& rayClosestHitPath, const std::string& rayMissPath);
 		VulkanRayTraceShader(const std::string& rayGenPath, const std::string& rayClosestHitPath, const std::string& rayAnyHitPath, const std::string& rayIntersectionPath, const std::string& rayMissPath);
+		VulkanRayTraceShader(const std::string& rayGenPath, const std::vector<std::string>& rayClosestHitPaths, const std::vector<std::string>& rayAnyHitPaths, const std::vector<std::string>& rayIntersectionPaths, const std::string& rayMissPath);
 		~VulkanRayTraceShader();
 
 		std::shared_ptr<VulkanDescriptorSetLayout> CreateDescriptorSetLayout(int index = 0);

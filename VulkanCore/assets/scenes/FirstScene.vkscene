@@ -33,7 +33,7 @@ Entities:
       Scale: [9.99999332, 2.68595648, 0.109166376]
     MeshComponent:
       MeshHandle: 9816593081404201911
-      MaterialHandle: 3893884925322395954
+      MaterialHandle: 11737455955276656076
   - Entity: 842353453534
     TagComponent:
       Tag: Green Point Light

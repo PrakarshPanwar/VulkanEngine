@@ -165,16 +165,16 @@ namespace VulkanCore {
 
 						VkShaderStageFlags shaderStageFlags = 0;
 
-						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+						if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 							shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
-						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+						if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 							shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
-						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+						if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
 
-						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+						if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 							shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
 						descriptorSetLayoutBuilder.AddBinding(
@@ -232,16 +232,16 @@ namespace VulkanCore {
 
 					VkShaderStageFlags shaderStageFlags = 0;
 
-					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+					if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
-					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+					if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 						shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
-					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+					if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
 
-					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+					if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
 					descriptorSetLayoutBuilderMap[reflectionSet.set].AddBinding(

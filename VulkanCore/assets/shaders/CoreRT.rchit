@@ -338,7 +338,7 @@ uint RandomInt(inout uint seed)
 
 float RandomFloat(inout uint seed)
 {
-	//// Float version using bitmask from Numerical Recipes
+	// Float version using bitmask from Numerical Recipes
 	const uint one = 0x3f800000;
 	const uint msk = 0x007fffff;
 	return uintBitsToFloat(one | (msk & (RandomInt(seed) >> 9))) - 1;
@@ -423,7 +423,7 @@ void main()
 	Vertex v1 = Unpack(index.y);
 	Vertex v2 = Unpack(index.z);
 
-	// Interpolate normal
+	// Interpolate Vertex Data
 	vec3 normal = MixBarycentric(v0.Normal, v1.Normal, v2.Normal);
     vec3 tangent = MixBarycentric(v0.Tangent, v1.Tangent, v2.Tangent);
     vec3 binormal = MixBarycentric(v0.Binormal, v1.Binormal, v2.Binormal);
@@ -466,7 +466,8 @@ void main()
     vec3 lightContribution = Lighting(F0);
     vec3 iblContribution = IBL(F0, Lr);
 
-    vec3 color = iblContribution + lightContribution;
+    //vec3 color = iblContribution + lightContribution;
+    vec3 color = m_Params.Albedo.rgb + lightContribution;
     vec3 direction = normalize(gl_WorldRayDirectionEXT);
-    o_RayPayload = ScatterMettalic(m_Params.Albedo.rgb, direction, m_Params.Normal, Input.TexCoord, gl_HitTEXT, o_RayPayload.Seed);
+    o_RayPayload = ScatterMettalic(color, direction, m_Params.Normal, Input.TexCoord, gl_HitTEXT, o_RayPayload.Seed);
 }

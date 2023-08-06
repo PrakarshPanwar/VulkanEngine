@@ -30,7 +30,7 @@ namespace VulkanCore {
 		inline std::shared_ptr<Shader> GetShader() const override { return m_Shader; }
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
 		inline const VkStridedDeviceAddressRegionKHR& GetRayGenStridedDeviceAddressRegion() const { return m_RayGenSBTInfo.DeviceAddressRegion; }
-		inline const VkStridedDeviceAddressRegionKHR& GetRayClosestHitStridedDeviceAddressRegion() const { return m_RayClosestHitSBTInfo.DeviceAddressRegion; }
+		inline const VkStridedDeviceAddressRegionKHR& GetRayHitStridedDeviceAddressRegion() const { return m_RayClosestHitSBTInfo.DeviceAddressRegion; }
 		inline const VkStridedDeviceAddressRegionKHR& GetRayMissStridedDeviceAddressRegion() const { return m_RayMissSBTInfo.DeviceAddressRegion; }
 	private:
 		void InvalidateRayTracingPipeline();
