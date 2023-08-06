@@ -2,7 +2,7 @@
 #include "VulkanContext.h"
 #include "VulkanDescriptor.h"
 #include "VulkanCore/Renderer/RayTracingPipeline.h"
-#include "Platform/Vulkan/VulkanShader.h"
+#include "Platform/Vulkan/VulkanRayTraceShader.h"
 
 namespace VulkanCore {
 
@@ -23,7 +23,9 @@ namespace VulkanCore {
 		void Release();
 
 		void Bind(VkCommandBuffer commandBuffer);
+		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size);
 		void CreateShaderBindingTable() override;
+		void ReloadPipeline() override;
 
 		inline std::shared_ptr<Shader> GetShader() const override { return m_Shader; }
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }

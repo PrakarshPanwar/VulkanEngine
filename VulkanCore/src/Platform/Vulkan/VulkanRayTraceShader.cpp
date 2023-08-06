@@ -1,12 +1,8 @@
-#include "vulkanpch.h" 
-#include "VulkanShader.h"
+#include "vulkanpch.h"
+#include "VulkanRayTraceShader.h"
 
 #include "VulkanCore/Core/Core.h"
-#include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/Timer.h"
-#include "VulkanCore/Renderer/Renderer.h"
-#include "Platform/Vulkan/VulkanSwapChain.h"
-#include "Platform/Vulkan/VulkanDescriptor.h"
 
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
@@ -21,10 +17,11 @@ namespace VulkanCore {
 		{
 			switch (stage)
 			{
-			case ShaderType::Vertex:		  return shaderc_glsl_vertex_shader;
-			case ShaderType::Fragment:		  return shaderc_glsl_fragment_shader;
-			case ShaderType::Geometry:		  return shaderc_glsl_geometry_shader;
-			case ShaderType::Compute:		  return shaderc_glsl_compute_shader;
+			case ShaderType::RayGeneration:	  return shaderc_glsl_raygen_shader;
+			case ShaderType::RayAnyHit:		  return shaderc_glsl_anyhit_shader;
+			case ShaderType::RayClosestHit:   return shaderc_glsl_closesthit_shader;
+			case ShaderType::RayMiss:		  return shaderc_glsl_miss_shader;
+			case ShaderType::RayIntersection: return shaderc_glsl_intersection_shader;
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
@@ -35,10 +32,11 @@ namespace VulkanCore {
 		{
 			switch (stage)
 			{
-			case ShaderType::Vertex:		  return "Vertex";
-			case ShaderType::Fragment:		  return "Fragment";
-			case ShaderType::Geometry:		  return "Geometry";
-			case ShaderType::Compute:		  return "Compute";
+			case ShaderType::RayGeneration:	  return "RayGen";
+			case ShaderType::RayAnyHit:		  return "RayAnyHit";
+			case ShaderType::RayClosestHit:   return "RayClosestHit";
+			case ShaderType::RayMiss:		  return "RayMiss";
+			case ShaderType::RayIntersection: return "RayIntersection";
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
@@ -61,10 +59,11 @@ namespace VulkanCore {
 		{
 			switch (stage)
 			{
-			case ShaderType::Vertex:		  return ".vert.spv";
-			case ShaderType::Fragment:		  return ".frag.spv";
-			case ShaderType::Geometry:		  return ".geom.spv";
-			case ShaderType::Compute:		  return ".comp.spv";
+			case ShaderType::RayGeneration:	  return ".rgen.spv";
+			case ShaderType::RayAnyHit:		  return ".rahit.spv";
+			case ShaderType::RayClosestHit:   return ".rchit.spv";
+			case ShaderType::RayMiss:		  return ".rmiss.spv";
+			case ShaderType::RayIntersection: return ".rint.spv";
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
@@ -73,49 +72,17 @@ namespace VulkanCore {
 
 	}
 
-	VulkanShader::VulkanShader(const std::string& vertPath, const std::string& fragPath, const std::string& geomPath)
-		: m_VertexFilePath(vertPath), m_FragmentFilePath(fragPath), m_GeometryFilePath(geomPath)
+	VulkanRayTraceShader::VulkanRayTraceShader(const std::string& rayGenPath, const std::string& rayClosestHitPath, const std::string& rayMissPath)
+		: m_RayGenFilePath(rayGenPath), m_RayClosestHitFilePath(rayClosestHitPath), m_RayMissFilePath(rayMissPath)
 	{
-		if (m_GeometryFilePath.empty())
-		{
-			auto [VertexSrc, FragmentSrc] = ParseShader(vertPath, fragPath);
-
-			Utils::CreateCacheDirectoryIfRequired();
-
-			std::unordered_map<uint32_t, std::string> Sources;
-			Sources[(uint32_t)ShaderType::Vertex] = VertexSrc;
-			Sources[(uint32_t)ShaderType::Fragment] = FragmentSrc;
-
-			m_ShaderSources = Sources;
-			CompileOrGetVulkanBinaries(Sources);
-		}
-		else
-		{
-			auto [VertexSrc, FragmentSrc, GeometrySrc] = ParseShader(vertPath, fragPath, geomPath);
-
-			Utils::CreateCacheDirectoryIfRequired();
-
-			std::unordered_map<uint32_t, std::string> Sources;
-			Sources[(uint32_t)ShaderType::Vertex] = VertexSrc;
-			Sources[(uint32_t)ShaderType::Fragment] = FragmentSrc;
-			Sources[(uint32_t)ShaderType::Geometry] = GeometrySrc;
-
-			m_ShaderSources = Sources;
-			CompileOrGetVulkanBinaries(Sources);
-		}
-
-		ReflectShaderData();
-	}
-
-	VulkanShader::VulkanShader(const std::string& compPath)
-		: m_ComputeFilePath(compPath)
-	{
-		auto ComputeSrc = ParseShader(compPath);
+		auto [RayGenSrc, RayHitSrc, RayMissSrc] = ParseShader(rayGenPath, rayClosestHitPath, rayMissPath);
 
 		Utils::CreateCacheDirectoryIfRequired();
 
 		std::unordered_map<uint32_t, std::string> Sources;
-		Sources[(uint32_t)ShaderType::Compute] = ComputeSrc;
+		Sources[(uint32_t)ShaderType::RayGeneration] = RayGenSrc;
+		Sources[(uint32_t)ShaderType::RayClosestHit] = RayHitSrc;
+		Sources[(uint32_t)ShaderType::RayMiss] = RayMissSrc;
 
 		m_ShaderSources = Sources;
 		CompileOrGetVulkanBinaries(Sources);
@@ -123,12 +90,18 @@ namespace VulkanCore {
 		ReflectShaderData();
 	}
 
-	VulkanShader::~VulkanShader()
+	// TODO: Will be handled in future
+	VulkanRayTraceShader::VulkanRayTraceShader(const std::string& rayGenPath, const std::string& rayClosestHitPath, const std::string& rayAnyHitPath, const std::string& rayIntersectionPath, const std::string& rayMissPath)
 	{
 
 	}
 
-	std::shared_ptr<VulkanDescriptorSetLayout> VulkanShader::CreateDescriptorSetLayout(int index)
+	VulkanRayTraceShader::~VulkanRayTraceShader()
+	{
+
+	}
+
+	std::shared_ptr<VulkanDescriptorSetLayout> VulkanRayTraceShader::CreateDescriptorSetLayout(int index)
 	{
 		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
 
@@ -166,16 +139,19 @@ namespace VulkanCore {
 						VkShaderStageFlags shaderStageFlags = 0;
 
 						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-							shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+							shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 
 						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-							shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+							shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 
 						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
+							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR;
 
 						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-							shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+							shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+
+						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+							shaderStageFlags |= VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
 
 						descriptorSetLayoutBuilder.AddBinding(
 							reflectionBinding.binding,
@@ -197,7 +173,7 @@ namespace VulkanCore {
 		return descriptorSetLayout;
 	}
 
-	std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> VulkanShader::CreateAllDescriptorSetsLayout()
+	std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> VulkanRayTraceShader::CreateAllDescriptorSetsLayout()
 	{
 		// Key: Set number
 		std::unordered_map<uint32_t, DescriptorSetLayoutBuilder> descriptorSetLayoutBuilderMap;
@@ -233,16 +209,19 @@ namespace VulkanCore {
 					VkShaderStageFlags shaderStageFlags = 0;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-						shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
+						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+
+					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+						shaderStageFlags |= VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
 
 					descriptorSetLayoutBuilderMap[reflectionSet.set].AddBinding(
 						reflectionBinding.binding,
@@ -261,111 +240,149 @@ namespace VulkanCore {
 		return m_DescriptorSetsLayout;
 	}
 
-	std::vector<VkDescriptorSet> VulkanShader::AllocateDescriptorSets(uint32_t index)
+	void VulkanRayTraceShader::Reload()
 	{
-		auto vulkanDescriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
-		VkDescriptorSetLayout setLayout = CreateDescriptorSetLayout(index)->GetVulkanDescriptorSetLayout();
+		ParseShader();
 
-		std::vector<VkDescriptorSet> descriptorSets(3);
-		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
-			vulkanDescriptorPool->AllocateDescriptorSet(setLayout, descriptorSets[i]);
+		shaderc::Compiler compiler;
+		shaderc::CompileOptions options;
 
-		return descriptorSets;
+		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+		options.SetTargetSpirv(shaderc_spirv_version_1_4);
+		const bool optimize = true;
+
+		if (optimize)
+			options.SetOptimizationLevel(shaderc_optimization_level_performance);
+		else
+			options.SetOptimizationLevel(shaderc_optimization_level_zero);
+
+		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
+
+		auto& shaderSources = m_ShaderSources;
+		auto& shaderData = m_VulkanSPIRV;
+		shaderData.clear();
+		m_Futures.clear();
+
+		std::mutex MapMutexLock;
+
+		auto CreateShader = [&](const std::filesystem::path& shaderFilePath, const std::string& source, ShaderType stage)
+		{
+			Timer timer(Utils::GLShaderTypeToString(stage) + " Shader Creation");
+
+			shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, Utils::GLShaderStageToShaderC(stage), shaderFilePath.string().c_str(), options);
+
+			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
+			{
+				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
+				__debugbreak();
+			}
+
+			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
+
+			std::scoped_lock ShaderMutexLock(MapMutexLock);
+			shaderData[(uint32_t)stage] = std::vector<uint32_t>(module.cbegin(), module.cend());
+
+			std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
+			if (out.is_open())
+			{
+				auto& data = shaderData[(uint32_t)stage];
+				out.write((char*)data.data(), data.size() * sizeof(uint32_t));
+				out.flush();
+				out.close();
+			}
+		};
+
+		Timer timer("Whole Shader Creation Process");
+
+		for (auto&& [stage, source] : shaderSources)
+		{
+			std::filesystem::path shaderFilePath;
+
+			ShaderType shaderType = (ShaderType)stage;
+			switch (shaderType)
+			{
+			case ShaderType::RayGeneration:
+				shaderFilePath = m_RayGenFilePath;
+				break;
+			case ShaderType::RayAnyHit:
+				shaderFilePath = m_RayAnyHitFilePath;
+				break;
+			case ShaderType::RayClosestHit:
+				shaderFilePath = m_RayClosestHitFilePath;
+				break;
+			case ShaderType::RayMiss:
+				shaderFilePath = m_RayMissFilePath;
+				break;
+			case ShaderType::RayIntersection:
+				shaderFilePath = m_RayIntersectionFilePath;
+				break;
+			default:
+				VK_CORE_ASSERT(false, "Cannot find Shader Type!");
+				break;
+			}
+
+			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(shaderType));
+			m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderFilePath, source, shaderType));
+		}
+
+		SetReloadFlag();
+		VK_CORE_TRACE("Total Shader Async Threads: {0}", m_Futures.size());
+
+		for (auto& future : m_Futures)
+			future.wait();
 	}
 
-	std::vector<VkDescriptorSet> VulkanShader::AllocateAllDescriptorSets()
+	std::tuple<std::string, std::string, std::string> VulkanRayTraceShader::ParseShader(const std::string& rayGenPath, const std::string& rayClosestHitPath, const std::string& rayMissPath)
 	{
-		return {};
+		std::ifstream RayGenSource(rayGenPath, std::ios::binary);
+		std::ifstream RayClosestHitSource(rayClosestHitPath, std::ios::binary);
+		std::ifstream RayMissSource(rayMissPath, std::ios::binary);
+
+		VK_CORE_ASSERT(RayGenSource.is_open(), "Failed to Open Ray Generation Shader File!");
+		VK_CORE_ASSERT(RayClosestHitSource.is_open(), "Failed to Open Ray Closest Hit Shader File!");
+		VK_CORE_ASSERT(RayMissSource.is_open(), "Failed to Open Ray Miss Shader File!");
+
+		std::stringstream RayGenStream, RayClosestHitStream, RayMissStream;
+
+		RayGenStream << RayGenSource.rdbuf();
+		RayClosestHitStream << RayClosestHitSource.rdbuf();
+		RayMissStream << RayMissSource.rdbuf();
+
+		return { RayGenStream.str(), RayClosestHitStream.str(), RayMissStream.str() };
 	}
 
-	std::tuple<std::string, std::string> VulkanShader::ParseShader(const std::string& vsfilepath, const std::string& fsfilepath)
-	{
-		std::ifstream VertexSource(vsfilepath, std::ios::binary);
-		std::ifstream FragmentSource(fsfilepath, std::ios::binary);
-
-		VK_CORE_ASSERT(VertexSource.is_open(), "Failed to Open Vertex Shader File!");
-		VK_CORE_ASSERT(FragmentSource.is_open(), "Failed to Open Fragment Shader File!");
-
-		std::stringstream VertexStream, FragmentStream;
-
-		VertexStream << VertexSource.rdbuf();
-		FragmentStream << FragmentSource.rdbuf();
-
-		return { VertexStream.str(), FragmentStream.str() };
-	}
-
-	std::tuple<std::string, std::string, std::string> VulkanShader::ParseShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath)
-	{
-		std::ifstream VertexSource(vsfilepath, std::ios::binary);
-		std::ifstream FragmentSource(fsfilepath, std::ios::binary);
-		std::ifstream GeometrySource(gsfilepath, std::ios::binary);
-
-		VK_CORE_ASSERT(VertexSource.is_open(), "Failed to Open Vertex Shader File!");
-		VK_CORE_ASSERT(FragmentSource.is_open(), "Failed to Open Fragment Shader File!");
-		VK_CORE_ASSERT(GeometrySource.is_open(), "Failed to Open Geometry Shader File!");
-
-		std::stringstream VertexStream, FragmentStream, GeometryStream;
-
-		VertexStream << VertexSource.rdbuf();
-		FragmentStream << FragmentSource.rdbuf();
-		GeometryStream << GeometrySource.rdbuf();
-
-		return { VertexStream.str(), FragmentStream.str(), GeometryStream.str() };
-	}
-
-	std::string VulkanShader::ParseShader(const std::string& cmpfilepath)
-	{
-		std::ifstream ComputeSource(cmpfilepath, std::ios::binary);
-
-		VK_CORE_ASSERT(ComputeSource.is_open(), "Failed to Open Compute Shader File!");
-
-		std::stringstream ComputeStream;
-		ComputeStream << ComputeSource.rdbuf();
-
-		return ComputeStream.str();
-	}
-
-	void VulkanShader::ParseShader()
+	void VulkanRayTraceShader::ParseShader()
 	{
 		std::unordered_map<uint32_t, std::string> Sources;
 
-		if (!(m_VertexFilePath.empty() || m_FragmentFilePath.empty()))
-		{
-			std::ifstream VertexSource(m_VertexFilePath, std::ios::binary);
-			std::ifstream FragmentSource(m_FragmentFilePath, std::ios::binary);
+		std::ifstream RayGenSource(m_RayGenFilePath, std::ios::binary);
+		std::ifstream RayClosestHitSource(m_RayClosestHitFilePath, std::ios::binary);
+		std::ifstream RayMissSource(m_RayMissFilePath, std::ios::binary);
 
-			VK_CORE_ASSERT(VertexSource.is_open(), "Failed to Open Vertex Shader File!");
-			VK_CORE_ASSERT(FragmentSource.is_open(), "Failed to Open Fragment Shader File!");
+		VK_CORE_ASSERT(RayGenSource.is_open(), "Failed to Open Ray Generation Shader File!");
+		VK_CORE_ASSERT(RayClosestHitSource.is_open(), "Failed to Open Ray Closest Hit Shader File!");
+		VK_CORE_ASSERT(RayMissSource.is_open(), "Failed to Open Ray Miss Shader File!");
 
-			std::stringstream VertexStream, FragmentStream;
+		std::stringstream RayGenStream, RayClosestHitStream, RayMissStream;
 
-			VertexStream << VertexSource.rdbuf();
-			FragmentStream << FragmentSource.rdbuf();
+		RayGenStream << RayGenSource.rdbuf();
+		RayClosestHitStream << RayClosestHitSource.rdbuf();
+		RayMissStream << RayMissSource.rdbuf();
 
-			Sources[(uint32_t)ShaderType::Vertex] = VertexStream.str();
-			Sources[(uint32_t)ShaderType::Fragment] = FragmentStream.str();
-		}
-		else
-		{
-			std::ifstream ComputeSource(m_ComputeFilePath, std::ios::binary);
-
-			VK_CORE_ASSERT(ComputeSource.is_open(), "Failed to Open Compute Shader File!");
-
-			std::stringstream ComputeStream;
-			ComputeStream << ComputeSource.rdbuf();
-
-			Sources[(uint32_t)ShaderType::Compute] = ComputeStream.str();
-		}
+		Sources[(uint32_t)ShaderType::RayGeneration] = RayGenStream.str();
+		Sources[(uint32_t)ShaderType::RayClosestHit] = RayClosestHitStream.str();
+		Sources[(uint32_t)ShaderType::RayMiss] = RayMissStream.str();
 
 		m_ShaderSources = Sources;
 	}
 
-	void VulkanShader::CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources)
+	void VulkanRayTraceShader::CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources)
 	{
 		shaderc::Compiler compiler;
 		shaderc::CompileOptions options;
 
-		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
+		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+		options.SetTargetSpirv(shaderc_spirv_version_1_4);
 		const bool optimize = true;
 
 		if (optimize)
@@ -416,17 +433,20 @@ namespace VulkanCore {
 			ShaderType shaderType = (ShaderType)stage;
 			switch (shaderType)
 			{
-			case ShaderType::Vertex:
-				shaderFilePath = m_VertexFilePath;
+			case ShaderType::RayGeneration:
+				shaderFilePath = m_RayGenFilePath;
 				break;
-			case ShaderType::Fragment:
-				shaderFilePath = m_FragmentFilePath;
+			case ShaderType::RayAnyHit:
+				shaderFilePath = m_RayAnyHitFilePath;
 				break;
-			case ShaderType::Geometry:
-				shaderFilePath = m_GeometryFilePath;
+			case ShaderType::RayClosestHit:
+				shaderFilePath = m_RayClosestHitFilePath;
 				break;
-			case ShaderType::Compute:
-				shaderFilePath = m_ComputeFilePath;
+			case ShaderType::RayMiss:
+				shaderFilePath = m_RayMissFilePath;
+				break;
+			case ShaderType::RayIntersection:
+				shaderFilePath = m_RayIntersectionFilePath;
 				break;
 			default:
 				VK_CORE_ASSERT(false, "Cannot find Shader Type!");
@@ -458,102 +478,11 @@ namespace VulkanCore {
 			future.wait();
 	}
 
-	void VulkanShader::Reload()
+	void VulkanRayTraceShader::ReflectShaderData()
 	{
-		ParseShader();
-
-		shaderc::Compiler compiler;
-		shaderc::CompileOptions options;
-
-		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
-		const bool optimize = true;
-
-		if (optimize)
-			options.SetOptimizationLevel(shaderc_optimization_level_performance);
-		else
-			options.SetOptimizationLevel(shaderc_optimization_level_zero);
-
-		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
-
-		auto& shaderSources = m_ShaderSources;
-		auto& shaderData = m_VulkanSPIRV;
-		shaderData.clear();
-		m_Futures.clear();
-
-		std::mutex MapMutexLock;
-
-		auto CreateShader = [&](const std::filesystem::path& shaderFilePath, const std::string& source, ShaderType stage)
-		{
-			Timer timer(Utils::GLShaderTypeToString(stage) + " Shader Creation");
-
-			shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, Utils::GLShaderStageToShaderC(stage), shaderFilePath.string().c_str(), options);
-
-			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
-			{
-				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
-				__debugbreak();
-			}
-
-			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
-
-			std::scoped_lock ShaderMutexLock(MapMutexLock);
-			shaderData[(uint32_t)stage] = std::vector<uint32_t>(module.cbegin(), module.cend());
-
-			std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
-			if (out.is_open())
-			{
-				auto& data = shaderData[(uint32_t)stage];
-				out.write((char*)data.data(), data.size() * sizeof(uint32_t));
-				out.flush();
-				out.close();
-			}
-		};
-
-		Timer timer("Shader Recreation Process");
-
-		for (auto&& [stage, source] : shaderSources)
-		{
-			std::filesystem::path shaderFilePath;
-
-			ShaderType shaderType = (ShaderType)stage;
-			switch (shaderType)
-			{
-			case ShaderType::Vertex:
-				shaderFilePath = m_VertexFilePath;
-				break;
-			case ShaderType::Fragment:
-				shaderFilePath = m_FragmentFilePath;
-				break;
-			case ShaderType::Geometry:
-				shaderFilePath = m_GeometryFilePath;
-				break;
-			case ShaderType::Compute:
-				shaderFilePath = m_ComputeFilePath;
-				break;
-			default:
-				VK_CORE_ASSERT(false, "Cannot find Shader Type!");
-				break;
-			}
-
-			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(shaderType));
-			m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderFilePath, source, shaderType));
-		}
-
-		VK_CORE_TRACE("Total Shader Async Threads: {0}", m_Futures.size());
-		SetReloadFlag();
-
-		for (auto& future : m_Futures)
-			future.wait();
-	}
-
-	void VulkanShader::ReflectShaderData()
-	{
-		std::filesystem::path shaderFilePath = m_VertexFilePath;
-		if (!std::filesystem::exists(shaderFilePath))
-			shaderFilePath = m_ComputeFilePath;
+		std::filesystem::path shaderFilePath = m_RayGenFilePath;
 
 		VK_CORE_INFO("In {0}:", shaderFilePath.stem());
-
 		for (auto&& [stage, shader] : m_VulkanSPIRV)
 		{
 			spirv_cross::Compiler compiler(shader);
@@ -605,11 +534,6 @@ namespace VulkanCore {
 				VK_CORE_TRACE("\t  Members = {0}", memberCount);
 			}
 		}
-	}
-
-	void VulkanShader::InvalidateDescriptors()
-	{
-
 	}
 
 }

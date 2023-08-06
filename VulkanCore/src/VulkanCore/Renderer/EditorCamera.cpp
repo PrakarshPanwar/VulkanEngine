@@ -3,6 +3,7 @@
 #include "VulkanCore/Events/Input.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Scene/SceneRenderer.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
@@ -75,8 +76,9 @@ namespace VulkanCore {
 		}
 	}
 
-	void EditorCamera::OnUpdate()
+	bool EditorCamera::OnUpdate()
 	{
+		bool moved = false;
 		if (Input::IsKeyPressed(Key::LeftAlt))
 		{
 			auto mousePosition = Input::GetMousePosition();
@@ -91,9 +93,10 @@ namespace VulkanCore {
 				MouseRotate(delta);
 			else if (Input::IsMouseButtonPressed(Mouse::ButtonRight))
 				MouseZoom(delta.y);
-		}
 
-		else
+			moved = true;
+		}
+		else if (Input::IsMouseButtonPressed(Mouse::ButtonLeft))
 		{
 			auto mousePosition = Input::GetMousePosition();
 
@@ -101,11 +104,12 @@ namespace VulkanCore {
 			glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
 			m_InitialMousePosition = mouse;
 
-			if (Input::IsMouseButtonPressed(Mouse::ButtonLeft))
-				MouseDrag(delta);
+			MouseDrag(delta);
+			moved = true;
 		}
 
 		UpdateView();
+		return moved;
 	}
 
 	void EditorCamera::OnEvent(Event& e)

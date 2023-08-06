@@ -330,10 +330,16 @@ namespace VulkanCore {
 		physicalDeviceDescriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
 		physicalDeviceDescriptorIndexingFeatures.pNext = &physicalDeviceRayTracingPipelineFeatures;
 
+		VkPhysicalDeviceShaderClockFeaturesKHR physicalDeviceShaderClockFeatures{};
+		physicalDeviceShaderClockFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
+		physicalDeviceShaderClockFeatures.shaderSubgroupClock = VK_TRUE;
+		physicalDeviceShaderClockFeatures.shaderDeviceClock = VK_TRUE;
+		physicalDeviceShaderClockFeatures.pNext = &physicalDeviceDescriptorIndexingFeatures;
+
 		VkPhysicalDeviceAccelerationStructureFeaturesKHR physicalDeviceAccelerationStructureFeatures{};
 		physicalDeviceAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 		physicalDeviceAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
-		physicalDeviceAccelerationStructureFeatures.pNext = &physicalDeviceDescriptorIndexingFeatures;
+		physicalDeviceAccelerationStructureFeatures.pNext = &physicalDeviceShaderClockFeatures;
 
 		VkPhysicalDeviceFeatures2 physicalDeviceFeatures{};
 		physicalDeviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;

@@ -21,6 +21,7 @@
 #include "Platform/Vulkan/VulkanUniformBuffer.h"
 #include "Platform/Vulkan/VulkanStorageBuffer.h"
 
+#include <random>
 #include <imgui.h>
 
 namespace VulkanCore {
@@ -93,6 +94,10 @@ namespace VulkanCore {
 		}
 
 	}
+
+	static std::random_device s_RandomDevice;
+	static std::mt19937_64 s_Engine(s_RandomDevice());
+	static std::uniform_int_distribution<uint32_t> s_UniformDistribution;
 
 	SceneRenderer* SceneRenderer::s_Instance = nullptr;
 
@@ -186,10 +191,11 @@ namespace VulkanCore {
 
 			m_RayTracingBaseMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
 			m_RayTracingBaseMaterial->SetImages(1, m_SceneRTOutputImages);
-			m_RayTracingBaseMaterial->SetBuffers(2, m_UBCamera);
-			m_RayTracingBaseMaterial->SetBuffers(3, m_UBPointLight);
-			m_RayTracingBaseMaterial->SetBuffers(4, m_UBSpotLight);
-			m_RayTracingBaseMaterial->SetBuffers(5, m_SBMeshBuffersData);
+			m_RayTracingBaseMaterial->SetImages(2, m_SceneRTAccumulationImages);
+			m_RayTracingBaseMaterial->SetBuffers(3, m_UBCamera);
+			m_RayTracingBaseMaterial->SetBuffers(4, m_UBPointLight);
+			m_RayTracingBaseMaterial->SetBuffers(5, m_UBSpotLight);
+			m_RayTracingBaseMaterial->SetBuffers(6, m_SBMeshBuffersData);
 			m_RayTracingBaseMaterial->PrepareShaderMaterial();
 		}
 
@@ -548,6 +554,7 @@ namespace VulkanCore {
 		// Ray Tracing Base Material
 		{
 			m_RayTracingBaseMaterial->SetImages(1, m_SceneRTOutputImages);
+			m_RayTracingBaseMaterial->SetImages(2, m_SceneRTAccumulationImages);
 			m_RayTracingBaseMaterial->PrepareShaderMaterial();
 		}
 	}
@@ -559,6 +566,12 @@ namespace VulkanCore {
 		m_CompositePipeline->ReloadPipeline();
 		m_SkyboxPipeline->ReloadPipeline();
 		m_BloomPipeline->ReloadPipeline();
+
+		if (m_RayTraced)
+		{
+			m_RayTracingPipeline->ReloadPipeline();
+			m_RayTracingPipeline->CreateShaderBindingTable();
+		}
 	}
 
 	void SceneRenderer::CreateResources()
@@ -653,6 +666,25 @@ namespace VulkanCore {
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRTOutputTexture->GetSpecification().MipLevels, 0, 1 });
 		}
 
+		ImageSpecification sceneRTAccumulateSpec = {};
+		sceneRTAccumulateSpec.DebugName = "Scene Accumulate Output";
+		sceneRTAccumulateSpec.Width = m_ViewportSize.x;
+		sceneRTAccumulateSpec.Height = m_ViewportSize.y;
+		sceneRTAccumulateSpec.Format = ImageFormat::RGBA32F;
+		sceneRTAccumulateSpec.Usage = ImageUsage::Storage;
+
+		for (uint32_t i = 0; i < framesInFlight; ++i)
+		{
+			auto SceneRTAccumulateTexture = std::static_pointer_cast<VulkanImage>(m_SceneRTAccumulationImages.emplace_back(std::make_shared<VulkanImage>(sceneRTAccumulateSpec)));
+			SceneRTAccumulateTexture->Invalidate();
+
+			Utils::InsertImageMemoryBarrier(barrierCmd, SceneRTAccumulateTexture->GetVulkanImageInfo().Image,
+				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
+				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
+				VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRTAccumulateTexture->GetSpecification().MipLevels, 0, 1 });
+		}
+
 		device->FlushCommandBuffer(barrierCmd);
 
 		m_SceneImages.resize(framesInFlight);
@@ -739,6 +771,18 @@ namespace VulkanCore {
 					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRTOutputTexture->GetSpecification().MipLevels, 0, 1 });
 			}
 
+			for (auto& SceneRTAccumulateTexture : m_SceneRTAccumulationImages)
+			{
+				auto vulkanRTAccumulateImage = std::static_pointer_cast<VulkanImage>(SceneRTAccumulateTexture);
+				vulkanRTAccumulateImage->Resize(m_ViewportSize.x, m_ViewportSize.y);
+
+				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanRTAccumulateImage->GetVulkanImageInfo().Image,
+					VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
+					VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
+					VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRTAccumulateTexture->GetSpecification().MipLevels, 0, 1 });
+			}
+
 			device->FlushCommandBuffer(barrierCmd);
 
 			// Update ImGui Viewport Image
@@ -819,6 +863,20 @@ namespace VulkanCore {
 			}
 
 			ImGui::TreePop();
+		}
+
+		if (m_RayTraced)
+		{
+			if (ImGui::TreeNodeEx("Scene Ray Tracer Settings", treeFlags))
+			{
+				uint32_t DragMin = 1;
+				ImGui::DragScalar("Sample Count", ImGuiDataType_U32, &m_RTSettings.SampleCount, 1.0f, &DragMin);
+				ImGui::DragScalar("Bounces", ImGuiDataType_U32, &m_RTSettings.Bounces, 1.0f, &DragMin);
+				ImGui::Checkbox("Accumulate", &m_Accumulate);
+				ImGui::Text("Accumulate Frame Count: %u", m_RTSettings.AccumulateFrameIndex);
+
+				ImGui::TreePop();
+			}
 		}
 
 		if (ImGui::TreeNodeEx("Scene Draw Stats", treeFlags))
@@ -1057,6 +1115,14 @@ namespace VulkanCore {
 		s_Instance->UpdateSkybox(filepath);
 	}
 
+	void SceneRenderer::ResetAccumulationFrameIndex()
+	{
+		Renderer::Submit([]
+		{
+			s_Instance->m_RTSettings.AccumulateFrameIndex = 1;
+		});
+	}
+
 	void SceneRenderer::CompositePass()
 	{
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Composite-Pass", DebugLabelColor::Red);
@@ -1228,7 +1294,21 @@ namespace VulkanCore {
 
 		Renderer::TraceRays(m_SceneCommandBuffer, m_RayTracingPipeline,
 			{ m_RayTracingBaseMaterial, m_RayTracingPBRMaterial, m_RayTracingSkyboxMaterial },
-			m_ViewportSize.x, m_ViewportSize.y);
+			m_ViewportSize.x, m_ViewportSize.y,
+			&m_RTSettings, (uint32_t)sizeof(RTSettings));
+
+		Renderer::Submit([this]
+		{
+			// Ray Tracing Data
+			m_RTSettings.RandomSeed = s_UniformDistribution(s_Engine);
+			if (m_Accumulate)
+			{
+				m_RTSettings.AccumulateFrameIndex++;
+				m_RTSettings.AccumulateFrameIndex = glm::clamp(m_RTSettings.AccumulateFrameIndex, 1u, m_RTSettings.SampleCount * m_ViewportSize.x * m_ViewportSize.y);
+			}
+			else
+				m_RTSettings.AccumulateFrameIndex = 1;
+		});
 
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);

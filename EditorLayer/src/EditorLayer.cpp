@@ -76,12 +76,14 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
+		bool cameraMoved = false;
 		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
-			m_EditorCamera.OnUpdate();
+			cameraMoved = m_EditorCamera.OnUpdate();
+
+		if (cameraMoved)
+			m_SceneRenderer->ResetAccumulationFrameIndex();
 
 		m_SceneRenderer->SetBuffersData(m_EditorCamera);
-
-		auto appPtr = Application::Get();
 		if (m_RayTraced)
 			m_SceneRenderer->TraceScene();
 		else

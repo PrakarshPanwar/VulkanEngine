@@ -14,38 +14,37 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		std::shared_ptr<Shader> MakeShader(const std::string& path, bool rayTraceShader = false)
+		std::shared_ptr<Shader> MakeShader(const std::string& path)
 		{
-			if (rayTraceShader)
-			{
-				const std::filesystem::path shaderPath = "assets\\shaders";
-				std::filesystem::path rayGenShaderPath = shaderPath / path,
-					rayClosestHitShaderPath = shaderPath / path,
-					rayMissShaderPath = shaderPath / path;
+			const std::filesystem::path shaderPath = "assets\\shaders";
+			std::filesystem::path vertexShaderPath = shaderPath / path, fragmentShaderPath = shaderPath / path, computeShaderPath = shaderPath / path;
+			vertexShaderPath.replace_extension(".vert");
+			fragmentShaderPath.replace_extension(".frag");
+			computeShaderPath.replace_extension(".comp");
 
-				rayGenShaderPath.replace_extension(".rgen");
-				rayClosestHitShaderPath.replace_extension(".rchit");
-				rayMissShaderPath.replace_extension(".rmiss");
+			if (std::filesystem::exists(vertexShaderPath) && std::filesystem::exists(fragmentShaderPath))
+				return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string());
 
-				return std::make_shared<VulkanShader>(rayGenShaderPath.string(), rayClosestHitShaderPath.string(), rayMissShaderPath.string(), "");
-			}
-			else
-			{
-				const std::filesystem::path shaderPath = "assets\\shaders";
-				std::filesystem::path vertexShaderPath = shaderPath / path, fragmentShaderPath = shaderPath / path, computeShaderPath = shaderPath / path;
-				vertexShaderPath.replace_extension(".vert");
-				fragmentShaderPath.replace_extension(".frag");
-				computeShaderPath.replace_extension(".comp");
-
-				if (std::filesystem::exists(vertexShaderPath) && std::filesystem::exists(fragmentShaderPath))
-					return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string());
-
-				if (std::filesystem::exists(computeShaderPath))
-					return std::make_shared<VulkanShader>(computeShaderPath.string());
-			}
+			if (std::filesystem::exists(computeShaderPath))
+				return std::make_shared<VulkanShader>(computeShaderPath.string());
 
 			VK_CORE_ASSERT(false, "Shader: {} does not exist!", path);
 			return std::make_shared<VulkanShader>();
+		}
+
+		std::shared_ptr<Shader> MakeRTShader(const std::string& path)
+		{
+			const std::filesystem::path shaderPath = "assets\\shaders";
+			std::filesystem::path rayGenShaderPath = shaderPath / path, rayClosestHitShaderPath = shaderPath / path, rayMissShaderPath = shaderPath / path;
+			rayGenShaderPath.replace_extension(".rgen");
+			rayClosestHitShaderPath.replace_extension(".rchit");
+			rayMissShaderPath.replace_extension(".rmiss");
+
+			if (std::filesystem::exists(rayGenShaderPath) && std::filesystem::exists(rayClosestHitShaderPath) && std::filesystem::exists(rayMissShaderPath))
+				return std::make_shared<VulkanRayTraceShader>(rayGenShaderPath.string(), rayClosestHitShaderPath.string(), rayMissShaderPath.string());
+
+			VK_CORE_ASSERT(false, "Shader: {}, does not exist!", path);
+			return std::make_shared<VulkanRayTraceShader>();
 		}
 
 	}
@@ -88,7 +87,6 @@ namespace VulkanCore {
 	void Renderer::BuildShaders()
 	{
 		m_Shaders["CorePBR"] = Utils::MakeShader("CorePBR");
-		m_Shaders["CoreRT"] = Utils::MakeShader("CoreRT", true);
 		m_Shaders["LightShader"] = Utils::MakeShader("LightShader");
 		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
 		m_Shaders["Bloom"] = Utils::MakeShader("Bloom");
@@ -97,6 +95,9 @@ namespace VulkanCore {
 		m_Shaders["EnvironmentMipFilter"] = Utils::MakeShader("EnvironmentMipFilter");
 		m_Shaders["EnvironmentIrradiance"] = Utils::MakeShader("EnvironmentIrradiance");
 		m_Shaders["GenerateBRDF"] = Utils::MakeShader("GenerateBRDF");
+
+		// Ray Trace Shader
+		m_Shaders["CoreRT"] = Utils::MakeRTShader("CoreRT");
 	}
 
 	void Renderer::ShutDown()
@@ -155,9 +156,9 @@ namespace VulkanCore {
 		s_Renderer->SubmitFullscreenQuad(cmdBuffer, pipeline, shaderMaterial);
 	}
 
-	void Renderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height)
+	void Renderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height, void* pcData, uint32_t pcSize)
 	{
-		s_Renderer->TraceRays(cmdBuffer, pipeline, shaderMaterials, width, height);
+		s_Renderer->TraceRays(cmdBuffer, pipeline, shaderMaterials, width, height, pcData, pcSize);
 	}
 
 	std::shared_ptr<Image2D> Renderer::CreateBRDFTexture()

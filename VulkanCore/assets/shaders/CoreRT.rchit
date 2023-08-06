@@ -2,12 +2,16 @@
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_control_flow_attributes : require
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_EXT_scalar_block_layout : enable
 
 struct RayPayload
 {
 	vec3 Color;
+	vec4 ScatterDirection;
+	float Distance;
+	uint Seed;
 };
 
 layout(location = 0) rayPayloadInEXT RayPayload o_RayPayload;
@@ -66,7 +70,7 @@ struct MeshBufferData
 	uint64_t IndexBufferAddress;
 };
 
-layout(set = 0, binding = 2) uniform Camera
+layout(set = 0, binding = 3) uniform Camera
 {
 	mat4 Projection;
 	mat4 View;
@@ -74,19 +78,19 @@ layout(set = 0, binding = 2) uniform Camera
 	mat4 InverseView;
 } u_Camera;
 
-layout(set = 0, binding = 3) uniform PointLightData
+layout(set = 0, binding = 4) uniform PointLightData
 {
 	int Count;
 	PointLight PointLights[10];
 } u_PointLight;
 
-layout(set = 0, binding = 4) uniform SpotLightData
+layout(set = 0, binding = 5) uniform SpotLightData
 {
     int Count;
     SpotLight SpotLights[10];
 } u_SpotLight;
 
-layout(set = 0, binding = 5) readonly buffer MeshData
+layout(set = 0, binding = 6) readonly buffer MeshData
 {
 	MeshBufferData addressData[];
 } r_MeshBufferData;
@@ -311,6 +315,73 @@ vec3 IBL(vec3 F0, vec3 Lr)
     return ambient;
 }
 
+uint InitRandomSeed(uint val0, uint val1)
+{
+	uint v0 = val0, v1 = val1, s0 = 0;
+
+	[[unroll]] 
+	for (uint n = 0; n < 16; n++)
+	{
+		s0 += 0x9e3779b9;
+		v0 += ((v1 << 4) + 0xa341316c) ^ (v1 + s0) ^ ((v1 >> 5) + 0xc8013ea4);
+		v1 += ((v0 << 4) + 0xad90777d) ^ (v0 + s0) ^ ((v0 >> 5) + 0x7e95761e);
+	}
+
+	return v0;
+}
+
+uint RandomInt(inout uint seed)
+{
+	// LCG values from Numerical Recipes
+    return (seed = 1664525 * seed + 1013904223);
+}
+
+float RandomFloat(inout uint seed)
+{
+	//// Float version using bitmask from Numerical Recipes
+	const uint one = 0x3f800000;
+	const uint msk = 0x007fffff;
+	return uintBitsToFloat(one | (msk & (RandomInt(seed) >> 9))) - 1;
+}
+
+vec2 RandomInUnitDisk(inout uint seed)
+{
+	for (;;)
+	{
+		const vec2 p = 2 * vec2(RandomFloat(seed), RandomFloat(seed)) - 1;
+		if (dot(p, p) < 1)
+		{
+			return p;
+		}
+	}
+}
+
+vec3 RandomInUnitSphere(inout uint seed)
+{
+	for (;;)
+	{
+		const vec3 p = 2 * vec3(RandomFloat(seed), RandomFloat(seed), RandomFloat(seed)) - 1;
+		if (dot(p, p) < 1)
+		{
+			return p;
+		}
+	}
+}
+
+RayPayload ScatterMettalic(const vec3 color, const vec3 direction, const vec3 normal, const vec2 texCoord, const float hitDistance, inout uint seed)
+{
+    RayPayload rayPayload;
+    
+    const vec3 reflected = reflect(direction, normal);
+	const vec4 scatter = vec4(reflected + m_Params.Roughness * RandomInUnitSphere(seed), dot(reflected, normal) > 0 ? 1 : 0);
+
+    rayPayload.Color = color;
+    rayPayload.ScatterDirection = scatter;
+    rayPayload.Distance = hitDistance;
+    rayPayload.Seed = seed;
+	return rayPayload;
+}
+
 vec2 MixBarycentric(vec2 p0, vec2 p1, vec2 p2)
 {
     const vec3 barycentricCoords = vec3(1.0 - g_HitAttribs.x - g_HitAttribs.y, g_HitAttribs.x, g_HitAttribs.y);
@@ -396,5 +467,6 @@ void main()
     vec3 iblContribution = IBL(F0, Lr);
 
     vec3 color = iblContribution + lightContribution;
-	o_RayPayload.Color = color;
+    vec3 direction = normalize(gl_WorldRayDirectionEXT);
+    o_RayPayload = ScatterMettalic(m_Params.Albedo.rgb, direction, m_Params.Normal, Input.TexCoord, gl_HitTEXT, o_RayPayload.Seed);
 }

@@ -14,6 +14,7 @@ namespace VulkanCore {
 
 		// Ray Tracing Types
 		RayGeneration = 0x100,
+		RayAnyHit = 0x200,
 		RayClosestHit = 0x400,
 		RayMiss = 0x800,
 		RayIntersection = 0x1000
@@ -23,9 +24,6 @@ namespace VulkanCore {
 	{
 	public:
 		virtual void Reload() = 0;
-		virtual bool HasGeometryShader() const = 0;
-		virtual bool IsRayTraced() const = 0;
-		virtual bool HasRayIntersectionShader() const = 0;
 	public:
 		virtual void SetReloadFlag() { m_ReloadFlag = true; }
 		virtual void ResetReloadFlag() { m_ReloadFlag = false; }
