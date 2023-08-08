@@ -60,16 +60,17 @@ namespace VulkanCore {
 
 		ImGui::Columns(columnCount, nullptr, false);
 
-		for (auto& directoryEntry : std::filesystem::directory_iterator(m_CurrentDirectory))
+		const auto& directoryIterator = std::filesystem::directory_iterator(m_CurrentDirectory);
+		for (auto& directoryEntry : directoryIterator)
 		{
 			const auto& path = directoryEntry.path();
 			std::string filenameString = path.filename().string();
 
-			ImGui::PushID(filenameString.c_str());
+			//ImGui::PushID(filenameString.c_str());
 			ImTextureID icon = directoryEntry.is_directory() ? m_DirectoryIconID : m_FileIconID;
 
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-			ImGui::ImageButton((ImTextureID)icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
+			ImGui::ImageButton(filenameString.c_str(), (ImTextureID)icon, {m_ThumbnailSize, m_ThumbnailSize}, {0, 0}, {1, 1});
 
 			if (ImGui::BeginDragDropSource())
 			{
@@ -128,7 +129,7 @@ namespace VulkanCore {
 			ImGui::TextWrapped(filenameString.c_str());
 			ImGui::NextColumn();
 
-			ImGui::PopID();
+			//ImGui::PopID();
 		}
 
 		ImGui::Columns(1);

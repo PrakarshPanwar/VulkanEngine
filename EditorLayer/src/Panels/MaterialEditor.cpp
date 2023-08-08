@@ -84,7 +84,7 @@ namespace VulkanCore {
 			auto& materialData = vulkanMaterial->GetMaterialData();
 			auto [diffuse, normal, arm] = vulkanMaterial->GetMaterialTextureIDs();
 
-			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_FramePadding;
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
 			bool albedoNode = ImGui::TreeNodeEx("ALBEDO", treeNodeFlags);
 			ImGui::PopStyleVar();

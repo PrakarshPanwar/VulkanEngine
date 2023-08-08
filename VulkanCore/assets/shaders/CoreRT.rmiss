@@ -19,10 +19,18 @@ layout(set = 2, binding = 4) uniform SkyboxData
 	float LOD;
 } u_Skybox;
 
+layout(push_constant) uniform RTSettings
+{
+	uint SampleCount;
+	uint Bounces;
+	uint RandomSeed;
+	uint FrameIndex;
+} u_Settings;
+
 void main()
 {
 	vec3 color = textureLod(u_CubeMap, gl_WorldRayDirectionEXT, u_Skybox.LOD).rgb;
-	color *= u_Skybox.Intensity;
+	color *= u_Skybox.Intensity / float(u_Settings.SampleCount);
 
 	o_RayPayload.Color = color;
 	o_RayPayload.Distance = -1.0;
