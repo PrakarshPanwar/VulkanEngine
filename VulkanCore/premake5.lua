@@ -20,7 +20,12 @@ project "VulkanCore"
 		"assets/shaders/*.vert",
 		"assets/shaders/*.frag",
 		"assets/shaders/*.geom",
-		"assets/shaders/*.comp"
+		"assets/shaders/*.comp",
+		"assets/shaders/*.rgen",
+		"assets/shaders/*.rchit",
+		"assets/shaders/*.rahit",
+		"assets/shaders/*.rint",
+		"assets/shaders/*.rmiss"
 	}
 
 	removefiles {

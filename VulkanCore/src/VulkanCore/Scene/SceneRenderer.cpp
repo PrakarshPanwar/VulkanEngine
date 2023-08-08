@@ -816,8 +816,8 @@ namespace VulkanCore {
 			if (m_RayTraced)
 			{
 				ImGui::Text("RayTrace Pass: %lluns", vulkanCmdBuffer->GetQueryTime(0));
-				ImGui::Text("Composite Pass: %lluns", vulkanCmdBuffer->GetQueryTime(2));
-				ImGui::Text("Bloom Compute Pass: %lluns", vulkanCmdBuffer->GetQueryTime(3));
+				ImGui::Text("Composite Pass: %lluns", vulkanCmdBuffer->GetQueryTime(3));
+				ImGui::Text("Bloom Compute Pass: %lluns", vulkanCmdBuffer->GetQueryTime(2));
 			}
 			else
 			{
@@ -845,8 +845,8 @@ namespace VulkanCore {
 			int buttonID = 0;
 			for (auto&& [name, shader] : shaderMap)
 			{
-				ImGui::Selectable(name.c_str(), false, ImGuiSelectableFlags_AllowItemOverlap, ImVec2{ 0.0f, 24.5f });
-				ImGui::SetItemAllowOverlap();
+				ImGui::SetNextItemAllowOverlap();
+				ImGui::Selectable(name.c_str(), false, ImGuiSelectableFlags_AllowOverlap, ImVec2{ 0.0f, 24.5f });
 
 				ImGui::SameLine(ImGui::GetContentRegionAvail().x - 20.0f);
 				ImGui::PushID(buttonID++);
@@ -867,8 +867,10 @@ namespace VulkanCore {
 			if (ImGui::TreeNodeEx("Scene Ray Tracer Settings", treeFlags))
 			{
 				uint32_t DragMin = 1;
-				ImGui::DragScalar("Sample Count", ImGuiDataType_U32, &m_RTSettings.SampleCount, 1.0f, &DragMin);
-				ImGui::DragScalar("Bounces", ImGuiDataType_U32, &m_RTSettings.Bounces, 1.0f, &DragMin);
+				uint32_t DragMax = 16;
+				ImGui::SliderScalar("Sample Count", ImGuiDataType_U32, &m_RTSettings.SampleCount, &DragMin, &DragMax);
+				ImGui::SliderScalar("Bounces", ImGuiDataType_U32, &m_RTSettings.Bounces, &DragMin, &DragMax);
+
 				ImGui::Checkbox("Accumulate", &m_Accumulate);
 				ImGui::Text("Accumulate Frame Count: %u", m_RTSettings.AccumulateFrameIndex);
 
