@@ -119,7 +119,6 @@ namespace VulkanCore {
 	{
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<MouseScrolledEvent>(VK_CORE_BIND_EVENT_FN(EditorCamera::OnMouseScroll));
-	//	dispatcher.Dispatch<WindowResizeEvent>(VULKAN_CORE_BIND_EVENT_FN(EditorCamera::OnWindowResize));
 	}
 
 	bool EditorCamera::OnMouseScroll(MouseScrolledEvent& e)

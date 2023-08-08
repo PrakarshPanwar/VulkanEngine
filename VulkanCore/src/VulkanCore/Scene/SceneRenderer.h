@@ -116,7 +116,7 @@ namespace VulkanCore {
 
 		struct SkyboxSettings
 		{
-			float Intensity = 0.05f;
+			float Intensity = 0.5f;
 			float LOD = 0.0f;
 		} m_SkyboxSettings;
 
