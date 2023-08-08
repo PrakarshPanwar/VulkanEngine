@@ -76,12 +76,12 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
-		bool cameraMoved = false;
 		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
-			cameraMoved = m_EditorCamera.OnUpdate();
-
-		if (cameraMoved)
-			m_SceneRenderer->ResetAccumulationFrameIndex();
+		{
+			bool cameraUpdated = m_EditorCamera.OnUpdate();
+			if (cameraUpdated)
+				m_SceneRenderer->ResetAccumulationFrameIndex();
+		}
 
 		m_SceneRenderer->SetBuffersData(m_EditorCamera);
 		if (m_RayTraced)
@@ -94,6 +94,10 @@ namespace VulkanCore {
 	{
 		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents())
 			m_EditorCamera.OnEvent(e);
+
+		// Handling Camera Events
+		if (e.Handled)
+			m_SceneRenderer->ResetAccumulationFrameIndex();
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnKeyEvent));

@@ -61,9 +61,6 @@ namespace VulkanCore {
 		// Top Level AS
 		allocator.DestroyBuffer(m_TLASInfo.Buffer, m_TLASInfo.MemoryAlloc);
 		vkDestroyAccelerationStructureKHR(device->GetVulkanDevice(), m_TLASInfo.Handle, nullptr);
-
-		// Instance Buffer
-		allocator.DestroyBuffer(m_InstanceBuffer, m_InstanceBufferAlloc);
 	}
 
 	void VulkanAccelerationStructure::BuildTopLevelAccelerationStructure()
@@ -78,63 +75,37 @@ namespace VulkanCore {
 		for (auto& [mk, blasInput] : m_BLASInputData)
 			tlasInstancesData.insert(tlasInstancesData.end(), blasInput.InstanceData.begin(), blasInput.InstanceData.end());
 
-		// Buffer for Instance Data
-		VkBuffer stagingBuffer;
-		VmaAllocation stagingBufferAlloc;
+		// Host(Temporary) Instance Buffer
+		VkBuffer instanceBuffer;
+		VmaAllocation instanceBufferAlloc;
 
 		uint32_t instanceBufferSize = tlasInstancesData.size() * sizeof(VkAccelerationStructureInstanceKHR);
 
-		VkBufferCreateInfo stagingBufferCreateInfo{};
-		stagingBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		stagingBufferCreateInfo.size = instanceBufferSize;
-		stagingBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-
-		stagingBufferAlloc = allocator.AllocateBuffer(stagingBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, stagingBuffer);
-
-		// Device Instance Buffer
 		VkBufferCreateInfo instanceBufferCreateInfo{};
 		instanceBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		instanceBufferCreateInfo.size = instanceBufferSize;
 		instanceBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
 			VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
 
-		m_InstanceBufferAlloc = allocator.AllocateBuffer(instanceBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_InstanceBuffer);
+		instanceBufferAlloc = allocator.AllocateBuffer(instanceBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, instanceBuffer);
 
-		// Copy Instance Data to Staging(Host) Buffer
-		uint8_t* stagingDstData = allocator.MapMemory<uint8_t>(stagingBufferAlloc);
-		memcpy(stagingDstData, tlasInstancesData.data(), instanceBufferSize);
-		allocator.UnmapMemory(stagingBufferAlloc);
+		// Copy Instance Data to Instance Buffer
+		uint8_t* dstData = allocator.MapMemory<uint8_t>(instanceBufferAlloc);
+		memcpy(dstData, tlasInstancesData.data(), instanceBufferSize);
+		allocator.UnmapMemory(instanceBufferAlloc);
 
-		// Copy Instance Data to Device Buffer
-		VkCommandBuffer copyCmd = device->GetCommandBuffer();
+		VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress = Utils::GetBufferDeviceAddress(instanceBuffer);
 
-		VkBufferCopy copyRegion{};
-		copyRegion.size = instanceBufferSize;
-
-		vkCmdCopyBuffer(copyCmd,
-			stagingBuffer,
-			m_InstanceBuffer,
-			1,
-			&copyRegion
-		);
-
-		device->FlushCommandBuffer(copyCmd);
-
-		// Destroy Staging Buffer
-		allocator.DestroyBuffer(stagingBuffer, stagingBufferAlloc);
-
-		VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress = Utils::GetBufferDeviceAddress(m_InstanceBuffer);
-
-		VkAccelerationStructureGeometryInstancesDataKHR instances{};
-		instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
-		instances.arrayOfPointers = VK_FALSE;
-		instances.data = instanceDataDeviceAddress;
+		VkAccelerationStructureGeometryInstancesDataKHR instancesData{};
+		instancesData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+		instancesData.arrayOfPointers = VK_FALSE;
+		instancesData.data = instanceDataDeviceAddress;
 
 		VkAccelerationStructureGeometryKHR accelerationStructureGeometry{};
 		accelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
 		accelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
 		accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
-		accelerationStructureGeometry.geometry.instances = instances;
+		accelerationStructureGeometry.geometry.instances = instancesData;
 
 		// Get Sizes Info
 		VkAccelerationStructureBuildGeometryInfoKHR asBuildGeometryInfo{};
@@ -242,6 +213,7 @@ namespace VulkanCore {
 		device->FlushCommandBuffer(buildCmd);
 
 		allocator.DestroyBuffer(scratchBuffer, scratchBufferAlloc);
+		allocator.DestroyBuffer(instanceBuffer, instanceBufferAlloc);
 
 		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, "Top Level Acceleration Structure", m_TLASInfo.Handle);
 
