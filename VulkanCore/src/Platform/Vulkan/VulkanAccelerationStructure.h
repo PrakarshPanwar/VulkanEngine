@@ -21,6 +21,7 @@ namespace VulkanCore {
 		~VulkanAccelerationStructure();
 
 		void BuildTopLevelAccelerationStructure() override;
+		void UpdateTopLevelAccelerationStructure() override;
 		void BuildBottomLevelAccelerationStructures() override;
 		void SubmitMeshDrawData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex, uint32_t instanceCount) override;
 

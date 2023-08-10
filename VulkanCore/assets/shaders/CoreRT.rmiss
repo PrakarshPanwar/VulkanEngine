@@ -30,7 +30,7 @@ layout(push_constant) uniform RTSettings
 void main()
 {
 	vec3 color = textureLod(u_CubeMap, gl_WorldRayDirectionEXT, u_Skybox.LOD).rgb;
-	color *= u_Skybox.Intensity;
+	color *= u_Skybox.Intensity / float(u_Settings.SampleCount);
 
 	o_RayPayload.Color = color;
 	o_RayPayload.Distance = -1.0;

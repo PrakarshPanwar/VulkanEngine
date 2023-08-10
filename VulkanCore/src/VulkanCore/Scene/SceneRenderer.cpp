@@ -122,6 +122,8 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
+		m_Scene->UpdateRayTracedGeometry(this);
+
 		std::vector<MeshBuffersAddress> meshBuffersData;
 		std::vector<MaterialData> meshMaterialData;
 
@@ -1046,6 +1048,11 @@ namespace VulkanCore {
 
 	void SceneRenderer::SubmitRayTracedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform)
 	{
+		VK_CORE_PROFILE();
+
+		if (!mesh || !materialAsset)
+			return;
+
 		auto meshSource = mesh->GetMeshSource();
 		auto& submeshData = meshSource->GetSubmeshes();
 		uint64_t meshHandle = mesh->Handle;
@@ -1144,7 +1151,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::GeometryPass()
 	{
-		m_Scene->OnUpdateGeometry(this);
+		m_Scene->UpdateGeometry(this);
 		m_Scene->OnUpdateLights(m_PointLightPositions, m_SpotLightPositions);
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().pRenderPass);
@@ -1286,6 +1293,9 @@ namespace VulkanCore {
 
 	void SceneRenderer::RayTracePass()
 	{
+		m_Scene->UpdateRayTracedGeometry(this);
+		m_SceneAccelerationStructure->UpdateTopLevelAccelerationStructure();
+
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "RayTrace", DebugLabelColor::Aqua);
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 

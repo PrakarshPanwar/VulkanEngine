@@ -32,7 +32,7 @@ namespace VulkanCore {
 		return entity;
 	}
 
-	void Scene::OnUpdateGeometry(SceneRenderer* renderer)
+	void Scene::UpdateGeometry(SceneRenderer* renderer)
 	{
 		VK_CORE_PROFILE_FN("Submit-SubmitMeshes");
 		auto view = m_Registry.view<TransformComponent, MeshComponent>();
@@ -44,6 +44,21 @@ namespace VulkanCore {
 			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshComponent.MeshHandle);
 			std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(meshComponent.MaterialTableHandle);
 			renderer->SubmitMesh(mesh, materialAsset, transform.GetTransform());
+		}
+	}
+
+	void Scene::UpdateRayTracedGeometry(SceneRenderer* renderer)
+	{
+		VK_CORE_PROFILE_FN("Submit-SubmitMeshes");
+		auto view = m_Registry.view<TransformComponent, MeshComponent>();
+
+		for (auto ent : view)
+		{
+			auto [transform, meshComponent] = view.get<TransformComponent, MeshComponent>(ent);
+
+			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshComponent.MeshHandle);
+			std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(meshComponent.MaterialTableHandle);
+			renderer->SubmitRayTracedMesh(mesh, materialAsset, transform.GetTransform());
 		}
 	}
 
@@ -127,6 +142,8 @@ namespace VulkanCore {
 		m_Registry.destroy(entity);
 	}
 
+	// NOTE: Written for future use
+#if 0
 	template<typename T>
 	void Scene::OnComponentAdded(Entity entity, T& component)
 	{
@@ -151,11 +168,6 @@ namespace VulkanCore {
 	template<>
 	void Scene::OnComponentAdded<MeshComponent>(Entity entity, MeshComponent& component)
 	{
-		auto renderer = SceneRenderer::GetSceneRenderer();
-
-		auto mesh = AssetManager::GetAsset<Mesh>(component.MeshHandle);
-		auto materialAsset = AssetManager::GetAsset<MaterialAsset>(component.MaterialTableHandle);
-		renderer->SubmitRayTracedMesh(mesh, materialAsset, entity.GetComponent<TransformComponent>().GetTransform());
 	}
 
 	template<>
@@ -172,5 +184,6 @@ namespace VulkanCore {
 	void Scene::OnComponentAdded<SkyLightComponent>(Entity entity, SkyLightComponent& component)
 	{
 	}
+#endif
 
 }
