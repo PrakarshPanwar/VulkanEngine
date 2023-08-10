@@ -16,14 +16,12 @@ namespace VulkanCore {
 		Entity CreateEntity(const std::string& name);
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name);
 
-		void OnUpdateGeometry(SceneRenderer* renderer);
+		void UpdateGeometry(SceneRenderer* renderer);
 		void OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions);
 		void UpdatePointLightUB(UBPointLights& ubo);
 		void UpdateSpotLightUB(UBSpotLights& ubo);
 		void DestroyEntity(Entity entity);
-	private:
-		template<typename T>
-		void OnComponentAdded(Entity entity, T& component);
+		void UpdateRayTracedGeometry(SceneRenderer* renderer);
 	private:
 		entt::registry m_Registry;
 

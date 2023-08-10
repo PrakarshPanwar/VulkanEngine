@@ -147,8 +147,6 @@ void main()
 		pixelColor += rayColor;
 	}
 
-	pixelColor /= float(u_Settings.SampleCount);
-
 	const bool accumulate = u_Settings.FrameIndex > 1;
 	const vec4 accumulationColor = accumulate ? imageLoad(u_AccumulationImage, ivec2(gl_LaunchIDEXT.xy)) : vec4(0.0);
 	vec3 accumulatedColor = accumulationColor.rgb + pixelColor;

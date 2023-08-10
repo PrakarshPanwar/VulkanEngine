@@ -68,7 +68,7 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("TopLevelAccelerationStructure");
 
-		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Top Level Acceleration Structure");
+		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Top Level Acceleration Structure Build");
 
 		// Batch all instance data from BLAS Input
 		std::vector<VkAccelerationStructureInstanceKHR> tlasInstancesData{};
@@ -227,7 +227,7 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("BottomLevelAccelerationStructure");
 
-		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Bottom Level Acceleration Structure");
+		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Bottom Level Acceleration Structures Build");
 
 		for (auto& [mk, blasInput] : m_BLASInputData)
 		{
@@ -314,8 +314,7 @@ namespace VulkanCore {
 
 			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> pBuildRangeInfo = { &blasInput.BuildRangeInfo };
 
-			// Build the acceleration structure on the device via a one-time command buffer submission
-			// Some implementations may support acceleration structure building on the host (VkPhysicalDeviceAccelerationStructureFeaturesKHR->accelerationStructureHostCommands), but we prefer device builds
+			// Build TLAS
 			VkCommandBuffer buildCmd = device->GetCommandBuffer();
 
 			vkCmdBuildAccelerationStructuresKHR(buildCmd,
@@ -327,6 +326,11 @@ namespace VulkanCore {
 
 			allocator.DestroyBuffer(scratchBuffer, scratchBufferAlloc);
 		}
+	}
+
+	void VulkanAccelerationStructure::UpdateTopLevelAccelerationStructure()
+	{
+		// Update Acceleration Structure
 	}
 
 	void VulkanAccelerationStructure::SubmitMeshDrawData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex, uint32_t instanceCount)

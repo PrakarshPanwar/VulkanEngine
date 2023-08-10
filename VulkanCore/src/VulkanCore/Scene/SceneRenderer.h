@@ -44,6 +44,7 @@ namespace VulkanCore {
 		static void SetSkybox(const std::string& filepath);
 		static void ResetAccumulationFrameIndex();
 
+		inline bool IsRayTraced() const { return m_RayTraced; }
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		std::shared_ptr<Image2D> GetFinalPassImage(uint32_t index) const;
 		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
