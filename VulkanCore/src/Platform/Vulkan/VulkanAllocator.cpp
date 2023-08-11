@@ -7,13 +7,26 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		static VkMemoryPropertyFlags VulkanMemoryFlags(VmaMemoryUsage usage)
+		static VkMemoryPropertyFlags VulkanMemoryPropertyFlags(VmaMemoryUsage usage)
 		{
 			switch (usage)
 			{
 			case VMA_MEMORY_USAGE_AUTO:               return 0;
 			case VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE: return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 			case VMA_MEMORY_USAGE_AUTO_PREFER_HOST:   return VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+			default:
+				VK_CORE_ASSERT(false, "Could not find necessary Format!");
+				return 0;
+			}
+		}
+
+		static VmaAllocationCreateFlags VulkanMemoryAllocationFlags(VmaMemoryUsage usage)
+		{
+			switch (usage)
+			{
+			case VMA_MEMORY_USAGE_AUTO:				  return 0;
+			case VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE: return 0;
+			case VMA_MEMORY_USAGE_AUTO_PREFER_HOST:	  return VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
 			default:
 				VK_CORE_ASSERT(false, "Could not find necessary Format!");
 				return 0;
@@ -35,8 +48,8 @@ namespace VulkanCore {
 	{
 		VmaAllocationCreateInfo allocInfo{};
 		allocInfo.usage = usage;
-		allocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
-		allocInfo.preferredFlags = Utils::VulkanMemoryFlags(usage);
+		allocInfo.flags = Utils::VulkanMemoryAllocationFlags(usage);
+		allocInfo.preferredFlags = Utils::VulkanMemoryPropertyFlags(usage);
 
 		VmaAllocation vmaAllocation;
 		VK_CHECK_RESULT(vmaCreateBuffer(m_VkMemoryAllocator, &bufInfo, &allocInfo, &buffer, &vmaAllocation, nullptr), "{0}: Failed to Allocate Buffer!", m_DebugName);
@@ -53,7 +66,7 @@ namespace VulkanCore {
 	{
 		VmaAllocationCreateInfo allocInfo{};
 		allocInfo.usage = usage;
-		allocInfo.preferredFlags = Utils::VulkanMemoryFlags(usage);
+		allocInfo.preferredFlags = Utils::VulkanMemoryPropertyFlags(usage);
 
 		VmaAllocation vmaAllocation;
 		VK_CHECK_RESULT(vmaCreateImage(m_VkMemoryAllocator, &imgInfo, &allocInfo, &image, &vmaAllocation, nullptr), "{0}: Failed to Allocate Image!", m_DebugName);

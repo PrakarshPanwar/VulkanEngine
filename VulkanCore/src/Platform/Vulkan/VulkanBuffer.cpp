@@ -9,7 +9,7 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		static VmaMemoryUsage VulkanMemoryFlags(VkMemoryPropertyFlags flags)
+		static VmaMemoryUsage VulkanMemoryPropertyFlags(VkMemoryPropertyFlags flags)
 		{
 			switch (flags)
 			{
@@ -39,7 +39,7 @@ namespace VulkanCore {
 		bufferInfo.usage = m_UsageFlags;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		const auto vmaMemoryFlag = Utils::VulkanMemoryFlags(m_MemoryPropertyFlags);
+		const auto vmaMemoryFlag = Utils::VulkanMemoryPropertyFlags(m_MemoryPropertyFlags);
 		m_MemoryAllocation = allocator.AllocateBuffer(bufferInfo, vmaMemoryFlag, m_Buffer);
 	}
 
