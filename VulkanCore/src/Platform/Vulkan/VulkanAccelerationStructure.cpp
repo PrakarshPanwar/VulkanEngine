@@ -191,8 +191,7 @@ namespace VulkanCore {
 
 		std::vector<VkAccelerationStructureBuildRangeInfoKHR*> pBuildRangeInfos = { &buildRangeInfo };
 
-		// Build the Acceleration Structure on the device via a one-time command buffer submission
-		// Some implementations may support Acceleration Structure building on the host (VkPhysicalDeviceAccelerationStructureFeaturesKHR->accelerationStructureHostCommands), but we prefer device builds
+		// Build TLAS
 		VkCommandBuffer buildCmd = device->GetCommandBuffer();
 
 		// Make sure the Copy of the Instance Buffer are copied before triggering the Acceleration Structure Build
@@ -314,7 +313,7 @@ namespace VulkanCore {
 
 			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> pBuildRangeInfo = { &blasInput.BuildRangeInfo };
 
-			// Build TLAS
+			// Build BLAS
 			VkCommandBuffer buildCmd = device->GetCommandBuffer();
 
 			vkCmdBuildAccelerationStructuresKHR(buildCmd,

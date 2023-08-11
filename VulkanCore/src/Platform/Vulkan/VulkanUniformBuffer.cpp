@@ -16,7 +16,7 @@ namespace VulkanCore {
 		uniformBufferCreateInfo.size = m_Size;
 		uniformBufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 		uniformBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		m_MemoryAllocation = allocator.AllocateBuffer(uniformBufferCreateInfo, VMA_MEMORY_USAGE_AUTO, m_VulkanBuffer);
+		m_MemoryAllocation = allocator.AllocateBuffer(uniformBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_VulkanBuffer);
 
 		m_dstData = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
 
