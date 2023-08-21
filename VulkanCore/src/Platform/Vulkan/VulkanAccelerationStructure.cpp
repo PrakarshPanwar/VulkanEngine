@@ -11,7 +11,7 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		static VkDeviceOrHostAddressConstKHR GetBufferDeviceAddress(VkBuffer buffer)
+		static VkDeviceOrHostAddressConstKHR GetBufferDeviceAddress(VkBuffer buffer, uint32_t offset = 0)
 		{
 			auto vulkanDevice = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
 
@@ -20,15 +20,13 @@ namespace VulkanCore {
 			bufferDeviceAddressInfo.buffer = buffer;
 
 			VkDeviceOrHostAddressConstKHR deviceConstAddress{};
-			deviceConstAddress.deviceAddress = vkGetBufferDeviceAddressKHR(vulkanDevice, &bufferDeviceAddressInfo);
+			deviceConstAddress.deviceAddress = vkGetBufferDeviceAddressKHR(vulkanDevice, &bufferDeviceAddressInfo) + (VkDeviceAddress)offset;
 			return deviceConstAddress;
 		}
 
 		static VkTransformMatrixKHR VulkanTransformFromTransformData(const TransformData& transformData)
 		{
-			VkTransformMatrixKHR vulkanTransform{};
-
-			vulkanTransform = {
+			VkTransformMatrixKHR vulkanTransform = {
 				transformData.MRow[0].x, transformData.MRow[0].y, transformData.MRow[0].z, transformData.MRow[0].w,
 				transformData.MRow[1].x, transformData.MRow[1].y, transformData.MRow[1].z, transformData.MRow[1].w,
 				transformData.MRow[2].x, transformData.MRow[2].y, transformData.MRow[2].z, transformData.MRow[2].w
@@ -273,6 +271,8 @@ namespace VulkanCore {
 				nullptr,
 				&blasInfo.Handle);
 
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, blasInput.DebugName, blasInfo.Handle);
+
 			// AS Device Address(Will be used as reference in creating Top Level AS)
 			VkAccelerationStructureDeviceAddressInfoKHR deviceAddressInfo{};
 			deviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
@@ -339,7 +339,10 @@ namespace VulkanCore {
 		auto vulkanMeshVB = std::static_pointer_cast<VulkanVertexBuffer>(meshSource->GetVertexBuffer());
 		auto vulkanMeshIB = std::static_pointer_cast<VulkanIndexBuffer>(meshSource->GetIndexBuffer());
 
-		VkDeviceOrHostAddressConstKHR vertexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshVB->GetVulkanBuffer());
+		auto& submeshData = meshSource->GetSubmeshes();
+		const Submesh& submesh = submeshData[submeshIndex];
+
+		VkDeviceOrHostAddressConstKHR vertexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshVB->GetVulkanBuffer(), submesh.BaseVertex * sizeof(Vertex));
 		VkDeviceOrHostAddressConstKHR indexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshIB->GetVulkanBuffer());
 
 		VkAccelerationStructureGeometryTrianglesDataKHR trianglesData{};
@@ -358,13 +361,10 @@ namespace VulkanCore {
 		geometryData.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
 		geometryData.geometry.triangles = trianglesData;
 
-		auto& submeshData = meshSource->GetSubmeshes();
-		const Submesh& submesh = submeshData[submeshIndex];
-
 		VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo{};
-		buildRangeInfo.firstVertex = submesh.BaseVertex;
+		buildRangeInfo.firstVertex = 0;
 		buildRangeInfo.primitiveCount = submesh.IndexCount / 3;
-		buildRangeInfo.primitiveOffset = submesh.BaseIndex;
+		buildRangeInfo.primitiveOffset = submesh.BaseIndex * sizeof(uint32_t);
 		buildRangeInfo.transformOffset = 0;
 
 		std::vector<VkAccelerationStructureInstanceKHR> instances{ instanceCount };
@@ -385,6 +385,7 @@ namespace VulkanCore {
 
 		MeshKey meshKey = { mesh->Handle, materialAsset->Handle, submeshIndex };
 		auto& blasInput = m_BLASInputData[meshKey];
+		blasInput.DebugName = submesh.MeshName;
 		blasInput.GeometryData = geometryData;
 		blasInput.BuildRangeInfo = buildRangeInfo;
 		blasInput.InstanceCount = instanceCount;

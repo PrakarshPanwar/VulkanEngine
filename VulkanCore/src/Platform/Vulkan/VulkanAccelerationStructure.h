@@ -32,6 +32,7 @@ namespace VulkanCore {
 	private:
 		struct BLASInput
 		{
+			std::string DebugName;
 			VkAccelerationStructureGeometryKHR GeometryData{};
 			VkAccelerationStructureBuildRangeInfoKHR BuildRangeInfo{};
 			VulkanAccelerationStructureInfo BLASInfo{};

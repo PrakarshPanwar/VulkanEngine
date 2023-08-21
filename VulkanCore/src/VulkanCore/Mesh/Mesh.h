@@ -10,9 +10,17 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#define RAY_TRACING 1
+
+#if RAY_TRACING
+#define VERTEX_ALIGN alignas(16)
+#else
+#define VERTEX_ALIGN
+#endif
+
 namespace VulkanCore {
 
-	struct alignas(16) Vertex
+	struct VERTEX_ALIGN Vertex
 	{
 		glm::vec3 Position;
 		glm::vec3 Normal;
