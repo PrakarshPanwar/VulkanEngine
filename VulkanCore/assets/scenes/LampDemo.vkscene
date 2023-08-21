@@ -48,4 +48,4 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     SkyLightComponent:
-      TextureHandle: 4427852403240736341
+      TextureHandle: 8997689789897987

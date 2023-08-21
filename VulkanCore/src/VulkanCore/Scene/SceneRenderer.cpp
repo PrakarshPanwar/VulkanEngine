@@ -81,7 +81,7 @@ namespace VulkanCore {
 			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
 		}
 
-		static VkDeviceAddress GetBufferDeviceAddress(VkBuffer buffer)
+		static VkDeviceAddress GetBufferDeviceAddress(VkBuffer buffer, uint32_t offset = 0)
 		{
 			auto vulkanDevice = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
 
@@ -89,7 +89,8 @@ namespace VulkanCore {
 			bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 			bufferDeviceAddressInfo.buffer = buffer;
 			
-			return vkGetBufferDeviceAddressKHR(vulkanDevice, &bufferDeviceAddressInfo);
+			VkDeviceAddress deviceAddress = vkGetBufferDeviceAddressKHR(vulkanDevice, &bufferDeviceAddressInfo) + (VkDeviceAddress)offset;
+			return deviceAddress;
 		}
 
 	}
@@ -135,9 +136,12 @@ namespace VulkanCore {
 			auto vulkanMeshVB = std::static_pointer_cast<VulkanVertexBuffer>(meshSource->GetVertexBuffer());
 			auto vulkanMeshIB = std::static_pointer_cast<VulkanIndexBuffer>(meshSource->GetIndexBuffer());
 
+			auto& submeshData = meshSource->GetSubmeshes();
+			auto& submesh = submeshData[tc.SubmeshIndex];
+
 			auto& bufferData = meshBuffersData.emplace_back();
-			bufferData.VertexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshVB->GetVulkanBuffer());
-			bufferData.IndexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshIB->GetVulkanBuffer());
+			bufferData.VertexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshVB->GetVulkanBuffer(), submesh.BaseVertex * sizeof(Vertex));
+			bufferData.IndexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshIB->GetVulkanBuffer(), submesh.BaseIndex * sizeof(uint32_t));
 
 			// Submit Mesh Material Data
 			meshMaterialData.push_back(tc.MaterialInstance->GetMaterial()->GetMaterialData());
@@ -898,7 +902,7 @@ namespace VulkanCore {
 		m_Scene = scene;
 
 		m_MeshDrawList.clear();
-		//m_MeshTransformMap.clear();
+		m_MeshTransformMap.clear();
 	}
 
 	void SceneRenderer::SetViewportSize(uint32_t width, uint32_t height)
@@ -949,7 +953,7 @@ namespace VulkanCore {
 		cameraUB.InverseView = glm::inverse(camera.GetViewMatrix());
 		m_UBCamera[frameIndex]->WriteAndFlushBuffer(&cameraUB);
 
-		// Point Light
+		// Lights
 		UBPointLights pointLightUB{};
 		m_Scene->UpdatePointLightUB(pointLightUB);
 		m_UBPointLight[frameIndex]->WriteAndFlushBuffer(&pointLightUB);
@@ -1121,7 +1125,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::ResetAccumulationFrameIndex()
 	{
-		Renderer::Submit([]
+		Renderer::SubmitResourceFree([]
 		{
 			s_Instance->m_RTSettings.AccumulateFrameIndex = 1;
 		});

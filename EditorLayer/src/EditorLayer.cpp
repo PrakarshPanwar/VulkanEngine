@@ -78,8 +78,7 @@ namespace VulkanCore {
 
 		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
 		{
-			bool cameraUpdated = m_EditorCamera.OnUpdate();
-			if (cameraUpdated)
+			if (m_EditorCamera.OnUpdate())
 				m_SceneRenderer->ResetAccumulationFrameIndex();
 		}
 

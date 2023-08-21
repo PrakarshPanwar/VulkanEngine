@@ -245,6 +245,8 @@ namespace VulkanCore {
 		m_Specification.Width = width;
 		m_Specification.Height = height;
 
+		VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+
 		for (auto& fbImages : m_ColorAttachments)
 		{
 			for (auto& fbImage : fbImages)
@@ -255,18 +257,17 @@ namespace VulkanCore {
 
 				if (!multisampled)
 				{
-					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
-
 					Utils::InsertImageMemoryBarrier(barrierCmd, vulkanFBImage->GetVulkanImageInfo().Image,
 						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
 						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 						VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
-					device->FlushCommandBuffer(barrierCmd);
 				}
 			}
 		}
+
+		device->FlushCommandBuffer(barrierCmd);
 
 		for (auto& depthImage : m_DepthAttachment)
 		{

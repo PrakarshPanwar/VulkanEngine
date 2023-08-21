@@ -21,7 +21,7 @@ namespace VulkanCore {
 		spec.Name = "Vulkan Application";
 		spec.WorkingDirectory = "../VulkanCore";
 		spec.Fullscreen = true;
-		spec.RayTracing = true;
+		spec.RayTracing = RAY_TRACING;
 		spec.CommandLineArgs = args;
 
 		return new EditorApp(spec);
