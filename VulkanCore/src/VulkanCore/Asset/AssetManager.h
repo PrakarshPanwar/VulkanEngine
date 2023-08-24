@@ -4,31 +4,24 @@
 
 namespace VulkanCore {
 
-	class Texture2D;
-	class TextureCube;
-	class MeshSource;
-	class Mesh;
-	class MaterialAsset;
-
 	class AssetManager
 	{
 	public:
-		template<typename T>
+		template<AssetConcept T>
 		static std::shared_ptr<T> ImportNewAsset(const std::string& filepath)
 		{
 			static_assert(std::derived_from<T, Asset>, "ImportNewAsset only works for types derived from Asset");
 
 			std::filesystem::path assetPath = filepath;
 
-			// NOTE: Maybe in future we can try assigned handle "std.filesystem.hash_value(assetPath)"
-			// But for now we are assigning random generated UUIDs
+			// Assigning random generated UUIDs
 			AssetMetadata metadata = {};
 			AssetHandle handle = {}; // Generate Random Handle
 
 			if (std::filesystem::exists(assetPath))
 			{
 				metadata.FilePath = assetPath;
-				metadata.Type = GetAssetType<T>();
+				metadata.Type = T::GetStaticType();
 			}
 
 			// Create Asset
@@ -44,19 +37,18 @@ namespace VulkanCore {
 			return std::static_pointer_cast<T>(asset);
 		}
 
-		template<typename T, typename... Args>
+		template<AssetConcept T, typename... Args>
 		static std::shared_ptr<T> CreateNewAsset(const std::string& filepath, Args&&... args)
 		{
 			static_assert(std::derived_from<T, Asset>, "CreateNewAsset only works for types derived from Asset");
 
 			std::filesystem::path assetPath = filepath;
 
-			// NOTE: Maybe in future we can try assigned handle "std.filesystem.hash_value(assetPath)"
-			// But for now we are assigning random generated UUIDs
+			// Assigning random generated UUIDs
 			AssetHandle handle = {}; // Generate Random Handle
 			AssetMetadata metadata = {};
 			metadata.FilePath = assetPath;
-			metadata.Type = GetAssetType<T>();
+			metadata.Type = T::GetStaticType();
 
 			// Create Asset
 			std::shared_ptr<T> asset = std::make_shared<T>(std::forward<Args>(args)...);
@@ -73,7 +65,7 @@ namespace VulkanCore {
 			return asset;
 		}
 
-		template<typename T, typename... Args>
+		template<AssetConcept T, typename... Args>
 		static std::shared_ptr<T> CreateMemoryOnlyAsset(Args&&... args)
 		{
 			static_assert(std::derived_from<T, Asset>, "CreateMemoryOnlyAsset only works for types derived from Asset");
@@ -88,7 +80,7 @@ namespace VulkanCore {
 			return std::static_pointer_cast<T>(asset);
 		}
 
-		template<typename T>
+		template<AssetConcept T>
 		static bool RemoveAsset(const std::string& filepath)
 		{
 			static_assert(std::derived_from<T, Asset>, "RemoveAsset only works for types derived from Asset");
@@ -116,7 +108,7 @@ namespace VulkanCore {
 			return std::filesystem::remove(assetPath);
 		}
 
-		template<typename T>
+		template<AssetConcept T>
 		static std::shared_ptr<T> GetAsset(AssetHandle handle)
 		{
 			static_assert(std::derived_from<T, Asset>, "GetAsset only works for types derived from Asset");
@@ -126,7 +118,7 @@ namespace VulkanCore {
 		}
 
 		// NOTE: This overload is slowest try to use it as less as possible
-		template<typename T>
+		template<AssetConcept T>
 		static std::shared_ptr<T> GetAsset(const std::string& filepath)
 		{
 			static_assert(std::derived_from<T, Asset>, "GetAsset only works for types derived from Asset");
@@ -160,24 +152,6 @@ namespace VulkanCore {
 	private:
 		static bool LoadRegistryFromFile();
 		static void WriteRegistryToFile();
-
-		template<typename T>
-		static AssetType GetAssetType() { return AssetType::None; }
-
-		template<>
-		static AssetType GetAssetType<Texture2D>() { return AssetType::Texture2D; }
-
-		template<>
-		static AssetType GetAssetType<TextureCube>() { return AssetType::TextureCube; }
-
-		template<>
-		static AssetType GetAssetType<Mesh>() { return AssetType::Mesh; }
-
-		template<>
-		static AssetType GetAssetType<MeshSource>() { return AssetType::MeshAsset; }
-
-		template<>
-		static AssetType GetAssetType<MaterialAsset>() { return AssetType::Material; }
 	private:
 		static std::shared_ptr<AssetManagerBase> s_AssetManager;
 	};
