@@ -146,13 +146,12 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 
 		VkQueryPool queryPool = RT_GetCurrentTimestampQueryPool();
-		VK_CHECK_WARN(vkGetQueryPoolResults(device->GetVulkanDevice(),
+		vkGetQueryPoolResults(device->GetVulkanDevice(),
 			queryPool,
 			0,
 			m_TimestampQueryBufferSize, sizeof(uint64_t) * m_TimestampQueryBufferSize,
 			(void*)m_TimestampQueryPoolBuffer.data(), sizeof(uint64_t),
-			VK_QUERY_RESULT_64_BIT),
-			"Failed to Retrieve Query Results!");
+			VK_QUERY_RESULT_64_BIT);
 	}
 
 	uint64_t VulkanRenderCommandBuffer::GetQueryTime(uint32_t index) const
