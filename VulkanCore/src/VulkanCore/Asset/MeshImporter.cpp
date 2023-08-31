@@ -131,8 +131,6 @@ namespace VulkanCore {
 					vertex.Binormal = mVector;
 				}
 
-				vertex.Color = glm::vec3{ 1.0f };
-
 				if (mesh->HasTextureCoords(0))
 				{
 					glm::vec2 mTexCoords = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };

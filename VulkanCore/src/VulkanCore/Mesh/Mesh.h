@@ -26,16 +26,7 @@ namespace VulkanCore {
 		glm::vec3 Normal;
 		glm::vec3 Tangent;
 		glm::vec3 Binormal;
-		glm::vec3 Color;
 		glm::vec2 TexCoord;
-
-		bool operator==(const Vertex& other) const
-		{
-			return Position == other.Position &&
-				Color == other.Color && 
-				Normal == other.Normal &&
-				TexCoord == other.TexCoord;
-		}
 	};
 
 	struct MeshKey

@@ -65,16 +65,16 @@ namespace VulkanCore {
 
 		const auto vulkanInstance = VulkanContext::GetCurrentContext()->m_VkInstance;
 
-		ImGui_ImplVulkan_InitInfo init_info = {};
-		init_info.Instance = vulkanInstance;
-		init_info.PhysicalDevice = device->GetPhysicalDevice();
-		init_info.Device = device->GetVulkanDevice();
-		init_info.Queue = device->GetGraphicsQueue();
-		init_info.DescriptorPool = m_ImGuiGlobalPool->GetVulkanDescriptorPool();
-		init_info.MinImageCount = 2;
-		init_info.ImageCount = 3;
-		init_info.CheckVkResultFn = CheckVkResult;
-		init_info.MSAASamples = device->GetMSAASampleCount();
+		ImGui_ImplVulkan_InitInfo imguiInitInfo = {};
+		imguiInitInfo.Instance = vulkanInstance;
+		imguiInitInfo.PhysicalDevice = device->GetPhysicalDevice();
+		imguiInitInfo.Device = device->GetVulkanDevice();
+		imguiInitInfo.Queue = device->GetGraphicsQueue();
+		imguiInitInfo.DescriptorPool = m_ImGuiGlobalPool->GetVulkanDescriptorPool();
+		imguiInitInfo.MinImageCount = 2;
+		imguiInitInfo.ImageCount = 3;
+		imguiInitInfo.CheckVkResultFn = CheckVkResult;
+		imguiInitInfo.MSAASamples = device->GetMSAASampleCount();
 
 		ImGuiStyle& style = ImGui::GetStyle();
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -83,7 +83,7 @@ namespace VulkanCore {
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
 
-		bool initSuccess = ImGui_ImplVulkan_Init(&init_info, VulkanSwapChain::GetSwapChain()->GetRenderPass());
+		bool initSuccess = ImGui_ImplVulkan_Init(&imguiInitInfo, VulkanSwapChain::GetSwapChain()->GetRenderPass());
 		VK_CORE_ASSERT(initSuccess, "Failed to Initialize ImGui");
 
 #define OPENSANS 0
@@ -139,12 +139,10 @@ namespace VulkanCore {
 		ImGuiIO& io = ImGui::GetIO();
 		Application* app = Application::Get();
 		io.DisplaySize = ImVec2{ (float)app->GetWindow()->GetWidth(), (float)app->GetWindow()->GetHeight() };
-#endif
 
 		ImGui::Render();
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vulkanCmdBuffer);
 
-#if IMGUI_VIEWPORTS
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
 			GLFWwindow* backup_current_context = glfwGetCurrentContext();
@@ -152,6 +150,9 @@ namespace VulkanCore {
 			ImGui::RenderPlatformWindowsDefault();
 			glfwMakeContextCurrent(backup_current_context);
 		}
+#else
+		ImGui::Render();
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vulkanCmdBuffer);
 #endif
 	}
 
