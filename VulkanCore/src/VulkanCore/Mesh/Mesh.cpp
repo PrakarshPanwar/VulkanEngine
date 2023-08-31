@@ -15,21 +15,6 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
-namespace std {
-
-	template<>
-	struct hash<VulkanCore::Vertex>
-	{
-		size_t operator()(const VulkanCore::Vertex& vertex) const
-		{
-			size_t seed = 0;
-			VulkanCore::HashCombine(seed, vertex.Position, vertex.Color, vertex.Normal, vertex.TexCoord);
-			return seed;
-		}
-	};
-
-}
-
 namespace VulkanCore {
 
 	namespace Utils {

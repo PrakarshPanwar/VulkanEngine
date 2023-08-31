@@ -81,7 +81,7 @@ namespace VulkanCore {
 			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
 		}
 
-		static VkDeviceAddress GetBufferDeviceAddress(VkBuffer buffer, uint32_t offset = 0)
+		static uint64_t GetBufferDeviceAddress(VkBuffer buffer, uint64_t offset = 0)
 		{
 			auto vulkanDevice = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
 
@@ -89,8 +89,8 @@ namespace VulkanCore {
 			bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 			bufferDeviceAddressInfo.buffer = buffer;
 			
-			VkDeviceAddress deviceAddress = vkGetBufferDeviceAddressKHR(vulkanDevice, &bufferDeviceAddressInfo) + (VkDeviceAddress)offset;
-			return deviceAddress;
+			uint64_t deviceAddress = vkGetBufferDeviceAddressKHR(vulkanDevice, &bufferDeviceAddressInfo);
+			return deviceAddress + offset;
 		}
 
 	}
@@ -181,10 +181,10 @@ namespace VulkanCore {
 			vulkanSBMeshMaterialData->WriteAndFlushBuffer(meshMaterialData.data(), 0);
 		}
 
-		CreateRTMaterials();
+		CreateRayTraceMaterials();
 	}
 
-	void SceneRenderer::CreateRTMaterials()
+	void SceneRenderer::CreateRayTraceMaterials()
 	{
 		// Ray Tracing Material
 		{

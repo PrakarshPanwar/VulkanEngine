@@ -262,13 +262,6 @@ namespace VulkanCore {
 		shaderGroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
 		m_ShaderGroups.push_back(shaderGroupInfo);
 
-		// TODO: Work on this
-#if 0
-		if (shader->HasIntersectionShader())
-		{
-		}
-#endif
-
 		m_DescriptorSetLayout = shader->CreateAllDescriptorSetsLayout();
 		m_PipelineLayout = Utils::CreatePipelineLayout(m_DescriptorSetLayout, shader->GetPushConstantSize());
 
@@ -371,13 +364,6 @@ namespace VulkanCore {
 			shaderGroupInfo.generalShader = 2;
 			shaderGroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
 			m_ShaderGroups.push_back(shaderGroupInfo);
-
-			// TODO: Work on this
-#if 0
-			if (shader->HasIntersectionShader())
-			{
-			}
-#endif
 
 			m_DescriptorSetLayout = shader->CreateAllDescriptorSetsLayout();
 			m_PipelineLayout = Utils::CreatePipelineLayout(m_DescriptorSetLayout, shader->GetPushConstantSize());

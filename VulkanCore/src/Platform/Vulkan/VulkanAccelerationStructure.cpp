@@ -11,7 +11,7 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		static VkDeviceOrHostAddressConstKHR GetBufferDeviceAddress(VkBuffer buffer, uint32_t offset = 0)
+		static VkDeviceOrHostAddressConstKHR GetBufferDeviceAddress(VkBuffer buffer, uint64_t offset = 0)
 		{
 			auto vulkanDevice = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
 

@@ -1,7 +1,6 @@
 #version 460 core
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_buffer_reference2 : require
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 #extension GL_EXT_control_flow_attributes : require
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_EXT_scalar_block_layout : enable
@@ -18,13 +17,12 @@ layout(location = 0) rayPayloadInEXT RayPayload o_RayPayload;
 
 hitAttributeEXT vec2 g_HitAttribs;
 
-struct VertexSSBOLayout
+struct VertexLayout
 {
 	vec4 M0;
 	vec4 M1;
 	vec4 M2;
 	vec4 M3;
-	vec4 M4;
 };
 
 struct Vertex
@@ -33,7 +31,6 @@ struct Vertex
 	vec3 Normal;
 	vec3 Tangent;
 	vec3 Binormal;
-	vec3 Color;
 	vec2 TexCoord;
 };
 
@@ -64,12 +61,6 @@ struct SpotLight
     float Falloff;
 };
 
-struct MeshBufferData
-{
-	uint64_t VertexBufferAddress;
-	uint64_t IndexBufferAddress;
-};
-
 layout(set = 0, binding = 3) uniform Camera
 {
 	mat4 Projection;
@@ -90,20 +81,26 @@ layout(set = 0, binding = 5) uniform SpotLightData
     SpotLight SpotLights[10];
 } u_SpotLight;
 
-layout(set = 0, binding = 6) readonly buffer MeshData
-{
-	MeshBufferData addressData[];
-} r_MeshBufferData;
-
 layout(buffer_reference, scalar) buffer Vertices
 {
-	VertexSSBOLayout v[];
+	VertexLayout Vert[];
 };
 
 layout(buffer_reference, scalar) buffer Indices
 {
-	uint idx[];
+	uint Idx[];
 };
+
+struct MeshInfo
+{
+	Vertices VBAddress;
+	Indices IBAddress;
+};
+
+layout(set = 0, binding = 6) readonly buffer MeshInfoData
+{
+	MeshInfo Data[];
+} r_MeshInfo;
 
 // Materials Texture Array
 layout(set = 1, binding = 0) uniform sampler2D u_DiffuseTextureArray[];
@@ -121,7 +118,7 @@ struct Material
 
 layout(set = 1, binding = 3) readonly buffer MaterialData
 {
-    Material materials[];
+    Material MatBuffer[];
 } r_MaterialData;
 
 // IBL
@@ -400,24 +397,26 @@ vec3 MixBarycentric(vec3 p0, vec3 p1, vec3 p2)
 
 Vertex Unpack(int index)
 {
-	Vertices vertexData = Vertices(r_MeshBufferData.addressData[gl_InstanceCustomIndexEXT].VertexBufferAddress);	
-	VertexSSBOLayout vertexLayout = vertexData.v[index];
+	Vertices vertexData = Vertices(r_MeshInfo.Data[gl_InstanceCustomIndexEXT].VBAddress);	
+	VertexLayout vertexLayout = vertexData.Vert[index];
 
 	Vertex vertex;
 	vertex.Position = vertexLayout.M0.xyz;
 	vertex.Normal = vec3(vertexLayout.M0.w, vertexLayout.M1.xy);
 	vertex.Tangent = vec3(vertexLayout.M1.zw, vertexLayout.M2.x);
 	vertex.Binormal = vertexLayout.M2.yzw;
-	vertex.Color = vertexLayout.M3.xyz;
-	vertex.TexCoord = vec2(vertexLayout.M3.w, vertexLayout.M4.x);
+	vertex.TexCoord = vec2(vertexLayout.M3.x, vertexLayout.M3.y);
 
 	return vertex;
 }
 
 void main()
 {
-	Indices indexData = Indices(r_MeshBufferData.addressData[gl_InstanceCustomIndexEXT].IndexBufferAddress);
-	ivec3 index = ivec3(indexData.idx[3 * gl_PrimitiveID], indexData.idx[3 * gl_PrimitiveID + 1], indexData.idx[3 * gl_PrimitiveID + 2]);
+	Indices indexData = Indices(r_MeshInfo.Data[gl_InstanceCustomIndexEXT].IBAddress);
+	ivec3 index = ivec3(
+        indexData.Idx[3 * gl_PrimitiveID],
+        indexData.Idx[3 * gl_PrimitiveID + 1],
+        indexData.Idx[3 * gl_PrimitiveID + 2]);
 	
 	Vertex v0 = Unpack(index.x);
 	Vertex v1 = Unpack(index.y);
@@ -442,7 +441,7 @@ void main()
     Input.WorldNormals = mat3(T, B, N);
 
     // Set Materials
-    Material materialData = r_MaterialData.materials[gl_InstanceCustomIndexEXT];
+    Material materialData = r_MaterialData.MatBuffer[gl_InstanceCustomIndexEXT];
 
 	vec4 diffuse = texture(u_DiffuseTextureArray[nonuniformEXT(gl_InstanceCustomIndexEXT)], Input.TexCoord);
 	m_Params.Albedo = diffuse.rgb * materialData.Albedo.rgb * materialData.Emission;

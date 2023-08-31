@@ -53,7 +53,7 @@ namespace VulkanCore {
 		void CreatePipelines();
 		void CreateResources();
 		void CreateMaterials();
-		void CreateRTMaterials();
+		void CreateRayTraceMaterials();
 		void RecreateMaterials();
 		void RecreatePipelines();
 
