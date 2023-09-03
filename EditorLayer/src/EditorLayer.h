@@ -56,7 +56,7 @@ namespace VulkanCore {
 		int m_GizmoType = -1;
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
-		ContentBrowserPanel m_ContentBrowserPanel;
+		std::unique_ptr<ContentBrowserPanel> m_ContentBrowserPanel;
 
 		std::shared_ptr<Texture2D> m_MenuIcon;
 		VkDescriptorSet m_MenuIconID;
