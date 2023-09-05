@@ -51,7 +51,7 @@ namespace VulkanCore {
 		m_SceneRenderer = std::make_shared<SceneRenderer>(m_Scene);
 
 		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
-		m_ContentBrowserPanel = ContentBrowserPanel();
+		m_ContentBrowserPanel = std::make_unique<ContentBrowserPanel>();
 
 		auto commandLineArgs = Application::Get()->GetSpecification().CommandLineArgs;
 		if (commandLineArgs.Count > 1)
@@ -249,11 +249,11 @@ namespace VulkanCore {
 
 			ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
 			if (ImGui::IsItemActive())
-				m_ContentBrowserPanel.SetThumbnailSize(thumbnailSize);
+				m_ContentBrowserPanel->SetThumbnailSize(thumbnailSize);
 
 			ImGui::SliderFloat("Padding", &padding, 0, 32);
 			if (ImGui::IsItemActive())
-				m_ContentBrowserPanel.SetPadding(padding);
+				m_ContentBrowserPanel->SetPadding(padding);
 
 			ImGui::EndPopup();
 		}
@@ -262,7 +262,7 @@ namespace VulkanCore {
 		ImGui::End(); // End of Viewport
 
 		m_SceneHierarchyPanel.OnImGuiRender();
-		m_ContentBrowserPanel.OnImGuiRender();
+		m_ContentBrowserPanel->OnImGuiRender();
 		m_SceneRenderer->OnImGuiRender();
 
 		ImGui::End(); // End of DockSpace
