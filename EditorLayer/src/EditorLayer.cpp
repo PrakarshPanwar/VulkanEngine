@@ -243,6 +243,7 @@ namespace VulkanCore {
 			static float thumbnailSize = 128.0f;
 			static float padding = 16.0f;
 
+			ImGui::Text("Camera/Content Browser");
 			ImGui::DragFloat("Field of View", &fov, 0.5f, 5.0f, 90.0f);
 			if (ImGui::IsItemActive())
 				m_EditorCamera.SetFieldOfView(glm::radians(fov));
@@ -254,6 +255,13 @@ namespace VulkanCore {
 			ImGui::SliderFloat("Padding", &padding, 0, 32);
 			if (ImGui::IsItemActive())
 				m_ContentBrowserPanel->SetPadding(padding);
+
+			ImGui::Separator();
+			ImGui::Text("Snap Parameters");
+			ImGui::Checkbox("Snap", &m_EnableSnap);
+			ImGui::DragFloat("Translation", &m_TranslationSnapValue, 0.01f, 0.01f);
+			ImGui::DragFloat("Rotation", &m_RotationSnapValue);
+			ImGui::DragFloat("Scale", &m_ScaleSnapValue, 0.2f);
 
 			ImGui::EndPopup();
 		}
@@ -332,12 +340,23 @@ namespace VulkanCore {
 			glm::mat4 transform = tc.GetTransform();
 
 			// Snapping
-			bool snap = Input::IsKeyPressed(Key::LeftControl);
-			float snapValue = 0.5f; // Snap to 0.5m for translation/scale
-			// Snap to 45 degrees for rotation
-			if (m_GizmoType == ImGuizmo::OPERATION::ROTATE)
-				snapValue = 45.0f;
+			float snapValue = 0.0f; // Snap to 0.5m for translation/scale
+			switch (m_GizmoType)
+			{
+			case ImGuizmo::TRANSLATE:
+				snapValue = m_TranslationSnapValue;
+				break;
+			case ImGuizmo::ROTATE:
+				snapValue = m_RotationSnapValue;
+				break;
+			case ImGuizmo::SCALE:
+				snapValue = m_ScaleSnapValue;
+				break;
+			default:
+				break;
+			}
 
+			bool snap = Input::IsKeyPressed(Key::LeftControl) || m_EnableSnap;
 			float snapValues[3] = { snapValue, snapValue, snapValue };
 
 			ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),

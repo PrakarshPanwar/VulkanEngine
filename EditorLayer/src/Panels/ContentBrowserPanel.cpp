@@ -28,12 +28,12 @@ namespace VulkanCore {
 			return AssetType::None;
 		}
 
-		static bool IsAssetValid(const std::filesystem::path& filePath)
+		static bool IsAssetValid(const std::filesystem::path& filepath)
 		{
 			auto& assetRegistry = AssetManager::GetEditorAssetManager()->GetAssetRegistry();
 			for (auto&& [handle, metadata] : assetRegistry)
 			{
-				if (filePath == metadata.FilePath)
+				if (filepath == metadata.FilePath)
 					return true;
 			}
 
