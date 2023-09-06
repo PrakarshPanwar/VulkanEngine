@@ -59,7 +59,7 @@ namespace VulkanCore {
 		float m_TranslationSnapValue = 0.5f, m_RotationSnapValue = 45.0f, m_ScaleSnapValue = 0.5f;
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
-		ContentBrowserPanel m_ContentBrowserPanel;
+		std::unique_ptr<ContentBrowserPanel> m_ContentBrowserPanel;
 
 		std::shared_ptr<Texture2D> m_MenuIcon;
 		VkDescriptorSet m_MenuIconID;
