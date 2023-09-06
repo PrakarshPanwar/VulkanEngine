@@ -24,7 +24,7 @@ Entities:
     TagComponent:
       Tag: Vintage Lamp
     TransformComponent:
-      Translation: [0, 0, 0]
+      Translation: [2, 0, 3]
       Rotation: [0, 0, 0]
       Scale: [2.5, 2.49999976, 2.49999976]
     MeshComponent:

@@ -150,7 +150,7 @@ namespace VulkanCore {
 		}
 
 		meshSource->m_VertexBuffer = std::make_shared<VulkanVertexBuffer>(meshSource->m_Vertices.data(), (uint32_t)(meshSource->m_Vertices.size() * sizeof(Vertex)));
-		meshSource->m_IndexBuffer = std::make_shared<VulkanIndexBuffer>(meshSource->m_Indices.data(), (uint32_t)(meshSource->m_Indices.size() * 4));
+		meshSource->m_IndexBuffer = std::make_shared<VulkanIndexBuffer>(meshSource->m_Indices.data(), (uint32_t)(meshSource->m_Indices.size() * sizeof(uint32_t)));
 	}
 
 	void MeshImporter::InvalidateMaterials(std::shared_ptr<MeshSource> meshSource)
