@@ -343,13 +343,13 @@ namespace VulkanCore {
 		const Submesh& submesh = submeshData[submeshIndex];
 
 		VkDeviceOrHostAddressConstKHR vertexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshVB->GetVulkanBuffer(), submesh.BaseVertex * sizeof(Vertex));
-		VkDeviceOrHostAddressConstKHR indexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshIB->GetVulkanBuffer());
+		VkDeviceOrHostAddressConstKHR indexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshIB->GetVulkanBuffer(), submesh.BaseIndex * sizeof(uint32_t));
 
 		VkAccelerationStructureGeometryTrianglesDataKHR trianglesData{};
 		trianglesData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
 		trianglesData.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
 		trianglesData.vertexData = vertexBufferAddress;
-		trianglesData.maxVertex = meshSource->GetVertexCount();
+		trianglesData.maxVertex = submesh.VertexCount;
 		trianglesData.vertexStride = sizeof(Vertex); // We may have to change this as our current stride is struct Vertex
 		trianglesData.indexType = VK_INDEX_TYPE_UINT32;
 		trianglesData.indexData = indexBufferAddress;
@@ -364,7 +364,7 @@ namespace VulkanCore {
 		VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo{};
 		buildRangeInfo.firstVertex = 0;
 		buildRangeInfo.primitiveCount = submesh.IndexCount / 3;
-		buildRangeInfo.primitiveOffset = submesh.BaseIndex * sizeof(uint32_t);
+		buildRangeInfo.primitiveOffset = 0;
 		buildRangeInfo.transformOffset = 0;
 
 		std::vector<VkAccelerationStructureInstanceKHR> instances{ instanceCount };
