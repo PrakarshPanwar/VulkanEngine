@@ -48,23 +48,28 @@ namespace VulkanCore {
 			return pipelineLayout;
 		}
 
-		static VkStridedDeviceAddressRegionKHR GetSBTStridedDeviceAddressRegion(VkBuffer buffer, uint32_t handleCount = 1)
+		static uint32_t GetAlignment(uint32_t size, uint32_t alignment)
+		{
+			return (size + alignment - 1) & ~(alignment - 1);
+		}
+
+		static VkStridedDeviceAddressRegionKHR GetSBTStridedDeviceAddressRegion(VkBuffer buffer, uint32_t offset = 0, uint32_t handleCount = 1)
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 
 			auto rayTracingPipelineProperties = device->GetPhysicalDeviceRayTracingPipelineProperties();
+			const uint32_t shaderGroupBaseAlignment = rayTracingPipelineProperties.shaderGroupBaseAlignment;
 			const uint32_t shaderGroupHandleSize = rayTracingPipelineProperties.shaderGroupHandleSize;
-			const uint32_t shaderGroupHandleAlignment = rayTracingPipelineProperties.shaderGroupHandleAlignment;
-			const uint32_t shaderHandleSizeAligned = (shaderGroupHandleSize + shaderGroupHandleAlignment - 1) & ~(shaderGroupHandleAlignment - 1);
+			const uint32_t shaderHandleSizeAligned = GetAlignment(shaderGroupHandleSize * handleCount, shaderGroupBaseAlignment);
 
 			VkBufferDeviceAddressInfoKHR bufferDeviceAddressInfo{};
 			bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 			bufferDeviceAddressInfo.buffer = buffer;
 
 			VkStridedDeviceAddressRegionKHR stridedDeviceAddressRegionKHR{};
-			stridedDeviceAddressRegionKHR.deviceAddress = vkGetBufferDeviceAddressKHR(device->GetVulkanDevice(), &bufferDeviceAddressInfo);
+			stridedDeviceAddressRegionKHR.deviceAddress = vkGetBufferDeviceAddressKHR(device->GetVulkanDevice(), &bufferDeviceAddressInfo) + (VkDeviceAddress)offset;
 			stridedDeviceAddressRegionKHR.stride = shaderHandleSizeAligned;
-			stridedDeviceAddressRegionKHR.size = handleCount * shaderHandleSizeAligned;
+			stridedDeviceAddressRegionKHR.size = shaderHandleSizeAligned;
 			return stridedDeviceAddressRegionKHR;
 		}
 
@@ -102,9 +107,7 @@ namespace VulkanCore {
 		m_RayTracingPipeline = nullptr;
 
 		// Destroy SBT
-		allocator.DestroyBuffer(m_RayGenSBTInfo.Buffer, m_RayGenSBTInfo.MemoryAlloc);
-		allocator.DestroyBuffer(m_RayClosestHitSBTInfo.Buffer, m_RayClosestHitSBTInfo.MemoryAlloc);
-		allocator.DestroyBuffer(m_RayMissSBTInfo.Buffer, m_RayMissSBTInfo.MemoryAlloc);
+		allocator.DestroyBuffer(m_SBTBuffer, m_SBTMemAlloc);
 	}
 
 	void VulkanRayTracingPipeline::Bind(VkCommandBuffer commandBuffer)
@@ -128,9 +131,10 @@ namespace VulkanCore {
 		VulkanAllocator allocator("ShaderBindingTable");
 
 		auto rayTracingPipelineProperties = device->GetPhysicalDeviceRayTracingPipelineProperties();
+		const uint32_t shaderGroupBaseAlignment = rayTracingPipelineProperties.shaderGroupBaseAlignment;
 		const uint32_t shaderGroupHandleSize = rayTracingPipelineProperties.shaderGroupHandleSize;
 		const uint32_t shaderGroupHandleAlignment = rayTracingPipelineProperties.shaderGroupHandleAlignment;
-		const uint32_t shaderHandleSizeAligned = (shaderGroupHandleSize + shaderGroupHandleAlignment - 1) & ~(shaderGroupHandleAlignment - 1);
+		const uint32_t shaderHandleSizeAligned = Utils::GetAlignment(shaderGroupHandleSize, shaderGroupHandleAlignment);
 		const uint32_t groupCount = (uint32_t)m_ShaderGroups.size();
 		const uint32_t sbtSize = groupCount * shaderHandleSizeAligned;
 
@@ -145,35 +149,33 @@ namespace VulkanCore {
 			shaderHandleStorage.data()),
 			"Failed to Retrieve Shader Handles!");
 
-		// Create Buffers to map Shader Handles
+		// Create SBT Buffer
 		VkBufferCreateInfo bufferCreateInfo{};
 		bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferCreateInfo.size = shaderGroupHandleSize;
+		bufferCreateInfo.size = shaderGroupBaseAlignment * groupCount;
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
-		// Ray Gen
-		m_RayGenSBTInfo.MemoryAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_RayGenSBTInfo.Buffer);
-		m_RayGenSBTInfo.DeviceAddressRegion = Utils::GetSBTStridedDeviceAddressRegion(m_RayGenSBTInfo.Buffer);
+		m_SBTMemAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_SBTBuffer);
+		uint8_t* sbtBufferDst = allocator.MapMemory<uint8_t>(m_SBTMemAlloc);
+		uint32_t offset = 0;
 
-		uint8_t* rayGenDst = allocator.MapMemory<uint8_t>(m_RayGenSBTInfo.MemoryAlloc);
-		memcpy(rayGenDst, shaderHandleStorage.data(), shaderGroupHandleSize);
-		allocator.UnmapMemory(m_RayGenSBTInfo.MemoryAlloc);
+		// Ray Gen
+		m_RayGenSBTInfo = Utils::GetSBTStridedDeviceAddressRegion(m_SBTBuffer);
+		memcpy(sbtBufferDst, shaderHandleStorage.data(), shaderGroupBaseAlignment);
+		sbtBufferDst += m_RayGenSBTInfo.size;
+		offset += m_RayGenSBTInfo.size;
 
 		// Closest Hit
-		m_RayClosestHitSBTInfo.MemoryAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_RayClosestHitSBTInfo.Buffer);
-		m_RayClosestHitSBTInfo.DeviceAddressRegion = Utils::GetSBTStridedDeviceAddressRegion(m_RayClosestHitSBTInfo.Buffer);
-
-		uint8_t* closestHitDst = allocator.MapMemory<uint8_t>(m_RayClosestHitSBTInfo.MemoryAlloc);
-		memcpy(closestHitDst, shaderHandleStorage.data() + shaderHandleSizeAligned, shaderGroupHandleSize);
-		allocator.UnmapMemory(m_RayClosestHitSBTInfo.MemoryAlloc);
+		m_RayClosestHitSBTInfo = Utils::GetSBTStridedDeviceAddressRegion(m_SBTBuffer, offset);
+		memcpy(sbtBufferDst, shaderHandleStorage.data() + shaderHandleSizeAligned, shaderGroupHandleSize);
+		sbtBufferDst += m_RayClosestHitSBTInfo.size;
+		offset += m_RayClosestHitSBTInfo.size;
 
 		// Miss
-		m_RayMissSBTInfo.MemoryAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_RayMissSBTInfo.Buffer);
-		m_RayMissSBTInfo.DeviceAddressRegion = Utils::GetSBTStridedDeviceAddressRegion(m_RayMissSBTInfo.Buffer);
+		m_RayMissSBTInfo = Utils::GetSBTStridedDeviceAddressRegion(m_SBTBuffer, offset);
+		memcpy(sbtBufferDst, shaderHandleStorage.data() + shaderHandleSizeAligned * 2, shaderGroupHandleSize);
 
-		uint8_t* missDst = allocator.MapMemory<uint8_t>(m_RayMissSBTInfo.MemoryAlloc);
-		memcpy(missDst, shaderHandleStorage.data() + shaderHandleSizeAligned * 2, shaderGroupHandleSize);
-		allocator.UnmapMemory(m_RayMissSBTInfo.MemoryAlloc);
+		allocator.UnmapMemory(m_SBTMemAlloc);
 	}
 
 	void VulkanRayTracingPipeline::ReloadPipeline()

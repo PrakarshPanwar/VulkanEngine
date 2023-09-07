@@ -33,13 +33,17 @@ vec3 ACESTonemap(vec3 hdrColor)
 vec3 UpsampleTent9(sampler2D tex, float lod, vec2 uv, vec2 texelSize, float radius)
 {
 	vec4 offset = texelSize.xyxy * vec4(1.0, 1.0, -1.0, 0.0) * radius;
+
+	// Center
 	vec3 result = textureLod(tex, uv, lod).rgb * 4.0;
 
 	result += textureLod(tex, uv - offset.xy, lod).rgb;
 	result += textureLod(tex, uv - offset.wy, lod).rgb * 2.0;
 	result += textureLod(tex, uv - offset.zy, lod).rgb;
+
 	result += textureLod(tex, uv + offset.zw, lod).rgb * 2.0;
 	result += textureLod(tex, uv + offset.xw, lod).rgb * 2.0;
+
 	result += textureLod(tex, uv + offset.zy, lod).rgb;
 	result += textureLod(tex, uv + offset.wy, lod).rgb * 2.0;
 	result += textureLod(tex, uv + offset.xy, lod).rgb;

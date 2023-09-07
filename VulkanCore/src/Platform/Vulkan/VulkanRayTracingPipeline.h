@@ -6,13 +6,6 @@
 
 namespace VulkanCore {
 
-	struct VulkanSBTInfo
-	{
-		VkBuffer Buffer = nullptr;
-		VmaAllocation MemoryAlloc = nullptr;
-		VkStridedDeviceAddressRegionKHR DeviceAddressRegion{};
-	};
-
 	class VulkanRayTracingPipeline : public RayTracingPipeline
 	{
 	public:
@@ -29,9 +22,9 @@ namespace VulkanCore {
 
 		inline std::shared_ptr<Shader> GetShader() const override { return m_Shader; }
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
-		inline const VkStridedDeviceAddressRegionKHR& GetRayGenStridedDeviceAddressRegion() const { return m_RayGenSBTInfo.DeviceAddressRegion; }
-		inline const VkStridedDeviceAddressRegionKHR& GetRayHitStridedDeviceAddressRegion() const { return m_RayClosestHitSBTInfo.DeviceAddressRegion; }
-		inline const VkStridedDeviceAddressRegionKHR& GetRayMissStridedDeviceAddressRegion() const { return m_RayMissSBTInfo.DeviceAddressRegion; }
+		inline const VkStridedDeviceAddressRegionKHR& GetRayGenStridedDeviceAddressRegion() const { return m_RayGenSBTInfo; }
+		inline const VkStridedDeviceAddressRegionKHR& GetRayHitStridedDeviceAddressRegion() const { return m_RayClosestHitSBTInfo; }
+		inline const VkStridedDeviceAddressRegionKHR& GetRayMissStridedDeviceAddressRegion() const { return m_RayMissSBTInfo; }
 	private:
 		void InvalidateRayTracingPipeline();
 		void RT_InvalidateRayTracingPipeline();
@@ -45,7 +38,9 @@ namespace VulkanCore {
 		std::shared_ptr<Shader> m_Shader;
 
 		// TODO: Abstract this in separate class ShaderBindingTable
-		VulkanSBTInfo m_RayGenSBTInfo{}, m_RayClosestHitSBTInfo{}, m_RayMissSBTInfo{}, m_RayIntersectionSBTInfo{};
+		VkBuffer m_SBTBuffer = nullptr;
+		VmaAllocation m_SBTMemAlloc = nullptr;
+		VkStridedDeviceAddressRegionKHR m_RayGenSBTInfo{}, m_RayClosestHitSBTInfo{}, m_RayMissSBTInfo{}, m_RayIntersectionSBTInfo{};
 		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> m_DescriptorSetLayout;
 	};
 
