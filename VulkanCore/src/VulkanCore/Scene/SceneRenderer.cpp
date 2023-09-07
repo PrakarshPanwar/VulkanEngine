@@ -854,7 +854,7 @@ namespace VulkanCore {
 				ImGui::Selectable(name.c_str(), false, ImGuiSelectableFlags_AllowOverlap, ImVec2{ 0.0f, 24.5f });
 
 				ImGui::SameLine(ImGui::GetContentRegionAvail().x - 20.0f);
-				ImGui::PushID(buttonID++);
+				ImGui::PushID(buttonID);
 				if (ImGui::Button("Reload", ImVec2{ 0.0f, 24.5f }))
 				{
 					shader->Reload();
@@ -862,6 +862,7 @@ namespace VulkanCore {
 				}
 
 				ImGui::PopID();
+				buttonID++;
 			}
 
 			ImGui::TreePop();
