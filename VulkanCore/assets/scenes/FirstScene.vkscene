@@ -65,7 +65,7 @@ Entities:
       Scale: [0.100000001, 0.100000001, 0.100000001]
     PointLightComponent:
       Color: [0.200000003, 0.300000012, 0.800000012, 20]
-      Falloff: 1
+      Falloff: 0.1
       Radius: 0.100000001
   - Entity: 2353646777867
     TagComponent:

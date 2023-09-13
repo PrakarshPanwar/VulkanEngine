@@ -59,8 +59,7 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 
 		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings{};
-		std::vector<VkDescriptorBindingFlags> bindingFlags;
-
+		std::vector<VkDescriptorBindingFlags> bindingFlags{};
 		for (auto&& [binding, setLayoutBinding] : m_Bindings)
 		{
 			setLayoutBindings.push_back(setLayoutBinding);
