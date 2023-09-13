@@ -106,7 +106,7 @@ namespace VulkanCore {
 		struct SceneSettings
 		{
 			float Exposure = 1.0f;
-			float DirtIntensity = 5.0f;
+			float DirtIntensity = 0.0f;
 		} m_SceneSettings;
 
 		struct BloomParams
@@ -117,7 +117,7 @@ namespace VulkanCore {
 
 		struct SkyboxSettings
 		{
-			float Intensity = 0.5f;
+			float Intensity = 0.25f;
 			float LOD = 0.0f;
 		} m_SkyboxSettings;
 
