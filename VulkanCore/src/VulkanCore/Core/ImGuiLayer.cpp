@@ -111,20 +111,14 @@ namespace VulkanCore {
 	{
 	}
 
-	void ImGuiLayer::ImGuiNewFrame()
-	{
-		VK_CORE_PROFILE();
-
-		ImGui::NewFrame();
-		ImGuizmo::BeginFrame();
-	}
-
 	void ImGuiLayer::ImGuiBegin()
 	{
 		VK_CORE_PROFILE();
 
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
 	}
 
 	void ImGuiLayer::ImGuiEnd()

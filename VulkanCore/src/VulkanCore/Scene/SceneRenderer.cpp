@@ -535,21 +535,22 @@ namespace VulkanCore {
 		m_BloomMipSize = (glm::uvec2(m_ViewportSize.x, m_ViewportSize.y) + 1u) / 2u;
 		m_BloomMipSize += 16u - m_BloomMipSize % 16u;
 
-		ImageSpecification bloomRTSpec = {};
-		bloomRTSpec.DebugName = "Bloom Compute Texture";
-		bloomRTSpec.Width = m_BloomMipSize.x;
-		bloomRTSpec.Height = m_BloomMipSize.y;
-		bloomRTSpec.Format = ImageFormat::RGBA32F;
-		bloomRTSpec.Usage = ImageUsage::Storage;
-		bloomRTSpec.MipLevels = Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2;
-
 		m_BloomTextures.reserve(framesInFlight);
 		m_SceneRenderTextures.reserve(framesInFlight);
 
 		VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
+		// Bloom Compute Textures
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
+			ImageSpecification bloomRTSpec = {};
+			bloomRTSpec.DebugName = std::format("Bloom Compute Texture {}", i);
+			bloomRTSpec.Width = m_BloomMipSize.x;
+			bloomRTSpec.Height = m_BloomMipSize.y;
+			bloomRTSpec.Format = ImageFormat::RGBA32F;
+			bloomRTSpec.Usage = ImageUsage::Storage;
+			bloomRTSpec.MipLevels = Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2;
+
 			auto BloomTexture = std::static_pointer_cast<VulkanImage>(m_BloomTextures.emplace_back(std::make_shared<VulkanImage>(bloomRTSpec)));
 			BloomTexture->Invalidate();
 
@@ -560,6 +561,7 @@ namespace VulkanCore {
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, BloomTexture->GetSpecification().MipLevels, 0, 1 });
 		}
 
+		// Scene Render Textures
 		ImageSpecification sceneRTSpec = {};
 		sceneRTSpec.DebugName = "Scene Render Texture";
 		sceneRTSpec.Width = m_ViewportSize.x;
@@ -1098,12 +1100,11 @@ namespace VulkanCore {
 			m_BloomPrefilterShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
 			const uint32_t mips = m_BloomTextures[0]->GetSpecification().MipLevels;
-			glm::uvec2 bloomMipSize = m_BloomMipSize;
-			glm::uvec2 bloomWorkGroups = glm::max(bloomMipSize / 16u, 1u);
+			glm::uvec2 workGroups = glm::ceil((glm::vec2)m_BloomMipSize / 16.0f);
 
 			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_BloomParams, sizeof(glm::vec2), sizeof(glm::vec2));
-			vulkanBloomPipeline->Dispatch(dispatchCmd, bloomWorkGroups.x, bloomWorkGroups.y, 1);
+			vulkanBloomPipeline->Dispatch(dispatchCmd, workGroups.x, workGroups.y, 1);
 
 			for (uint32_t i = 1; i < mips; i++)
 			{
@@ -1113,18 +1114,17 @@ namespace VulkanCore {
 				int currentIdx = i - 1;
 
 				m_BloomPingShaderMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
-				bloomMipSize = m_BloomTextures[0]->GetMipSize(i);
-				bloomWorkGroups = glm::max(bloomMipSize / 16u, 1u);
+				glm::uvec2 workGroups = glm::ceil((glm::vec2)m_BloomTextures[0]->GetMipSize(i) / 16.0f);
 
 				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
-				vulkanBloomPipeline->Dispatch(dispatchCmd, bloomWorkGroups.x, bloomWorkGroups.y, 1);
+				vulkanBloomPipeline->Dispatch(dispatchCmd, workGroups.x, workGroups.y, 1);
 
 				m_LodAndMode.LOD = (float)i;
 				
 				m_BloomPongShaderMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
 				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
-				vulkanBloomPipeline->Dispatch(dispatchCmd, bloomWorkGroups.x, bloomWorkGroups.y, 1);
+				vulkanBloomPipeline->Dispatch(dispatchCmd, workGroups.x, workGroups.y, 1);
 			}
 
 			// Upsample First
@@ -1133,12 +1133,10 @@ namespace VulkanCore {
 			m_LodAndMode.Mode = 2.0f;
 
 			m_BloomUpsampleFirstShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
-
-			bloomMipSize = m_BloomTextures[2]->GetMipSize(mips - 1);
-			bloomWorkGroups = glm::max(bloomMipSize / 16u, 1u);
+			workGroups = glm::ceil((glm::vec2)m_BloomTextures[2]->GetMipSize(mips - 1) / 16.0f);
 
 			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
-			vulkanBloomPipeline->Dispatch(dispatchCmd, bloomWorkGroups.x, bloomWorkGroups.y, 1);
+			vulkanBloomPipeline->Dispatch(dispatchCmd, workGroups.x, workGroups.y, 1);
 
 			// Upsample Final
 			for (int i = mips - 2; i >= 0; --i)
@@ -1147,12 +1145,10 @@ namespace VulkanCore {
 				m_LodAndMode.Mode = 3.0f;
 
 				m_BloomUpsampleShaderMaterials[i]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
-
-				bloomMipSize = m_BloomTextures[2]->GetMipSize(i);
-				bloomWorkGroups = glm::max(bloomMipSize / 16u, 1u);
+				workGroups = glm::ceil((glm::vec2)m_BloomTextures[2]->GetMipSize(i) / 16.0f);
 
 				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
-				vulkanBloomPipeline->Dispatch(dispatchCmd, bloomWorkGroups.x, bloomWorkGroups.y, 1);
+				vulkanBloomPipeline->Dispatch(dispatchCmd, workGroups.x, workGroups.y, 1);
 			}
 		});
 

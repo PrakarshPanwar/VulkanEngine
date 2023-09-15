@@ -30,4 +30,11 @@ namespace VulkanCore {
 
 		virtual AssetType GetType() const = 0;
 	};
+
+	template<typename T>
+	concept AssetConcept = requires
+	{
+		T::GetStaticType();
+	};
+
 }
