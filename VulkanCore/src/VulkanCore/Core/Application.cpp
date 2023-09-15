@@ -53,11 +53,12 @@ namespace VulkanCore {
 			VK_CORE_BEGIN_FRAME("Main Thread");
 			m_Window->OnUpdate();
 
+			ExecuteMainThreadQueue();
+
 			// Render Swapchain/ImGui
 			m_Renderer->BeginFrame();
 			m_Renderer->BeginSwapChainRenderPass();
 
-			m_ImGuiLayer->ImGuiBegin();
 			Renderer::Submit([this]() { RenderImGui(); });
 			Renderer::Submit([this]() { m_ImGuiLayer->ImGuiEnd(); });
 
@@ -97,6 +98,12 @@ namespace VulkanCore {
 		layer->OnAttach();
 	}
 
+	void Application::SubmitToMainThread(std::function<void()>&& func)
+	{
+		std::scoped_lock submitLock(m_MainThreadQueueMutex);
+		m_MainThreadQueue.emplace_back(func);
+	}
+
 	bool Application::OnWindowClose(WindowCloseEvent& window)
 	{
 		m_Running = false;
@@ -109,11 +116,21 @@ namespace VulkanCore {
 		return true;
 	}
 
+	void Application::ExecuteMainThreadQueue()
+	{
+		std::scoped_lock executeLock(m_MainThreadQueueMutex);
+
+		for (auto&& func : m_MainThreadQueue)
+			func();
+
+		m_MainThreadQueue.clear();
+	}
+
 	void Application::RenderImGui()
 	{
 		VK_CORE_PROFILE();
 
-		m_ImGuiLayer->ImGuiNewFrame();
+		m_ImGuiLayer->ImGuiBegin();
 		for (Layer* layer : m_LayerStack)
 			layer->OnImGuiRender();
 	}
