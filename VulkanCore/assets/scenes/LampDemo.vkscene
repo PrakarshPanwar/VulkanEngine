@@ -49,3 +49,13 @@ Entities:
       Scale: [1, 1, 1]
     SkyLightComponent:
       TextureHandle: 8997689789897987
+  - Entity: 13196956814018913870
+    TagComponent:
+      Tag: Chandelier
+    TransformComponent:
+      Translation: [1, 3, -2.5]
+      Rotation: [0, -0, 0]
+      Scale: [3, 3, 3]
+    MeshComponent:
+      MeshHandle: 8241472875144239002
+      MaterialHandle: 7975541396447701382

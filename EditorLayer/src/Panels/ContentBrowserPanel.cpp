@@ -153,7 +153,9 @@ namespace VulkanCore {
 				const auto& path = directoryEntry.path();
 				std::string filenameString = path.filename().string();
 
+				ImGui::PushID(filenameString.c_str());
 				ImTextureID icon = directoryEntry.is_directory() ? m_DirectoryIconID : m_FileIconID;
+
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 				ImGui::ImageButton(filenameString.c_str(), (ImTextureID)icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
 
@@ -213,6 +215,8 @@ namespace VulkanCore {
 
 				ImGui::TextWrapped(filenameString.c_str());
 				ImGui::NextColumn();
+
+				ImGui::PopID();
 			}
 		}
 
