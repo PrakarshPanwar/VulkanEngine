@@ -37,6 +37,7 @@ namespace VulkanCore {
 		void SubmitRayTracedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
 		void UpdateSkybox(const std::string& filepath);
+		void UpdateAccelerationStructure();
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 		static inline VkDescriptorSet GetTextureCubeID() { return s_Instance->m_SkyboxTextureID; }
@@ -62,6 +63,7 @@ namespace VulkanCore {
 		void BloomCompute();
 		void RayTracePass();
 		void ResetDrawCommands();
+		void ResetTraceCommands();
 	private:
 		struct DrawCommand
 		{

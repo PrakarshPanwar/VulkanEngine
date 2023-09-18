@@ -21,14 +21,17 @@ namespace VulkanCore {
 		~VulkanAccelerationStructure();
 
 		void BuildTopLevelAccelerationStructure() override;
-		void UpdateTopLevelAccelerationStructure() override;
 		void BuildBottomLevelAccelerationStructures() override;
+		void UpdateTopLevelAccelerationStructure() override;
 		void SubmitMeshDrawData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex, uint32_t instanceCount) override;
+		void UpdateInstancesData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex) override;
 
 		inline const VkWriteDescriptorSetAccelerationStructureKHR& GetDescriptorAccelerationStructureInfo() const
 		{
 			return m_DescriptorAccelerationStructureInfo;
 		}
+	private:
+		void Release();
 	private:
 		struct BLASInput
 		{
@@ -41,8 +44,8 @@ namespace VulkanCore {
 		};
 	private:
 		VulkanAccelerationStructureInfo m_TLASInfo{};
-
 		uint32_t m_InstanceIndex = 0;
+
 		std::map<MeshKey, BLASInput> m_BLASInputData;
 
 		VkWriteDescriptorSetAccelerationStructureKHR m_DescriptorAccelerationStructureInfo{};

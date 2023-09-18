@@ -1,5 +1,6 @@
 #include "vulkanpch.h"
 #include "VulkanAccelerationStructure.h"
+#include "VulkanRenderCommandBuffer.h"
 #include "VulkanVertexBuffer.h"
 #include "VulkanIndexBuffer.h"
 #include "VulkanAllocator.h"
@@ -61,6 +62,21 @@ namespace VulkanCore {
 		vkDestroyAccelerationStructureKHR(device->GetVulkanDevice(), m_TLASInfo.Handle, nullptr);
 	}
 
+	void VulkanAccelerationStructure::Release()
+	{
+		Renderer::Submit([tlasInfo = m_TLASInfo]() mutable
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			VulkanAllocator allocator("AccelerationStructure");
+
+			// Top Level AS
+			allocator.DestroyBuffer(tlasInfo.Buffer, tlasInfo.MemoryAlloc);
+			vkDestroyAccelerationStructureKHR(device->GetVulkanDevice(), tlasInfo.Handle, nullptr);
+		});
+
+		m_TLASInfo = {};
+	}
+
 	void VulkanAccelerationStructure::BuildTopLevelAccelerationStructure()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
@@ -109,7 +125,7 @@ namespace VulkanCore {
 		VkAccelerationStructureBuildGeometryInfoKHR asBuildGeometryInfo{};
 		asBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
 		asBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-		asBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+		asBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
 		asBuildGeometryInfo.geometryCount = 1;
 		asBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
 
@@ -174,7 +190,7 @@ namespace VulkanCore {
 		VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo{};
 		buildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
 		buildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-		buildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+		buildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
 		buildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
 		buildGeometryInfo.dstAccelerationStructure = m_TLASInfo.Handle;
 		buildGeometryInfo.geometryCount = 1;
@@ -330,6 +346,127 @@ namespace VulkanCore {
 	void VulkanAccelerationStructure::UpdateTopLevelAccelerationStructure()
 	{
 		// Update Acceleration Structure
+		auto device = VulkanContext::GetCurrentDevice();
+		VulkanAllocator allocator("TopLevelAccelerationStructure");
+
+		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Top Level Acceleration Structure Update");
+
+		// Batch all instance data from BLAS Input
+		std::vector<VkAccelerationStructureInstanceKHR> tlasInstancesData{};
+		for (auto& [mk, blasInput] : m_BLASInputData)
+			tlasInstancesData.insert(tlasInstancesData.end(), blasInput.InstanceData.begin(), blasInput.InstanceData.end());
+
+		// Host(Temporary) Instance Buffer
+		VkBuffer instanceBuffer;
+		VmaAllocation instanceBufferAlloc;
+
+		uint32_t instanceBufferSize = tlasInstancesData.size() * sizeof(VkAccelerationStructureInstanceKHR);
+
+		VkBufferCreateInfo instanceBufferCreateInfo{};
+		instanceBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		instanceBufferCreateInfo.size = instanceBufferSize;
+		instanceBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+			VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+
+		instanceBufferAlloc = allocator.AllocateBuffer(instanceBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, instanceBuffer);
+
+		// Copy Instance Data to Instance Buffer
+		uint8_t* dstData = allocator.MapMemory<uint8_t>(instanceBufferAlloc);
+		memcpy(dstData, tlasInstancesData.data(), instanceBufferSize);
+		allocator.UnmapMemory(instanceBufferAlloc);
+
+		VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress = Utils::GetBufferDeviceAddress(instanceBuffer);
+
+		VkAccelerationStructureGeometryInstancesDataKHR instancesData{};
+		instancesData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+		instancesData.arrayOfPointers = VK_FALSE;
+		instancesData.data = instanceDataDeviceAddress;
+
+		VkAccelerationStructureGeometryKHR accelerationStructureGeometry{};
+		accelerationStructureGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+		accelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+		accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+		accelerationStructureGeometry.geometry.instances = instancesData;
+
+		// Get Sizes Info
+		VkAccelerationStructureBuildGeometryInfoKHR asBuildGeometryInfo{};
+		asBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+		asBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+		asBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+		asBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
+		asBuildGeometryInfo.srcAccelerationStructure = m_TLASInfo.Handle;
+		asBuildGeometryInfo.dstAccelerationStructure = m_TLASInfo.Handle;
+		asBuildGeometryInfo.geometryCount = 1;
+		asBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+
+		VkAccelerationStructureBuildSizesInfoKHR buildSizesInfo{};
+		buildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+
+		uint32_t instanceCount = (uint32_t)tlasInstancesData.size();
+		vkGetAccelerationStructureBuildSizesKHR(device->GetVulkanDevice(),
+			VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+			&asBuildGeometryInfo,
+			&instanceCount,
+			&buildSizesInfo);
+
+		// Create a Small Scratch Buffer used during build of the Top Level Acceleration Structure
+		VkBuffer scratchBuffer;
+		VmaAllocation scratchBufferAlloc;
+
+		VkBufferCreateInfo scratchBufferCreateInfo{};
+		scratchBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		scratchBufferCreateInfo.size = buildSizesInfo.buildScratchSize;
+		scratchBufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+		scratchBufferAlloc = allocator.AllocateBuffer(scratchBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, scratchBuffer);
+
+		// Scratch Buffer Device Address
+		VkBufferDeviceAddressInfoKHR bufferDeviceAddressInfo{};
+		bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+		bufferDeviceAddressInfo.buffer = scratchBuffer;
+		VkDeviceAddress scratchBufferDeviceAddress = vkGetBufferDeviceAddressKHR(device->GetVulkanDevice(), &bufferDeviceAddressInfo);
+
+		VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo{};
+		buildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+		buildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+		buildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+		buildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
+		buildGeometryInfo.srcAccelerationStructure = m_TLASInfo.Handle;
+		buildGeometryInfo.dstAccelerationStructure = m_TLASInfo.Handle;
+		buildGeometryInfo.geometryCount = 1;
+		buildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+		buildGeometryInfo.scratchData.deviceAddress = scratchBufferDeviceAddress;
+
+		VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo{};
+		buildRangeInfo.firstVertex = 0;
+		buildRangeInfo.primitiveCount = (uint32_t)tlasInstancesData.size();
+		buildRangeInfo.primitiveOffset = 0;
+		buildRangeInfo.transformOffset = 0;
+
+		std::vector<VkAccelerationStructureBuildRangeInfoKHR*> pBuildRangeInfos = { &buildRangeInfo };
+
+		// Build TLAS
+		VkCommandBuffer buildCmd = device->GetCommandBuffer();
+
+		// Make sure the Copy of the Instance Buffer are copied before triggering the Acceleration Structure Build
+		VkMemoryBarrier instanceBufferBarrier{};
+		instanceBufferBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+		instanceBufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		instanceBufferBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+
+		vkCmdPipelineBarrier(buildCmd,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+			0, 1, &instanceBufferBarrier, 0, nullptr, 0, nullptr);
+
+		vkCmdBuildAccelerationStructuresKHR(buildCmd,
+			1,
+			&buildGeometryInfo,
+			pBuildRangeInfos.data());
+
+		device->FlushCommandBuffer(buildCmd);
+
+		allocator.DestroyBuffer(scratchBuffer, scratchBufferAlloc);
+		allocator.DestroyBuffer(instanceBuffer, instanceBufferAlloc);
 	}
 
 	void VulkanAccelerationStructure::SubmitMeshDrawData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex, uint32_t instanceCount)
@@ -350,7 +487,7 @@ namespace VulkanCore {
 		trianglesData.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
 		trianglesData.vertexData = vertexBufferAddress;
 		trianglesData.maxVertex = submesh.VertexCount;
-		trianglesData.vertexStride = sizeof(Vertex); // We may have to change this as our current stride is struct Vertex
+		trianglesData.vertexStride = sizeof(Vertex);
 		trianglesData.indexType = VK_INDEX_TYPE_UINT32;
 		trianglesData.indexData = indexBufferAddress;
 		trianglesData.transformData = { 0 };
@@ -391,6 +528,17 @@ namespace VulkanCore {
 		blasInput.InstanceCount = instanceCount;
 		blasInput.InstanceData = instances;
 		m_InstanceIndex++;
+	}
+
+	void VulkanAccelerationStructure::UpdateInstancesData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex)
+	{
+		MeshKey meshKey = { mesh->Handle, materialAsset->Handle, submeshIndex };
+		auto& blasInput = m_BLASInputData[meshKey];
+
+		// Update Transform
+		int i = 0;
+		for (auto& instanceData : blasInput.InstanceData)
+			instanceData.transform = Utils::VulkanTransformFromTransformData(transformData[i++]);
 	}
 
 }
