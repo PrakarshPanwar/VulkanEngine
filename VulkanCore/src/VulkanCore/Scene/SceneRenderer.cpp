@@ -940,6 +940,8 @@ namespace VulkanCore {
 		BloomCompute();
 		CompositePass();
 
+		ResetTraceCommands();
+
 		m_SceneCommandBuffer->End();
 	}
 
@@ -1120,6 +1122,12 @@ namespace VulkanCore {
 		ImGuiLayer::UpdateDescriptor(m_SkyboxTextureID, *std::dynamic_pointer_cast<VulkanTextureCube>(m_PrefilteredTexture));
 	}
 
+	void SceneRenderer::UpdateAccelerationStructure()
+	{
+		// Update Top Level AS
+		m_SceneAccelerationStructure->UpdateTopLevelAccelerationStructure();
+	}
+
 	void SceneRenderer::SetSkybox(const std::string& filepath)
 	{
 		s_Instance->UpdateSkybox(filepath);
@@ -1298,7 +1306,10 @@ namespace VulkanCore {
 	void SceneRenderer::RayTracePass()
 	{
 		m_Scene->UpdateRayTracedGeometry(this);
-		m_SceneAccelerationStructure->UpdateTopLevelAccelerationStructure();
+
+		// Update TLAS Instance Data
+		for (auto&& [mk, tc] : m_MeshTraceList)
+			m_SceneAccelerationStructure->UpdateInstancesData(tc.MeshInstance, tc.MaterialInstance, m_MeshTransformMap[mk].Transforms, tc.SubmeshIndex);
 
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "RayTrace", DebugLabelColor::Aqua);
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
@@ -1356,6 +1367,15 @@ namespace VulkanCore {
 
 		m_PointLightPositions.clear();
 		m_SpotLightPositions.clear();
+	}
+
+	void SceneRenderer::ResetTraceCommands()
+	{
+		for (auto& [mk, tc] : m_MeshTraceList)
+		{
+			m_MeshTransformMap[mk].Transforms.clear();
+			tc.InstanceCount = 0;
+		}
 	}
 
 }

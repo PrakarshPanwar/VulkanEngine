@@ -374,6 +374,9 @@ namespace VulkanCore {
 				tc.Translation = translation;
 				tc.Rotation = glm::eulerAngles(rotation);
 				tc.Scale = scale;
+
+				if (m_RayTraced && selectedEntity.HasComponent<MeshComponent>())
+					m_SceneRenderer->UpdateAccelerationStructure();
 			}
 		}
 	}
