@@ -22,7 +22,7 @@ namespace VulkanCore {
 
 		void BuildTopLevelAccelerationStructure() override;
 		void BuildBottomLevelAccelerationStructures() override;
-		void UpdateTopLevelAccelerationStructure() override;
+		void UpdateTopLevelAccelerationStructure(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer) override;
 		void SubmitMeshDrawData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex, uint32_t instanceCount) override;
 		void UpdateInstancesData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex) override;
 
@@ -45,6 +45,10 @@ namespace VulkanCore {
 	private:
 		VulkanAccelerationStructureInfo m_TLASInfo{};
 		uint32_t m_InstanceIndex = 0;
+		VkBuffer m_InstanceBuffer, m_ScratchBuffer;
+		VkDeviceAddress m_InstanceDeviceAddress, m_ScratchDeviceAddress;
+		VmaAllocation m_InstanceBufferAlloc, m_ScratchBufferAlloc;
+		uint8_t* m_InstanceBufferDstData = nullptr;
 
 		std::map<MeshKey, BLASInput> m_BLASInputData;
 

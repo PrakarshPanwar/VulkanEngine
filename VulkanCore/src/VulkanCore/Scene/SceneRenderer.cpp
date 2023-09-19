@@ -1124,8 +1124,8 @@ namespace VulkanCore {
 
 	void SceneRenderer::UpdateAccelerationStructure()
 	{
-		// Update Top Level AS
-		m_SceneAccelerationStructure->UpdateTopLevelAccelerationStructure();
+		m_UpdateTLAS = true;
+		m_RTSettings.AccumulateFrameIndex = 1;
 	}
 
 	void SceneRenderer::SetSkybox(const std::string& filepath)
@@ -1135,9 +1135,9 @@ namespace VulkanCore {
 
 	void SceneRenderer::ResetAccumulationFrameIndex()
 	{
-		Renderer::SubmitResourceFree([]
+		Renderer::SubmitResourceFree([this]
 		{
-			s_Instance->m_RTSettings.AccumulateFrameIndex = 1;
+			m_RTSettings.AccumulateFrameIndex = 1;
 		});
 	}
 
@@ -1244,9 +1244,9 @@ namespace VulkanCore {
 			m_LodAndMode.LOD = 0.0f;
 			m_LodAndMode.Mode = 0.0f;
 
-			m_BloomPrefilterShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
-
 			const uint32_t mips = m_BloomTextures[0]->GetSpecification().MipLevels;
+
+			m_BloomPrefilterShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 			glm::uvec2 workGroups = glm::ceil((glm::vec2)m_BloomMipSize / 16.0f);
 
 			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
@@ -1261,7 +1261,7 @@ namespace VulkanCore {
 				int currentIdx = i - 1;
 
 				m_BloomPingShaderMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
-				glm::uvec2 workGroups = glm::ceil((glm::vec2)m_BloomTextures[0]->GetMipSize(i) / 16.0f);
+				workGroups = glm::ceil((glm::vec2)m_BloomTextures[0]->GetMipSize(i) / 16.0f);
 
 				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 				vulkanBloomPipeline->Dispatch(dispatchCmd, workGroups.x, workGroups.y, 1);
@@ -1307,9 +1307,15 @@ namespace VulkanCore {
 	{
 		m_Scene->UpdateRayTracedGeometry(this);
 
-		// Update TLAS Instance Data
-		for (auto&& [mk, tc] : m_MeshTraceList)
-			m_SceneAccelerationStructure->UpdateInstancesData(tc.MeshInstance, tc.MaterialInstance, m_MeshTransformMap[mk].Transforms, tc.SubmeshIndex);
+		if (m_UpdateTLAS)
+		{
+			// Update TLAS Instance Data
+			for (auto&& [mk, tc] : m_MeshTraceList)
+				m_SceneAccelerationStructure->UpdateInstancesData(tc.MeshInstance, tc.MaterialInstance, m_MeshTransformMap[mk].Transforms, tc.SubmeshIndex);
+		
+			m_SceneAccelerationStructure->UpdateTopLevelAccelerationStructure(m_SceneCommandBuffer);
+			m_UpdateTLAS = false;
+		}
 
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "RayTrace", DebugLabelColor::Aqua);
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
