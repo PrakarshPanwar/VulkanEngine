@@ -38,12 +38,12 @@ namespace VulkanCore {
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
 		void UpdateSkybox(const std::string& filepath);
 		void UpdateAccelerationStructure();
+		void ResetAccumulationFrameIndex();
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 		static inline VkDescriptorSet GetTextureCubeID() { return s_Instance->m_SkyboxTextureID; }
 		static std::shared_ptr<RenderCommandBuffer> GetRenderCommandBuffer() { return s_Instance->m_SceneCommandBuffer; }
 		static void SetSkybox(const std::string& filepath);
-		static void ResetAccumulationFrameIndex();
 
 		inline bool IsRayTraced() const { return m_RayTraced; }
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
@@ -204,7 +204,7 @@ namespace VulkanCore {
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
 		uint32_t m_MaxAccumulateFrameCount = 10000;
-		bool m_RayTraced = false, m_Accumulate = false;
+		bool m_RayTraced = false, m_Accumulate = false, m_UpdateTLAS = false;
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;
