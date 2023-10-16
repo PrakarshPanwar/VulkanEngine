@@ -2,6 +2,7 @@
 #include "VulkanContext.h"
 #include "VulkanDescriptor.h"
 #include "VulkanCore/Renderer/RayTracingPipeline.h"
+#include "Platform/Vulkan/VulkanShaderBindingTable.h"
 #include "Platform/Vulkan/VulkanRayTraceShader.h"
 
 namespace VulkanCore {
@@ -10,21 +11,17 @@ namespace VulkanCore {
 	{
 	public:
 		VulkanRayTracingPipeline() = default;
-		VulkanRayTracingPipeline(std::shared_ptr<Shader> shader, const std::string& debugName);
+		VulkanRayTracingPipeline(std::shared_ptr<ShaderBindingTable> shaderBindingTable, const std::string& debugName);
 		~VulkanRayTracingPipeline();
 
 		void Release();
 
 		void Bind(VkCommandBuffer commandBuffer);
 		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size);
-		void CreateShaderBindingTable() override;
 		void ReloadPipeline() override;
 
-		inline std::shared_ptr<Shader> GetShader() const override { return m_Shader; }
+		inline std::shared_ptr<Shader> GetShader() const override { return m_ShaderBindingTable->GetShader(); }
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
-		inline const VkStridedDeviceAddressRegionKHR& GetRayGenStridedDeviceAddressRegion() const { return m_RayGenSBTInfo; }
-		inline const VkStridedDeviceAddressRegionKHR& GetRayHitStridedDeviceAddressRegion() const { return m_RayClosestHitSBTInfo; }
-		inline const VkStridedDeviceAddressRegionKHR& GetRayMissStridedDeviceAddressRegion() const { return m_RayMissSBTInfo; }
 	private:
 		void InvalidateRayTracingPipeline();
 		void RT_InvalidateRayTracingPipeline();
@@ -33,14 +30,10 @@ namespace VulkanCore {
 
 		VkPipeline m_RayTracingPipeline = nullptr;
 		VkPipelineLayout m_PipelineLayout = nullptr;
-		VkShaderModule m_RayGenShaderModule, m_RayClosestHitShaderModule, m_RayMissShaderModule, m_RayIntersectionShaderModule = nullptr;
-		std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_ShaderGroups{};
-		std::shared_ptr<Shader> m_Shader;
+		VkShaderModule m_RayGenShaderModule = nullptr;
+		std::vector<VkShaderModule> m_RayClosestHitShaderModules, m_RayAnyHitShaderModules, m_RayIntersectionShaderModules, m_RayMissShaderModules;
 
-		// TODO: Abstract this in separate class ShaderBindingTable
-		VkBuffer m_SBTBuffer = nullptr;
-		VmaAllocation m_SBTMemAlloc = nullptr;
-		VkStridedDeviceAddressRegionKHR m_RayGenSBTInfo{}, m_RayClosestHitSBTInfo{}, m_RayMissSBTInfo{}, m_RayIntersectionSBTInfo{};
+		std::shared_ptr<ShaderBindingTable> m_ShaderBindingTable;
 		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> m_DescriptorSetLayout;
 	};
 

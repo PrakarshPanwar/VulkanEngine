@@ -144,7 +144,10 @@ namespace VulkanCore {
 		std::shared_ptr<Pipeline> m_CompositePipeline;
 		std::shared_ptr<Pipeline> m_SkyboxPipeline;
 		std::shared_ptr<ComputePipeline> m_BloomPipeline;
+
+		// Ray Tracing
 		std::shared_ptr<RayTracingPipeline> m_RayTracingPipeline;
+		std::shared_ptr<ShaderBindingTable> m_RayTracingSBT;
 
 		// TODO: In future we have to setup Material Table
 		// Material Resources

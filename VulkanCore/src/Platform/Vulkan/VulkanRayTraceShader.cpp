@@ -13,6 +13,14 @@ namespace VulkanCore {
 
 	namespace Utils {
 
+		static std::map<std::filesystem::path, ShaderType> s_ShaderExtensionMap = {
+			{ ".rgen",  ShaderType::RayGeneration },
+			{ ".rahit", ShaderType::RayAnyHit },
+			{ ".rchit", ShaderType::RayClosestHit },
+			{ ".rmiss", ShaderType::RayMiss },
+			{ ".rint",  ShaderType::RayIntersection }
+		};
+
 		static shaderc_shader_kind GLShaderStageToShaderC(ShaderType stage)
 		{
 			switch (stage)
@@ -73,16 +81,16 @@ namespace VulkanCore {
 	}
 
 	VulkanRayTraceShader::VulkanRayTraceShader(const std::string& rayGenPath, const std::string& rayClosestHitPath, const std::string& rayMissPath)
-		: m_RayGenFilePath(rayGenPath), m_RayClosestHitFilePath(rayClosestHitPath), m_RayMissFilePath(rayMissPath)
+		: m_RayGenFilePath(rayGenPath), m_RayClosestHitFilePaths{ rayClosestHitPath }, m_RayMissFilePaths{ rayMissPath }
 	{
 		auto [RayGenSrc, RayHitSrc, RayMissSrc] = ParseShader(rayGenPath, rayClosestHitPath, rayMissPath);
 
 		Utils::CreateCacheDirectoryIfRequired();
 
-		std::unordered_map<uint32_t, std::string> Sources;
-		Sources[(uint32_t)ShaderType::RayGeneration] = RayGenSrc;
-		Sources[(uint32_t)ShaderType::RayClosestHit] = RayHitSrc;
-		Sources[(uint32_t)ShaderType::RayMiss] = RayMissSrc;
+		std::unordered_map<std::filesystem::path, std::string> Sources;
+		Sources[rayGenPath] = RayGenSrc;
+		Sources[rayClosestHitPath] = RayHitSrc;
+		Sources[rayMissPath] = RayMissSrc;
 
 		m_ShaderSources = Sources;
 		CompileOrGetVulkanBinaries(Sources);
@@ -96,10 +104,16 @@ namespace VulkanCore {
 
 	}
 
-	// TODO: Will be handled in future
-	VulkanRayTraceShader::VulkanRayTraceShader(const std::string& rayGenPath, const std::vector<std::string>& rayClosestHitPaths, const std::vector<std::string>& rayAnyHitPaths, const std::vector<std::string>& rayIntersectionPaths, const std::string& rayMissPath)
+	VulkanRayTraceShader::VulkanRayTraceShader(const std::string& rayGenPath, const std::vector<std::string>& rayClosestHitPaths, const std::vector<std::string>& rayAnyHitPaths, const std::vector<std::string>& rayIntersectionPaths, const std::vector<std::string>& rayMissPaths)
+		: m_RayGenFilePath(rayGenPath), m_RayClosestHitFilePaths(rayClosestHitPaths), m_RayAnyHitFilePaths(rayAnyHitPaths), m_RayIntersectionFilePaths(rayIntersectionPaths), m_RayMissFilePaths(rayMissPaths)
 	{
+		ParseShader();
 
+		// If directory is not found
+		Utils::CreateCacheDirectoryIfRequired();
+
+		CompileOrGetVulkanBinaries(m_ShaderSources);
+		ReflectShaderData();
 	}
 
 	VulkanRayTraceShader::~VulkanRayTraceShader()
@@ -111,7 +125,7 @@ namespace VulkanCore {
 	{
 		DescriptorSetLayoutBuilder descriptorSetLayoutBuilder = DescriptorSetLayoutBuilder();
 
-		for (auto&& [stage, source] : m_VulkanSPIRV)
+		for (auto&& [shaderPath, source] : m_VulkanSPIRV)
 		{
 			SpvReflectShaderModule shaderModule = {};
 
@@ -182,9 +196,9 @@ namespace VulkanCore {
 	std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> VulkanRayTraceShader::CreateAllDescriptorSetsLayout()
 	{
 		// Key: Set number
-		std::unordered_map<uint32_t, DescriptorSetLayoutBuilder> descriptorSetLayoutBuilderMap;
+		std::map<uint32_t, DescriptorSetLayoutBuilder> descriptorSetLayoutBuilderMap;
 
-		for (auto&& [stage, source] : m_VulkanSPIRV)
+		for (auto&& [shaderPath, source] : m_VulkanSPIRV)
 		{
 			SpvReflectShaderModule shaderModule = {};
 
@@ -286,12 +300,12 @@ namespace VulkanCore {
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
 
 			std::scoped_lock ShaderMutexLock(MapMutexLock);
-			shaderData[(uint32_t)stage] = std::vector<uint32_t>(module.cbegin(), module.cend());
+			shaderData[shaderFilePath] = std::vector<uint32_t>(module.cbegin(), module.cend());
 
 			std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
 			if (out.is_open())
 			{
-				auto& data = shaderData[(uint32_t)stage];
+				auto& data = shaderData[shaderFilePath];
 				out.write((char*)data.data(), data.size() * sizeof(uint32_t));
 				out.flush();
 				out.close();
@@ -300,35 +314,12 @@ namespace VulkanCore {
 
 		Timer timer("Whole Shader Creation Process");
 
-		for (auto&& [stage, source] : shaderSources)
+		for (auto&& [shaderPath, source] : shaderSources)
 		{
-			std::filesystem::path shaderFilePath;
+			ShaderType shaderType = Utils::s_ShaderExtensionMap[shaderPath.extension()];
 
-			ShaderType shaderType = (ShaderType)stage;
-			switch (shaderType)
-			{
-			case ShaderType::RayGeneration:
-				shaderFilePath = m_RayGenFilePath;
-				break;
-			case ShaderType::RayAnyHit:
-				shaderFilePath = m_RayAnyHitFilePath;
-				break;
-			case ShaderType::RayClosestHit:
-				shaderFilePath = m_RayClosestHitFilePath;
-				break;
-			case ShaderType::RayMiss:
-				shaderFilePath = m_RayMissFilePath;
-				break;
-			case ShaderType::RayIntersection:
-				shaderFilePath = m_RayIntersectionFilePath;
-				break;
-			default:
-				VK_CORE_ASSERT(false, "Cannot find Shader Type!");
-				break;
-			}
-
-			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(shaderType));
-			m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderFilePath, source, shaderType));
+			std::filesystem::path cachedPath = cacheDirectory / (shaderPath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(shaderType));
+			m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderPath, source, shaderType));
 		}
 
 		SetReloadFlag();
@@ -359,30 +350,70 @@ namespace VulkanCore {
 
 	void VulkanRayTraceShader::ParseShader()
 	{
-		std::unordered_map<uint32_t, std::string> Sources;
+		std::unordered_map<std::filesystem::path, std::string> Sources;
 
-		std::ifstream RayGenSource(m_RayGenFilePath, std::ios::binary);
-		std::ifstream RayClosestHitSource(m_RayClosestHitFilePath, std::ios::binary);
-		std::ifstream RayMissSource(m_RayMissFilePath, std::ios::binary);
+		// Ray Generation
+		{
+			std::ifstream RayGenSource(m_RayGenFilePath, std::ios::binary);
 
-		VK_CORE_ASSERT(RayGenSource.is_open(), "Failed to Open Ray Generation Shader File!");
-		VK_CORE_ASSERT(RayClosestHitSource.is_open(), "Failed to Open Ray Closest Hit Shader File!");
-		VK_CORE_ASSERT(RayMissSource.is_open(), "Failed to Open Ray Miss Shader File!");
+			VK_CORE_ASSERT(RayGenSource.is_open(), "Failed to Open Ray Generation Shader File!");
 
-		std::stringstream RayGenStream, RayClosestHitStream, RayMissStream;
+			std::stringstream RayGenStream;
+			RayGenStream << RayGenSource.rdbuf();
 
-		RayGenStream << RayGenSource.rdbuf();
-		RayClosestHitStream << RayClosestHitSource.rdbuf();
-		RayMissStream << RayMissSource.rdbuf();
+			Sources[m_RayGenFilePath] = RayGenStream.str();
+		}
 
-		Sources[(uint32_t)ShaderType::RayGeneration] = RayGenStream.str();
-		Sources[(uint32_t)ShaderType::RayClosestHit] = RayClosestHitStream.str();
-		Sources[(uint32_t)ShaderType::RayMiss] = RayMissStream.str();
+		// Closest Hit
+		{
+			for (auto& rayClosestHitFilePath : m_RayClosestHitFilePaths)
+			{
+				std::ifstream RayClosestHitSource(rayClosestHitFilePath, std::ios::binary);
+
+				VK_CORE_ASSERT(RayClosestHitSource.is_open(), "Failed to Open Ray Closest Hit Shader File!");
+
+				std::stringstream RayClosestHitStream;
+				RayClosestHitStream << RayClosestHitSource.rdbuf();
+
+				Sources[rayClosestHitFilePath] = RayClosestHitStream.str();
+			}
+		}
+
+		// TODO: Any Hit
+		// Intersection
+		{
+			for (auto& rayIntersectionFilePath : m_RayIntersectionFilePaths)
+			{
+				std::ifstream RayIntersectionSource(rayIntersectionFilePath, std::ios::binary);
+
+				VK_CORE_ASSERT(RayIntersectionSource.is_open(), "Failed to Open Ray Intersection Shader File!");
+
+				std::stringstream RayIntersectionStream;
+				RayIntersectionStream << RayIntersectionSource.rdbuf();
+
+				Sources[rayIntersectionFilePath] = RayIntersectionStream.str();
+			}
+		}
+
+		// Miss
+		{
+			for (auto& rayMissFilePath : m_RayMissFilePaths)
+			{
+				std::ifstream RayMissSource(rayMissFilePath, std::ios::binary);
+
+				VK_CORE_ASSERT(RayMissSource.is_open(), "Failed to Open Ray Miss Shader File!");
+
+				std::stringstream RayMissStream;
+				RayMissStream << RayMissSource.rdbuf();
+
+				Sources[rayMissFilePath] = RayMissStream.str();
+			}
+		}
 
 		m_ShaderSources = Sources;
 	}
 
-	void VulkanRayTraceShader::CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources)
+	void VulkanRayTraceShader::CompileOrGetVulkanBinaries(const std::unordered_map<std::filesystem::path, std::string>& shaderSources)
 	{
 		shaderc::Compiler compiler;
 		shaderc::CompileOptions options;
@@ -418,12 +449,12 @@ namespace VulkanCore {
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
 
 			std::scoped_lock ShaderMutexLock(MapMutexLock);
-			shaderData[(uint32_t)stage] = std::vector<uint32_t>(module.cbegin(), module.cend());
+			shaderData[shaderFilePath] = std::vector<uint32_t>(module.cbegin(), module.cend());
 
 			std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
 			if (out.is_open())
 			{
-				auto& data = shaderData[(uint32_t)stage];
+				auto& data = shaderData[shaderFilePath];
 				out.write((char*)data.data(), data.size() * sizeof(uint32_t));
 				out.flush();
 				out.close();
@@ -432,49 +463,25 @@ namespace VulkanCore {
 
 		Timer timer("Whole Shader Creation Process");
 
-		for (auto&& [stage, source] : shaderSources)
+		for (auto&& [shaderPath, source] : shaderSources)
 		{
-			std::filesystem::path shaderFilePath;
+			ShaderType shaderType = Utils::s_ShaderExtensionMap[shaderPath.extension()];
 
-			ShaderType shaderType = (ShaderType)stage;
-			switch (shaderType)
-			{
-			case ShaderType::RayGeneration:
-				shaderFilePath = m_RayGenFilePath;
-				break;
-			case ShaderType::RayAnyHit:
-				shaderFilePath = m_RayAnyHitFilePath;
-				break;
-			case ShaderType::RayClosestHit:
-				shaderFilePath = m_RayClosestHitFilePath;
-				break;
-			case ShaderType::RayMiss:
-				shaderFilePath = m_RayMissFilePath;
-				break;
-			case ShaderType::RayIntersection:
-				shaderFilePath = m_RayIntersectionFilePath;
-				break;
-			default:
-				VK_CORE_ASSERT(false, "Cannot find Shader Type!");
-				break;
-			}
-
-			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(shaderType));
+			std::filesystem::path cachedPath = cacheDirectory / (shaderPath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(shaderType));
 
 			std::ifstream in(cachedPath, std::ios::in | std::ios::binary);
-
 			if (in.is_open())
 			{
 				in.seekg(0, std::ios::end);
 				auto size = in.tellg();
 				in.seekg(0, std::ios::beg);
 
-				auto& data = shaderData[stage];
+				auto& data = shaderData[shaderPath];
 				data.resize(size / sizeof(uint32_t));
 				in.read((char*)data.data(), size);
 			}
 			else
-				m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderFilePath, source, shaderType));
+				m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderPath, source, shaderType));
 		}
 
 		if (!m_Futures.empty())
@@ -489,12 +496,12 @@ namespace VulkanCore {
 		std::filesystem::path shaderFilePath = m_RayGenFilePath;
 
 		VK_CORE_INFO("In {0}:", shaderFilePath.stem());
-		for (auto&& [stage, shader] : m_VulkanSPIRV)
+		for (auto&& [shaderPath, shader] : m_VulkanSPIRV)
 		{
 			spirv_cross::Compiler compiler(shader);
 			spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
-			std::string ShaderStageType = Utils::GLShaderTypeToString((ShaderType)stage);
+			std::string ShaderStageType = Utils::GLShaderTypeToString(Utils::s_ShaderExtensionMap[shaderPath.extension()]);
 			VK_CORE_TRACE("  {0} Shader Reflection:", ShaderStageType);
 			VK_CORE_TRACE("\t  {0} uniform buffers", resources.uniform_buffers.size());
 			VK_CORE_TRACE("\t  {0} storage buffers", resources.storage_buffers.size());

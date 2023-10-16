@@ -200,7 +200,7 @@ namespace VulkanCore {
 	std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> VulkanShader::CreateAllDescriptorSetsLayout()
 	{
 		// Key: Set number
-		std::unordered_map<uint32_t, DescriptorSetLayoutBuilder> descriptorSetLayoutBuilderMap;
+		std::map<uint32_t, DescriptorSetLayoutBuilder> descriptorSetLayoutBuilderMap;
 
 		for (auto&& [stage, source] : m_VulkanSPIRV)
 		{

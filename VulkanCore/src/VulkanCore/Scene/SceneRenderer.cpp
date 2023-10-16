@@ -313,8 +313,16 @@ namespace VulkanCore {
 
 		// Ray Tracing Pipeline
 		{
-			m_RayTracingPipeline = std::make_shared<VulkanRayTracingPipeline>(Renderer::GetShader("CoreRT"), "Ray Tracing Pipeline");
-			m_RayTracingPipeline->CreateShaderBindingTable();
+			std::vector<HitShaderInfo> hitShaderInfos = {
+				{ "CoreRT.rchit" }
+			};
+
+			std::vector<std::string> missPaths = {
+				"CoreRT.rmiss"
+			};
+
+			m_RayTracingSBT = std::make_shared<VulkanShaderBindingTable>("CoreRT.rgen", hitShaderInfos, missPaths);
+			m_RayTracingPipeline = std::make_shared<VulkanRayTracingPipeline>(m_RayTracingSBT, "Ray Tracing Pipeline");
 		}
 	}
 
@@ -569,10 +577,7 @@ namespace VulkanCore {
 		m_BloomPipeline->ReloadPipeline();
 
 		if (m_RayTraced)
-		{
 			m_RayTracingPipeline->ReloadPipeline();
-			m_RayTracingPipeline->CreateShaderBindingTable();
-		}
 	}
 
 	void SceneRenderer::CreateResources()
@@ -1320,7 +1325,7 @@ namespace VulkanCore {
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "RayTrace", DebugLabelColor::Aqua);
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
-		Renderer::TraceRays(m_SceneCommandBuffer, m_RayTracingPipeline,
+		Renderer::TraceRays(m_SceneCommandBuffer, m_RayTracingPipeline, m_RayTracingSBT,
 			{ m_RayTracingBaseMaterial, m_RayTracingPBRMaterial, m_RayTracingSkyboxMaterial },
 			m_ViewportSize.x, m_ViewportSize.y,
 			&m_RTSettings, (uint32_t)sizeof(RTSettings));
