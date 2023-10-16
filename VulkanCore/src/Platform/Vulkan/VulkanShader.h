@@ -34,13 +34,14 @@ namespace VulkanCore {
 		void ReflectShaderData();
 		void InvalidateDescriptors();
 	protected:
-		std::unordered_map<uint32_t, std::string> m_ShaderSources;
-		std::unordered_map<uint32_t, std::vector<uint32_t>> m_VulkanSPIRV;
 		std::vector<std::future<void>> m_Futures;
 		size_t m_PushConstantSize = 0;
 
 		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> m_DescriptorSetsLayout;
 	private:
+		std::unordered_map<uint32_t, std::string> m_ShaderSources;
+		std::unordered_map<uint32_t, std::vector<uint32_t>> m_VulkanSPIRV;
+
 		std::string m_VertexFilePath, m_FragmentFilePath, m_GeometryFilePath, m_ComputeFilePath;
 	};
 

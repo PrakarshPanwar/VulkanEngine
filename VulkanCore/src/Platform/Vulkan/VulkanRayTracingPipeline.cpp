@@ -8,6 +8,14 @@ namespace VulkanCore {
 
 	namespace Utils {
 
+		static std::map<std::filesystem::path, ShaderType> s_ShaderExtensionMap = {
+			{ ".rgen",  ShaderType::RayGeneration },
+			{ ".rahit", ShaderType::RayAnyHit },
+			{ ".rchit", ShaderType::RayClosestHit },
+			{ ".rmiss", ShaderType::RayMiss },
+			{ ".rint",  ShaderType::RayIntersection }
+		};
+
 		static VkShaderModule CreateShaderModule(const std::vector<uint32_t>& shaderSource)
 		{
 			auto device = VulkanContext::GetCurrentDevice();
@@ -48,35 +56,10 @@ namespace VulkanCore {
 			return pipelineLayout;
 		}
 
-		static uint32_t GetAlignment(uint32_t size, uint32_t alignment)
-		{
-			return (size + alignment - 1) & ~(alignment - 1);
-		}
-
-		static VkStridedDeviceAddressRegionKHR GetSBTStridedDeviceAddressRegion(VkBuffer buffer, uint32_t offset = 0, uint32_t handleCount = 1)
-		{
-			auto device = VulkanContext::GetCurrentDevice();
-
-			auto rayTracingPipelineProperties = device->GetPhysicalDeviceRayTracingPipelineProperties();
-			const uint32_t shaderGroupBaseAlignment = rayTracingPipelineProperties.shaderGroupBaseAlignment;
-			const uint32_t shaderGroupHandleSize = rayTracingPipelineProperties.shaderGroupHandleSize;
-			const uint32_t shaderHandleSizeAligned = GetAlignment(shaderGroupHandleSize * handleCount, shaderGroupBaseAlignment);
-
-			VkBufferDeviceAddressInfoKHR bufferDeviceAddressInfo{};
-			bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-			bufferDeviceAddressInfo.buffer = buffer;
-
-			VkStridedDeviceAddressRegionKHR stridedDeviceAddressRegionKHR{};
-			stridedDeviceAddressRegionKHR.deviceAddress = vkGetBufferDeviceAddressKHR(device->GetVulkanDevice(), &bufferDeviceAddressInfo) + (VkDeviceAddress)offset;
-			stridedDeviceAddressRegionKHR.stride = shaderHandleSizeAligned;
-			stridedDeviceAddressRegionKHR.size = shaderHandleSizeAligned;
-			return stridedDeviceAddressRegionKHR;
-		}
-
 	}
 
-	VulkanRayTracingPipeline::VulkanRayTracingPipeline(std::shared_ptr<Shader> shader, const std::string& debugName)
-		: m_DebugName(debugName), m_Shader(shader)
+	VulkanRayTracingPipeline::VulkanRayTracingPipeline(std::shared_ptr<ShaderBindingTable> shaderBindingTable, const std::string& debugName)
+		: m_DebugName(debugName), m_ShaderBindingTable(shaderBindingTable)
 	{
 		InvalidateRayTracingPipeline();
 	}
@@ -89,25 +72,29 @@ namespace VulkanCore {
 	void VulkanRayTracingPipeline::Release()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-		VulkanAllocator allocator("ShaderBindingTable");
 
-		// Destroy Pipeline
+		// Destroy Shader Modules
 		vkDestroyShaderModule(device->GetVulkanDevice(), m_RayGenShaderModule, nullptr);
-		vkDestroyShaderModule(device->GetVulkanDevice(), m_RayClosestHitShaderModule, nullptr);
-		vkDestroyShaderModule(device->GetVulkanDevice(), m_RayMissShaderModule, nullptr);
 
-		if (m_RayIntersectionShaderModule)
-			vkDestroyShaderModule(device->GetVulkanDevice(), m_RayIntersectionShaderModule, nullptr);
+		for (auto& rayClosestHitModule : m_RayClosestHitShaderModules)
+			vkDestroyShaderModule(device->GetVulkanDevice(), rayClosestHitModule, nullptr);
+
+		for (auto& rayAnyHitModule : m_RayAnyHitShaderModules)
+			vkDestroyShaderModule(device->GetVulkanDevice(), rayAnyHitModule, nullptr);
+
+		for (auto& rayIntersectionModule : m_RayIntersectionShaderModules)
+			vkDestroyShaderModule(device->GetVulkanDevice(), rayIntersectionModule, nullptr);
+
+		for (auto& rayMissModule : m_RayMissShaderModules)
+			vkDestroyShaderModule(device->GetVulkanDevice(), rayMissModule, nullptr);
 
 		if (m_PipelineLayout)
 			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
 
+		// Destroy Pipeline
 		vkDestroyPipeline(device->GetVulkanDevice(), m_RayTracingPipeline, nullptr);
 
 		m_RayTracingPipeline = nullptr;
-
-		// Destroy SBT
-		allocator.DestroyBuffer(m_SBTBuffer, m_SBTMemAlloc);
 	}
 
 	void VulkanRayTracingPipeline::Bind(VkCommandBuffer commandBuffer)
@@ -125,6 +112,7 @@ namespace VulkanCore {
 			pcData);
 	}
 
+#if 0
 	void VulkanRayTracingPipeline::CreateShaderBindingTable()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
@@ -177,14 +165,15 @@ namespace VulkanCore {
 
 		allocator.UnmapMemory(m_SBTMemAlloc);
 	}
+#endif
 
 	void VulkanRayTracingPipeline::ReloadPipeline()
 	{
-		if (m_Shader->GetReloadFlag())
+		if (m_ShaderBindingTable->GetShader()->GetReloadFlag())
 		{
 			Release();
 			InvalidateRayTracingPipeline();
-			m_Shader->ResetReloadFlag();
+			m_ShaderBindingTable->GetShader()->ResetReloadFlag();
 		}
 	}
 
@@ -192,16 +181,50 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		auto shader = std::static_pointer_cast<VulkanRayTraceShader>(m_Shader);
+		auto vulkanSBT = std::static_pointer_cast<VulkanShaderBindingTable>(m_ShaderBindingTable);
+		auto shader = std::static_pointer_cast<VulkanRayTraceShader>(m_ShaderBindingTable->GetShader());
 		auto& shaderSources = shader->GetShaderModules();
 
-		m_RayGenShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::RayGeneration]);
-		m_RayClosestHitShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::RayClosestHit]);
-		m_RayMissShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::RayMiss]);
+		// TODO: This is temporary
+		for (auto&& [shaderPath, source] : shaderSources)
+		{
+			ShaderType stage = Utils::s_ShaderExtensionMap[shaderPath.extension()];
 
-		const uint32_t shaderStageCount = shader->HasIntersectionShader() ? 4 : 3;
-		std::vector<VkPipelineShaderStageCreateInfo> shaderStages(shaderStageCount);
+			switch (stage)
+			{
+			case ShaderType::RayGeneration:
+				m_RayGenShaderModule = Utils::CreateShaderModule(source);
+				break;
+			case ShaderType::RayClosestHit:
+			{
+				VkShaderModule closestHitModule = Utils::CreateShaderModule(source);
+				m_RayClosestHitShaderModules.push_back(closestHitModule);
+				break;
+			}
+			case ShaderType::RayMiss:
+			{
+				VkShaderModule missModule = Utils::CreateShaderModule(source);
+				m_RayMissShaderModules.push_back(missModule);
+				break;
+			}
+			case ShaderType::RayIntersection:
+			{
+				VkShaderModule intersectionModule = Utils::CreateShaderModule(source);
+				m_RayIntersectionShaderModules.push_back(intersectionModule);
+				break;
+			}
+			default:
+				break;
+			}
+		}
 
+		size_t shaderStageCount = m_RayClosestHitShaderModules.size()
+			+ m_RayMissShaderModules.size()
+			+ m_RayIntersectionShaderModules.size() + 1;
+
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages{ shaderStageCount };
+
+		// Ray Gen
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[0].stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
 		shaderStages[0].module = m_RayGenShaderModule;
@@ -210,59 +233,58 @@ namespace VulkanCore {
 		shaderStages[0].pNext = nullptr;
 		shaderStages[0].pSpecializationInfo = nullptr;
 
-		shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStages[1].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-		shaderStages[1].module = m_RayClosestHitShaderModule;
-		shaderStages[1].pName = "main";
-		shaderStages[1].flags = 0;
-		shaderStages[1].pNext = nullptr;
-		shaderStages[1].pSpecializationInfo = nullptr;
-
-		shaderStages[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStages[2].stage = VK_SHADER_STAGE_MISS_BIT_KHR;
-		shaderStages[2].module = m_RayMissShaderModule;
-		shaderStages[2].pName = "main";
-		shaderStages[2].flags = 0;
-		shaderStages[2].pNext = nullptr;
-		shaderStages[2].pSpecializationInfo = nullptr;
-
-		if (shader->HasIntersectionShader())
+		uint32_t stageIndex = 1;
+		for (auto& rayClosestHitModule : m_RayClosestHitShaderModules)
 		{
-			m_RayIntersectionShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::RayIntersection]);
+			shaderStages[stageIndex].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			shaderStages[stageIndex].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+			shaderStages[stageIndex].module = rayClosestHitModule;
+			shaderStages[stageIndex].pName = "main";
+			shaderStages[stageIndex].flags = 0;
+			shaderStages[stageIndex].pNext = nullptr;
+			shaderStages[stageIndex].pSpecializationInfo = nullptr;
 
-			shaderStages[3].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			shaderStages[3].stage = VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
-			shaderStages[3].module = m_RayClosestHitShaderModule;
-			shaderStages[3].pName = "main";
-			shaderStages[3].flags = 0;
-			shaderStages[3].pNext = nullptr;
-			shaderStages[3].pSpecializationInfo = nullptr;
+			stageIndex++;
 		}
 
-		// Set Shader Groups
-		uint32_t shaderGroupIndex = 0;
+		for (auto& rayAnyHitModule : m_RayAnyHitShaderModules)
+		{
+			shaderStages[stageIndex].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			shaderStages[stageIndex].stage = VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+			shaderStages[stageIndex].module = rayAnyHitModule;
+			shaderStages[stageIndex].pName = "main";
+			shaderStages[stageIndex].flags = 0;
+			shaderStages[stageIndex].pNext = nullptr;
+			shaderStages[stageIndex].pSpecializationInfo = nullptr;
 
-		// Ray Generation
-		VkRayTracingShaderGroupCreateInfoKHR shaderGroupInfo{};
-		shaderGroupInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
-		shaderGroupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
-		shaderGroupInfo.generalShader = shaderGroupIndex++;
-		shaderGroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-		shaderGroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-		shaderGroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
-		m_ShaderGroups.push_back(shaderGroupInfo);
+			stageIndex++;
+		}
 
-		// Closest Hit
-		shaderGroupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
-		shaderGroupInfo.generalShader = VK_SHADER_UNUSED_KHR;
-		shaderGroupInfo.closestHitShader = shaderGroupIndex++;
-		m_ShaderGroups.push_back(shaderGroupInfo);
+		for (auto& rayIntersectionModule : m_RayIntersectionShaderModules)
+		{
+			shaderStages[stageIndex].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			shaderStages[stageIndex].stage = VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+			shaderStages[stageIndex].module = rayIntersectionModule;
+			shaderStages[stageIndex].pName = "main";
+			shaderStages[stageIndex].flags = 0;
+			shaderStages[stageIndex].pNext = nullptr;
+			shaderStages[stageIndex].pSpecializationInfo = nullptr;
 
-		// Miss
-		shaderGroupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
-		shaderGroupInfo.generalShader = shaderGroupIndex++;
-		shaderGroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-		m_ShaderGroups.push_back(shaderGroupInfo);
+			stageIndex++;
+		}
+
+		for (auto& rayMissModule : m_RayMissShaderModules)
+		{
+			shaderStages[stageIndex].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			shaderStages[stageIndex].stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+			shaderStages[stageIndex].module = rayMissModule;
+			shaderStages[stageIndex].pName = "main";
+			shaderStages[stageIndex].flags = 0;
+			shaderStages[stageIndex].pNext = nullptr;
+			shaderStages[stageIndex].pSpecializationInfo = nullptr;
+
+			stageIndex++;
+		}
 
 		m_DescriptorSetLayout = shader->CreateAllDescriptorSetsLayout();
 		m_PipelineLayout = Utils::CreatePipelineLayout(m_DescriptorSetLayout, shader->GetPushConstantSize());
@@ -271,8 +293,8 @@ namespace VulkanCore {
 		rayTracingPipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
 		rayTracingPipelineInfo.stageCount = shaderStageCount;
 		rayTracingPipelineInfo.pStages = shaderStages.data();
-		rayTracingPipelineInfo.groupCount = (uint32_t)m_ShaderGroups.size();
-		rayTracingPipelineInfo.pGroups = m_ShaderGroups.data();
+		rayTracingPipelineInfo.groupCount = (uint32_t)vulkanSBT->GetShaderGroups().size();
+		rayTracingPipelineInfo.pGroups = vulkanSBT->GetShaderGroups().data();
 		rayTracingPipelineInfo.maxPipelineRayRecursionDepth = 1;
 		rayTracingPipelineInfo.layout = m_PipelineLayout;
 		rayTracingPipelineInfo.basePipelineIndex = -1;
@@ -288,6 +310,8 @@ namespace VulkanCore {
 			&m_RayTracingPipeline),
 			"Failed to Create Ray Tracing Pipeline");
 
+		vulkanSBT->Invalidate(m_RayTracingPipeline);
+
 		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_DebugName, m_RayTracingPipeline);
 	}
 
@@ -297,16 +321,49 @@ namespace VulkanCore {
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 
-			auto shader = std::static_pointer_cast<VulkanRayTraceShader>(m_Shader);
+			auto vulkanSBT = std::static_pointer_cast<VulkanShaderBindingTable>(m_ShaderBindingTable);
+			auto shader = std::static_pointer_cast<VulkanRayTraceShader>(m_ShaderBindingTable->GetShader());
 			auto& shaderSources = shader->GetShaderModules();
 
-			m_RayGenShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::RayGeneration]);
-			m_RayClosestHitShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::RayClosestHit]);
-			m_RayMissShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::RayMiss]);
+			for (auto&& [shaderPath, source] : shaderSources)
+			{
+				ShaderType stage = Utils::s_ShaderExtensionMap[shaderPath.extension()];
 
-			const uint32_t shaderStageCount = shader->HasIntersectionShader() ? 4 : 3;
-			std::vector<VkPipelineShaderStageCreateInfo> shaderStages(shaderStageCount);
+				switch (stage)
+				{
+				case ShaderType::RayGeneration:
+					m_RayGenShaderModule = Utils::CreateShaderModule(source);
+					break;
+				case ShaderType::RayClosestHit:
+				{
+					VkShaderModule closestHitModule = Utils::CreateShaderModule(source);
+					m_RayClosestHitShaderModules.push_back(closestHitModule);
+					break;
+				}
+				case ShaderType::RayMiss:
+				{
+					VkShaderModule missModule = Utils::CreateShaderModule(source);
+					m_RayMissShaderModules.push_back(missModule);
+					break;
+				}
+				case ShaderType::RayIntersection:
+				{
+					VkShaderModule intersectionModule = Utils::CreateShaderModule(source);
+					m_RayIntersectionShaderModules.push_back(intersectionModule);
+					break;
+				}
+				default:
+					break;
+				}
+			}
 
+			size_t shaderStageCount = m_RayClosestHitShaderModules.size()
+				+ m_RayMissShaderModules.size()
+				+ m_RayIntersectionShaderModules.size() + 1;
+
+			std::vector<VkPipelineShaderStageCreateInfo> shaderStages{ shaderStageCount };
+
+			// Ray Gen
 			shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 			shaderStages[0].stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
 			shaderStages[0].module = m_RayGenShaderModule;
@@ -315,57 +372,58 @@ namespace VulkanCore {
 			shaderStages[0].pNext = nullptr;
 			shaderStages[0].pSpecializationInfo = nullptr;
 
-			shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			shaderStages[1].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-			shaderStages[1].module = m_RayClosestHitShaderModule;
-			shaderStages[1].pName = "main";
-			shaderStages[1].flags = 0;
-			shaderStages[1].pNext = nullptr;
-			shaderStages[1].pSpecializationInfo = nullptr;
-
-			shaderStages[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			shaderStages[2].stage = VK_SHADER_STAGE_MISS_BIT_KHR;
-			shaderStages[2].module = m_RayMissShaderModule;
-			shaderStages[2].pName = "main";
-			shaderStages[2].flags = 0;
-			shaderStages[2].pNext = nullptr;
-			shaderStages[2].pSpecializationInfo = nullptr;
-
-			if (shader->HasIntersectionShader())
+			uint32_t stageIndex = 1;
+			for (auto& rayClosestHitModule : m_RayClosestHitShaderModules)
 			{
-				m_RayIntersectionShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::RayIntersection]);
+				shaderStages[stageIndex].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+				shaderStages[stageIndex].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+				shaderStages[stageIndex].module = rayClosestHitModule;
+				shaderStages[stageIndex].pName = "main";
+				shaderStages[stageIndex].flags = 0;
+				shaderStages[stageIndex].pNext = nullptr;
+				shaderStages[stageIndex].pSpecializationInfo = nullptr;
 
-				shaderStages[3].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-				shaderStages[3].stage = VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
-				shaderStages[3].module = m_RayClosestHitShaderModule;
-				shaderStages[3].pName = "main";
-				shaderStages[3].flags = 0;
-				shaderStages[3].pNext = nullptr;
-				shaderStages[3].pSpecializationInfo = nullptr;
+				stageIndex++;
 			}
 
-			// Set Shader Groups
-			// Ray Generation
-			VkRayTracingShaderGroupCreateInfoKHR shaderGroupInfo{};
-			shaderGroupInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
-			shaderGroupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
-			shaderGroupInfo.generalShader = 0;
-			shaderGroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-			shaderGroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-			shaderGroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
-			m_ShaderGroups.push_back(shaderGroupInfo);
+			for (auto& rayAnyHitModule : m_RayAnyHitShaderModules)
+			{
+				shaderStages[stageIndex].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+				shaderStages[stageIndex].stage = VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+				shaderStages[stageIndex].module = rayAnyHitModule;
+				shaderStages[stageIndex].pName = "main";
+				shaderStages[stageIndex].flags = 0;
+				shaderStages[stageIndex].pNext = nullptr;
+				shaderStages[stageIndex].pSpecializationInfo = nullptr;
 
-			// Closest Hit
-			shaderGroupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
-			shaderGroupInfo.generalShader = VK_SHADER_UNUSED_KHR;
-			shaderGroupInfo.closestHitShader = 1;
-			m_ShaderGroups.push_back(shaderGroupInfo);
+				stageIndex++;
+			}
 
-			// Miss
-			shaderGroupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
-			shaderGroupInfo.generalShader = 2;
-			shaderGroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-			m_ShaderGroups.push_back(shaderGroupInfo);
+			for (auto& rayIntersectionModule : m_RayIntersectionShaderModules)
+			{
+				shaderStages[stageIndex].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+				shaderStages[stageIndex].stage = VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+				shaderStages[stageIndex].module = rayIntersectionModule;
+				shaderStages[stageIndex].pName = "main";
+				shaderStages[stageIndex].flags = 0;
+				shaderStages[stageIndex].pNext = nullptr;
+				shaderStages[stageIndex].pSpecializationInfo = nullptr;
+
+				stageIndex++;
+			}
+
+			for (auto& rayMissModule : m_RayMissShaderModules)
+			{
+				shaderStages[stageIndex].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+				shaderStages[stageIndex].stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+				shaderStages[stageIndex].module = rayMissModule;
+				shaderStages[stageIndex].pName = "main";
+				shaderStages[stageIndex].flags = 0;
+				shaderStages[stageIndex].pNext = nullptr;
+				shaderStages[stageIndex].pSpecializationInfo = nullptr;
+
+				stageIndex++;
+			}
 
 			m_DescriptorSetLayout = shader->CreateAllDescriptorSetsLayout();
 			m_PipelineLayout = Utils::CreatePipelineLayout(m_DescriptorSetLayout, shader->GetPushConstantSize());
@@ -374,8 +432,9 @@ namespace VulkanCore {
 			rayTracingPipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
 			rayTracingPipelineInfo.stageCount = shaderStageCount;
 			rayTracingPipelineInfo.pStages = shaderStages.data();
-			rayTracingPipelineInfo.groupCount = (uint32_t)m_ShaderGroups.size();
-			rayTracingPipelineInfo.pGroups = m_ShaderGroups.data();
+			rayTracingPipelineInfo.groupCount = (uint32_t)vulkanSBT->GetShaderGroups().size();
+			rayTracingPipelineInfo.pGroups = vulkanSBT->GetShaderGroups().data();
+			rayTracingPipelineInfo.maxPipelineRayRecursionDepth = 1;
 			rayTracingPipelineInfo.layout = m_PipelineLayout;
 			rayTracingPipelineInfo.basePipelineIndex = -1;
 			rayTracingPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -389,6 +448,8 @@ namespace VulkanCore {
 				nullptr,
 				&m_RayTracingPipeline),
 				"Failed to Create Ray Tracing Pipeline");
+
+			vulkanSBT->Invalidate(m_RayTracingPipeline);
 
 			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_DebugName, m_RayTracingPipeline);
 		});

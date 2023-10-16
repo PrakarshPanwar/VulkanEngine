@@ -95,9 +95,6 @@ namespace VulkanCore {
 		m_Shaders["EnvironmentMipFilter"] = Utils::MakeShader("EnvironmentMipFilter");
 		m_Shaders["EnvironmentIrradiance"] = Utils::MakeShader("EnvironmentIrradiance");
 		m_Shaders["GenerateBRDF"] = Utils::MakeShader("GenerateBRDF");
-
-		// Ray Trace Shader
-		m_Shaders["CoreRT"] = Utils::MakeRTShader("CoreRT");
 	}
 
 	void Renderer::ShutDown()
@@ -156,9 +153,9 @@ namespace VulkanCore {
 		s_Renderer->SubmitFullscreenQuad(cmdBuffer, pipeline, shaderMaterial);
 	}
 
-	void Renderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height, void* pcData, uint32_t pcSize)
+	void Renderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::shared_ptr<ShaderBindingTable>& shaderBindingTable, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height, void* pcData, uint32_t pcSize)
 	{
-		s_Renderer->TraceRays(cmdBuffer, pipeline, shaderMaterials, width, height, pcData, pcSize);
+		s_Renderer->TraceRays(cmdBuffer, pipeline, shaderBindingTable, shaderMaterials, width, height, pcData, pcSize);
 	}
 
 	std::shared_ptr<Image2D> Renderer::CreateBRDFTexture()

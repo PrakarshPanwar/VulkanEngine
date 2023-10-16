@@ -12,6 +12,7 @@
 #include "VulkanRenderPass.h"
 #include "VulkanPipeline.h"
 #include "VulkanComputePipeline.h"
+#include "VulkanShaderBindingTable.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/integer.hpp>
@@ -641,9 +642,9 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height, void* pcData, uint32_t pcSize)
+	void VulkanRenderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::shared_ptr<ShaderBindingTable>& shaderBindingTable, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height, void* pcData, uint32_t pcSize)
 	{
-		Renderer::Submit([cmdBuffer, pipeline, shaderMaterials, width, height, pcData, pcSize]
+		Renderer::Submit([cmdBuffer, pipeline, shaderBindingTable, shaderMaterials, width, height, pcData, pcSize]
 		{
 			VK_CORE_PROFILE_FN("Renderer::TraceRays");
 
@@ -655,6 +656,8 @@ namespace VulkanCore {
 			auto vulkanRTBaseMaterial = std::static_pointer_cast<VulkanMaterial>(shaderMaterials[0]);
 			auto vulkanRTPBRMaterial = std::static_pointer_cast<VulkanMaterial>(shaderMaterials[1]);
 			auto vulkanRTSkyboxMaterial = std::static_pointer_cast<VulkanMaterial>(shaderMaterials[2]);
+
+			auto vulkanSBT = std::static_pointer_cast<VulkanShaderBindingTable>(shaderBindingTable);
 
 			VkDescriptorSet descriptorSets[] = { vulkanRTBaseMaterial->RT_GetVulkanMaterialDescriptorSet(),
 				vulkanRTPBRMaterial->RT_GetVulkanMaterialDescriptorSet(),
@@ -668,9 +671,9 @@ namespace VulkanCore {
 
 			VkStridedDeviceAddressRegionKHR emptySBTEntry{};
 			vkCmdTraceRaysKHR(vulkanTraceCmd,
-				&vulkanPipeline->GetRayGenStridedDeviceAddressRegion(),
-				&vulkanPipeline->GetRayMissStridedDeviceAddressRegion(),
-				&vulkanPipeline->GetRayHitStridedDeviceAddressRegion(),
+				&vulkanSBT->GetRayGenStridedDeviceAddressRegion(),
+				&vulkanSBT->GetRayMissStridedDeviceAddressRegion(),
+				&vulkanSBT->GetRayHitStridedDeviceAddressRegion(),
 				&emptySBTEntry,
 				width,
 				height,
