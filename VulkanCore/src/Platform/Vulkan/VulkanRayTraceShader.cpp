@@ -159,16 +159,16 @@ namespace VulkanCore {
 						VkShaderStageFlags shaderStageFlags = 0;
 
 						if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
+							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 
 						if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
+							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 
 						if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR;
 
 						if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
 
 						if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
 							shaderStageFlags |= VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
@@ -229,16 +229,16 @@ namespace VulkanCore {
 					VkShaderStageFlags shaderStageFlags = 0;
 
 					if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
+						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 
 					if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
+						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR;
 
 					if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR;
 
 					if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
 
 					if (reflectionBinding.descriptor_type == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
 						shaderStageFlags |= VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
@@ -379,7 +379,21 @@ namespace VulkanCore {
 			}
 		}
 
-		// TODO: Any Hit
+		// Any Hit
+		{
+			for (auto& rayAnyHitFilePath : m_RayAnyHitFilePaths)
+			{
+				std::ifstream RayAnyHitSource(rayAnyHitFilePath, std::ios::binary);
+
+				VK_CORE_ASSERT(RayAnyHitSource.is_open(), "Failed to Open Ray Any Hit Shader File!");
+
+				std::stringstream RayAnyHitStream;
+				RayAnyHitStream << RayAnyHitSource.rdbuf();
+
+				Sources[rayAnyHitFilePath] = RayAnyHitStream.str();
+			}
+		}
+
 		// Intersection
 		{
 			for (auto& rayIntersectionFilePath : m_RayIntersectionFilePaths)

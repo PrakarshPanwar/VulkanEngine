@@ -201,10 +201,10 @@ namespace VulkanCore {
 				m_RayClosestHitShaderModules.push_back(closestHitModule);
 				break;
 			}
-			case ShaderType::RayMiss:
+			case ShaderType::RayAnyHit:
 			{
-				VkShaderModule missModule = Utils::CreateShaderModule(source);
-				m_RayMissShaderModules.push_back(missModule);
+				VkShaderModule anyHitModule = Utils::CreateShaderModule(source);
+				m_RayAnyHitShaderModules.push_back(anyHitModule);
 				break;
 			}
 			case ShaderType::RayIntersection:
@@ -213,14 +213,21 @@ namespace VulkanCore {
 				m_RayIntersectionShaderModules.push_back(intersectionModule);
 				break;
 			}
+			case ShaderType::RayMiss:
+			{
+				VkShaderModule missModule = Utils::CreateShaderModule(source);
+				m_RayMissShaderModules.push_back(missModule);
+				break;
+			}
 			default:
 				break;
 			}
 		}
 
 		size_t shaderStageCount = m_RayClosestHitShaderModules.size()
-			+ m_RayMissShaderModules.size()
-			+ m_RayIntersectionShaderModules.size() + 1;
+			+ m_RayAnyHitShaderModules.size()
+			+ m_RayIntersectionShaderModules.size()
+			+ m_RayMissShaderModules.size() + 1;
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages{ shaderStageCount };
 
@@ -340,16 +347,22 @@ namespace VulkanCore {
 					m_RayClosestHitShaderModules.push_back(closestHitModule);
 					break;
 				}
-				case ShaderType::RayMiss:
+				case ShaderType::RayAnyHit:
 				{
-					VkShaderModule missModule = Utils::CreateShaderModule(source);
-					m_RayMissShaderModules.push_back(missModule);
+					VkShaderModule anyHitModule = Utils::CreateShaderModule(source);
+					m_RayAnyHitShaderModules.push_back(anyHitModule);
 					break;
 				}
 				case ShaderType::RayIntersection:
 				{
 					VkShaderModule intersectionModule = Utils::CreateShaderModule(source);
 					m_RayIntersectionShaderModules.push_back(intersectionModule);
+					break;
+				}
+				case ShaderType::RayMiss:
+				{
+					VkShaderModule missModule = Utils::CreateShaderModule(source);
+					m_RayMissShaderModules.push_back(missModule);
 					break;
 				}
 				default:

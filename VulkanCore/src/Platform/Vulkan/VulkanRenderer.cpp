@@ -457,7 +457,7 @@ namespace VulkanCore {
 
 	std::shared_ptr<Texture2D> VulkanRenderer::GetWhiteTexture(ImageFormat format)
 	{
-		TextureSpecification whiteTexSpec;
+		TextureSpecification whiteTexSpec{};
 		whiteTexSpec.Width = 1;
 		whiteTexSpec.Height = 1;
 		whiteTexSpec.Format = format;
@@ -465,6 +465,7 @@ namespace VulkanCore {
 
 		uint32_t* textureData = new uint32_t;
 		*textureData = 0xffffffff;
+
 		auto whiteTexture = std::make_shared<VulkanTexture>(textureData, whiteTexSpec);
 		return whiteTexture;
 	}
@@ -481,7 +482,10 @@ namespace VulkanCore {
 		for (uint32_t i = 0; i < 6; ++i)
 			textureData[i] = 0x0;
 
-		return std::make_shared<VulkanTextureCube>(textureData, cubeTexSpec);
+		auto blackCubeTexture = std::make_shared<VulkanTextureCube>(textureData, cubeTexSpec);
+		blackCubeTexture->Invalidate();
+
+		return blackCubeTexture;
 	}
 
 	void VulkanRenderer::BeginRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass)

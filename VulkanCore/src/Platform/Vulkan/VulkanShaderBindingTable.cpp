@@ -126,7 +126,7 @@ namespace VulkanCore {
 			std::filesystem::path rayGenAbsPath = g_ShaderPath / m_RayGenPath;
 
 			// Hit Groups
-			std::vector<std::string> rayClosestHitAbsPaths, rayIntersectionAbsPaths, rayMissAbsPaths;
+			std::vector<std::string> rayClosestHitAbsPaths, rayAnyHitAbsPaths, rayIntersectionAbsPaths, rayMissAbsPaths;
 			for (auto& hitShaderInfo : m_HitShaderInfos)
 			{
 				// Closest Hit
@@ -136,7 +136,13 @@ namespace VulkanCore {
 					rayClosestHitAbsPaths.emplace_back(rayClosestHitAbsPath.string());
 				}
 
-				// TODO: Any Hit
+				// Any Hit
+				if (!hitShaderInfo.AnyHitPath.empty())
+				{
+					std::filesystem::path rayAnyHitAbsPath = g_ShaderPath / hitShaderInfo.AnyHitPath;
+					rayAnyHitAbsPaths.emplace_back(rayAnyHitAbsPath.string());
+				}
+
 				// Intersection
 				if (!hitShaderInfo.IntersectionPath.empty())
 				{
@@ -152,8 +158,8 @@ namespace VulkanCore {
 				rayMissAbsPaths.emplace_back(rayMissAbsPath.string());
 			}
 
-			m_Shader = std::make_shared<VulkanRayTraceShader>(rayGenAbsPath.string(), rayClosestHitAbsPaths,
-				std::vector<std::string>{}, rayIntersectionAbsPaths,
+			m_Shader = std::make_shared<VulkanRayTraceShader>(rayGenAbsPath.string(),
+				rayClosestHitAbsPaths, rayAnyHitAbsPaths, rayIntersectionAbsPaths,
 				rayMissAbsPaths);
 		}
 
@@ -191,14 +197,14 @@ namespace VulkanCore {
 			shaderGroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
 			m_ShaderGroups.push_back(shaderGroupInfo);
 
+			shaderGroupInfo.generalShader = VK_SHADER_UNUSED_KHR;
+
 			std::vector<std::string> allHitShaders{};
 			allHitShaders.insert(allHitShaders.end(), closestHitPaths.begin(), closestHitPaths.end());
 			allHitShaders.insert(allHitShaders.end(), anyHitPaths.begin(), anyHitPaths.end());
 			allHitShaders.insert(allHitShaders.end(), intersectionPaths.begin(), intersectionPaths.end());
 
 			// Hit Shaders
-			shaderGroupInfo.generalShader = VK_SHADER_UNUSED_KHR;
-
 			for (auto& hitShaderInfo : m_HitShaderInfos)
 			{
 				shaderGroupInfo.type = Utils::VulkanShaderGroupType(hitShaderInfo);
@@ -207,7 +213,10 @@ namespace VulkanCore {
 				const auto OutputCHShader = std::ranges::find(allHitShaders.begin(), allHitShaders.end(), hitShaderInfo.ClosestHitPath);
 				shaderGroupInfo.closestHitShader = Utils::GetHitGroupShaderIndex(allHitShaders, OutputCHShader);
 
-				// TODO: Any Hit
+				// Any Hit
+				const auto OutputAHShader = std::ranges::find(allHitShaders.begin(), allHitShaders.end(), hitShaderInfo.AnyHitPath);
+				shaderGroupInfo.anyHitShader = Utils::GetHitGroupShaderIndex(allHitShaders, OutputAHShader);
+
 				// Intersection
 				const auto OutputIntShader = std::ranges::find(allHitShaders.begin(), allHitShaders.end(), hitShaderInfo.IntersectionPath);
 				shaderGroupInfo.intersectionShader = Utils::GetHitGroupShaderIndex(allHitShaders, OutputIntShader);
