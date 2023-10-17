@@ -365,7 +365,7 @@ vec3 RandomInUnitSphere(inout uint seed)
 	}
 }
 
-RayPayload ScatterMettalic(const vec3 color, const vec3 direction, const vec3 normal, const vec2 texCoord, const float hitDistance, inout uint seed)
+RayPayload ScatterMettalic(const vec3 color, const vec3 direction, const vec3 normal, const float hitDistance, inout uint seed)
 {
     RayPayload rayPayload;
     
@@ -468,5 +468,5 @@ void main()
     //vec3 color = iblContribution + lightContribution;
     vec3 color = m_Params.Albedo.rgb + lightContribution;
     vec3 direction = normalize(gl_WorldRayDirectionEXT);
-    o_RayPayload = ScatterMettalic(color, direction, m_Params.Normal, Input.TexCoord, gl_HitTEXT, o_RayPayload.Seed);
+    o_RayPayload = ScatterMettalic(color, direction, m_Params.Normal, gl_HitTEXT, o_RayPayload.Seed);
 }

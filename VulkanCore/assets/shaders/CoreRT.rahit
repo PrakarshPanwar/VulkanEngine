@@ -1,0 +1,50 @@
+#version 460
+#extension GL_EXT_ray_tracing : require
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_EXT_control_flow_attributes : require
+
+struct RayPayload
+{
+	vec3 Color;
+	vec4 ScatterDirection;
+	float Distance;
+	uint Seed;
+};
+
+layout(location = 0) rayPayloadInEXT RayPayload o_RayPayload;
+
+struct Material
+{
+    vec4 Albedo;
+    float Emission;
+    float Roughness;
+    float Metallic;
+    uint UseNormalMap;
+};
+
+layout(set = 1, binding = 3) readonly buffer MaterialData
+{
+    Material MatBuffer[];
+} r_MaterialData;
+
+uint RandomInt(inout uint seed)
+{
+	// LCG values from Numerical Recipes
+    return (seed = 1664525 * seed + 1013904223);
+}
+
+float RandomFloat(inout uint seed)
+{
+	// Float version using bitmask from Numerical Recipes
+	const uint one = 0x3f800000;
+	const uint msk = 0x007fffff;
+	return uintBitsToFloat(one | (msk & (RandomInt(seed) >> 9))) - 1;
+}
+
+void main()
+{
+	Material materialData = r_MaterialData.MatBuffer[gl_InstanceCustomIndexEXT];
+
+	if (RandomFloat(o_RayPayload.Seed) > materialData.Albedo.a)
+		ignoreIntersectionEXT;
+}

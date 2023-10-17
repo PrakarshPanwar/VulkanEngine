@@ -314,7 +314,7 @@ namespace VulkanCore {
 		// Ray Tracing Pipeline
 		{
 			std::vector<HitShaderInfo> hitShaderInfos = {
-				{ "CoreRT.rchit" }
+				{ "CoreRT.rchit"/*, "CoreRT.rahit"*/ }
 			};
 
 			std::vector<std::string> missPaths = {
@@ -657,7 +657,6 @@ namespace VulkanCore {
 		sceneRTOutputSpec.DebugName = "Scene Ray Tracing Output";
 		sceneRTOutputSpec.Width = m_ViewportSize.x;
 		sceneRTOutputSpec.Height = m_ViewportSize.y;
-		// TODO: Render in HDR Format then Tonemap in post(when material system is supported in Ray Tracing Pipeline)
 		sceneRTOutputSpec.Format = ImageFormat::RGBA32F;
 		sceneRTOutputSpec.Usage = ImageUsage::Storage;
 		sceneRTOutputSpec.Transfer = true;
@@ -705,9 +704,7 @@ namespace VulkanCore {
 
 		m_BloomDirtTexture = AssetManager::GetAsset<Texture2D>("assets/textures/LensDirt.png");
 
-		auto blackTextureCube = std::dynamic_pointer_cast<VulkanTextureCube>(Renderer::GetBlackTextureCube(ImageFormat::RGBA8_UNORM));
-		blackTextureCube->Invalidate();
-
+		auto blackTextureCube = Renderer::GetBlackTextureCube(ImageFormat::RGBA8_UNORM);
 		m_CubemapTexture = blackTextureCube;
 		m_PrefilteredTexture = blackTextureCube;
 		m_IrradianceTexture = blackTextureCube;
@@ -870,6 +867,25 @@ namespace VulkanCore {
 				ImGui::PopID();
 				buttonID++;
 			}
+
+			// TODO: Ray Trace Shader Reload
+#if 0
+			ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal, 2.0f);
+			{
+				ImGui::SetNextItemAllowOverlap();
+				ImGui::Selectable("Ray Trace Shader", false, ImGuiSelectableFlags_AllowOverlap, ImVec2{0.0f, 24.5f});
+
+				ImGui::SameLine(ImGui::GetContentRegionAvail().x - 20.0f);
+				ImGui::PushID(buttonID);
+				if (ImGui::Button("Reload", ImVec2{ 0.0f, 24.5f }))
+				{
+					m_RayTracingSBT->GetShader()->Reload();
+					RecreatePipelines();
+				}
+
+				ImGui::PopID();
+			}
+#endif
 
 			ImGui::TreePop();
 		}

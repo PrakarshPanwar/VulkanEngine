@@ -446,7 +446,7 @@ namespace VulkanCore {
 
 		VkAccelerationStructureGeometryKHR geometryData{};
 		geometryData.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
-		geometryData.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+		geometryData.flags = materialAsset->IsTransparent() ? VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR : VK_GEOMETRY_OPAQUE_BIT_KHR;
 		geometryData.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
 		geometryData.geometry.triangles = trianglesData;
 
