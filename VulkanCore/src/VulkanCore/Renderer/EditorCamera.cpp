@@ -92,7 +92,6 @@ namespace VulkanCore {
 			else if (Input::IsMouseButtonPressed(Mouse::ButtonRight))
 				MouseZoom(delta.y);
 		}
-
 		else
 		{
 			auto mousePosition = Input::GetMousePosition();

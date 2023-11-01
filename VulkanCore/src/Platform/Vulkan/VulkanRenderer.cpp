@@ -2,17 +2,45 @@
 #include "VulkanRenderer.h"
 
 #include "VulkanCore/Core/ImGuiLayer.h"
+#include "VulkanCore/Asset/AssetManager.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
-#include "Renderer.h"
-#include "Platform/Vulkan/VulkanContext.h"
-#include "Platform/Vulkan/VulkanDescriptor.h"
-#include "Platform/Vulkan/VulkanMaterial.h"
+#include "VulkanCore/Renderer/Renderer.h"
+#include "VulkanContext.h"
+#include "VulkanDescriptor.h"
+#include "VulkanMaterial.h"
+#include "VulkanIndexBuffer.h"
+#include "VulkanRenderPass.h"
+#include "VulkanPipeline.h"
+#include "VulkanComputePipeline.h"
 
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/integer.hpp>
 #include "optick.h"
-#include "../Asset/AssetManager.h"
 
 namespace VulkanCore {
+
+	namespace Utils {
+
+		static glm::vec4 GetLabelColor(DebugLabelColor labelColor)
+		{
+			switch (labelColor)
+			{
+			case DebugLabelColor::None:	  return { 0.1f, 0.1f, 0.1f, 1.0f };
+			case DebugLabelColor::Grey:	  return { 0.66f, 0.66f, 0.66f, 1.0f };
+			case DebugLabelColor::Red:	  return { 1.0f, 0.0f, 0.0f, 1.0f };
+			case DebugLabelColor::Blue:	  return { 0.0f, 0.58f, 1.0f, 1.0f };
+			case DebugLabelColor::Gold:	  return { 0.76f, 0.7f, 0.32f, 1.0f };
+			case DebugLabelColor::Orange: return { 1.0f, 0.34f, 0.2f, 1.0f };
+			case DebugLabelColor::Pink:	  return { 0.972f, 0.784f, 0.862f, 1.0f };
+			case DebugLabelColor::Aqua:	  return { 0.0f, 1.0f, 1.0f, 1.0f };
+			case DebugLabelColor::Green:  return { 0.486f, 0.988f, 0.0f, 1.0f };
+			default:
+				VK_CORE_ASSERT(false, "Label Color is undefined!");
+				return { 0.3f, 0.3f, 0.3f, 1.0f };
+			}
+		}
+
+	}
 
 	VulkanRenderer* VulkanRenderer::s_Instance;
 	RendererStats VulkanRenderer::s_Data;
@@ -71,7 +99,7 @@ namespace VulkanCore {
 	
 		Renderer::Submit([this]
 		{
-			VkCommandBuffer commandBuffer = m_CommandBuffer->RT_GetActiveCommandBuffer();
+			VkCommandBuffer commandBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_CommandBuffer)->RT_GetActiveCommandBuffer();
 
 			VkRenderPassBeginInfo renderPassInfo{};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -109,20 +137,23 @@ namespace VulkanCore {
 
 		Renderer::Submit([this]
 		{
-			VkCommandBuffer commandBuffer =	m_CommandBuffer->RT_GetActiveCommandBuffer();
+			VkCommandBuffer commandBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_CommandBuffer)->RT_GetActiveCommandBuffer();
 			vkCmdEndRenderPass(commandBuffer);
 		});
 	}
 
-	std::tuple<std::shared_ptr<VulkanTextureCube>, std::shared_ptr<VulkanTextureCube>> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
+	std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
 	{
 		constexpr uint32_t cubemapSize = 1024;
 		constexpr uint32_t irradianceMapSize = 32;
 
 		std::shared_ptr<VulkanTexture> envEquirect = std::dynamic_pointer_cast<VulkanTexture>(AssetManager::GetAsset<Texture2D>(filepath));
 
-		std::shared_ptr<VulkanTextureCube> envFiltered = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
-		std::shared_ptr<VulkanTextureCube> envUnfiltered = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
+		std::shared_ptr<TextureCube> filteredMap = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
+		std::shared_ptr<TextureCube> unFilteredMap = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
+
+		std::shared_ptr<VulkanTextureCube> envFiltered = std::static_pointer_cast<VulkanTextureCube>(filteredMap);
+		std::shared_ptr<VulkanTextureCube> envUnfiltered = std::static_pointer_cast<VulkanTextureCube>(unFilteredMap);
 
 		envFiltered->Invalidate();
 		envUnfiltered->Invalidate();
@@ -239,15 +270,15 @@ namespace VulkanCore {
 		return { envFiltered, irradianceMap };
 	}
 
-	void VulkanRenderer::CopyVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage>& sourceImage, const std::shared_ptr<VulkanImage>& destImage)
+	void VulkanRenderer::CopyVulkanImage(const std::shared_ptr<RenderCommandBuffer>& commandBuffer, const std::shared_ptr<Image2D>& sourceImage, const std::shared_ptr<Image2D>& destImage)
 	{
 		Renderer::Submit([commandBuffer, sourceImage, destImage]
 		{
 			VK_CORE_PROFILE_FN("VulkanRenderer::CopyVulkanImage");
-			VkCommandBuffer vulkanCmdBuffer = commandBuffer->RT_GetActiveCommandBuffer();
+			VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(commandBuffer)->RT_GetActiveCommandBuffer();
 
-			VkImage srcImage = sourceImage->GetVulkanImageInfo().Image;
-			VkImage dstImage = destImage->GetVulkanImageInfo().Image;
+			VkImage srcImage = std::static_pointer_cast<VulkanImage>(sourceImage)->GetVulkanImageInfo().Image;
+			VkImage dstImage = std::static_pointer_cast<VulkanImage>(destImage)->GetVulkanImageInfo().Image;
 
 			// TODO: We cannot determine layout like this for image but we are doing this for now to get Bloom
 			// Changing Source Image Layout
@@ -289,15 +320,14 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::BlitVulkanImage(std::shared_ptr<VulkanRenderCommandBuffer> commandBuffer, const std::shared_ptr<VulkanImage>& image)
+	void VulkanRenderer::BlitVulkanImage(const std::shared_ptr<RenderCommandBuffer>& commandBuffer, const std::shared_ptr<Image2D>& image)
 	{
 		Renderer::Submit([commandBuffer, image]
 		{
 			VK_CORE_PROFILE_FN("VulkanRenderer::BlitVulkanImage");
-			VkCommandBuffer vulkanCmdBuffer = commandBuffer->RT_GetActiveCommandBuffer();
+			VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(commandBuffer)->RT_GetActiveCommandBuffer();
 
-			VkImage vulkanImage = image->GetVulkanImageInfo().Image;
-
+			VkImage vulkanImage = std::static_pointer_cast<VulkanImage>(image)->GetVulkanImageInfo().Image;
 			const uint32_t mipLevels = image->GetSpecification().MipLevels;
 			const glm::uvec2 imgSize = { image->GetSpecification().Width, image->GetSpecification().Height };
 
@@ -377,7 +407,7 @@ namespace VulkanCore {
 		});
 	}		
 	
-	std::shared_ptr<VulkanImage> VulkanRenderer::CreateBRDFTexture()
+	std::shared_ptr<Image2D> VulkanRenderer::CreateBRDFTexture()
 	{
 		constexpr uint32_t textureSize = 512;
 
@@ -419,33 +449,153 @@ namespace VulkanCore {
 		return brdfTexture;
 	}
 
-	void VulkanRenderer::RenderMesh(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	std::shared_ptr<Texture2D> VulkanRenderer::GetWhiteTexture(ImageFormat format)
+	{
+		TextureSpecification whiteTexSpec;
+		whiteTexSpec.Width = 1;
+		whiteTexSpec.Height = 1;
+		whiteTexSpec.Format = format;
+		whiteTexSpec.GenerateMips = false;
+
+		uint32_t* textureData = new uint32_t;
+		*textureData = 0xffffffff;
+		auto whiteTexture = std::make_shared<VulkanTexture>(textureData, whiteTexSpec);
+		return whiteTexture;
+	}
+
+	std::shared_ptr<TextureCube> VulkanRenderer::GetBlackTextureCube(ImageFormat format)
+	{
+		TextureSpecification cubeTexSpec{};
+		cubeTexSpec.Width = 1;
+		cubeTexSpec.Height = 1;
+		cubeTexSpec.Format = format;
+		cubeTexSpec.GenerateMips = false;
+
+		uint32_t* textureData = new uint32_t[6];
+		for (uint32_t i = 0; i < 6; ++i)
+			textureData[i] = 0x0;
+
+		return std::make_shared<VulkanTextureCube>(textureData, cubeTexSpec);
+	}
+
+	void VulkanRenderer::BeginRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass)
+	{
+		auto vulkanRenderPass = std::static_pointer_cast<VulkanRenderPass>(renderPass);
+		vulkanRenderPass->Begin(std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer));
+	}
+
+	void VulkanRenderer::EndRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass)
+	{
+		auto vulkanRenderPass = std::static_pointer_cast<VulkanRenderPass>(renderPass);
+		vulkanRenderPass->End(std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer));
+	}
+
+	void VulkanRenderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& skyboxVB, const std::shared_ptr<Material>& skyboxMaterial, void* pcData /*= nullptr*/)
+	{
+		Renderer::Submit([cmdBuffer, pipeline, skyboxMaterial, pcData, skyboxVB]
+		{
+			VK_CORE_PROFILE_FN("Renderer::RenderSkybox");
+
+			VkCommandBuffer vulkanDrawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
+			vulkanPipeline->Bind(vulkanDrawCmd);
+
+			auto vulkanSkyboxVB = std::static_pointer_cast<VulkanVertexBuffer>(skyboxVB);
+			auto vulkanSkyboxMaterial = std::static_pointer_cast<VulkanMaterial>(skyboxMaterial);
+			vkCmdBindDescriptorSets(vulkanDrawCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				vulkanPipeline->GetVulkanPipelineLayout(),
+				0, 1, &vulkanSkyboxMaterial->RT_GetVulkanMaterialDescriptorSet(),
+				0, nullptr);
+
+			vkCmdPushConstants(vulkanDrawCmd,
+				vulkanPipeline->GetVulkanPipelineLayout(),
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				(uint32_t)sizeof(glm::vec2),
+				pcData);
+
+			VkBuffer skyboxBuffer[] = { vulkanSkyboxVB->GetVulkanBuffer() };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(vulkanDrawCmd, 0, 1, skyboxBuffer, offsets);
+			vkCmdDraw(vulkanDrawCmd, 36, 1, 0, 0);
+		});
+	}
+
+	void VulkanRenderer::BeginTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
+	{
+		Renderer::Submit([cmdBuffer]
+		{
+			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer);
+			vkCmdWriteTimestamp(vulkanCmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+				vulkanCmdBuffer->RT_GetCurrentTimestampQueryPool(), vulkanCmdBuffer->m_TimestampsQueryIndex);
+		});
+	}
+
+	void VulkanRenderer::EndTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
+	{
+		Renderer::Submit([cmdBuffer]
+		{
+			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer);
+			vkCmdWriteTimestamp(vulkanCmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+				vulkanCmdBuffer->RT_GetCurrentTimestampQueryPool(), vulkanCmdBuffer->m_TimestampsQueryIndex + 1);
+
+			vulkanCmdBuffer->m_TimestampsQueryIndex += 2;
+			vulkanCmdBuffer->m_TimestampsQueryIndex = vulkanCmdBuffer->m_TimestampsQueryIndex % vulkanCmdBuffer->m_TimestampQueryBufferSize;
+		});
+	}
+
+	void VulkanRenderer::BeginGPUPerfMarker(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::string& name, DebugLabelColor labelColor /*= DebugLabelColor::None*/)
+	{
+		Renderer::Submit([cmdBuffer, name, labelColor]
+		{
+			VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+
+			glm::vec4 color = Utils::GetLabelColor(labelColor);
+			VKUtils::SetCommandBufferLabel(vulkanCmdBuffer, name.c_str(), glm::value_ptr(color));
+		});
+	}
+
+	void VulkanRenderer::EndGPUPerfMarker(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
+	{
+		Renderer::Submit([cmdBuffer]
+		{
+			VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+			VKUtils::EndCommandBufferLabel(vulkanCmdBuffer);
+		});
+	}
+
+	void VulkanRenderer::RenderMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 		Renderer::Submit([cmdBuffer, mesh, pipeline, material, transformBuffer, transformData, submeshIndex, instanceCount]
 		{
 			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMesh");
 
 			// Bind Vertex Buffer
-			auto drawCmd = cmdBuffer->RT_GetActiveCommandBuffer();
+			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
 
 			auto meshSource = mesh->GetMeshSource();
-			transformBuffer->WriteData((void*)transformData.data(), 0);
-			VkBuffer buffers[] = { meshSource->GetVertexBuffer()->GetVulkanBuffer(), transformBuffer->GetVulkanBuffer() };
+			auto vulkanMeshVB = std::static_pointer_cast<VulkanVertexBuffer>(meshSource->GetVertexBuffer());
+			auto vulkanMeshIB = std::static_pointer_cast<VulkanIndexBuffer>(meshSource->GetIndexBuffer());
+			auto vulkanTransformBuffer = std::static_pointer_cast<VulkanVertexBuffer>(transformBuffer);
+			vulkanTransformBuffer->WriteData((void*)transformData.data(), 0);
+			VkBuffer buffers[] = { vulkanMeshVB->GetVulkanBuffer(), vulkanTransformBuffer->GetVulkanBuffer() };
 			VkDeviceSize offsets[] = { 0, 0 };
 			vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
-			vkCmdBindIndexBuffer(drawCmd, meshSource->GetIndexBuffer()->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(drawCmd, vulkanMeshIB->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-			std::shared_ptr<VulkanMaterial> vulkanMaterial = std::dynamic_pointer_cast<VulkanMaterial>(material);
+			std::shared_ptr<VulkanPipeline> vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
+			std::shared_ptr<VulkanMaterial> vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
 			VkDescriptorSet descriptorSets[1] = { vulkanMaterial->RT_GetVulkanMaterialDescriptorSet() };
 	
 			vkCmdBindDescriptorSets(drawCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipeline->GetVulkanPipelineLayout(),
+				vulkanPipeline->GetVulkanPipelineLayout(),
 				1, 1, descriptorSets,
 				0, nullptr);
 	
 			vkCmdPushConstants(drawCmd,
-				pipeline->GetVulkanPipelineLayout(),
+				vulkanPipeline->GetVulkanPipelineLayout(),
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				0,
 				sizeof(MaterialData),
@@ -460,9 +610,30 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::RenderTransparentMesh(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	void VulkanRenderer::RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 
+	}
+
+	void VulkanRenderer::SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial)
+	{
+		Renderer::Submit([cmdBuffer, pipeline, shaderMaterial]
+		{
+			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad");
+
+			VkCommandBuffer vulkanDrawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
+			vulkanPipeline->Bind(vulkanDrawCmd);
+
+			auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(shaderMaterial);
+			vkCmdBindDescriptorSets(vulkanDrawCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				vulkanPipeline->GetVulkanPipelineLayout(),
+				0, 1, &vulkanMaterial->RT_GetVulkanMaterialDescriptorSet(),
+				0, nullptr);
+
+			vkCmdDraw(vulkanDrawCmd, 3, 1, 0, 0);
+		});
 	}
 
 	void VulkanRenderer::ResetStats()
@@ -505,7 +676,6 @@ namespace VulkanCore {
 		{
 			m_SwapChain = std::make_unique<VulkanSwapChain>(extent);
 		}
-
 		else
 		{
 			std::shared_ptr<VulkanSwapChain> oldSwapChain = std::move(m_SwapChain);
@@ -516,7 +686,6 @@ namespace VulkanCore {
 				VK_CORE_ASSERT(false, "Swap Chain Image(or Depth) Format has changed!");
 			}
 		}
-
 	}
 
 	void VulkanRenderer::SubmitAndPresent()
@@ -538,7 +707,6 @@ namespace VulkanCore {
 			m_Window->ResetWindowResizeFlag();
 			RecreateSwapChain();
 		}
-
 		else if (result != VK_SUCCESS)
 			VK_CORE_ERROR("Failed to Present Swap Chain Image!");
 	}

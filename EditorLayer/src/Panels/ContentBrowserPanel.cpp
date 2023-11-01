@@ -3,12 +3,13 @@
 #include <filesystem>
 
 #include "ContentBrowserPanel.h"
+#include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Core/Timer.h"
+#include "VulkanCore/Core/ImGuiLayer.h"
 #include "VulkanCore/Asset/AssetManager.h"
-#include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Asset/MaterialAsset.h"
 #include "VulkanCore/Asset/TextureImporter.h"
-#include "VulkanCore/Core/Core.h"
-#include "VulkanCore/Core/ImGuiLayer.h"
+#include "VulkanCore/Mesh/Mesh.h"
 
 #include <imgui.h>
 
@@ -27,6 +28,18 @@ namespace VulkanCore {
 			return AssetType::None;
 		}
 
+		static bool IsAssetValid(const std::filesystem::path& filePath)
+		{
+			auto& assetRegistry = AssetManager::GetEditorAssetManager()->GetAssetRegistry();
+			for (auto&& [handle, metadata] : assetRegistry)
+			{
+				if (filePath == metadata.FilePath)
+					return true;
+			}
+
+			return false;
+		}
+
 	}
 
 	static const std::filesystem::path g_AssetPath = "assets";
@@ -39,17 +52,51 @@ namespace VulkanCore {
 
 		m_DirectoryIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_DirectoryIcon));
 		m_FileIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_FileIcon));
+
+		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Asset Tree Creation");
+
+		m_RootNode = new TreeNode;
+		m_RootNode->FilePath = g_AssetPath;
+		UpdateAssetTree(m_RootNode);
+	}
+
+	ContentBrowserPanel::~ContentBrowserPanel()
+	{
+		delete m_RootNode;
 	}
 
 	void ContentBrowserPanel::OnImGuiRender()
 	{
 		ImGui::Begin("Content Browser");
 
-		if (m_CurrentDirectory != g_AssetPath)
+		static TreeNode* tempNode = m_RootNode;
+		if (m_AssetMode)
 		{
-			if (ImGui::Button("Back"))
-				m_CurrentDirectory = m_CurrentDirectory.parent_path();
+			if (tempNode != m_RootNode)
+			{
+				if (ImGui::Button("Back"))
+					tempNode = tempNode->ParentNode;
+
+				ImGui::SameLine();
+			}
 		}
+		else
+		{
+			if (m_CurrentDirectory != g_AssetPath)
+			{
+				if (ImGui::Button("Back"))
+					m_CurrentDirectory = m_CurrentDirectory.parent_path();
+
+				ImGui::SameLine();
+			}
+		}
+
+		ImVec4 buttonColor = m_AssetMode ? ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f } : ImVec4{ 0.2f, 0.3f, 0.8f, 1.0f };
+		ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, buttonColor);
+		if (ImGui::Button("Show All Files"))
+			m_AssetMode = !m_AssetMode;
+		ImGui::PopStyleColor(2);
 
 		float cellSize = m_ThumbnailSize + m_Padding;
 
@@ -60,75 +107,120 @@ namespace VulkanCore {
 
 		ImGui::Columns(columnCount, nullptr, false);
 
-		for (auto& directoryEntry : std::filesystem::directory_iterator(m_CurrentDirectory))
+		if (m_AssetMode)
 		{
-			const auto& path = directoryEntry.path();
-			std::string filenameString = path.filename().string();
-
-			ImGui::PushID(filenameString.c_str());
-			ImTextureID icon = directoryEntry.is_directory() ? m_DirectoryIconID : m_FileIconID;
-
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-			ImGui::ImageButton((ImTextureID)icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
-
-			if (ImGui::BeginDragDropSource())
+			for (auto& directoryNode : tempNode->ChildNodes)
 			{
-				auto relativePath = std::filesystem::relative(path, g_AssetPath);
-				const wchar_t* itemPath = relativePath.c_str();
-				ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
-				ImGui::EndDragDropSource();
-			}
+				const auto& path = directoryNode.FilePath;
+				std::string filenameString = path.filename().string();
 
-			ImGui::PopStyleColor();
-			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-			{
-				if (directoryEntry.is_directory())
-					m_CurrentDirectory /= path.filename();
+				ImGui::PushID(filenameString.c_str());
+				ImTextureID icon = std::filesystem::is_directory(path) ? m_DirectoryIconID : m_FileIconID;
 
-				AssetType assetType = Utils::AssetTypeFromExtension(path.extension());
-				if (assetType == AssetType::Material)
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+				ImGui::ImageButton((ImTextureID)icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
+
+				if (ImGui::BeginDragDropSource())
 				{
-					std::string pathStr = path.string();
-					std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(pathStr);
-					m_MaterialEditor = std::make_shared<MaterialEditor>(materialAsset);
+					auto relativePath = std::filesystem::relative(path, g_AssetPath);
+					const wchar_t* itemPath = relativePath.c_str();
+					ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
+					ImGui::EndDragDropSource();
 				}
-			}
 
-			if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
-				ImGui::OpenPopup("AssetImport");
-
-			bool openMeshImportDialog = false;
-			bool openRemoveAssetDialog = false;
-			if (ImGui::BeginPopup("AssetImport"))
-			{
-				if (ImGui::MenuItem("Import"))
+				ImGui::PopStyleColor();
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 				{
+					if (std::filesystem::is_directory(path))
+						tempNode = &directoryNode;
+
 					AssetType assetType = Utils::AssetTypeFromExtension(path.extension());
-					std::string filepath = path.generic_string();
-
-					if (assetType == AssetType::Texture2D)
-						AssetManager::ImportNewAsset<Texture2D>(filepath);
-					if (assetType == AssetType::MeshAsset)
-						openMeshImportDialog = true;
-					if (assetType == AssetType::Mesh)
-						VK_ERROR("AssetType Mesh is already in Registry!");
-					if (assetType == AssetType::None)
-						VK_ERROR("Extension type currently is not defined!");
+					if (assetType == AssetType::Material)
+					{
+						std::string pathStr = path.string();
+						std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(pathStr);
+						m_MaterialEditor = std::make_shared<MaterialEditor>(materialAsset);
+					}
 				}
 
-				if (ImGui::MenuItem("Remove"))
-					openRemoveAssetDialog = true;
+				ImGui::TextWrapped(filenameString.c_str());
+				ImGui::NextColumn();
 
-				ImGui::EndPopup();
+				ImGui::PopID();
 			}
+		}
+		else
+		{
+			for (auto& directoryEntry : std::filesystem::directory_iterator(m_CurrentDirectory))
+			{
+				const auto& path = directoryEntry.path();
+				std::string filenameString = path.filename().string();
 
-			RemoveAssetDialog(openRemoveAssetDialog, path);
-			MeshImportDialog(openMeshImportDialog, path);
+				ImGui::PushID(filenameString.c_str());
+				ImTextureID icon = directoryEntry.is_directory() ? m_DirectoryIconID : m_FileIconID;
 
-			ImGui::TextWrapped(filenameString.c_str());
-			ImGui::NextColumn();
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+				ImGui::ImageButton((ImTextureID)icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
 
-			ImGui::PopID();
+				if (ImGui::BeginDragDropSource())
+				{
+					auto relativePath = std::filesystem::relative(path, g_AssetPath);
+					const wchar_t* itemPath = relativePath.c_str();
+					ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
+					ImGui::EndDragDropSource();
+				}
+
+				ImGui::PopStyleColor();
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				{
+					if (directoryEntry.is_directory())
+						m_CurrentDirectory /= path.filename();
+
+					AssetType assetType = Utils::AssetTypeFromExtension(path.extension());
+					if (assetType == AssetType::Material)
+					{
+						std::string pathStr = path.string();
+						std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(pathStr);
+						m_MaterialEditor = std::make_shared<MaterialEditor>(materialAsset);
+					}
+				}
+
+				if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+					ImGui::OpenPopup("AssetImport");
+
+				bool openMeshImportDialog = false;
+				bool openRemoveAssetDialog = false;
+				if (ImGui::BeginPopup("AssetImport"))
+				{
+					if (ImGui::MenuItem("Import"))
+					{
+						AssetType assetType = Utils::AssetTypeFromExtension(path.extension());
+						std::string filepath = path.generic_string();
+
+						if (assetType == AssetType::Texture2D)
+							AssetManager::ImportNewAsset<Texture2D>(filepath);
+						if (assetType == AssetType::MeshAsset)
+							openMeshImportDialog = true;
+						if (assetType == AssetType::Mesh)
+							VK_ERROR("AssetType Mesh is already in Registry!");
+						if (assetType == AssetType::None)
+							VK_ERROR("Extension type currently is not defined!");
+					}
+
+					if (ImGui::MenuItem("Remove"))
+						openRemoveAssetDialog = true;
+
+					ImGui::EndPopup();
+				}
+
+				RemoveAssetDialog(openRemoveAssetDialog, path);
+				MeshImportDialog(openMeshImportDialog, path);
+
+				ImGui::TextWrapped(filenameString.c_str());
+				ImGui::NextColumn();
+
+				ImGui::PopID();
+			}
 		}
 
 		ImGui::Columns(1);
@@ -287,6 +379,45 @@ namespace VulkanCore {
 
 			ImGui::EndPopup();
 		}
+	}
+
+	void ContentBrowserPanel::UpdateAssetTree(TreeNode* treeNode)
+	{
+		auto directoryIterator = std::filesystem::directory_iterator(treeNode->FilePath);
+
+		for (const auto& directoryEntry : directoryIterator)
+		{
+			auto fileStatus = directoryEntry.status();
+			switch (fileStatus.type())
+			{
+			case std::filesystem::file_type::directory:
+			{
+				auto& childNode = treeNode->ChildNodes.emplace_back();
+				childNode.FilePath = directoryEntry.path();
+				childNode.ParentNode = treeNode;
+				UpdateAssetTree(&childNode);
+
+				break;
+			}
+			default:
+			{
+				std::string pathString = directoryEntry.path().generic_string();
+				if (Utils::IsAssetValid(pathString))
+				{
+					auto& childNode = treeNode->ChildNodes.emplace_back();
+					childNode.FilePath = directoryEntry.path();
+					childNode.ParentNode = treeNode;
+				}
+
+				break;
+			}
+			}
+		}
+
+		treeNode->ChildNodes.remove_if([](TreeNode& node)
+		{
+			return node.ChildNodes.empty() && std::filesystem::is_directory(node.FilePath);
+		});
 	}
 
 }

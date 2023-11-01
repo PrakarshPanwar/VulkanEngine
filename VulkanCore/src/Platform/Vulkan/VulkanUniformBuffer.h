@@ -1,17 +1,17 @@
 #pragma once
 #include "VulkanContext.h"
+#include "VulkanCore/Renderer/UniformBuffer.h"
 
 namespace VulkanCore {
 
-	class VulkanUniformBuffer
+	class VulkanUniformBuffer : public UniformBuffer
 	{
 	public:
 		VulkanUniformBuffer() = default;
 		VulkanUniformBuffer(uint32_t size);
-
 		~VulkanUniformBuffer();
 
-		void WriteandFlushBuffer(void* data, VkDeviceSize offset = 0);
+		void WriteAndFlushBuffer(void* data, uint32_t offset) override;
 
 		inline const VkDescriptorBufferInfo& GetDescriptorBufferInfo() const { return m_DescriptorBufferInfo; }
 	private:

@@ -8,8 +8,8 @@ layout(binding = 2) uniform sampler2D u_BloomTexture;
 layout(push_constant) uniform BloomParams
 {
 	vec2 LodAndMode;
-	layout (offset = 8)  float Threshold;
-	layout (offset = 12) float Knee;
+	float Threshold;
+	float Knee;
 } u_Params;
 
 #define BLOOM_MODE_PREFILTER      0

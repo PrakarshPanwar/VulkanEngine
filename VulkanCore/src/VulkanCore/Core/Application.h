@@ -2,13 +2,16 @@
 
 #include "Platform/Windows/WindowsWindow.h"
 #include "Platform/Vulkan/VulkanContext.h"
+#include "Platform/Vulkan/VulkanRenderer.h"
 
 #include "VulkanCore/Events/ApplicationEvent.h"
-#include "VulkanCore/Renderer/VulkanRenderer.h"
 
 #include "ImGuiLayer.h"
 #include "LayerStack.h"
 #include "Timer.h"
+
+// Required for ImGui
+#define SUBMIT_TO_MAIN_THREAD VulkanCore::Application::Get()->SubmitToMainThread
 
 namespace VulkanCore {
 
@@ -46,6 +49,8 @@ namespace VulkanCore {
 		void OnEvent(Event& e);
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);
+		
+		void SubmitToMainThread(std::function<void()>&& func);
 
 		Window* GetWindow() { return m_Window.get(); }
 		WindowsWindow* GetWindowsWindow() { return std::dynamic_pointer_cast<WindowsWindow>(m_Window).get(); }
@@ -56,6 +61,8 @@ namespace VulkanCore {
 	private:
 		bool OnWindowClose(WindowCloseEvent& window);
 		bool OnWindowResize(WindowResizeEvent& window);
+
+		void ExecuteMainThreadQueue();
 	private:
 		ApplicationSpecification m_Specification;
 		std::shared_ptr<Window> m_Window;
@@ -63,6 +70,9 @@ namespace VulkanCore {
 		std::unique_ptr<VulkanRenderer> m_Renderer;
 		std::shared_ptr<ImGuiLayer> m_ImGuiLayer;
 		std::unique_ptr<Timer> m_AppTimer;
+
+		std::vector<std::function<void()>> m_MainThreadQueue;
+		std::mutex m_MainThreadQueueMutex;
 
 		bool m_Running = true, m_GammaCorrection = false;
 		LayerStack m_LayerStack;

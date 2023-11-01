@@ -1,14 +1,14 @@
 #pragma once
 #include "VulkanContext.h"
+#include "VulkanCore/Renderer/IndexBuffer.h"
 
 namespace VulkanCore {
 
-	class VulkanIndexBuffer
+	class VulkanIndexBuffer : public IndexBuffer
 	{
 	public:
 		VulkanIndexBuffer() = default;
 		VulkanIndexBuffer(void* data, uint32_t size);
-
 		~VulkanIndexBuffer();
 
 		inline VkBuffer GetVulkanBuffer() const { return m_VulkanBuffer; }

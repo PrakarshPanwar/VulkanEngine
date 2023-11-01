@@ -1,11 +1,10 @@
 #include "vulkanpch.h"
 #include "Renderer.h"
 
-#include "VulkanCore/Core/Core.h"
 #include "Platform/Vulkan/VulkanRenderCommandBuffer.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
-
-#include <glm/gtc/type_ptr.hpp>
+#include "Platform/Vulkan/VulkanRenderer.h"
+#include "Platform/Vulkan/VulkanShader.h"
 
 namespace VulkanCore {
 
@@ -17,39 +16,20 @@ namespace VulkanCore {
 
 		std::shared_ptr<Shader> MakeShader(const std::string& path)
 		{
-			const std::filesystem::path shaderPath = "assets/shaders";
+			const std::filesystem::path shaderPath = "assets\\shaders";
 			std::filesystem::path vertexShaderPath = shaderPath / path, fragmentShaderPath = shaderPath / path, computeShaderPath = shaderPath / path;
 			vertexShaderPath.replace_extension(".vert");
 			fragmentShaderPath.replace_extension(".frag");
 			computeShaderPath.replace_extension(".comp");
 
 			if (std::filesystem::exists(vertexShaderPath) && std::filesystem::exists(fragmentShaderPath))
-				return std::make_shared<Shader>(vertexShaderPath.string(), fragmentShaderPath.string());
+				return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string());
 
 			if (std::filesystem::exists(computeShaderPath))
-				return std::make_shared<Shader>(computeShaderPath.string());
+				return std::make_shared<VulkanShader>(computeShaderPath.string());
 
 			VK_CORE_ASSERT(false, "Shader: {} does not exist!", path);
-			return std::make_shared<Shader>();
-		}
-
-		glm::vec4 GetLabelColor(DebugLabelColor labelColor)
-		{
-			switch (labelColor)
-			{
-			case DebugLabelColor::None:	  return { 0.1f, 0.1f, 0.1f, 1.0f };
-			case DebugLabelColor::Grey:	  return { 0.66f, 0.66f, 0.66f, 1.0f };
-			case DebugLabelColor::Red:	  return { 1.0f, 0.0f, 0.0f, 1.0f };
-			case DebugLabelColor::Blue:	  return { 0.0f, 0.58f, 1.0f, 1.0f };
-			case DebugLabelColor::Gold:	  return { 0.76f, 0.7f, 0.32f, 1.0f };
-			case DebugLabelColor::Orange: return { 1.0f, 0.34f, 0.2f, 1.0f };
-			case DebugLabelColor::Pink:	  return { 0.972f, 0.784f, 0.862f, 1.0f };
-			case DebugLabelColor::Aqua:	  return { 0.0f, 1.0f, 1.0f, 1.0f };
-			case DebugLabelColor::Green:  return { 0.486f, 0.988f, 0.0f, 1.0f };
-			default:
-				VK_CORE_ASSERT(false, "Label Color is undefined!");
-				return { 0.3f, 0.3f, 0.3f, 1.0f };
-			}
+			return std::make_shared<VulkanShader>();
 		}
 
 	}
@@ -74,14 +54,19 @@ namespace VulkanCore {
 		return s_RendererConfig;
 	}
 
-	void Renderer::BeginRenderPass(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)
+	std::unordered_map<std::string, std::shared_ptr<Shader>>& Renderer::GetShaderMap()
 	{
-		renderPass->Begin(cmdBuffer);
+		return m_Shaders;
 	}
 
-	void Renderer::EndRenderPass(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, std::shared_ptr<VulkanRenderPass> renderPass)
+	void Renderer::BeginRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass)
 	{
-		renderPass->End(cmdBuffer);
+		s_Renderer->BeginRenderPass(cmdBuffer, renderPass);
+	}
+
+	void Renderer::EndRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass)
+	{
+		s_Renderer->EndRenderPass(cmdBuffer, renderPass);
 	}
 
 	void Renderer::BuildShaders()
@@ -103,123 +88,69 @@ namespace VulkanCore {
 		m_Shaders.clear();
 	}
 
-	void Renderer::RenderSkybox(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanVertexBuffer>& skyboxVB, const std::shared_ptr<VulkanMaterial>& skyboxMaterial, void* pcData)
+	void Renderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& skyboxVB, const std::shared_ptr<Material>& skyboxMaterial, void* pcData)
 	{
-		Renderer::Submit([cmdBuffer, pipeline, skyboxMaterial, pcData, skyboxVB]
-		{
-			VK_CORE_PROFILE_FN("Renderer::RenderSkybox");
-
-			VkCommandBuffer vulkanDrawCmd = cmdBuffer->RT_GetActiveCommandBuffer();
-			pipeline->Bind(vulkanDrawCmd);
-
-			vkCmdBindDescriptorSets(vulkanDrawCmd,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipeline->GetVulkanPipelineLayout(),
-				0, 1, &skyboxMaterial->RT_GetVulkanMaterialDescriptorSet(),
-				0, nullptr);
-
-			vkCmdPushConstants(vulkanDrawCmd,
-				pipeline->GetVulkanPipelineLayout(),
-				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				0,
-				(uint32_t)sizeof(glm::vec2),
-				pcData);
-
-			VkBuffer skyboxBuffer[] = { skyboxVB->GetVulkanBuffer() };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(vulkanDrawCmd, 0, 1, skyboxBuffer, offsets);
-			vkCmdDraw(vulkanDrawCmd, 36, 1, 0, 0);
-		});
+		s_Renderer->RenderSkybox(cmdBuffer, pipeline, skyboxVB, skyboxMaterial, pcData);
 	}	
 	
-	void Renderer::BeginTimestampsQuery(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer)
+	void Renderer::BeginTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
 	{
-		Renderer::Submit([cmdBuffer]
-		{
-			vkCmdWriteTimestamp(cmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-				cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex);
-		});
+		s_Renderer->BeginTimestampsQuery(cmdBuffer);
 	}
 
-	void Renderer::EndTimestampsQuery(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer)
+	void Renderer::EndTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
 	{
-		Renderer::Submit([cmdBuffer]
-		{
-			vkCmdWriteTimestamp(cmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-			cmdBuffer->m_TimestampQueryPool, cmdBuffer->m_TimestampsQueryIndex + 1);
-
-			cmdBuffer->m_TimestampsQueryIndex += 2;
-			cmdBuffer->m_TimestampsQueryIndex = cmdBuffer->m_TimestampsQueryIndex % cmdBuffer->m_TimestampQueryBufferSize;
-		});
+		s_Renderer->EndTimestampsQuery(cmdBuffer);
 	}
 
-	void Renderer::BeginGPUPerfMarker(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::string& name, DebugLabelColor labelColor)
+	void Renderer::BeginGPUPerfMarker(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::string& name, DebugLabelColor labelColor)
 	{
-		Renderer::Submit([cmdBuffer, name, labelColor]
-		{
-			VkCommandBuffer vulkanCmdBuffer = cmdBuffer->RT_GetActiveCommandBuffer();
-
-			glm::vec4 color = Utils::GetLabelColor(labelColor);
-			VKUtils::SetCommandBufferLabel(vulkanCmdBuffer, name.c_str(), glm::value_ptr(color));
-		});
+		s_Renderer->BeginGPUPerfMarker(cmdBuffer, name, labelColor);
 	}
 
-	void Renderer::EndGPUPerfMarker(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer)
+	void Renderer::EndGPUPerfMarker(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
 	{
-		Renderer::Submit([cmdBuffer]
-		{
-			VkCommandBuffer vulkanCmdBuffer = cmdBuffer->RT_GetActiveCommandBuffer();
-			VKUtils::EndCommandBufferLabel(vulkanCmdBuffer);
-		});
+		s_Renderer->EndGPUPerfMarker(cmdBuffer);
+	}
+
+	void Renderer::CopyVulkanImage(const std::shared_ptr<RenderCommandBuffer>& commandBuffer, const std::shared_ptr<Image2D>& sourceImage, const std::shared_ptr<Image2D>& destImage)
+	{
+		s_Renderer->CopyVulkanImage(commandBuffer, sourceImage, destImage);
+	}
+
+	void Renderer::BlitVulkanImage(const std::shared_ptr<RenderCommandBuffer>& commandBuffer, const std::shared_ptr<Image2D>& image)
+	{
+		s_Renderer->BlitVulkanImage(commandBuffer, image);
+	}
+
+	void Renderer::RenderMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	{
+		s_Renderer->RenderMesh(cmdBuffer, mesh, material, submeshIndex, pipeline, transformBuffer, transformData, instanceCount);
+	}
+
+	void Renderer::RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	{
+		s_Renderer->RenderTransparentMesh(cmdBuffer, mesh, material, submeshIndex, pipeline, transformBuffer, transformData, instanceCount);
+	}
+
+	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial)
+	{
+		s_Renderer->SubmitFullscreenQuad(cmdBuffer, pipeline, shaderMaterial);
+	}
+
+	std::shared_ptr<Image2D> Renderer::CreateBRDFTexture()
+	{
+		return s_Renderer->CreateBRDFTexture();
 	}
 
 	std::shared_ptr<Texture2D> Renderer::GetWhiteTexture(ImageFormat format)
 	{
-		TextureSpecification whiteTexSpec{};
-		whiteTexSpec.Width = 1;
-		whiteTexSpec.Height = 1;
-		whiteTexSpec.Format = format;
-		whiteTexSpec.GenerateMips = false;
-
-		uint32_t* textureData = new uint32_t;
-		*textureData = 0xffffffff;
-		auto whiteTexture = std::make_shared<VulkanTexture>(textureData, whiteTexSpec);
-		return whiteTexture;
+		return s_Renderer->GetWhiteTexture(format);
 	}
 
 	std::shared_ptr<TextureCube> Renderer::GetBlackTextureCube(ImageFormat format)
 	{
-		TextureSpecification cubeTexSpec{};
-		cubeTexSpec.Width = 1;
-		cubeTexSpec.Height = 1;
-		cubeTexSpec.Format = format;
-		cubeTexSpec.GenerateMips = false;
-
-		uint32_t* textureData = new uint32_t[6];
-		for (uint32_t i = 0; i < 6; ++i)
-			textureData[i] = 0x0;
-
-		return std::make_shared<VulkanTextureCube>(textureData, cubeTexSpec);
-	}
-
-	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, const std::shared_ptr<VulkanMaterial>& shaderMaterial)
-	{
-		Renderer::Submit([cmdBuffer, pipeline, shaderMaterial]
-		{
-			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad");
-
-			VkCommandBuffer vulkanDrawCmd = cmdBuffer->RT_GetActiveCommandBuffer();
-
-			pipeline->Bind(vulkanDrawCmd);
-
-			vkCmdBindDescriptorSets(vulkanDrawCmd,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipeline->GetVulkanPipelineLayout(),
-				0, 1, &shaderMaterial->RT_GetVulkanMaterialDescriptorSet(),
-				0, nullptr);
-
-			vkCmdDraw(vulkanDrawCmd, 3, 1, 0, 0);
-		});
+		return s_Renderer->GetBlackTextureCube(format);
 	}
 
 	void Renderer::Init()
