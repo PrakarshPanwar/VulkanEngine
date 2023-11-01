@@ -4,6 +4,8 @@
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Renderer/Renderer.h"
+#include "VulkanShader.h"
+#include "VulkanRenderPass.h"
 
 namespace VulkanCore {
 
@@ -115,7 +117,7 @@ namespace VulkanCore {
 			pipelineConfig.RasterizationInfo.depthBiasClamp = 0.0f;
 			pipelineConfig.RasterizationInfo.depthBiasSlopeFactor = 0.0f;
 
-			auto Framebuffer = spec.RenderPass->GetSpecification().TargetFramebuffer;
+			auto Framebuffer = spec.pRenderPass->GetSpecification().TargetFramebuffer;
 			const auto sampleCount = VulkanSampleCount(Framebuffer->GetSpecification().Samples);
 			pipelineConfig.MultisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 			pipelineConfig.MultisampleInfo.sampleShadingEnable = VK_FALSE;
@@ -262,74 +264,33 @@ namespace VulkanCore {
 
 	}
 
-	VulkanPipeline::VulkanPipeline(PipelineConfigInfo& pipelineInfo, const std::string& vertFilepath, const std::string& fragFilepath, const std::string& geomFilepath)
-	{
-		if (geomFilepath.empty())
-		{
-			std::filesystem::path VertexFilePath = vertFilepath;
-			std::filesystem::path FragmentFilePath = fragFilepath;
-
-			m_Shader = std::make_shared<Shader>(vertFilepath, fragFilepath);
-			CreateGraphicsPipeline(m_Shader, pipelineInfo);
-			m_Shader->CreateDescriptorSetLayout();
-		}
-
-		else
-		{
-			std::filesystem::path VertexFilePath = vertFilepath;
-			std::filesystem::path FragmentFilePath = fragFilepath;
-			std::filesystem::path GeometryFilepath = geomFilepath;
-
-			m_Shader = std::make_shared<Shader>(vertFilepath, fragFilepath, geomFilepath);
-			CreateGraphicsPipeline(m_Shader, pipelineInfo);
-		}
-	}
-
 	VulkanPipeline::VulkanPipeline(const PipelineSpecification& spec)
 		: m_Specification(spec)
 	{
-		CreateGraphicsPipeline();
+		RT_InvalidateGraphicsPipeline();
 	}
 
-	// TODO: Do this process in Render Thread
 	VulkanPipeline::~VulkanPipeline()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-
-		vkDestroyShaderModule(device->GetVulkanDevice(), m_vertShaderModule, nullptr);
-		vkDestroyShaderModule(device->GetVulkanDevice(), m_fragShaderModule, nullptr);
-
-		if (m_geomShaderModule != VK_NULL_HANDLE)
-			vkDestroyShaderModule(device->GetVulkanDevice(), m_geomShaderModule, nullptr);
-
-		if (m_PipelineLayout)
-			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
-
-		vkDestroyPipeline(device->GetVulkanDevice(), m_GraphicsPipeline, nullptr);
+		Release();
 	}
 
-	void VulkanPipeline::CreateGraphicsPipeline(std::shared_ptr<Shader> shader, const PipelineConfigInfo& pipelineInfo)
+	void VulkanPipeline::InvalidateGraphicsPipeline()
 	{
-		VK_CORE_ASSERT(pipelineInfo.RenderPass != VK_NULL_HANDLE, "Failed to Create Graphics Pipeline: Render Pass is VK_NULL_HANDLE");
-		VK_CORE_ASSERT(pipelineInfo.PipelineLayout != VK_NULL_HANDLE, "Failed to Create Graphics Pipeline: Pipeline Layout is VK_NULL_HANDLE");
-
 		auto device = VulkanContext::GetCurrentDevice();
+
+		auto shader = std::static_pointer_cast<VulkanShader>(m_Specification.pShader);
 		auto& shaderSources = shader->GetShaderModules();
 
-		CreateShaderModule(shaderSources[(uint32_t)ShaderType::Vertex], &m_vertShaderModule);
-		CreateShaderModule(shaderSources[(uint32_t)ShaderType::Fragment], &m_fragShaderModule);
+		m_VertexShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Vertex]);
+		m_FragmentShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Fragment]);
 
-		if (shader->CheckIfGeometryShaderExists())
-			CreateShaderModule(shaderSources[(uint32_t)ShaderType::Geometry], &m_geomShaderModule);
-
-		VkPipelineShaderStageCreateInfo* shaderStages;
-
-		const uint32_t shaderStageCount = shader->CheckIfGeometryShaderExists() ? 3 : 2;
-		shaderStages = new VkPipelineShaderStageCreateInfo[shaderStageCount];
+		const uint32_t shaderStageCount = shader->HasGeometryShader() ? 3 : 2;
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages(shaderStageCount);
 
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		shaderStages[0].module = m_vertShaderModule;
+		shaderStages[0].module = m_VertexShaderModule;
 		shaderStages[0].pName = "main";
 		shaderStages[0].flags = 0;
 		shaderStages[0].pNext = nullptr;
@@ -337,25 +298,27 @@ namespace VulkanCore {
 
 		shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		shaderStages[1].module = m_fragShaderModule;
+		shaderStages[1].module = m_FragmentShaderModule;
 		shaderStages[1].pName = "main";
 		shaderStages[1].flags = 0;
 		shaderStages[1].pNext = nullptr;
 		shaderStages[1].pSpecializationInfo = nullptr;
 
-		if (shader->CheckIfGeometryShaderExists())
+		if (shader->HasGeometryShader())
 		{
+			m_GeometryShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Geometry]);
+
 			shaderStages[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 			shaderStages[2].stage = VK_SHADER_STAGE_GEOMETRY_BIT;
-			shaderStages[2].module = m_geomShaderModule;
+			shaderStages[2].module = m_GeometryShaderModule;
 			shaderStages[2].pName = "main";
 			shaderStages[2].flags = 0;
 			shaderStages[2].pNext = nullptr;
 			shaderStages[2].pSpecializationInfo = nullptr;
 		}
 
-		auto& bindingDescriptions = pipelineInfo.BindingDescriptions;
-		auto& attributeDescriptions = pipelineInfo.AttributeDescriptions;
+		auto bindingDescriptions = Utils::GetVulkanBindingDescription(m_Specification);
+		auto attributeDescriptions = Utils::GetVulkanAttributeDescription(m_Specification);
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -364,10 +327,15 @@ namespace VulkanCore {
 		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 		vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 
+		m_DescriptorSetLayout = shader->CreateAllDescriptorSetsLayout();
+		m_PipelineLayout = Utils::CreatePipelineLayout(m_DescriptorSetLayout, shader->GetPushConstantSize());
+
+		auto pipelineInfo = Utils::GetPipelineConfiguration(m_Specification);
+
 		VkGraphicsPipelineCreateInfo graphicsPipelineInfo{};
 		graphicsPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		graphicsPipelineInfo.stageCount = shaderStageCount;
-		graphicsPipelineInfo.pStages = shaderStages;
+		graphicsPipelineInfo.pStages = shaderStages.data();
 		graphicsPipelineInfo.pVertexInputState = &vertexInputInfo;
 		graphicsPipelineInfo.pInputAssemblyState = &pipelineInfo.InputAssemblyInfo;
 		graphicsPipelineInfo.pViewportState = &pipelineInfo.ViewportInfo;
@@ -377,39 +345,43 @@ namespace VulkanCore {
 		graphicsPipelineInfo.pMultisampleState = &pipelineInfo.MultisampleInfo;
 		graphicsPipelineInfo.pDynamicState = &pipelineInfo.DynamicStateInfo;
 
-		graphicsPipelineInfo.layout = pipelineInfo.PipelineLayout;
-		graphicsPipelineInfo.renderPass = pipelineInfo.RenderPass->GetRenderPass();
-		graphicsPipelineInfo.subpass = pipelineInfo.SubPass;
+		graphicsPipelineInfo.layout = m_PipelineLayout;
+		graphicsPipelineInfo.renderPass = std::dynamic_pointer_cast<VulkanRenderPass>(m_Specification.pRenderPass)->GetVulkanRenderPass();
+		graphicsPipelineInfo.subpass = pipelineInfo.Subpass;
 
 		graphicsPipelineInfo.basePipelineIndex = -1;
 		graphicsPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-		VK_CHECK_RESULT(vkCreateGraphicsPipelines(device->GetVulkanDevice(),
-			VK_NULL_HANDLE, 1, &graphicsPipelineInfo, nullptr, &m_GraphicsPipeline),
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(
+			device->GetVulkanDevice(),
+			VK_NULL_HANDLE,
+			1,
+			&graphicsPipelineInfo,
+			nullptr,
+			&m_GraphicsPipeline),
 			"Failed to Create Graphics Pipeline!");
 
-		delete[] shaderStages;
+		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_Specification.DebugName, m_GraphicsPipeline);
 	}
 
-	// For Pipeline Specification
-	void VulkanPipeline::CreateGraphicsPipeline()
+	void VulkanPipeline::RT_InvalidateGraphicsPipeline()
 	{
 		Renderer::Submit([this]()
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 
-			auto shader = m_Specification.pShader;
+			auto shader = std::static_pointer_cast<VulkanShader>(m_Specification.pShader);
 			auto& shaderSources = shader->GetShaderModules();
 
-			m_vertShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Vertex]);
-			m_fragShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Fragment]);
+			m_VertexShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Vertex]);
+			m_FragmentShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Fragment]);
 
-			const uint32_t shaderStageCount = shader->CheckIfGeometryShaderExists() ? 3 : 2;
-			VkPipelineShaderStageCreateInfo* shaderStages = new VkPipelineShaderStageCreateInfo[shaderStageCount];
+			const uint32_t shaderStageCount = shader->HasGeometryShader() ? 3 : 2;
+			std::vector<VkPipelineShaderStageCreateInfo> shaderStages(shaderStageCount);
 
 			shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 			shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-			shaderStages[0].module = m_vertShaderModule;
+			shaderStages[0].module = m_VertexShaderModule;
 			shaderStages[0].pName = "main";
 			shaderStages[0].flags = 0;
 			shaderStages[0].pNext = nullptr;
@@ -417,19 +389,19 @@ namespace VulkanCore {
 
 			shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 			shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-			shaderStages[1].module = m_fragShaderModule;
+			shaderStages[1].module = m_FragmentShaderModule;
 			shaderStages[1].pName = "main";
 			shaderStages[1].flags = 0;
 			shaderStages[1].pNext = nullptr;
 			shaderStages[1].pSpecializationInfo = nullptr;
 
-			if (shader->CheckIfGeometryShaderExists())
+			if (shader->HasGeometryShader())
 			{
-				const auto geometryShader = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Geometry]);
+				m_GeometryShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Geometry]);
 
 				shaderStages[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 				shaderStages[2].stage = VK_SHADER_STAGE_GEOMETRY_BIT;
-				shaderStages[2].module = geometryShader;
+				shaderStages[2].module = m_GeometryShaderModule;
 				shaderStages[2].pName = "main";
 				shaderStages[2].flags = 0;
 				shaderStages[2].pNext = nullptr;
@@ -454,7 +426,7 @@ namespace VulkanCore {
 			VkGraphicsPipelineCreateInfo graphicsPipelineInfo{};
 			graphicsPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 			graphicsPipelineInfo.stageCount = shaderStageCount;
-			graphicsPipelineInfo.pStages = shaderStages;
+			graphicsPipelineInfo.pStages = shaderStages.data();
 			graphicsPipelineInfo.pVertexInputState = &vertexInputInfo;
 			graphicsPipelineInfo.pInputAssemblyState = &pipelineInfo.InputAssemblyInfo;
 			graphicsPipelineInfo.pViewportState = &pipelineInfo.ViewportInfo;
@@ -465,7 +437,7 @@ namespace VulkanCore {
 			graphicsPipelineInfo.pDynamicState = &pipelineInfo.DynamicStateInfo;
 
 			graphicsPipelineInfo.layout = m_PipelineLayout;
-			graphicsPipelineInfo.renderPass = m_Specification.RenderPass->GetRenderPass();
+			graphicsPipelineInfo.renderPass = std::dynamic_pointer_cast<VulkanRenderPass>(m_Specification.pRenderPass)->GetVulkanRenderPass();
 			graphicsPipelineInfo.subpass = pipelineInfo.Subpass;
 
 			graphicsPipelineInfo.basePipelineIndex = -1;
@@ -481,7 +453,6 @@ namespace VulkanCore {
 				"Failed to Create Graphics Pipeline!");
 
 			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_Specification.DebugName, m_GraphicsPipeline);
-			delete[] shaderStages;
 		});
 	}
 
@@ -519,17 +490,23 @@ namespace VulkanCore {
 		cacheInfo.pInitialData = nullptr;
 	}
 
-	void VulkanPipeline::EnableAlphaBlending(PipelineConfigInfo& pipelineConfigInfo)
+	// TODO: Do this process in Render Thread
+	void VulkanPipeline::Release()
 	{
-		pipelineConfigInfo.ColorBlendAttachment.blendEnable = VK_TRUE;
-		pipelineConfigInfo.ColorBlendAttachment.colorWriteMask =
-			VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		pipelineConfigInfo.ColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		pipelineConfigInfo.ColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		pipelineConfigInfo.ColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-		pipelineConfigInfo.ColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		pipelineConfigInfo.ColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-		pipelineConfigInfo.ColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+		auto device = VulkanContext::GetCurrentDevice();
+
+		vkDestroyShaderModule(device->GetVulkanDevice(), m_VertexShaderModule, nullptr);
+		vkDestroyShaderModule(device->GetVulkanDevice(), m_FragmentShaderModule, nullptr);
+
+		if (m_GeometryShaderModule)
+			vkDestroyShaderModule(device->GetVulkanDevice(), m_GeometryShaderModule, nullptr);
+
+		if (m_PipelineLayout)
+			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
+
+		vkDestroyPipeline(device->GetVulkanDevice(), m_GraphicsPipeline, nullptr);
+
+		m_GraphicsPipeline = nullptr;
 	}
 
 	void VulkanPipeline::Bind(VkCommandBuffer commandBuffer)
@@ -545,6 +522,17 @@ namespace VulkanCore {
 			0,
 			(uint32_t)size,
 			pcData);
+	}
+
+	void VulkanPipeline::ReloadPipeline()
+	{
+		auto shader = m_Specification.pShader;
+		if (shader->GetReloadFlag())
+		{
+			Release();
+			InvalidateGraphicsPipeline();
+			shader->ResetReloadFlag();
+		}
 	}
 
 }

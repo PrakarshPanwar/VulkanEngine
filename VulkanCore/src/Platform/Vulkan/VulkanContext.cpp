@@ -112,6 +112,7 @@ namespace VulkanCore {
 			case VK_OBJECT_TYPE_FRAMEBUFFER:     return "Framebuffer";
 			case VK_OBJECT_TYPE_SHADER_MODULE:   return "Shader Module";
 			case VK_OBJECT_TYPE_QUEUE:			 return "Queue";
+			case VK_OBJECT_TYPE_QUERY_POOL:		 return "Query Pool";
 			case VK_OBJECT_TYPE_SWAPCHAIN_KHR:	 return "Swapchain";
 			default:
 				VK_CORE_ASSERT(false, "Object Type not present in this scope");

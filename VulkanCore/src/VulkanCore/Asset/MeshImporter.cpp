@@ -2,6 +2,9 @@
 #include "MeshImporter.h"
 #include "AssetManager.h"
 
+#include "Platform/Vulkan/VulkanVertexBuffer.h"
+#include "Platform/Vulkan/VulkanIndexBuffer.h"
+
 #include <yaml-cpp/yaml.h>
 
 namespace VulkanCore {

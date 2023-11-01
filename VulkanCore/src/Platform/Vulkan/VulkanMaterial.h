@@ -1,10 +1,8 @@
 #pragma once
-#include "VulkanCore/Core/Shader.h"
+#include "VulkanCore/Renderer/Shader.h"
 #include "VulkanCore/Renderer/Material.h"
 #include "VulkanCore/Renderer/Renderer.h"
 #include "Platform/Vulkan/VulkanTexture.h"
-#include "Platform/Vulkan/VulkanUniformBuffer.h"
-#include "Platform/Vulkan/VulkanComputePipeline.h"
 
 namespace VulkanCore {
 
@@ -26,21 +24,20 @@ namespace VulkanCore {
 		void SetNormalTexture(std::shared_ptr<Texture2D> texture) override;
 		void SetARMTexture(std::shared_ptr<Texture2D> texture) override;
 
-		void SetImage(uint32_t binding, std::shared_ptr<VulkanImage> image);
-		void SetImage(uint32_t binding, std::shared_ptr<VulkanImage> image, uint32_t mipLevel);
-		void SetImages(uint32_t binding, const std::vector<std::shared_ptr<VulkanImage>>& images);
-		void SetTexture(uint32_t binding, std::shared_ptr<VulkanTexture> texture);
-		void SetTexture(uint32_t binding, std::shared_ptr<VulkanTextureCube> textureCube);
-		void SetTextures(uint32_t binding, const std::vector<std::shared_ptr<VulkanTexture>>& textures);
-		void SetBuffer(uint32_t binding, std::shared_ptr<VulkanUniformBuffer> uniformBuffer);
-		void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<VulkanUniformBuffer>>& uniformBuffers);
-		void SetBuffers(uint32_t binding, const std::vector<VulkanUniformBuffer>& uniformBuffers);
+		void SetImage(uint32_t binding, std::shared_ptr<Image2D> image) override;
+		void SetImage(uint32_t binding, std::shared_ptr<Image2D> image, uint32_t mipLevel) override;
+		void SetImages(uint32_t binding, const std::vector<std::shared_ptr<Image2D>>& images) override;
+		void SetTexture(uint32_t binding, std::shared_ptr<Texture2D> texture) override;
+		void SetTexture(uint32_t binding, std::shared_ptr<TextureCube> textureCube) override;
+		void SetTextures(uint32_t binding, const std::vector<std::shared_ptr<Texture2D>>& textures) override;
+		void SetBuffer(uint32_t binding, std::shared_ptr<UniformBuffer> uniformBuffer) override;
+		void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<UniformBuffer>>& uniformBuffers) override;
 
-		void RT_BindMaterial(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline, uint32_t setIndex = 0);
-		void RT_BindMaterial(const std::shared_ptr<VulkanRenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VulkanComputePipeline>& pipeline, uint32_t setIndex = 0);
+		void RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, uint32_t setIndex = 0) override;
+		void RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<ComputePipeline>& pipeline, uint32_t setIndex = 0) override;
 
-		void UpdateMaterials();
-		void PrepareShaderMaterial();
+		void UpdateMaterials() override;
+		void PrepareShaderMaterial() override;
 	private:
 		void InvalidateMaterial();
 		void InvalidateMaterialDescriptorSets();
