@@ -3,6 +3,7 @@
 #include "AssetManager.h"
 
 #include <stb_image.h>
+#include <algorithm>
 
 namespace VulkanCore {
 
@@ -42,7 +43,17 @@ namespace VulkanCore {
 		}
 
 		else if (!path.empty())
+		{
+			std::string filePath{};
+			filePath.resize(path.size());
+
+			std::transform(path.begin(), path.end(), filePath.begin(), [](char c) { return std::tolower(c); });
+
+			if (filePath.find("nor") != std::string::npos || filePath.find("arm") != std::string::npos)
+				spec.Format = ImageFormat::RGBA8_UNORM;
+
 			data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+		}
 
 		spec.Width = width;
 		spec.Height = height;
