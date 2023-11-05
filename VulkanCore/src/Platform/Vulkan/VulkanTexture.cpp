@@ -180,6 +180,7 @@ namespace VulkanCore {
 			}
 
 			allocator.DestroyBuffer(stagingBuffer, stagingBufferAlloc);
+			free(m_LocalStorage);
 		}
 
 		m_IsLoaded = true;
@@ -187,8 +188,6 @@ namespace VulkanCore {
 
 	void VulkanTexture::Release()
 	{
-		if (m_LocalStorage)
-			free(m_LocalStorage);
 	}
 
 	void VulkanTexture::GenerateMipMaps()
@@ -267,11 +266,6 @@ namespace VulkanCore {
 	VulkanTextureCube::VulkanTextureCube(uint32_t width, uint32_t height, ImageFormat format)
 		: m_Specification({ width, height, format, TextureWrap::Clamp, true })
 	{
-		m_Specification.Width = width;
-		m_Specification.Height = height;
-		m_Specification.Format = format;
-		m_Specification.SamplerWrap = TextureWrap::Clamp;
-		m_Specification.GenerateMips = true;
 	}
 
 	VulkanTextureCube::VulkanTextureCube(void* data, TextureSpecification spec)
