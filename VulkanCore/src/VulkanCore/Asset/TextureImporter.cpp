@@ -3,7 +3,6 @@
 #include "AssetManager.h"
 
 #include <stb_image.h>
-#include <algorithm>
 
 namespace VulkanCore {
 
@@ -42,14 +41,29 @@ namespace VulkanCore {
 			data = (uint8_t*)stbi_loadf(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 		}
 
-		else if (!path.empty())
+		else
 		{
-			std::string filePath{};
-			filePath.resize(path.size());
+			std::string pathStr{};
 
-			std::transform(path.begin(), path.end(), filePath.begin(), [](char c) { return std::tolower(c); });
+			pathStr.resize(path.size());
+			pathStr.reserve(std::bit_ceil(path.size()));
 
-			if (filePath.find("nor") != std::string::npos || filePath.find("arm") != std::string::npos)
+			// SIMD Code to convert Upper case to Lower case
+			for (uint32_t i = 0; i < (uint32_t)path.size(); i += 32)
+			{
+				__m256i data = _mm256_load_si256((__m256i*)&path[i]);
+
+				uint32_t lmask = _mm256_cmpgt_epi8_mask(data, _mm256_set1_epi8(0x40));
+				uint32_t umask = _mm256_cmplt_epi8_mask(data, _mm256_set1_epi8(0x5B));
+				uint32_t mask = umask & lmask;
+
+				__m256i value = _mm256_add_epi8(data, _mm256_set1_epi8(0x20));
+				__m256i result = _mm256_mask_blend_epi8(mask, data, value);
+
+				_mm256_storeu_epi8(pathStr.data() + i, result);
+			}
+
+			if (pathStr.find("nor") != std::string::npos || pathStr.find("arm") != std::string::npos)
 				spec.Format = ImageFormat::RGBA8_UNORM;
 
 			data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
