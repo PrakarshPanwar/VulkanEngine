@@ -599,4 +599,3 @@ namespace VulkanCore {
 	}
 
 }
-
