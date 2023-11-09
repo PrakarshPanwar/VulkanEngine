@@ -112,19 +112,13 @@ namespace VulkanCore {
 	void VulkanMaterial::SetNormalTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_NormalTexture = texture;
-		std::shared_ptr<VulkanTexture> normalTexture = std::static_pointer_cast<VulkanTexture>(m_NormalTexture);
-		normalTexture->Reload(ImageFormat::RGBA8_UNORM);
-
-		UpdateNormalMap(normalTexture);
+		UpdateNormalMap(std::static_pointer_cast<VulkanTexture>(m_NormalTexture));
 	}
 
 	void VulkanMaterial::SetARMTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_ARMTexture = texture;
-		std::shared_ptr<VulkanTexture> armTexture = std::static_pointer_cast<VulkanTexture>(m_ARMTexture);
-		armTexture->Reload(ImageFormat::RGBA8_UNORM);
-
-		UpdateARMMap(armTexture);
+		UpdateARMMap(std::static_pointer_cast<VulkanTexture>(m_ARMTexture));
 	}
 
 	void VulkanMaterial::SetImage(uint32_t binding, std::shared_ptr<Image2D> image)
