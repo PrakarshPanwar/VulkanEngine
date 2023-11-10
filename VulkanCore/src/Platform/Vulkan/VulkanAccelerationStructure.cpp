@@ -252,13 +252,27 @@ namespace VulkanCore {
 
 		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Bottom Level Acceleration Structures Build");
 
-		for (auto& [mk, blasInput] : m_BLASInputData)
+		// Create Query Pool for BLAS Compaction
+		VkQueryPool queryPool;
+
+		VkQueryPoolCreateInfo queryPoolCreateInfo{};
+		queryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+		queryPoolCreateInfo.queryCount = (uint32_t)m_BLASInputData.size();
+		queryPoolCreateInfo.queryType = VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR;
+		vkCreateQueryPool(device->GetVulkanDevice(), &queryPoolCreateInfo, nullptr, &queryPool);
+
+		uint32_t queryIndex = 0;
+		std::vector<VkAccelerationStructureKHR> accelerationStructureHandles{};
+		std::vector<VkBuffer> asBuildBuffers{};
+		std::vector<VmaAllocation> asBuildMemAlloc{};
+
+		for (auto&& [mk, blasInput] : m_BLASInputData)
 		{
 			// Get Sizes Info
 			VkAccelerationStructureBuildGeometryInfoKHR asBuildGeometryInfo{};
 			asBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
 			asBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-			asBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+			asBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
 			asBuildGeometryInfo.geometryCount = 1;
 			asBuildGeometryInfo.pGeometries = &blasInput.GeometryData;
 
@@ -281,10 +295,6 @@ namespace VulkanCore {
 			VmaAllocation memAlloc;
 			memAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, buffer);
 
-			VulkanAccelerationStructureInfo& blasInfo = blasInput.BLASInfo;
-			blasInfo.Buffer = buffer;
-			blasInfo.MemoryAlloc = memAlloc;
-
 			// Acceleration Structure
 			VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{};
 			accelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
@@ -292,22 +302,15 @@ namespace VulkanCore {
 			accelerationStructureCreateInfo.buffer = buffer;
 			accelerationStructureCreateInfo.size = buildSizesInfo.accelerationStructureSize;
 
+			VkAccelerationStructureKHR accelerationStructureHandle = nullptr;
 			vkCreateAccelerationStructureKHR(device->GetVulkanDevice(),
 				&accelerationStructureCreateInfo,
 				nullptr,
-				&blasInfo.Handle);
+				&accelerationStructureHandle);
 
-			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, blasInput.DebugName, blasInfo.Handle);
-
-			// AS Device Address(Will be used as reference in creating Top Level AS)
-			VkAccelerationStructureDeviceAddressInfoKHR deviceAddressInfo{};
-			deviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
-			deviceAddressInfo.accelerationStructure = blasInfo.Handle;
-			blasInfo.DeviceAddress = vkGetAccelerationStructureDeviceAddressKHR(device->GetVulkanDevice(), &deviceAddressInfo);
-
-			// Update Instance for TLAS Build
-			for (auto& instance : blasInput.InstanceData)
-				instance.accelerationStructureReference = blasInfo.DeviceAddress;
+			accelerationStructureHandles.push_back(accelerationStructureHandle);
+			asBuildBuffers.push_back(buffer);
+			asBuildMemAlloc.push_back(memAlloc);
 
 			// Create a Small Scratch Buffer used during build of the Bottom Level Acceleration Structure
 			VkBuffer scratchBuffer;
@@ -330,18 +333,28 @@ namespace VulkanCore {
 			VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo{};
 			buildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
 			buildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-			buildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+			buildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
 			buildGeometryInfo.geometryCount = 1;
 			buildGeometryInfo.pGeometries = &blasInput.GeometryData;
 			buildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-			buildGeometryInfo.dstAccelerationStructure = blasInfo.Handle;
+			buildGeometryInfo.dstAccelerationStructure = accelerationStructureHandle;
 			buildGeometryInfo.scratchData.deviceAddress = scratchBufferDeviceAddress;
 
 			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> pBuildRangeInfo = { &blasInput.BuildRangeInfo };
 
-			// Build BLAS
+			// Make sure the Copy of the Instance Buffer are copied before triggering the Acceleration Structure Build
+			VkMemoryBarrier instanceBufferBarrier{};
+			instanceBufferBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+			instanceBufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			instanceBufferBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+
 			VkCommandBuffer buildCmd = device->GetCommandBuffer();
 
+			vkCmdPipelineBarrier(buildCmd,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+				0, 1, &instanceBufferBarrier, 0, nullptr, 0, nullptr);
+
+			// Build BLAS
 			vkCmdBuildAccelerationStructuresKHR(buildCmd,
 				1,
 				&buildGeometryInfo,
@@ -350,7 +363,97 @@ namespace VulkanCore {
 			device->FlushCommandBuffer(buildCmd);
 
 			allocator.DestroyBuffer(scratchBuffer, scratchBufferAlloc);
+			queryIndex++;
 		}
+
+		// BLAS Compaction
+		VkCommandBuffer compactCmd = device->GetCommandBuffer();
+
+		vkCmdResetQueryPool(compactCmd,
+			queryPool,
+			0,
+			(uint32_t)m_BLASInputData.size());
+
+		vkCmdWriteAccelerationStructuresPropertiesKHR(compactCmd,
+			(uint32_t)accelerationStructureHandles.size(),
+			accelerationStructureHandles.data(),
+			VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR,
+			queryPool,
+			0);
+
+		device->FlushCommandBuffer(compactCmd);
+
+		queryIndex = 0;
+		std::vector<VkDeviceSize> blasCompactedSizes(m_BLASInputData.size());
+		vkGetQueryPoolResults(device->GetVulkanDevice(),
+			queryPool,
+			0,
+			(uint32_t)m_BLASInputData.size(),
+			blasCompactedSizes.size() * sizeof(VkDeviceSize),
+			blasCompactedSizes.data(),
+			sizeof(VkDeviceSize),
+			VK_QUERY_RESULT_WAIT_BIT);
+
+		for (auto&& [mk, blasInput] : m_BLASInputData)
+		{
+			// Create new compacted Acceleration Structure
+			VkBufferCreateInfo bufferCreateInfo{};
+			bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			bufferCreateInfo.size = blasCompactedSizes[queryIndex];
+			bufferCreateInfo.usage = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+			VkBuffer buffer;
+			VmaAllocation memAlloc;
+			memAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, buffer);
+
+			VulkanAccelerationStructureInfo& blasInfo = blasInput.BLASInfo;
+			blasInfo.Buffer = buffer;
+			blasInfo.MemoryAlloc = memAlloc;
+
+			VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{};
+			accelerationStructureCreateInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+			accelerationStructureCreateInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+			accelerationStructureCreateInfo.buffer = buffer;
+			accelerationStructureCreateInfo.size = blasCompactedSizes[queryIndex];
+
+			vkCreateAccelerationStructureKHR(device->GetVulkanDevice(),
+				&accelerationStructureCreateInfo,
+				nullptr,
+				&blasInfo.Handle);
+
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, blasInput.DebugName, blasInfo.Handle);
+
+			// AS Device Address(Will be used as reference in creating Top Level AS)
+			VkAccelerationStructureDeviceAddressInfoKHR deviceAddressInfo{};
+			deviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+			deviceAddressInfo.accelerationStructure = blasInfo.Handle;
+			blasInfo.DeviceAddress = vkGetAccelerationStructureDeviceAddressKHR(device->GetVulkanDevice(), &deviceAddressInfo);
+
+			// Update Instance for TLAS Build
+			for (auto& instance : blasInput.InstanceData)
+				instance.accelerationStructureReference = blasInfo.DeviceAddress;
+
+			VkCommandBuffer copyCmd = device->GetCommandBuffer();
+
+			// Copy the uncompacted(original) BLAS to compacted one
+			VkCopyAccelerationStructureInfoKHR copyAccelerationStructureInfo{};
+			copyAccelerationStructureInfo.sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR;
+			copyAccelerationStructureInfo.src = accelerationStructureHandles[queryIndex];
+			copyAccelerationStructureInfo.dst = blasInfo.Handle;
+			copyAccelerationStructureInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
+			vkCmdCopyAccelerationStructureKHR(copyCmd, &copyAccelerationStructureInfo);
+
+			device->FlushCommandBuffer(copyCmd);
+
+			// Destroy Old Acceleration Structure and its Buffers Data
+			allocator.DestroyBuffer(asBuildBuffers[queryIndex], asBuildMemAlloc[queryIndex]);
+			vkDestroyAccelerationStructureKHR(device->GetVulkanDevice(), accelerationStructureHandles[queryIndex], nullptr);
+
+			queryIndex++;
+		}
+
+		// Destroy Query Pool
+		vkDestroyQueryPool(device->GetVulkanDevice(), queryPool, nullptr);
 	}
 
 	void VulkanAccelerationStructure::UpdateTopLevelAccelerationStructure(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
@@ -364,7 +467,7 @@ namespace VulkanCore {
 
 			// Batch all instance data from BLAS Input
 			std::vector<VkAccelerationStructureInstanceKHR> tlasInstancesData{};
-			for (auto& [mk, blasInput] : m_BLASInputData)
+			for (auto&& [mk, blasInput] : m_BLASInputData)
 				tlasInstancesData.insert(tlasInstancesData.end(), blasInput.InstanceData.begin(), blasInput.InstanceData.end());
 
 			uint32_t instanceBufferSize = tlasInstancesData.size() * sizeof(VkAccelerationStructureInstanceKHR);
@@ -408,16 +511,19 @@ namespace VulkanCore {
 			instanceBufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			instanceBufferBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
 
-			VkCommandBuffer buildCmd = vulkanCmdBuffer->RT_GetActiveCommandBuffer();
+			// TODO: Constant creation of creating and submitting Command Buffer is slow
+			VkCommandBuffer updateCmd = device->GetCommandBuffer();
 
-			vkCmdPipelineBarrier(buildCmd,
+			vkCmdPipelineBarrier(updateCmd,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
 				0, 1, &instanceBufferBarrier, 0, nullptr, 0, nullptr);
 
-			vkCmdBuildAccelerationStructuresKHR(buildCmd,
+			vkCmdBuildAccelerationStructuresKHR(updateCmd,
 				1,
 				&buildGeometryInfo,
 				pBuildRangeInfos.data());
+
+			device->FlushCommandBuffer(updateCmd);
 		});
 	}
 
