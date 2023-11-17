@@ -13,7 +13,7 @@ Asset Registry:
       Type: Texture2D
   - Handle: 2177908810160587812
     Metadata:
-      Filepath: assets/textures/Gold/GoldAORMNew.png
+      Filepath: assets/textures/Gold/GoldARM2.png
       Type: Texture2D
   - Handle: 16995992634766553316
     Metadata:
@@ -129,7 +129,7 @@ Asset Registry:
       Type: Texture2D
   - Handle: 4120767157361030501
     Metadata:
-      Filepath: assets/textures/Gold/GoldAORM.png
+      Filepath: assets/textures/Gold/GoldARM.png
       Type: Texture2D
   - Handle: 6435582088167422949
     Metadata:

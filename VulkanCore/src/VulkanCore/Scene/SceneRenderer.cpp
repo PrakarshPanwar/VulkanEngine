@@ -631,8 +631,8 @@ namespace VulkanCore {
 			int buttonID = 0;
 			for (auto&& [name, shader] : shaderMap)
 			{
-				ImGui::Selectable(name.c_str(), false, ImGuiSelectableFlags_AllowItemOverlap, ImVec2{ 0.0f, 24.5f });
-				ImGui::SetItemAllowOverlap();
+				ImGui::SetNextItemAllowOverlap();
+				ImGui::Selectable(name.c_str(), false, ImGuiSelectableFlags_AllowOverlap, ImVec2{ 0.0f, 24.5f });
 
 				ImGui::SameLine(ImGui::GetContentRegionAvail().x - 20.0f);
 				ImGui::PushID(buttonID++);
