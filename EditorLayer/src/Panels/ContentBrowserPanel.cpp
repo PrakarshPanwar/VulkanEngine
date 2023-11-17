@@ -118,7 +118,7 @@ namespace VulkanCore {
 				ImTextureID icon = std::filesystem::is_directory(path) ? m_DirectoryIconID : m_FileIconID;
 
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-				ImGui::ImageButton((ImTextureID)icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
+				ImGui::ImageButton(filenameString.c_str(), icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
 
 				if (ImGui::BeginDragDropSource())
 				{
@@ -160,7 +160,7 @@ namespace VulkanCore {
 				ImTextureID icon = directoryEntry.is_directory() ? m_DirectoryIconID : m_FileIconID;
 
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-				ImGui::ImageButton((ImTextureID)icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
+				ImGui::ImageButton(filenameString.c_str(), icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
 
 				if (ImGui::BeginDragDropSource())
 				{
