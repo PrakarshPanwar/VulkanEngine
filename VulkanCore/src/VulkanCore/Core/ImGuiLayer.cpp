@@ -36,7 +36,8 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
+		DescriptorPoolBuilder descriptorPoolBuilder = {};
+		descriptorPoolBuilder.SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, 1000);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000);
@@ -50,7 +51,6 @@ namespace VulkanCore {
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000);
 
 		m_ImGuiGlobalPool = descriptorPoolBuilder.Build();
-		//m_ImGuiCmdBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary);
 
 		ImGui::CreateContext();
 
@@ -101,10 +101,10 @@ namespace VulkanCore {
 
 		SetDarkThemeColor();
 
-		VkCommandBuffer commandBuffer = device->GetCommandBuffer();
-		ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-		device->FlushCommandBuffer(commandBuffer);
-		ImGui_ImplVulkan_DestroyFontUploadObjects();
+		bool createFont = ImGui_ImplVulkan_CreateFontsTexture();
+		VK_CORE_ASSERT(createFont, "Failed to Create Font Textures");
+
+		ImGui_ImplVulkan_DestroyFontsTexture();
 	}
 
 	void ImGuiLayer::OnDetach()
