@@ -233,7 +233,7 @@ namespace VulkanCore {
 		// Button Position just at the top
 		ImGui::SetCursorPos({ ImGui::GetWindowContentRegionMin().x + 5.0f, ImGui::GetWindowContentRegionMin().y + 5.0f });
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 20.0f);
-		if (ImGui::ImageButton("MenuIcon", (ImTextureID)m_MenuIconID, { 20.0f, 20.0f }, { 0, 1 }, { 1, 0 }))
+		if (ImGui::ImageButton("##MenuIcon", (ImTextureID)m_MenuIconID, { 20.0f, 20.0f }, { 0, 1 }, { 1, 0 }))
 			ImGui::OpenPopup("EditorSettings");
 		ImGui::PopStyleVar();
 
