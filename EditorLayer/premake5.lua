@@ -27,7 +27,7 @@ project "EditorLayer"
 		"%{IncludeDir.ImGuizmo}"
 	}
 
-	defines { "_CRT_SECURE_NO_WARNINGS", "GLM_FORCE_INTRINSICS" }
+	defines { "_CRT_SECURE_NO_WARNINGS", "GLM_FORCE_INTRINSICS", "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING" }
 	links { "VulkanCore" }
 
 	filter "system:windows"
