@@ -3,6 +3,7 @@
 #include "AssetManager.h"
 
 #include <stb_image.h>
+#include <algorithm>
 
 namespace VulkanCore {
 

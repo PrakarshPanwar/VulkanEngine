@@ -23,12 +23,6 @@ project "VulkanCore"
 		"assets/shaders/*.comp"
 	}
 
-	removefiles {
-		"src/Platform/Vulkan/VulkanGameObject.h",
-		"src/Platform/Vulkan/VulkanGameObject.cpp",
-		"src/VulkanCore/Core/FrameInfo.h"
-	}
-
 	includedirs {
 		"src",
 		"vendor/spdlog/include",
@@ -45,6 +39,7 @@ project "VulkanCore"
 		"%{IncludeDir.Assimp}"
 	}
 
+	defines { "IMGUI_DEFINE_MATH_OPERATORS", "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING" }
 	links { "GLFW", "%{Library.Vulkan}", "ImGui", "yaml-cpp", "%{Library.optick_Release}" }
 
 	filter "system:windows"
