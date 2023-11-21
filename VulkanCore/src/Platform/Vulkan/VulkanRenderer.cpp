@@ -451,20 +451,29 @@ namespace VulkanCore {
 
 	std::shared_ptr<Texture2D> VulkanRenderer::GetWhiteTexture(ImageFormat format)
 	{
-		TextureSpecification whiteTexSpec;
+		if (m_WhiteTextureAssets.contains(format))
+			return AssetManager::GetAsset<Texture2D>(m_WhiteTextureAssets[format]);
+
+		TextureSpecification whiteTexSpec{};
 		whiteTexSpec.Width = 1;
 		whiteTexSpec.Height = 1;
 		whiteTexSpec.Format = format;
 		whiteTexSpec.GenerateMips = false;
 
 		uint32_t* textureData = new uint32_t;
-		*textureData = 0xffffffff;
-		auto whiteTexture = std::make_shared<VulkanTexture>(textureData, whiteTexSpec);
+		*textureData = 0xFFFFFFFF;
+
+		auto whiteTexture = AssetManager::CreateMemoryOnlyAsset<VulkanTexture>(textureData, whiteTexSpec);
+		m_WhiteTextureAssets[format] = whiteTexture->Handle;
+
 		return whiteTexture;
 	}
 
 	std::shared_ptr<TextureCube> VulkanRenderer::GetBlackTextureCube(ImageFormat format)
 	{
+		if (m_BlackCubeTextureAssets.contains(format))
+			return AssetManager::GetAsset<TextureCube>(m_BlackCubeTextureAssets[format]);
+
 		TextureSpecification cubeTexSpec{};
 		cubeTexSpec.Width = 1;
 		cubeTexSpec.Height = 1;
@@ -472,10 +481,12 @@ namespace VulkanCore {
 		cubeTexSpec.GenerateMips = false;
 
 		uint32_t* textureData = new uint32_t[6];
-		for (uint32_t i = 0; i < 6; ++i)
-			textureData[i] = 0x0;
+		memset(textureData, 0, 24);
 
-		return std::make_shared<VulkanTextureCube>(textureData, cubeTexSpec);
+		auto blackCubeTexture = AssetManager::CreateMemoryOnlyAsset<VulkanTextureCube>(textureData, cubeTexSpec);
+		m_BlackCubeTextureAssets[format] = blackCubeTexture->Handle;
+
+		return blackCubeTexture;
 	}
 
 	void VulkanRenderer::BeginRenderPass(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<RenderPass> renderPass)
