@@ -308,9 +308,9 @@ namespace VulkanCore {
 
 				// TODO: Here we should prompt another popup stating whether file has been deleted or not
 				if (removed)
-					VK_WARN("File: {} is removed from ContentBrowser!", filepath);
+					VK_WARN("File {} is removed from ContentBrowser!", filepath);
 				else
-					VK_WARN("Unable to remove file: {}! It could be referencing in memory!", filepath);
+					VK_WARN("Unable to remove file {}! It could be referencing in memory!", filepath);
 
 				ImGui::CloseCurrentPopup();
 			}

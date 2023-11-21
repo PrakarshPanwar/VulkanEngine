@@ -69,6 +69,7 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanDescriptorPool> m_GlobalDescriptorPool;
 
 		std::shared_ptr<RenderCommandBuffer> m_CommandBuffer;
+		std::unordered_map<ImageFormat, AssetHandle> m_WhiteTextureAssets, m_BlackCubeTextureAssets;
 
 		uint32_t m_CurrentImageIndex;
 		int m_CurrentFrameIndex = 0;
