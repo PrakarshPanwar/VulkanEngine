@@ -308,9 +308,11 @@ namespace VulkanCore {
 			m_CompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_CompositePipeline->GetSpecification().pShader, "Composite Shader Material");
 
 			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
-			m_CompositeShaderMaterial->SetImages(0, geomFB->GetAttachment(true));
-			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
-			m_CompositeShaderMaterial->SetTexture(2, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
+			m_CompositeShaderMaterial->SetBuffers(0, m_UBCamera);
+			m_CompositeShaderMaterial->SetImages(1, geomFB->GetAttachment(true));
+			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment());
+			m_CompositeShaderMaterial->SetImage(3, m_BloomTextures[2]);
+			m_CompositeShaderMaterial->SetTexture(4, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -412,9 +414,11 @@ namespace VulkanCore {
 		{
 			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
 
-			m_CompositeShaderMaterial->SetImages(0, geomFB->GetAttachment(true));
-			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
-			m_CompositeShaderMaterial->SetTexture(2, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
+			m_CompositeShaderMaterial->SetBuffers(0, m_UBCamera);
+			m_CompositeShaderMaterial->SetImages(1, geomFB->GetAttachment(true));
+			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment());
+			m_CompositeShaderMaterial->SetImage(3, m_BloomTextures[2]);
+			m_CompositeShaderMaterial->SetTexture(4, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -601,6 +605,7 @@ namespace VulkanCore {
 			ImGui::DragFloat("Dirt Intensity", &m_SceneSettings.DirtIntensity, 0.01f, 0.0f, 100.0f);
 			ImGui::DragFloat("Skybox LOD", &m_SkyboxSettings.LOD, 0.01f, 0.0f, 11.0f);
 			ImGui::DragFloat("Skybox Intensity", &m_SkyboxSettings.Intensity, 0.01f, 0.0f, 20.0f);
+			ImGui::Checkbox("Fog", (bool*)&m_SceneSettings.EnableFog);
 
 			ImGui::TreePop();
 		}
@@ -690,6 +695,11 @@ namespace VulkanCore {
 		cameraUB.Projection = camera.GetProjectionMatrix();
 		cameraUB.View = camera.GetViewMatrix();
 		cameraUB.InverseView = glm::inverse(camera.GetViewMatrix());
+
+		glm::vec2 nearFarClip = camera.GetNearFarClip();
+		cameraUB.DepthUnpackConsts.x = (nearFarClip.y * nearFarClip.x) / (nearFarClip.y - nearFarClip.x);
+		cameraUB.DepthUnpackConsts.y = (nearFarClip.y + nearFarClip.x) / (nearFarClip.y - nearFarClip.x);
+
 		m_UBCamera[frameIndex]->WriteAndFlushBuffer(&cameraUB);
 
 		// Point Light

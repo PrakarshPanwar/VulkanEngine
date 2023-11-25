@@ -116,6 +116,7 @@ namespace VulkanCore {
 		{
 			float Exposure = 1.0f;
 			float DirtIntensity = 5.0f;
+			uint32_t EnableFog = 1;
 		};
 
 		struct BloomParams

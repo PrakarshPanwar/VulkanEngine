@@ -34,6 +34,7 @@ namespace VulkanCore {
 			UpdateProjection();
 		}
 
+		glm::vec2 GetNearFarClip() const { return { m_NearClip, m_FarClip }; }
 		const glm::mat4& GetViewMatrix() const { return m_ViewMatrix; }
 		const glm::mat4& GetProjectionMatrix() const { return m_Projection; }
 		glm::mat4 GetViewProjection() const { return m_Projection * m_ViewMatrix; }

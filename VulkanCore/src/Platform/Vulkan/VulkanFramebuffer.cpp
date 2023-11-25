@@ -75,6 +75,11 @@ namespace VulkanCore {
 		return m_ColorAttachments[resolve && multisampled ? attachmentSize + index : index];
 	}
 
+	const std::vector<std::shared_ptr<Image2D>>& VulkanFramebuffer::GetDepthAttachment() const
+	{
+		return m_DepthAttachment;
+	}
+
 	void VulkanFramebuffer::Invalidate()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
