@@ -40,51 +40,49 @@ namespace VulkanCore {
 
 		void SetDebugUtilsObjectName(VkDevice device, VkObjectType objectType, const std::string& debugName, void* object)
 		{
-			if (vkSetDebugUtilsObjectNameEXT == nullptr)
-				return;
+			if (vkSetDebugUtilsObjectNameEXT)
+			{
+				VkDebugUtilsObjectNameInfoEXT debugUtilsNameInfo{};
+				debugUtilsNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+				debugUtilsNameInfo.objectType = objectType;
+				debugUtilsNameInfo.objectHandle = (uint64_t)object;
+				debugUtilsNameInfo.pObjectName = debugName.c_str();
 
-			VkDebugUtilsObjectNameInfoEXT debugUtilsNameInfo{};
-			debugUtilsNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-			debugUtilsNameInfo.objectType = objectType;
-			debugUtilsNameInfo.objectHandle = (uint64_t)object;
-			debugUtilsNameInfo.pObjectName = debugName.c_str();
+				vkSetDebugUtilsObjectNameEXT(device, &debugUtilsNameInfo);
+			}
 
-			vkSetDebugUtilsObjectNameEXT(device, &debugUtilsNameInfo);
-
-			if (vkDebugMarkerSetObjectNameEXT == nullptr)
-				return;
-
-			VkDebugMarkerObjectNameInfoEXT debugMarkerNameInfo{};
-			debugMarkerNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
-			debugMarkerNameInfo.objectType = (VkDebugReportObjectTypeEXT)objectType;
-			debugMarkerNameInfo.object = (uint64_t)object;
-			debugMarkerNameInfo.pObjectName = debugName.c_str();
+			if (vkDebugMarkerSetObjectNameEXT)
+			{
+				VkDebugMarkerObjectNameInfoEXT debugMarkerNameInfo{};
+				debugMarkerNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
+				debugMarkerNameInfo.objectType = (VkDebugReportObjectTypeEXT)objectType;
+				debugMarkerNameInfo.object = (uint64_t)object;
+				debugMarkerNameInfo.pObjectName = debugName.c_str();
 				
-			vkDebugMarkerSetObjectNameEXT(device, &debugMarkerNameInfo);
+				vkDebugMarkerSetObjectNameEXT(device, &debugMarkerNameInfo);
+			}
 		}
 
 		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName, float labelColor[])
 		{
-			if (vkCmdDebugMarkerBeginEXT == nullptr)
-				return;
+			if (vkCmdDebugMarkerBeginEXT)
+			{
+				VkDebugMarkerMarkerInfoEXT markerInfoExt{};
+				markerInfoExt.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
+				markerInfoExt.pMarkerName = labelName;
+				markerInfoExt.color[0] = labelColor[0];
+				markerInfoExt.color[1] = labelColor[1];
+				markerInfoExt.color[2] = labelColor[2];
+				markerInfoExt.color[3] = labelColor[3];
 
-			VkDebugMarkerMarkerInfoEXT markerInfoExt{};
-			markerInfoExt.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
-			markerInfoExt.pMarkerName = labelName;
-			markerInfoExt.color[0] = labelColor[0];
-			markerInfoExt.color[1] = labelColor[1];
-			markerInfoExt.color[2] = labelColor[2];
-			markerInfoExt.color[3] = labelColor[3];
-
-			vkCmdDebugMarkerBeginEXT(cmdBuffer, &markerInfoExt);
+				vkCmdDebugMarkerBeginEXT(cmdBuffer, &markerInfoExt);
+			}
 		}
 
 		void EndCommandBufferLabel(VkCommandBuffer cmdBuffer)
 		{
-			if (vkCmdDebugMarkerEndEXT == nullptr)
-				return;
-
-			vkCmdDebugMarkerEndEXT(cmdBuffer);
+			if (vkCmdDebugMarkerEndEXT)
+				vkCmdDebugMarkerEndEXT(cmdBuffer);
 		}
 
 	}

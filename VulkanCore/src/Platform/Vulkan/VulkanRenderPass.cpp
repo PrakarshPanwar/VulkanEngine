@@ -59,7 +59,10 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([this]
 		{
-			Invalidate();
+			if (m_Specification.TargetFramebuffer->GetSpecification().ReadDepthTexture)
+				InvalidateWithDepthTexture();
+			else
+				Invalidate();
 		});
 	}
 
@@ -165,9 +168,6 @@ namespace VulkanCore {
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = static_cast<uint32_t>(Framebuffer->GetColorAttachmentsTextureSpec().size());
 		subpass.pColorAttachments = attachmentRefs.data();
-
-		// TODO: We are using single resolve attachment but,
-		// I think we need a vector of it for multiple color attachments
 		subpass.pDepthStencilAttachment = Framebuffer->HasDepthAttachment() ? &depthAttachmentRef : nullptr;
 		subpass.pResolveAttachments = multisampled ? attachmentRefs.data() + Framebuffer->GetColorAttachmentsTextureSpec().size() : nullptr;
 
@@ -191,8 +191,169 @@ namespace VulkanCore {
 
 		VK_CHECK_RESULT(vkCreateRenderPass(device->GetVulkanDevice(), &renderPassInfo, nullptr, &m_RenderPass), "Failed to Create Scene Render Pass!");
 
-		m_ClearValues.resize(attachmentDescriptions.size());
 		m_AttachmentDescriptions = attachmentDescriptions;
+		m_ClearValues.resize(m_AttachmentDescriptions.size());
+		Framebuffer->CreateFramebuffer(m_RenderPass);
+	}
+
+	void VulkanRenderPass::InvalidateWithDepthTexture()
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+		auto Framebuffer = std::static_pointer_cast<VulkanFramebuffer>(m_Specification.TargetFramebuffer);
+
+		VkSampleCountFlagBits samples = Utils::VulkanSampleCount(Framebuffer->GetSpecification().Samples);
+
+		bool multisampled = Utils::IsMultisampled(m_Specification);
+		std::vector<VkAttachmentDescription2> attachmentDescriptions;
+		std::vector<VkAttachmentReference2> attachmentRefs;
+		std::vector<VkAttachmentReference2> attachmentResolveRefs;
+
+		// Color Attachments Description
+		for (const auto& attachmentSpec : Framebuffer->GetColorAttachmentsTextureSpec())
+		{
+			VkAttachmentDescription2 colorAttachment = {};
+			colorAttachment.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2;
+			colorAttachment.format = Utils::VulkanImageFormat(attachmentSpec.ImgFormat);
+			colorAttachment.samples = samples;
+			colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			colorAttachment.finalLayout = multisampled ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			attachmentDescriptions.push_back(colorAttachment);
+		}
+
+		// Resolve Attachment Description
+		VkAttachmentDescription2 colorAttachmentResolve = {};
+		if (multisampled)
+		{
+			for (const auto& attachmentSpec : Framebuffer->GetColorAttachmentsTextureSpec())
+			{
+				colorAttachmentResolve.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2;
+				colorAttachmentResolve.format = Utils::VulkanImageFormat(attachmentSpec.ImgFormat);
+				colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+				colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+				colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+				colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+				colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				colorAttachmentResolve.flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
+				attachmentDescriptions.push_back(colorAttachmentResolve);
+			}
+		}
+
+		// Depth Attachment Description
+		if (Framebuffer->HasDepthAttachment())
+		{
+			VkAttachmentDescription2 depthAttachment = {};
+			depthAttachment.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2;
+			depthAttachment.format = Utils::VulkanImageFormat(Framebuffer->GetDepthAttachmentTextureSpec().ImgFormat);
+			depthAttachment.samples = samples;
+			depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			attachmentDescriptions.push_back(depthAttachment);
+
+			if (Framebuffer->GetSpecification().ReadDepthTexture)
+			{
+				VkAttachmentDescription2 depthAttachmentResolve = {};
+				depthAttachmentResolve.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2;
+				depthAttachmentResolve.format = Utils::VulkanImageFormat(Framebuffer->GetDepthAttachmentTextureSpec().ImgFormat);
+				depthAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+				depthAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				depthAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+				depthAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				depthAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+				depthAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+				depthAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+				depthAttachmentResolve.flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
+				attachmentDescriptions.push_back(depthAttachmentResolve);
+			}
+		}
+
+		// Color Attachment References
+		for (int i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
+		{
+			VkAttachmentReference2 colorAttachmentRef = {};
+			colorAttachmentRef.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2;
+			colorAttachmentRef.attachment = i;
+			colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			attachmentRefs.push_back(colorAttachmentRef);
+		}
+
+		// Resolve Attachment Reference(Only applicable if multisampling is present)
+		if (multisampled)
+		{
+			for (int i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
+			{
+				VkAttachmentReference2 colorAttachmentResolveRef = {};
+				colorAttachmentResolveRef.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2;
+				colorAttachmentResolveRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
+				colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+				attachmentRefs.push_back(colorAttachmentResolveRef);
+				attachmentResolveRefs.push_back(colorAttachmentResolveRef);
+			}
+		}
+
+		// Depth Attachment Reference
+		VkAttachmentReference2 depthAttachmentRef = {};
+		depthAttachmentRef.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2;
+		depthAttachmentRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
+		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		attachmentRefs.push_back(depthAttachmentRef);
+
+		VkAttachmentReference2 depthAttachmentResolveRef = {};
+		depthAttachmentResolveRef.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2;
+		depthAttachmentResolveRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
+		depthAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		attachmentRefs.push_back(depthAttachmentResolveRef);
+
+		// Depth Resolve Extension
+		VkSubpassDescriptionDepthStencilResolve depthResolveExt = {};
+		depthResolveExt.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE;
+		depthResolveExt.depthResolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+		depthResolveExt.stencilResolveMode = VK_RESOLVE_MODE_NONE;
+		depthResolveExt.pDepthStencilResolveAttachment = &depthAttachmentResolveRef;
+
+		VkSubpassDescription2 subpass = {}; // TODO: Changes need to be made
+		subpass.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2;
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = static_cast<uint32_t>(Framebuffer->GetColorAttachmentsTextureSpec().size());
+		subpass.pColorAttachments = attachmentRefs.data();
+		subpass.pDepthStencilAttachment = Framebuffer->HasDepthAttachment() ? &depthAttachmentRef : nullptr;
+		subpass.pResolveAttachments = multisampled ? attachmentResolveRefs.data() : nullptr;
+		subpass.pNext = &depthResolveExt;
+
+		VkSubpassDependency2 dependency = {}; // TODO: Changes need to be made
+		dependency.sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2;
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.srcAccessMask = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.dstSubpass = 0;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+
+		// TODO: There could be multiple subpasses/framebuffers, needs to be changed in future
+		VkRenderPassCreateInfo2 renderPassInfo = {};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2;
+		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
+		renderPassInfo.pAttachments = attachmentDescriptions.data();
+		renderPassInfo.subpassCount = 1;
+		renderPassInfo.pSubpasses = &subpass;
+		renderPassInfo.dependencyCount = 1;
+		renderPassInfo.pDependencies = &dependency;
+
+		VK_CHECK_RESULT(vkCreateRenderPass2(device->GetVulkanDevice(), &renderPassInfo, nullptr, &m_RenderPass), "Failed to Create Scene Render Pass!");
+
+		m_AttachmentDescriptions2 = attachmentDescriptions;
+		m_ClearValues.resize(m_AttachmentDescriptions2.size());
 		Framebuffer->CreateFramebuffer(m_RenderPass);
 	}
 
@@ -224,7 +385,13 @@ namespace VulkanCore {
 			for (uint32_t i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
 				m_ClearValues[i].color = { fbSpec.ClearColor.x, fbSpec.ClearColor.y, fbSpec.ClearColor.z, fbSpec.ClearColor.w };
 
-			m_ClearValues[m_ClearValues.size() - 1].depthStencil = { 1.0f, 0 };
+			if (m_Specification.TargetFramebuffer->GetSpecification().ReadDepthTexture)
+			{
+				m_ClearValues[m_ClearValues.size() - 2].depthStencil = { 1.0f, 0 };
+				m_ClearValues[m_ClearValues.size() - 1].depthStencil = { 1.0f, 0 };
+			}
+			else
+				m_ClearValues[m_ClearValues.size() - 1].depthStencil = { 1.0f, 0 };
 
 			beginPassInfo.clearValueCount = (uint32_t)m_ClearValues.size();
 			beginPassInfo.pClearValues = m_ClearValues.data();

@@ -50,7 +50,7 @@ namespace VulkanCore {
 	class Image2D : public Resource
 	{
 	public:
-		virtual void Resize(uint32_t width, uint32_t height, uint32_t mips) = 0;
+		virtual void Resize(uint32_t width, uint32_t height, uint32_t mips = 1) = 0;
 		virtual glm::uvec2 GetMipSize(uint32_t mipLevel) const = 0;
 		virtual const ImageSpecification& GetSpecification() const = 0;
 	};

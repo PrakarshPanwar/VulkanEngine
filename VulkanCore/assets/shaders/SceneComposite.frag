@@ -73,25 +73,25 @@ void main()
 	vec3 bloom = UpsampleTent9(u_BloomTexture, 0, v_TexCoord, 1.0 / fTexSize, 0.5);
 	vec3 bloomDirt = texture(u_BloomDirtTexture, v_TexCoord).rgb * u_SceneParams.DirtIntensity;
 
-	if (u_SceneParams.EnableFog == 1)
+	if (bool(u_SceneParams.EnableFog))
 	{
 		float depth = texture(u_DepthTexture, v_TexCoord).r;
 		depth = LinearizeDepth(depth);
 
-		//const float fogStartDistance = 5.5;
+		const float fogStartDistance = 5.5;
 		const float bloomFogStartDistance = 5.0;
 		const float fogFallOffDistance = 30.0;
 
-		//const float fogAmount = smoothstep(fogStartDistance, fogStartDistance + fogFallOffDistance, depth);
+		const float fogAmount = smoothstep(fogStartDistance, fogStartDistance + fogFallOffDistance, depth);
 		const float fogAmountBloom = smoothstep(bloomFogStartDistance, bloomFogStartDistance + fogFallOffDistance, depth);
 
 		vec3 fogColor = vec3(0.11, 0.12, 0.15);
-		fogColor *= 10.0;
+		fogColor *= 2.0;
 		vec3 bloomClamped = clamp(bloom * (1.0 - fogAmountBloom), 0.0, 1.0);
 		float intensity = (bloomClamped.r + bloomClamped.g + bloomClamped.b) / 3.0;
 		fogColor = mix(fogColor, color, intensity);
 
-		color = mix(color, fogColor, intensity);
+		color = mix(color, fogColor, fogAmount);
 		bloom *= (1.0 - fogAmountBloom);
 	}
 
