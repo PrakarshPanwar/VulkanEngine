@@ -18,7 +18,7 @@ namespace VulkanCore {
 		inline const FramebufferTextureSpecification& GetDepthAttachmentTextureSpec() const override { return m_DepthAttachmentSpecification; }
 		inline bool HasDepthAttachment() const { return m_DepthAttachmentSpecification; }
 		const std::vector<std::shared_ptr<Image2D>>& GetAttachment(bool resolve = false, uint32_t index = 0) const override;
-		const std::vector<std::shared_ptr<Image2D>>& GetDepthAttachment() const override;
+		const std::vector<std::shared_ptr<Image2D>>& GetDepthAttachment(bool resolve = false) const override;
 
 		void Invalidate();
 		void CreateFramebuffer(VkRenderPass renderPass);
@@ -31,7 +31,7 @@ namespace VulkanCore {
 		FramebufferTextureSpecification m_DepthAttachmentSpecification;
 
 		std::vector<std::vector<std::shared_ptr<Image2D>>> m_ColorAttachments;
-		std::vector<std::shared_ptr<Image2D>> m_DepthAttachment;
+		std::vector<std::shared_ptr<Image2D>> m_DepthAttachment, m_DepthAttachmentResolve;
 
 		std::vector<VkFramebuffer> m_Framebuffers;
 

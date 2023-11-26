@@ -75,9 +75,10 @@ namespace VulkanCore {
 		return m_ColorAttachments[resolve && multisampled ? attachmentSize + index : index];
 	}
 
-	const std::vector<std::shared_ptr<Image2D>>& VulkanFramebuffer::GetDepthAttachment() const
+	const std::vector<std::shared_ptr<Image2D>>& VulkanFramebuffer::GetDepthAttachment(bool resolve) const
 	{
-		return m_DepthAttachment;
+		bool multisampled = Utils::IsMultisampled(m_Specification);
+		return resolve && multisampled ? m_DepthAttachmentResolve : m_DepthAttachment;
 	}
 
 	void VulkanFramebuffer::Invalidate()
@@ -190,6 +191,38 @@ namespace VulkanCore {
 
 				m_DepthAttachment.push_back(depthImage);
 			}
+
+			if (multisampled && m_Specification.ReadDepthTexture)
+			{
+				m_DepthAttachmentResolve.reserve(framesInFlight);
+
+				for (uint32_t i = 0; i < framesInFlight; ++i)
+				{
+					ImageSpecification spec;
+					spec.DebugName = "Framebuffer Depth Resolve";
+					spec.Width = m_Specification.Width;
+					spec.Height = m_Specification.Height;
+					spec.Samples = 1;
+					spec.Format = m_DepthAttachmentSpecification.ImgFormat;
+					spec.Usage = ImageUsage::Attachment;
+
+					auto depthResolveImage = std::make_shared<VulkanImage>(spec);
+					depthResolveImage->Invalidate();
+
+					m_DepthAttachmentResolve.push_back(depthResolveImage);
+
+					// Depth Resolve Transition
+					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+
+					Utils::InsertImageMemoryBarrier(barrierCmd, depthResolveImage->GetVulkanImageInfo().Image,
+						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+						VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
+
+					device->FlushCommandBuffer(barrierCmd);
+				}
+			}
 		}
 	}
 
@@ -213,7 +246,15 @@ namespace VulkanCore {
 				Attachments.push_back(attachment->GetVulkanImageInfo().ImageView);
 			}
 
-			if (HasDepthAttachment())
+			if (HasDepthAttachment() && m_Specification.ReadDepthTexture)
+			{
+				auto depthAttachment = std::static_pointer_cast<VulkanImage>(m_DepthAttachment[i]);
+				Attachments.push_back(depthAttachment->GetVulkanImageInfo().ImageView);
+
+				auto depthAttachmentResolve = std::static_pointer_cast<VulkanImage>(m_DepthAttachmentResolve[i]);
+				Attachments.push_back(depthAttachmentResolve->GetVulkanImageInfo().ImageView);
+			}
+			else if (HasDepthAttachment())
 			{
 				auto depthAttachment = std::static_pointer_cast<VulkanImage>(m_DepthAttachment[i]);
 				Attachments.push_back(depthAttachment->GetVulkanImageInfo().ImageView);
@@ -250,6 +291,8 @@ namespace VulkanCore {
 		m_Specification.Width = width;
 		m_Specification.Height = height;
 
+		VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+
 		for (auto& fbImages : m_ColorAttachments)
 		{
 			for (auto& fbImage : fbImages)
@@ -260,24 +303,31 @@ namespace VulkanCore {
 
 				if (!multisampled)
 				{
-					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
-
 					Utils::InsertImageMemoryBarrier(barrierCmd, vulkanFBImage->GetVulkanImageInfo().Image,
 						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
 						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 						VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-					device->FlushCommandBuffer(barrierCmd);
 				}
 			}
 		}
 
 		for (auto& depthImage : m_DepthAttachment)
+			depthImage->Resize(width, height);
+
+		for (auto& depthResolveImage : m_DepthAttachmentResolve)
 		{
-			auto vulkanDepthImage = std::static_pointer_cast<VulkanImage>(depthImage);
-			vulkanDepthImage->Resize(width, height);
+			auto vulkanDepthResolveImage = std::static_pointer_cast<VulkanImage>(depthResolveImage);
+			depthResolveImage->Resize(width, height);
+
+			Utils::InsertImageMemoryBarrier(barrierCmd, vulkanDepthResolveImage->GetVulkanImageInfo().Image,
+				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
 		}
+
+		device->FlushCommandBuffer(barrierCmd);
 	}
 
 }

@@ -125,7 +125,8 @@ namespace VulkanCore {
 			FramebufferSpecification geomFramebufferSpec;
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
-			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::DEPTH24STENCIL8 };
+			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::DEPTH32F };
+			geomFramebufferSpec.ReadDepthTexture = true;
 			geomFramebufferSpec.Transfer = true;
 			geomFramebufferSpec.Samples = 8;
 
@@ -310,7 +311,7 @@ namespace VulkanCore {
 			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
 			m_CompositeShaderMaterial->SetBuffers(0, m_UBCamera);
 			m_CompositeShaderMaterial->SetImages(1, geomFB->GetAttachment(true));
-			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment());
+			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment(true));
 			m_CompositeShaderMaterial->SetImage(3, m_BloomTextures[2]);
 			m_CompositeShaderMaterial->SetTexture(4, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
@@ -416,7 +417,7 @@ namespace VulkanCore {
 
 			m_CompositeShaderMaterial->SetBuffers(0, m_UBCamera);
 			m_CompositeShaderMaterial->SetImages(1, geomFB->GetAttachment(true));
-			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment());
+			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment(true));
 			m_CompositeShaderMaterial->SetImage(3, m_BloomTextures[2]);
 			m_CompositeShaderMaterial->SetTexture(4, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
