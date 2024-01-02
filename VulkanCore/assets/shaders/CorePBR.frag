@@ -1,6 +1,7 @@
 #version 460 core
 
 layout(location = 0) out vec4 o_Color;
+layout(location = 1) out int o_EntityID; // Picking Color
 
 struct VertexOutput
 {
@@ -286,4 +287,5 @@ void main()
 
     // TODO: Transparent Materials(OIT)
 	o_Color = vec4(color, u_Material.Albedo.a * diffuse.a);
+    o_EntityID = gl_PrimitiveID;
 }
