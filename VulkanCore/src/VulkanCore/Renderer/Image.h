@@ -7,6 +7,7 @@ namespace VulkanCore {
 	enum class ImageFormat
 	{
 		None,
+		R32I,
 		RGBA8_SRGB,
 		RGBA8_NORM,
 		RGBA8_UNORM,
