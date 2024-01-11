@@ -2,7 +2,6 @@
 #include "VulkanCore/Renderer/EditorCamera.h"
 #include "VulkanCore/Renderer/ComputePipeline.h"
 #include "VulkanCore/Renderer/UniformBuffer.h"
-#include "VulkanCore/Renderer/VertexBuffer.h"
 #include "VulkanCore/Renderer/RenderCommandBuffer.h"
 #include "Platform/Vulkan/VulkanVertexBuffer.h"
 
@@ -177,7 +176,6 @@ namespace VulkanCore {
 		// Skybox Resources
 		std::shared_ptr<TextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;
 		std::shared_ptr<Image2D> m_BRDFTexture;
-		std::shared_ptr<VertexBuffer> m_SkyboxVBData;
 		SkyboxSettings m_SkyboxSettings;
 		VkDescriptorSet m_SkyboxTextureID;
 

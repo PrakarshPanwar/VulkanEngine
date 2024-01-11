@@ -17,6 +17,7 @@ namespace VulkanCore {
 			switch (format)
 			{
 			case ImageFormat::R32I:			   return VK_FORMAT_R32_SINT;
+			case ImageFormat::R32F:			   return VK_FORMAT_R32_SFLOAT;
 			case ImageFormat::RGBA8_SRGB:	   return VK_FORMAT_R8G8B8A8_SRGB;
 			case ImageFormat::RGBA8_NORM:	   return VK_FORMAT_R8G8B8A8_SNORM;
 			case ImageFormat::RGBA8_UNORM:	   return VK_FORMAT_R8G8B8A8_UNORM;

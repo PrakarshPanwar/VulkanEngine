@@ -25,55 +25,6 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		std::shared_ptr<VulkanVertexBuffer> CreateCubeModel()
-		{
-			float skyboxVertices[] = {       
-				-1.0f,  1.0f, -1.0f,
-				-1.0f, -1.0f, -1.0f,
-				 1.0f, -1.0f, -1.0f,
-				 1.0f, -1.0f, -1.0f,
-				 1.0f,  1.0f, -1.0f,
-				-1.0f,  1.0f, -1.0f,
-
-				-1.0f, -1.0f,  1.0f,
-				-1.0f, -1.0f, -1.0f,
-				-1.0f,  1.0f, -1.0f,
-				-1.0f,  1.0f, -1.0f,
-				-1.0f,  1.0f,  1.0f,
-				-1.0f, -1.0f,  1.0f,
-
-				 1.0f, -1.0f, -1.0f,
-				 1.0f, -1.0f,  1.0f,
-				 1.0f,  1.0f,  1.0f,
-				 1.0f,  1.0f,  1.0f,
-				 1.0f,  1.0f, -1.0f,
-				 1.0f, -1.0f, -1.0f,
-
-				-1.0f, -1.0f,  1.0f,
-				-1.0f,  1.0f,  1.0f,
-				 1.0f,  1.0f,  1.0f,
-				 1.0f,  1.0f,  1.0f,
-				 1.0f, -1.0f,  1.0f,
-				-1.0f, -1.0f,  1.0f,
-
-				-1.0f,  1.0f, -1.0f,
-				 1.0f,  1.0f, -1.0f,
-				 1.0f,  1.0f,  1.0f,
-				 1.0f,  1.0f,  1.0f,
-				-1.0f,  1.0f,  1.0f,
-				-1.0f,  1.0f, -1.0f,
-
-				-1.0f, -1.0f, -1.0f,
-				-1.0f, -1.0f,  1.0f,
-				 1.0f, -1.0f, -1.0f,
-				 1.0f, -1.0f, -1.0f,
-				-1.0f, -1.0f,  1.0f,
-				 1.0f, -1.0f,  1.0f
-			};
-
-			return std::make_shared<VulkanVertexBuffer>(skyboxVertices, (uint32_t)sizeof(skyboxVertices));
-		}
-
 		static uint32_t CalculateMipCount(uint32_t width, uint32_t height)
 		{
 			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
@@ -178,10 +129,6 @@ namespace VulkanCore {
 			PipelineSpecification skyboxPipelineSpec;
 			skyboxPipelineSpec.DebugName = "Skybox Pipeline";
 			skyboxPipelineSpec.pShader = Renderer::GetShader("Skybox");
-			skyboxPipelineSpec.Layout = {
-				{ ShaderDataType::Float3, "a_Position" }
-			};
-
 			skyboxPipelineSpec.pRenderPass = m_GeometryPipeline->GetSpecification().pRenderPass;
 
 			m_SkyboxPipeline = std::make_shared<VulkanPipeline>(skyboxPipelineSpec);
@@ -533,8 +480,6 @@ namespace VulkanCore {
 		m_BRDFTexture = Renderer::CreateBRDFTexture();
 		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/PointLightIcon.png");
 		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/SpotLightIcon.png");
-
-		m_SkyboxVBData = Utils::CreateCubeModel();
 	}
 
 	void SceneRenderer::Release()
@@ -883,7 +828,7 @@ namespace VulkanCore {
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		// Rendering Skybox
-		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxMaterial, &m_SkyboxSettings);
+		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxMaterial, &m_SkyboxSettings);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 
