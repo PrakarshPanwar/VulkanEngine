@@ -88,9 +88,9 @@ namespace VulkanCore {
 		m_Shaders.clear();
 	}
 
-	void Renderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& skyboxVB, const std::shared_ptr<Material>& skyboxMaterial, void* pcData)
+	void Renderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& skyboxMaterial, void* pcData)
 	{
-		s_Renderer->RenderSkybox(cmdBuffer, pipeline, skyboxVB, skyboxMaterial, pcData);
+		s_Renderer->RenderSkybox(cmdBuffer, pipeline, skyboxMaterial, pcData);
 	}	
 	
 	void Renderer::BeginTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)

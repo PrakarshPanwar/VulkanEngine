@@ -501,9 +501,9 @@ namespace VulkanCore {
 		vulkanRenderPass->End(std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer));
 	}
 
-	void VulkanRenderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& skyboxVB, const std::shared_ptr<Material>& skyboxMaterial, void* pcData /*= nullptr*/)
+	void VulkanRenderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& skyboxMaterial, void* pcData)
 	{
-		Renderer::Submit([cmdBuffer, pipeline, skyboxMaterial, pcData, skyboxVB]
+		Renderer::Submit([cmdBuffer, pipeline, skyboxMaterial, pcData]
 		{
 			VK_CORE_PROFILE_FN("Renderer::RenderSkybox");
 
@@ -511,7 +511,6 @@ namespace VulkanCore {
 			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
 			vulkanPipeline->Bind(vulkanDrawCmd);
 
-			auto vulkanSkyboxVB = std::static_pointer_cast<VulkanVertexBuffer>(skyboxVB);
 			auto vulkanSkyboxMaterial = std::static_pointer_cast<VulkanMaterial>(skyboxMaterial);
 			vkCmdBindDescriptorSets(vulkanDrawCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -526,9 +525,6 @@ namespace VulkanCore {
 				(uint32_t)sizeof(glm::vec2),
 				pcData);
 
-			VkBuffer skyboxBuffer[] = { vulkanSkyboxVB->GetVulkanBuffer() };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(vulkanDrawCmd, 0, 1, skyboxBuffer, offsets);
 			vkCmdDraw(vulkanDrawCmd, 36, 1, 0, 0);
 		});
 	}
