@@ -1,6 +1,8 @@
 #pragma once
 #include "VulkanCore/Renderer/Framebuffer.h"
 #include "VulkanImage.h"
+#include "VulkanIndexBuffer.h"
+#include "VulkanRenderCommandBuffer.h"
 
 #include <glm/glm.hpp>
 
@@ -24,6 +26,8 @@ namespace VulkanCore {
 		void CreateFramebuffer(VkRenderPass renderPass);
 		void Release();
 		void Resize(uint32_t width, uint32_t height);
+
+		void* ReadPixel(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<IndexBuffer> imageBuffer, uint32_t index, uint32_t x, uint32_t y);
 	private:
 		FramebufferSpecification m_Specification;
 

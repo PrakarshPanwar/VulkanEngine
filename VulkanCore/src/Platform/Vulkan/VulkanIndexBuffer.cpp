@@ -51,12 +51,43 @@ namespace VulkanCore {
 		allocator.DestroyBuffer(stagingBuffer, stagingBufferAlloc);
 	}
 
+	VulkanIndexBuffer::VulkanIndexBuffer(uint32_t size)
+		: m_Size(size)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+		VulkanAllocator allocator("IndexBuffer");
+
+		// Index Buffer
+		VkBufferCreateInfo bufferCreateInfo{};
+		bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferCreateInfo.size = m_Size;
+		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		m_MemoryAllocation = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_VulkanBuffer);
+
+		// Map Data to Index Buffer
+		m_MappedPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
+	}
+
 	VulkanIndexBuffer::~VulkanIndexBuffer()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("IndexBuffer");
 
+		if (m_MappedPtr)
+			allocator.UnmapMemory(m_MemoryAllocation);
+
 		allocator.DestroyBuffer(m_VulkanBuffer, m_MemoryAllocation);
+	}
+
+	void VulkanIndexBuffer::WriteData(void* data, uint32_t offset)
+	{
+		if (data)
+		{
+			memcpy(m_MappedPtr, data, m_Size);
+			vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, (VkDeviceSize)offset, (VkDeviceSize)m_Size);
+		}
 	}
 
 }
