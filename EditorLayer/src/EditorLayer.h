@@ -53,7 +53,7 @@ namespace VulkanCore {
 			m_ViewportFocused = false, m_WindowResized = false,
 			m_EnableSnap = false;
 
-		ImVec2 m_ViewportSize = { 1904.0f, 991.0f }; // TODO: Calculate this by function
+		ImVec2 m_ViewportSize;
 		glm::vec2 m_ViewportBounds[2];
 		int m_GizmoType = -1;
 		float m_TranslationSnapValue = 0.5f, m_RotationSnapValue = 45.0f, m_ScaleSnapValue = 0.5f;

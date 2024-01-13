@@ -47,6 +47,20 @@ namespace VulkanCore {
 		}
 	}
 
+	void Scene::OnSelectGeometry(SceneRenderer* renderer)
+	{
+		auto view = m_Registry.view<TransformComponent, MeshComponent>();
+
+		for (auto ent : view)
+		{
+			auto [transform, meshComponent] = view.get<TransformComponent, MeshComponent>(ent);
+
+			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshComponent.MeshHandle);
+			std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(meshComponent.MaterialTableHandle);
+			renderer->SubmitSelectedMesh(mesh, materialAsset, transform.GetTransform(), (uint32_t)ent);
+		}
+	}
+
 	void Scene::OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions)
 	{
 		{

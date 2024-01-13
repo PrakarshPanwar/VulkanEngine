@@ -75,7 +75,14 @@ namespace VulkanCore {
 		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
 			m_EditorCamera.OnUpdate();
 
-		m_SceneRenderer->RenderScene(m_EditorCamera);
+		SceneEditorData sceneEditorData{};
+		sceneEditorData.CameraData = m_EditorCamera;
+		sceneEditorData.ViewportBounds[0] = m_ViewportBounds[0];
+		sceneEditorData.ViewportBounds[1] = m_ViewportBounds[1];
+		sceneEditorData.ViewportHovered = m_ViewportHovered;
+		m_SceneRenderer->SetSceneEditorData(sceneEditorData);
+
+		m_SceneRenderer->RenderScene();
 	}
 
 	void EditorLayer::OnEvent(Event& e)
@@ -248,6 +255,9 @@ namespace VulkanCore {
 
 			ImGui::EndPopup();
 		}
+
+		if (m_ViewportHovered)
+			VK_WARN("Hovered Entity: {}", m_SceneRenderer->GetHoveredEntity());
 
 		RenderGizmo();
 		ImGui::End(); // End of Viewport

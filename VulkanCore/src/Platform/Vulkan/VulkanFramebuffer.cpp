@@ -105,6 +105,7 @@ namespace VulkanCore {
 				spec.Width = m_Specification.Width;
 				spec.Height = m_Specification.Height;
 				spec.Samples = m_Specification.Samples;
+				spec.Transfer = m_Specification.Transfer && !multisampled;
 				spec.Format = attachment.ImgFormat;
 				spec.Usage = ImageUsage::Attachment;
 
@@ -328,6 +329,56 @@ namespace VulkanCore {
 		}
 
 		device->FlushCommandBuffer(barrierCmd);
+	}
+
+	void* VulkanFramebuffer::ReadPixel(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<IndexBuffer> imageBuffer, uint32_t index, uint32_t x, uint32_t y)
+	{
+		int frameIndex = Renderer::RT_GetCurrentFrameIndex();
+
+		VkCommandBuffer copyCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+		auto vulkanBuffer = std::static_pointer_cast<VulkanIndexBuffer>(imageBuffer);
+		auto vulkanImage = std::static_pointer_cast<VulkanImage>(m_ColorAttachments[index][frameIndex]);
+
+		VkBuffer dstBuffer = vulkanBuffer->GetVulkanBuffer();
+		VkImage srcImage = vulkanImage->GetVulkanImageInfo().Image;
+
+		VkImageSubresourceLayers subresourceLayers{};
+		subresourceLayers.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceLayers.baseArrayLayer = 0;
+		subresourceLayers.layerCount = 1;
+		subresourceLayers.mipLevel = 0;
+
+		VkBufferImageCopy bufferImageCopy{};
+		bufferImageCopy.bufferOffset = 0;
+		bufferImageCopy.bufferRowLength = vulkanImage->GetSpecification().Width;
+		bufferImageCopy.bufferImageHeight = vulkanImage->GetSpecification().Height;
+		bufferImageCopy.imageSubresource = subresourceLayers;
+		bufferImageCopy.imageOffset = { 0, 0, 0 };
+		bufferImageCopy.imageExtent = { vulkanImage->GetSpecification().Width, vulkanImage->GetSpecification().Height, 1 };
+
+		// Changing Source Image Layout
+		Utils::InsertImageMemoryBarrier(copyCmd, srcImage,
+			VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+		vkCmdCopyImageToBuffer(copyCmd,
+			srcImage,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			dstBuffer,
+			1,
+			&bufferImageCopy);
+
+		// Changing Source Image back to its previous layout
+		Utils::InsertImageMemoryBarrier(copyCmd, srcImage,
+			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+		uint32_t* dataPtr = (uint32_t*)vulkanBuffer->GetMapPointer();
+		return dataPtr + (x + y * vulkanImage->GetSpecification().Width);
 	}
 
 }

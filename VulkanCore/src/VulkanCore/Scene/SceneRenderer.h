@@ -2,8 +2,8 @@
 #include "VulkanCore/Renderer/EditorCamera.h"
 #include "VulkanCore/Renderer/ComputePipeline.h"
 #include "VulkanCore/Renderer/UniformBuffer.h"
+#include "VulkanCore/Renderer/StorageBuffer.h"
 #include "VulkanCore/Renderer/RenderCommandBuffer.h"
-#include "Platform/Vulkan/VulkanVertexBuffer.h"
 
 #include <glm/glm.hpp>
 #include "Scene.h"
@@ -23,9 +23,11 @@ namespace VulkanCore {
 
 		void SetActiveScene(std::shared_ptr<Scene> scene);
 		void SetViewportSize(uint32_t width, uint32_t height);
-		void RenderScene(EditorCamera& camera);
+		void RenderScene();
 		void RenderLights();
+		void SelectionPass();
 		void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
+		void SubmitSelectedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform, uint32_t entityID);
 		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
 		void UpdateSkybox(const std::string& filepath);
@@ -34,7 +36,9 @@ namespace VulkanCore {
 		static inline VkDescriptorSet GetTextureCubeID() { return s_Instance->m_SkyboxTextureID; }
 		static std::shared_ptr<RenderCommandBuffer> GetRenderCommandBuffer() { return s_Instance->m_SceneCommandBuffer; }
 		static void SetSkybox(const std::string& filepath);
+		void SetSceneEditorData(const SceneEditorData& sceneEditorData) { m_SceneEditorData = sceneEditorData; }
 
+		inline uint32_t GetHoveredEntity() const { return m_HoveredEntity; }
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		std::shared_ptr<Image2D> GetFinalPassImage(uint32_t index) const;
 		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
@@ -97,12 +101,22 @@ namespace VulkanCore {
 			uint32_t InstanceCount;
 		};
 
+		struct DrawSelectCommand
+		{
+			std::shared_ptr<Mesh> MeshInstance;
+			std::shared_ptr<Material> MaterialInstance;
+			std::shared_ptr<VertexBuffer> TransformBuffer;
+			std::vector<uint32_t> EntityIDs;
+			uint32_t SubmeshIndex;
+			uint32_t InstanceCount;
+		};
+
 		struct MeshTransform
 		{
 			MeshTransform() = default;
 
 			std::vector<TransformData> Transforms = std::vector<TransformData>{ 10 };
-			std::shared_ptr<VertexBuffer> TransformBuffer = std::make_shared<VulkanVertexBuffer>(10 * sizeof(TransformData));
+			std::shared_ptr<VertexBuffer> TransformBuffer = VertexBuffer::Create(10 * sizeof(TransformData));
 		};
 
 		struct LodAndMode
@@ -138,6 +152,7 @@ namespace VulkanCore {
 
 		// Pipelines
 		std::shared_ptr<Pipeline> m_GeometryPipeline;
+		std::shared_ptr<Pipeline> m_GeometrySelectPipeline;
 		std::shared_ptr<Pipeline> m_LightPipeline;
 		std::shared_ptr<Pipeline> m_CompositePipeline;
 		std::shared_ptr<Pipeline> m_SkyboxPipeline;
@@ -147,6 +162,7 @@ namespace VulkanCore {
 		// Material Resources
 		// Material per Shader set
 		std::shared_ptr<Material> m_GeometryMaterial;
+		std::shared_ptr<Material> m_GeometrySelectMaterial;
 		std::shared_ptr<Material> m_PointLightShaderMaterial;
 		std::shared_ptr<Material> m_SpotLightShaderMaterial;
 		std::shared_ptr<Material> m_CompositeShaderMaterial;
@@ -164,6 +180,8 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBCamera;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBPointLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSpotLight;
+		std::vector<std::shared_ptr<StorageBuffer>> m_SBEntityData;
+		std::vector<std::shared_ptr<IndexBuffer>> m_ImageBuffer;
 
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 
@@ -180,11 +198,16 @@ namespace VulkanCore {
 		VkDescriptorSet m_SkyboxTextureID;
 
 		std::map<MeshKey, DrawCommand> m_MeshDrawList;
+		std::map<MeshKey, DrawSelectCommand> m_SelectedMeshDrawList;
 		std::map<MeshKey, MeshTransform> m_MeshTransformMap;
+		std::map<MeshKey, MeshTransform> m_SelectedMeshTransformMap;
 
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
+		glm::ivec2 m_MousePosition;
+		uint32_t m_HoveredEntity;
 
+		SceneEditorData m_SceneEditorData;
 		SceneSettings m_SceneSettings;
 		LodAndMode m_LodAndMode;
 		BloomParams m_BloomParams;

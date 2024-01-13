@@ -8,6 +8,7 @@
 #include "VulkanContext.h"
 #include "VulkanDescriptor.h"
 #include "VulkanMaterial.h"
+#include "VulkanVertexBuffer.h"
 #include "VulkanIndexBuffer.h"
 #include "VulkanRenderPass.h"
 #include "VulkanPipeline.h"
@@ -311,7 +312,7 @@ namespace VulkanCore {
 				1,
 				&region);
 
-			// Changing source image back to its previous layout
+			// Changing Source Image back to its previous layout
 			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, srcImage,
 				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
 				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -614,6 +615,42 @@ namespace VulkanCore {
 
 			s_Data.DrawCalls++;
 			s_Data.InstanceCount += instanceCount;
+		});
+	}
+
+	void VulkanRenderer::RenderSelectedMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	{
+		Renderer::Submit([cmdBuffer, mesh, pipeline, material, transformBuffer, transformData, submeshIndex, instanceCount]
+		{
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderSelectedMesh");
+
+			// Bind Vertex Buffer
+			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
+			vulkanPipeline->Bind(drawCmd);
+
+			auto meshSource = mesh->GetMeshSource();
+			auto vulkanMeshVB = std::static_pointer_cast<VulkanVertexBuffer>(meshSource->GetVertexBuffer());
+			auto vulkanMeshIB = std::static_pointer_cast<VulkanIndexBuffer>(meshSource->GetIndexBuffer());
+			auto vulkanTransformBuffer = std::static_pointer_cast<VulkanVertexBuffer>(transformBuffer);
+			vulkanTransformBuffer->WriteData((void*)transformData.data(), 0);
+			VkBuffer buffers[] = { vulkanMeshVB->GetVulkanBuffer(), vulkanTransformBuffer->GetVulkanBuffer() };
+			VkDeviceSize offsets[] = { 0, 0 };
+			vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
+			vkCmdBindIndexBuffer(drawCmd, vulkanMeshIB->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+			auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
+			VkDescriptorSet descriptorSets[1] = { vulkanMaterial->RT_GetVulkanMaterialDescriptorSet() };
+
+			vkCmdBindDescriptorSets(drawCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				vulkanPipeline->GetVulkanPipelineLayout(),
+				0, 1, descriptorSets,
+				0, nullptr);
+
+			const auto& submeshes = meshSource->GetSubmeshes();
+			const Submesh& submesh = submeshes[submeshIndex];
+			vkCmdDrawIndexed(drawCmd, submesh.IndexCount, instanceCount, submesh.BaseIndex, submesh.BaseVertex, 0);
 		});
 	}
 

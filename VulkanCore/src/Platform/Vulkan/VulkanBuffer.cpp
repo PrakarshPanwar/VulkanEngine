@@ -7,110 +7,57 @@
 
 namespace VulkanCore {
 
-	namespace Utils {
-
-		static VmaMemoryUsage VulkanMemoryFlags(VkMemoryPropertyFlags flags)
-		{
-			switch (flags)
-			{
-			case VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT: return VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
-			case VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT:   return VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
-			default:
-				VK_CORE_ASSERT(false, "Could not find necessary Format!");
-				return (VmaMemoryUsage)0;
-			}
-		}
-
-	}
-
-	VulkanBuffer::VulkanBuffer(VkDeviceSize instanceSize, uint32_t instanceCount, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize minOffsetAlignment)
-		: m_InstanceSize(instanceSize), m_InstanceCount(instanceCount), m_UsageFlags(usageFlags),
-		m_MemoryPropertyFlags(memoryPropertyFlags)
+	VulkanBuffer::VulkanBuffer(uint32_t size, VkBufferUsageFlags usageFlags, VmaMemoryUsage memoryPropertyFlags)
+		: m_Size(size), m_UsageFlags(usageFlags), m_MemoryUsageFlag(memoryPropertyFlags)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-		VulkanAllocator allocator("Buffer");
+		VulkanAllocator allocator("VulkanBuffer");
 
-		m_AlignmentSize = GetAlignment(m_InstanceSize, minOffsetAlignment);
-		m_BufferSize = m_AlignmentSize * m_InstanceCount;
+		VkBufferCreateInfo bufferCreateInfo{};
+		bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferCreateInfo.size = m_Size;
+		bufferCreateInfo.usage = m_UsageFlags;
+		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = m_BufferSize;
-		bufferInfo.usage = m_UsageFlags;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		const auto vmaMemoryFlag = Utils::VulkanMemoryFlags(m_MemoryPropertyFlags);
-		m_MemoryAllocation = allocator.AllocateBuffer(bufferInfo, vmaMemoryFlag, m_Buffer);
+		m_MemoryAllocation = allocator.AllocateBuffer(bufferCreateInfo, m_MemoryUsageFlag, m_VulkanBuffer);
 	}
 
 	VulkanBuffer::~VulkanBuffer()
 	{
-		Unmap();
-		vmaDestroyBuffer(VulkanContext::GetVulkanMemoryAllocator(), m_Buffer, m_MemoryAllocation);
-	}
+		if (m_MappedPtr)
+			Unmap();
 
-	VkResult VulkanBuffer::MapOld(VkDeviceSize size, VkDeviceSize offset)
-	{
-		auto device = VulkanContext::GetCurrentDevice();
-
-		VK_CORE_ASSERT(m_Buffer && m_Memory, "Called Map on Buffer before its creation!");
-		return vkMapMemory(device->GetVulkanDevice(), m_Memory, offset, size, 0, (void**)&m_dstMapped);
+		vmaDestroyBuffer(VulkanContext::GetVulkanMemoryAllocator(), m_VulkanBuffer, m_MemoryAllocation);
 	}
 
 	void VulkanBuffer::Map()
 	{
-		VulkanAllocator allocator("Buffer Mapping");
-		m_dstMapped = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
-	}
-
-	void VulkanBuffer::UnmapOld()
-	{
-		auto device = VulkanContext::GetCurrentDevice();
-
-		if (m_dstMapped)
-		{
-			vkUnmapMemory(device->GetVulkanDevice(), m_Memory);
-			m_dstMapped = nullptr;
-		}
+		VulkanAllocator allocator("VulkanBuffer");
+		m_MappedPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
 	}
 
 	void VulkanBuffer::Unmap()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-		VulkanAllocator allocator("Buffer Unmapping");
+		VulkanAllocator allocator("VulkanBuffer");
 
-		if (m_dstMapped)
-		{
-			allocator.UnmapMemory(m_MemoryAllocation);
-			m_dstMapped = nullptr;
-		}
+		allocator.UnmapMemory(m_MemoryAllocation);
+		m_MappedPtr = nullptr;
 	}
 
 	void VulkanBuffer::WriteToBuffer(void* data, VkDeviceSize size, VkDeviceSize offset)
 	{
-		VK_CORE_ASSERT(m_dstMapped, "Cannot Copy to Unmapped Buffer!");
+		VK_CORE_ASSERT(m_MappedPtr, "Cannot Copy to Unmapped Buffer!");
 
 		if (size == VK_WHOLE_SIZE)
-			memcpy(m_dstMapped, data, m_BufferSize);
+			memcpy(m_MappedPtr, data, m_Size);
 
 		else
 		{
-			char* memOffset = (char*)m_dstMapped;
+			char* memOffset = (char*)m_MappedPtr;
 			memOffset += offset;
 			memcpy(memOffset, data, size);
 		}
-	}
-
-	VkResult VulkanBuffer::FlushBufferOld(VkDeviceSize size, VkDeviceSize offset)
-	{
-		auto device = VulkanContext::GetCurrentDevice();
-
-		VkMappedMemoryRange mappedRange = {};
-		mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-		mappedRange.memory = m_Memory;
-		mappedRange.offset = offset;
-		mappedRange.size = size;
-		return vkFlushMappedMemoryRanges(device->GetVulkanDevice(), 1, &mappedRange);
 	}
 
 	VkResult VulkanBuffer::FlushBuffer(VkDeviceSize size, VkDeviceSize offset)
@@ -120,7 +67,7 @@ namespace VulkanCore {
 
 	VkDescriptorBufferInfo VulkanBuffer::DescriptorInfo(VkDeviceSize size, VkDeviceSize offset)
 	{
-		return VkDescriptorBufferInfo{ m_Buffer, offset, size };
+		return VkDescriptorBufferInfo{ m_VulkanBuffer, offset, size };
 	}
 
 	VkResult VulkanBuffer::Invalidate(VkDeviceSize size, VkDeviceSize offset)
@@ -133,26 +80,6 @@ namespace VulkanCore {
 		mappedRange.offset = offset;
 		mappedRange.size = size;
 		return vkInvalidateMappedMemoryRanges(device->GetVulkanDevice(), 1, &mappedRange);
-	}
-
-	void VulkanBuffer::WriteToIndex(void* data, int index)
-	{
-		WriteToBuffer(data, m_InstanceSize, index * m_AlignmentSize);
-	}
-
-	VkResult VulkanBuffer::FlushIndex(int index)
-	{
-		return FlushBufferOld(m_AlignmentSize, index * m_AlignmentSize);
-	}
-
-	VkDescriptorBufferInfo VulkanBuffer::DescriptorInfoForIndex(int index)
-	{
-		return DescriptorInfo(m_AlignmentSize, index * m_AlignmentSize);
-	}
-
-	VkResult VulkanBuffer::InvalidateIndex(int index)
-	{
-		return Invalidate(m_AlignmentSize, index * m_AlignmentSize);
 	}
 
 	VkDeviceSize VulkanBuffer::GetAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment)

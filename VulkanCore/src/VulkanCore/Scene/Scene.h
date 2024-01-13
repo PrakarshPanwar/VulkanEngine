@@ -1,11 +1,19 @@
 #pragma once
 #include <entt.hpp>
 #include "VulkanCore/Core/Components.h"
+#include "VulkanCore/Renderer/EditorCamera.h"
 
 namespace VulkanCore {
 
 	class Entity;
 	class SceneRenderer;
+
+	struct SceneEditorData
+	{
+		EditorCamera CameraData;
+		glm::vec2 ViewportBounds[2];
+		bool ViewportHovered;
+	};
 
 	class Scene
 	{
@@ -17,6 +25,7 @@ namespace VulkanCore {
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name);
 
 		void OnUpdateGeometry(SceneRenderer* renderer);
+		void OnSelectGeometry(SceneRenderer* renderer);
 		void OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions);
 		void UpdatePointLightUB(UBPointLights& ubo);
 		void UpdateSpotLightUB(UBSpotLights& ubo);
