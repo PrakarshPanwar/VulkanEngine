@@ -130,7 +130,7 @@ namespace VulkanCore {
 
 	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
 	{
-
+		m_SelectionContext = entity;
 	}
 
 	void SceneHierarchyPanel::SetContext(std::shared_ptr<Scene> context)

@@ -11,7 +11,7 @@ namespace VulkanCore {
 	struct SceneEditorData
 	{
 		EditorCamera CameraData;
-		glm::vec2 ViewportBounds[2];
+		glm::ivec2 ViewportMousePos;
 		bool ViewportHovered;
 	};
 

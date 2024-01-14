@@ -75,10 +75,16 @@ namespace VulkanCore {
 		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
 			m_EditorCamera.OnUpdate();
 
+		// Mouse Position relative to Viewport
+		auto [mx, my] = Input::GetMousePosition();
+		mx -= m_ViewportBounds[0].x;
+		my -= m_ViewportBounds[0].y;
+		int mouseX = (int)mx;
+		int mouseY = (int)my;
+
 		SceneEditorData sceneEditorData{};
 		sceneEditorData.CameraData = m_EditorCamera;
-		sceneEditorData.ViewportBounds[0] = m_ViewportBounds[0];
-		sceneEditorData.ViewportBounds[1] = m_ViewportBounds[1];
+		sceneEditorData.ViewportMousePos = glm::max(glm::ivec2{ mouseX, mouseY }, 0);
 		sceneEditorData.ViewportHovered = m_ViewportHovered;
 		m_SceneRenderer->SetSceneEditorData(sceneEditorData);
 
@@ -256,8 +262,12 @@ namespace VulkanCore {
 			ImGui::EndPopup();
 		}
 
-		if (m_ViewportHovered)
-			VK_WARN("Hovered Entity: {}", m_SceneRenderer->GetHoveredEntity());
+		if (m_ViewportHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+		{
+			uint32_t entityHandle = m_SceneRenderer->GetHoveredEntity();
+			m_HoveredEntity = entityHandle > 1000 ? Entity{} : Entity{ (entt::entity)entityHandle, m_Scene.get() };
+			m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
+		}
 
 		RenderGizmo();
 		ImGui::End(); // End of Viewport
@@ -269,10 +279,10 @@ namespace VulkanCore {
 		ImGui::End(); // End of DockSpace
 	}
 
-	bool EditorLayer::OnKeyEvent(KeyPressedEvent& keyevent)
+	bool EditorLayer::OnKeyEvent(KeyPressedEvent& e)
 	{
 		// Gizmos: Unreal Engine Controls
-		switch (keyevent.GetKeyCode())
+		switch (e.GetKeyCode())
 		{
 		case Key::Q:
 		{
@@ -302,12 +312,12 @@ namespace VulkanCore {
 		return false;
 	}
 
-	bool EditorLayer::OnMouseScroll(MouseScrolledEvent& mouseScroll)
+	bool EditorLayer::OnMouseScroll(MouseScrolledEvent& e)
 	{
 		return false;
 	}
 
-	bool EditorLayer::OnWindowResize(WindowResizeEvent& windowEvent)
+	bool EditorLayer::OnWindowResize(WindowResizeEvent& e)
 	{
 		m_WindowResized = true;
 		return false;

@@ -67,7 +67,7 @@ namespace VulkanCore {
 		m_MemoryAllocation = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_VulkanBuffer);
 
 		// Map Data to Index Buffer
-		m_MappedPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
+		m_MapDataPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
 	}
 
 	VulkanIndexBuffer::~VulkanIndexBuffer()
@@ -75,7 +75,7 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("IndexBuffer");
 
-		if (m_MappedPtr)
+		if (m_MapDataPtr)
 			allocator.UnmapMemory(m_MemoryAllocation);
 
 		allocator.DestroyBuffer(m_VulkanBuffer, m_MemoryAllocation);
@@ -85,7 +85,7 @@ namespace VulkanCore {
 	{
 		if (data)
 		{
-			memcpy(m_MappedPtr, data, m_Size);
+			memcpy(m_MapDataPtr, data, m_Size);
 			vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, (VkDeviceSize)offset, (VkDeviceSize)m_Size);
 		}
 	}

@@ -67,12 +67,12 @@ namespace VulkanCore {
 		m_MemoryAllocation = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_VulkanBuffer);
 
 		// Map Data to Vertex Buffer
-		m_MappedPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
+		m_MapDataPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
 	}
 
 	VulkanVertexBuffer::~VulkanVertexBuffer()
 	{
-		Renderer::SubmitResourceFree([mappedPtr = m_MappedPtr, memoryAlloc = m_MemoryAllocation, vulkanBuffer = m_VulkanBuffer]() mutable
+		Renderer::SubmitResourceFree([mappedPtr = m_MapDataPtr, memoryAlloc = m_MemoryAllocation, vulkanBuffer = m_VulkanBuffer]() mutable
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 			VulkanAllocator allocator("VertexBuffer");
@@ -88,7 +88,7 @@ namespace VulkanCore {
 	{
 		if (data)
 		{
-			memcpy(m_MappedPtr, data, m_Size);
+			memcpy(m_MapDataPtr, data, m_Size);
 			vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, (VkDeviceSize)offset, (VkDeviceSize)m_Size);
 		}
 	}
