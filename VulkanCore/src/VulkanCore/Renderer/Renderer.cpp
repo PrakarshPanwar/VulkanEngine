@@ -129,7 +129,7 @@ namespace VulkanCore {
 		s_Renderer->RenderMesh(cmdBuffer, mesh, material, submeshIndex, pipeline, transformBuffer, transformData, instanceCount);
 	}
 
-	void Renderer::RenderSelectedMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	void Renderer::RenderSelectedMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<SelectTransformData>& transformData, uint32_t instanceCount)
 	{
 		s_Renderer->RenderSelectedMesh(cmdBuffer, mesh, material, submeshIndex, pipeline, transformBuffer, transformData, instanceCount);
 	}

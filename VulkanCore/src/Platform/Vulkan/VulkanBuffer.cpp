@@ -24,7 +24,7 @@ namespace VulkanCore {
 
 	VulkanBuffer::~VulkanBuffer()
 	{
-		if (m_MappedPtr)
+		if (m_MapDataPtr)
 			Unmap();
 
 		vmaDestroyBuffer(VulkanContext::GetVulkanMemoryAllocator(), m_VulkanBuffer, m_MemoryAllocation);
@@ -33,7 +33,7 @@ namespace VulkanCore {
 	void VulkanBuffer::Map()
 	{
 		VulkanAllocator allocator("VulkanBuffer");
-		m_MappedPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
+		m_MapDataPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
 	}
 
 	void VulkanBuffer::Unmap()
@@ -42,19 +42,19 @@ namespace VulkanCore {
 		VulkanAllocator allocator("VulkanBuffer");
 
 		allocator.UnmapMemory(m_MemoryAllocation);
-		m_MappedPtr = nullptr;
+		m_MapDataPtr = nullptr;
 	}
 
 	void VulkanBuffer::WriteToBuffer(void* data, VkDeviceSize size, VkDeviceSize offset)
 	{
-		VK_CORE_ASSERT(m_MappedPtr, "Cannot Copy to Unmapped Buffer!");
+		VK_CORE_ASSERT(m_MapDataPtr, "Cannot Copy to Unmapped Buffer!");
 
 		if (size == VK_WHOLE_SIZE)
-			memcpy(m_MappedPtr, data, m_Size);
+			memcpy(m_MapDataPtr, data, m_Size);
 
 		else
 		{
-			char* memOffset = (char*)m_MappedPtr;
+			char* memOffset = (char*)m_MapDataPtr;
 			memOffset += offset;
 			memcpy(memOffset, data, size);
 		}

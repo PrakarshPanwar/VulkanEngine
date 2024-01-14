@@ -97,6 +97,12 @@ namespace VulkanCore {
 		glm::vec4 MRow[3];
 	};
 
+	struct SelectTransformData
+	{
+		glm::vec4 MRow[3];
+		int EntityID = -1;
+	};
+
 	struct PointLightComponent
 	{
 		glm::vec4 Position{ 0.0f };

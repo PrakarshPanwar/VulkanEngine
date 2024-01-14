@@ -17,7 +17,7 @@ namespace VulkanCore {
 	private:
 		VkBuffer m_VulkanBuffer = nullptr;
 		VmaAllocation m_MemoryAllocation = nullptr;
-		uint8_t* m_MappedPtr = nullptr;
+		uint8_t* m_MapDataPtr = nullptr;
 		uint32_t m_Size;
 	};
 

@@ -30,9 +30,9 @@ namespace VulkanCore {
 		void OnEvent(Event& e) override;
 		void OnImGuiRender() override;
 	private:
-		bool OnKeyEvent(KeyPressedEvent& keyEvent);
-		bool OnMouseScroll(MouseScrolledEvent& mouseScroll);
-		bool OnWindowResize(WindowResizeEvent& windowEvent);
+		bool OnKeyEvent(KeyPressedEvent& e);
+		bool OnMouseScroll(MouseScrolledEvent& e);
+		bool OnWindowResize(WindowResizeEvent& e);
 		void RenderGizmo();
 
 		void NewScene();
@@ -60,6 +60,7 @@ namespace VulkanCore {
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		std::unique_ptr<ContentBrowserPanel> m_ContentBrowserPanel;
+		Entity m_HoveredEntity;
 
 		std::shared_ptr<Texture2D> m_MenuIcon;
 		VkDescriptorSet m_MenuIconID;

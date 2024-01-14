@@ -104,9 +104,7 @@ namespace VulkanCore {
 		struct DrawSelectCommand
 		{
 			std::shared_ptr<Mesh> MeshInstance;
-			std::shared_ptr<Material> MaterialInstance;
 			std::shared_ptr<VertexBuffer> TransformBuffer;
-			std::vector<uint32_t> EntityIDs;
 			uint32_t SubmeshIndex;
 			uint32_t InstanceCount;
 		};
@@ -117,6 +115,14 @@ namespace VulkanCore {
 
 			std::vector<TransformData> Transforms = std::vector<TransformData>{ 10 };
 			std::shared_ptr<VertexBuffer> TransformBuffer = VertexBuffer::Create(10 * sizeof(TransformData));
+		};
+
+		struct MeshSelectTransform
+		{
+			MeshSelectTransform() = default;
+
+			std::vector<SelectTransformData> Transforms = std::vector<SelectTransformData>{ 10 };
+			std::shared_ptr<VertexBuffer> TransformBuffer = VertexBuffer::Create(10 * sizeof(SelectTransformData));
 		};
 
 		struct LodAndMode
@@ -180,7 +186,6 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBCamera;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBPointLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSpotLight;
-		std::vector<std::shared_ptr<StorageBuffer>> m_SBEntityData;
 		std::vector<std::shared_ptr<IndexBuffer>> m_ImageBuffer;
 
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
@@ -198,13 +203,12 @@ namespace VulkanCore {
 		VkDescriptorSet m_SkyboxTextureID;
 
 		std::map<MeshKey, DrawCommand> m_MeshDrawList;
-		std::map<MeshKey, DrawSelectCommand> m_SelectedMeshDrawList;
 		std::map<MeshKey, MeshTransform> m_MeshTransformMap;
-		std::map<MeshKey, MeshTransform> m_SelectedMeshTransformMap;
+		std::map<MeshKey, DrawSelectCommand> m_SelectedMeshDrawList;
+		std::map<MeshKey, MeshSelectTransform> m_SelectedMeshTransformMap;
 
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
-		glm::ivec2 m_MousePosition;
 		uint32_t m_HoveredEntity;
 
 		SceneEditorData m_SceneEditorData;
