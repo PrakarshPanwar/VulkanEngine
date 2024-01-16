@@ -79,6 +79,7 @@ namespace VulkanCore {
 			else if (Input::IsMouseButtonPressed(Mouse::ButtonRight))
 				MouseZoom(delta.y);
 		}
+#if 0
 		else
 		{
 			auto mousePosition = Input::GetMousePosition();
@@ -90,6 +91,7 @@ namespace VulkanCore {
 			if (Input::IsMouseButtonPressed(Mouse::ButtonLeft))
 				MouseDrag(delta);
 		}
+#endif
 
 		UpdateView();
 	}

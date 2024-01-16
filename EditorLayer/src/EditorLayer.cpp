@@ -262,11 +262,13 @@ namespace VulkanCore {
 			ImGui::EndPopup();
 		}
 
-		if (m_ViewportHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+		if (m_ViewportHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)
+			&& !ImGui::IsKeyDown(ImGuiKey_LeftAlt) && !ImGuizmo::IsOver())
 		{
-			uint32_t entityHandle = m_SceneRenderer->GetHoveredEntity();
-			m_HoveredEntity = entityHandle > 1000 ? Entity{} : Entity{ (entt::entity)entityHandle, m_Scene.get() };
-			m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
+			int entityHandle = m_SceneRenderer->GetHoveredEntity();
+			Entity hoveredEntity = entityHandle == -1 ? Entity{} : Entity{ (entt::entity)entityHandle, m_Scene.get() };
+
+			m_SceneHierarchyPanel.SetSelectedEntity(hoveredEntity);
 		}
 
 		RenderGizmo();

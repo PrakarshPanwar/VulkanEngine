@@ -60,7 +60,6 @@ namespace VulkanCore {
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		std::unique_ptr<ContentBrowserPanel> m_ContentBrowserPanel;
-		Entity m_HoveredEntity;
 
 		std::shared_ptr<Texture2D> m_MenuIcon;
 		VkDescriptorSet m_MenuIconID;

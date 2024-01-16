@@ -38,7 +38,7 @@ namespace VulkanCore {
 		static void SetSkybox(const std::string& filepath);
 		void SetSceneEditorData(const SceneEditorData& sceneEditorData) { m_SceneEditorData = sceneEditorData; }
 
-		inline uint32_t GetHoveredEntity() const { return m_HoveredEntity; }
+		inline int GetHoveredEntity() const { return m_HoveredEntity; }
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		std::shared_ptr<Image2D> GetFinalPassImage(uint32_t index) const;
 		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
@@ -212,7 +212,7 @@ namespace VulkanCore {
 
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
-		uint32_t m_HoveredEntity;
+		int m_HoveredEntity;
 
 		SceneEditorData m_SceneEditorData;
 		SceneSettings m_SceneSettings;
