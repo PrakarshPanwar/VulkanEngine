@@ -61,7 +61,7 @@ namespace VulkanCore {
 		}
 	}
 
-	void Scene::OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions)
+	void Scene::OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions, std::vector<uint32_t>& lightHandles)
 	{
 		{
 			// Point Lights
@@ -74,6 +74,7 @@ namespace VulkanCore {
 
 				glm::vec4 position = glm::vec4(transform.Translation, pointLightComponent.Radius);
 				pointLightPositions.push_back(position);
+				lightHandles.push_back((uint32_t)ent);
 			}
 		}
 
@@ -88,6 +89,7 @@ namespace VulkanCore {
 
 				glm::vec4 position = glm::vec4(transform.Translation, spotLightComponent.Radius);
 				spotLightPositions.push_back(position);
+				lightHandles.push_back((uint32_t)ent);
 			}
 		}
 	}

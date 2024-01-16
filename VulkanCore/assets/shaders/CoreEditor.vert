@@ -14,7 +14,7 @@ layout(location = 7) in vec4 a_MRow1;
 layout(location = 8) in vec4 a_MRow2;
 layout(location = 9) in int a_EntityID;
 
-layout(location = 0) out flat int o_InstanceID;
+layout(location = 0) out flat int v_InstanceID;
 
 layout(set = 0, binding = 0) uniform Camera
 {
@@ -36,5 +36,5 @@ void main()
 	vec4 positionWorld = transform * vec4(a_Position, 1.0);
 	gl_Position = u_Camera.Projection * u_Camera.View * positionWorld;
 
-	o_InstanceID = a_EntityID;
+	v_InstanceID = a_EntityID;
 }

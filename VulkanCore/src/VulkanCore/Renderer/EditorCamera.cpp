@@ -62,19 +62,6 @@ namespace VulkanCore {
 		return speed;
 	}
 
-	void EditorCamera::MouseDrag(const glm::vec2& delta)
-	{
-		glm::vec2 abs_delta = glm::abs(delta);
-		if (abs_delta.x < abs_delta.y)
-			m_FocalPoint += -GetForwardDirection() * delta.y * DragSpeed() * m_Distance;
-
-		else
-		{
-			float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
-			m_Yaw += yawSign * delta.x * RotationSpeed();
-		}
-	}
-
 	void EditorCamera::OnUpdate()
 	{
 		if (Input::IsKeyPressed(Key::LeftAlt))
@@ -140,6 +127,19 @@ namespace VulkanCore {
 		float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
 		m_Yaw += yawSign * delta.x * RotationSpeed();
 		m_Pitch += delta.y * RotationSpeed();
+	}
+
+	void EditorCamera::MouseDrag(const glm::vec2& delta)
+	{
+		glm::vec2 abs_delta = glm::abs(delta);
+		if (abs_delta.x < abs_delta.y)
+			m_FocalPoint += -GetForwardDirection() * delta.y * DragSpeed();
+
+		else
+		{
+			float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
+			m_Yaw += yawSign * delta.x * RotationSpeed();
+		}
 	}
 
 	void EditorCamera::MouseZoom(float delta)

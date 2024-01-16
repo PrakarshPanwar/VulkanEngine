@@ -135,7 +135,7 @@ namespace VulkanCore {
 		{
 			float Exposure = 1.0f;
 			float DirtIntensity = 5.0f;
-			uint32_t EnableFog = 1;
+			uint32_t EnableFog = 0;
 		};
 
 		struct BloomParams
@@ -160,6 +160,7 @@ namespace VulkanCore {
 		std::shared_ptr<Pipeline> m_GeometryPipeline;
 		std::shared_ptr<Pipeline> m_GeometrySelectPipeline;
 		std::shared_ptr<Pipeline> m_LightPipeline;
+		std::shared_ptr<Pipeline> m_LightSelectPipeline;
 		std::shared_ptr<Pipeline> m_CompositePipeline;
 		std::shared_ptr<Pipeline> m_SkyboxPipeline;
 		std::shared_ptr<ComputePipeline> m_BloomPipeline;
@@ -171,6 +172,7 @@ namespace VulkanCore {
 		std::shared_ptr<Material> m_GeometrySelectMaterial;
 		std::shared_ptr<Material> m_PointLightShaderMaterial;
 		std::shared_ptr<Material> m_SpotLightShaderMaterial;
+		std::shared_ptr<Material> m_LightSelectMaterial;
 		std::shared_ptr<Material> m_CompositeShaderMaterial;
 		std::shared_ptr<Material> m_SkyboxMaterial;
 
@@ -189,6 +191,7 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<IndexBuffer>> m_ImageBuffer;
 
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
+		std::vector<uint32_t> m_LightHandles;
 
 		std::vector<std::shared_ptr<Image2D>> m_BloomTextures;
 		std::vector<std::shared_ptr<Image2D>> m_SceneRenderTextures;
