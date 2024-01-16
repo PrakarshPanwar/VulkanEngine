@@ -106,7 +106,7 @@ namespace VulkanCore {
 			m_LightPipeline = std::make_shared<VulkanPipeline>(lightPipelineSpec);
 		}
 
-		// Geometry Selection Pipeline(Editor Only)
+		// Geometry/Light Selection Pipeline(Editor Only)
 		{
 			FramebufferSpecification geomSelectFramebufferSpec;
 			geomSelectFramebufferSpec.Width = 1920;
@@ -121,7 +121,6 @@ namespace VulkanCore {
 			PipelineSpecification geomSelectPipelineSpec;
 			geomSelectPipelineSpec.DebugName = "Geometry Select Pipeline";
 			geomSelectPipelineSpec.pShader = Renderer::GetShader("CoreEditor");
-			geomSelectPipelineSpec.Blend = false;
 			geomSelectPipelineSpec.pRenderPass = std::make_shared<VulkanRenderPass>(geomSelectRenderPassSpec);
 			geomSelectPipelineSpec.Layout = vertexLayout;
 			geomSelectPipelineSpec.InstanceLayout = {
@@ -133,7 +132,12 @@ namespace VulkanCore {
 
 			m_GeometrySelectPipeline = std::make_shared<VulkanPipeline>(geomSelectPipelineSpec);
 
-			// TODO: Include Lights
+			PipelineSpecification lightSelectPipelineSpec;
+			lightSelectPipelineSpec.DebugName = "Light Select Pipeline";
+			lightSelectPipelineSpec.pShader = Renderer::GetShader("LightEditor");
+			lightSelectPipelineSpec.pRenderPass = geomSelectPipelineSpec.pRenderPass;
+
+			m_LightSelectPipeline = std::make_shared<VulkanPipeline>(lightSelectPipelineSpec);
 		}
 
 		// Composite Pipeline
@@ -209,6 +213,11 @@ namespace VulkanCore {
 			m_SpotLightShaderMaterial->SetBuffers(0, m_UBCamera);
 			m_SpotLightShaderMaterial->SetTexture(1, std::dynamic_pointer_cast<VulkanTexture>(m_SpotLightTextureIcon));
 			m_SpotLightShaderMaterial->PrepareShaderMaterial();
+
+			m_LightSelectMaterial = std::make_shared<VulkanMaterial>(m_LightSelectPipeline->GetSpecification().pShader, "Light Select Shader Material");
+
+			m_LightSelectMaterial->SetBuffers(0, m_UBCamera);
+			m_LightSelectMaterial->PrepareShaderMaterial();
 		}
 
 		// Bloom Materials
@@ -902,7 +911,7 @@ namespace VulkanCore {
 	void SceneRenderer::GeometryPass()
 	{
 		m_Scene->OnUpdateGeometry(this);
-		m_Scene->OnUpdateLights(m_PointLightPositions, m_SpotLightPositions);
+		m_Scene->OnUpdateLights(m_PointLightPositions, m_SpotLightPositions, m_LightHandles);
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().pRenderPass);
 
@@ -970,6 +979,51 @@ namespace VulkanCore {
 
 		for (auto& [mk, dc] : m_SelectedMeshDrawList)
 			Renderer::RenderSelectedMesh(m_SceneCommandBuffer, dc.MeshInstance, m_GeometrySelectMaterial, dc.SubmeshIndex, m_GeometrySelectPipeline, dc.TransformBuffer, m_SelectedMeshTransformMap[mk].Transforms, dc.InstanceCount);
+
+		// Lights
+		{
+			auto commandBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
+			auto lightPipeline = std::static_pointer_cast<VulkanPipeline>(m_LightSelectPipeline);
+
+			Renderer::Submit([this, commandBuffer, lightPipeline]
+			{
+				VkCommandBuffer bindCmd = commandBuffer->RT_GetActiveCommandBuffer();
+				lightPipeline->Bind(bindCmd);
+
+				// Binding Point Light Descriptor Set
+				m_LightSelectMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_LightSelectPipeline);
+			});
+
+			int index = 0;
+
+			// Point Lights
+			for (auto pointLightPosition : m_PointLightPositions)
+			{
+				uint32_t lightEntity = m_LightHandles[index++];
+
+				Renderer::Submit([this, commandBuffer, lightPipeline, pointLightPosition, lightEntity]
+				{
+					VkCommandBuffer drawCmd = commandBuffer->RT_GetActiveCommandBuffer();
+
+					lightPipeline->SetPushConstants(drawCmd, (void*)&pointLightPosition, sizeof(glm::vec4) + sizeof(int));
+					vkCmdDraw(drawCmd, 6, 1, 0, 0);
+				});
+			}
+
+			// Spot Lights
+			for (auto spotLightPosition : m_SpotLightPositions)
+			{
+				uint32_t lightEntity = m_LightHandles[index++];
+
+				Renderer::Submit([this, commandBuffer, lightPipeline, spotLightPosition, lightEntity]
+				{
+					VkCommandBuffer drawCmd = commandBuffer->RT_GetActiveCommandBuffer();
+
+					lightPipeline->SetPushConstants(drawCmd, (void*)&spotLightPosition, sizeof(glm::vec4) + sizeof(int));
+					vkCmdDraw(drawCmd, 6, 1, 0, 0);
+				});
+			}
+		}
 
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometrySelectPipeline->GetSpecification().pRenderPass);
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
@@ -1084,6 +1138,7 @@ namespace VulkanCore {
 
 		m_PointLightPositions.clear();
 		m_SpotLightPositions.clear();
+		m_LightHandles.clear();
 	}
 
 }
