@@ -114,6 +114,7 @@ namespace VulkanCore {
 			geomSelectFramebufferSpec.Attachments = { ImageFormat::R32I, ImageFormat::DEPTH24STENCIL8 };
 			geomSelectFramebufferSpec.Transfer = true;
 			geomSelectFramebufferSpec.Samples = 1;
+			memset(&geomSelectFramebufferSpec.ClearColor, -1, sizeof(glm::vec4));
 
 			RenderPassSpecification geomSelectRenderPassSpec;
 			geomSelectRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(geomSelectFramebufferSpec);
@@ -1034,7 +1035,7 @@ namespace VulkanCore {
 			auto frameBuffer = std::static_pointer_cast<VulkanFramebuffer>(m_GeometrySelectPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
 
 			void* pixelData = frameBuffer->ReadPixel(m_SceneCommandBuffer, m_ImageBuffer[frameIndex], 0, m_SceneEditorData.ViewportMousePos.x, m_SceneEditorData.ViewportMousePos.y);
-			m_HoveredEntity = *(uint32_t*)pixelData;
+			m_HoveredEntity = *(int*)pixelData;
 		});
 	}
 
