@@ -64,7 +64,18 @@ namespace VulkanCore {
 
 	void EditorCamera::OnUpdate()
 	{
-		if (Input::IsKeyPressed(Key::LeftAlt))
+		if (m_FlyMode)
+		{
+			auto mousePosition = Input::GetMousePosition();
+
+			const glm::vec2& mouse{ mousePosition.first, mousePosition.second };
+			glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
+			m_InitialMousePosition = mouse;
+
+			Input::SetCursorMode(CursorMode::Locked);
+			MouseRotate(delta);
+		}
+		else if (Input::IsKeyPressed(Key::LeftAlt))
 		{
 			auto mousePosition = Input::GetMousePosition();
 
@@ -79,19 +90,6 @@ namespace VulkanCore {
 			else if (Input::IsMouseButtonPressed(Mouse::ButtonRight))
 				MouseZoom(delta.y);
 		}
-#if 0
-		else
-		{
-			auto mousePosition = Input::GetMousePosition();
-
-			const glm::vec2& mouse{ mousePosition.first, mousePosition.second };
-			glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
-			m_InitialMousePosition = mouse;
-
-			if (Input::IsMouseButtonPressed(Mouse::ButtonLeft))
-				MouseDrag(delta);
-		}
-#endif
 
 		UpdateView();
 	}
@@ -100,7 +98,45 @@ namespace VulkanCore {
 	{
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<MouseScrolledEvent>(VK_CORE_BIND_EVENT_FN(EditorCamera::OnMouseScroll));
-	//	dispatcher.Dispatch<WindowResizeEvent>(VULKAN_CORE_BIND_EVENT_FN(EditorCamera::OnWindowResize));
+		dispatcher.Dispatch<KeyPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorCamera::OnKeyEvent));
+	}
+
+	void EditorCamera::SetFlyMode(bool flyMode)
+	{
+		m_FlyMode = flyMode;
+		Input::SetCursorMode(flyMode ? CursorMode::Locked : CursorMode::Normal);
+	}
+
+	bool EditorCamera::OnKeyEvent(KeyPressedEvent& e)
+	{
+		if (m_FlyMode)
+		{
+			switch (e.GetKeyCode())
+			{
+			case Key::W:
+			{
+				m_FocalPoint += GetForwardDirection() * 0.1f;
+				break;
+			}
+			case Key::A:
+			{
+				m_FocalPoint -= GetRightDirection() * 0.1f;
+				break;
+			}
+			case Key::S:
+			{
+				m_FocalPoint -= GetForwardDirection() * 0.1f;
+				break;
+			}
+			case Key::D:
+			{
+				m_FocalPoint += GetRightDirection() * 0.1f;
+				break;
+			}
+			}
+		}
+
+		return true;
 	}
 
 	bool EditorCamera::OnMouseScroll(MouseScrolledEvent& e)
@@ -110,12 +146,6 @@ namespace VulkanCore {
 		UpdateView();
 		return true;
 	}
-
-	/*bool EditorCamera::OnWindowResize(WindowResizeEvent& e)
-	{
-		UpdateProjection();
-		return true;
-	}*/
 
 	void EditorCamera::MousePan(const glm::vec2& delta)
 	{
@@ -177,6 +207,11 @@ namespace VulkanCore {
 	glm::quat EditorCamera::GetOrientation() const
 	{
 		return glm::quat(glm::vec3(-m_Pitch, -m_Yaw, 0.0f));
+	}
+
+	void EditorCamera::KeyWalk()
+	{
+		throw std::logic_error("The method or operation is not implemented.");
 	}
 
 }

@@ -1,7 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
+#include "VulkanCore/Events/KeyEvent.h"
 #include "VulkanCore/Events/MouseEvent.h"
-#include "VulkanCore/Events/ApplicationEvent.h"
 
 namespace VulkanCore {
 
@@ -16,6 +16,8 @@ namespace VulkanCore {
 
 		inline float GetDistance() const { return m_Distance; }
 		inline void SetDistance(float distance) { m_Distance = distance; }
+		inline bool GetFlyMode() const { return m_FlyMode; }
+		void SetFlyMode(bool flyMode);
 
 		inline void SetViewportSize(float width, float height)
 		{ 
@@ -51,9 +53,11 @@ namespace VulkanCore {
 		void UpdateProjection();
 		void UpdateView();
 
+		bool OnKeyEvent(KeyPressedEvent& e);
 		bool OnMouseScroll(MouseScrolledEvent& e);
 		//bool OnWindowResize(WindowResizeEvent& e);
 
+		void KeyWalk();
 		void MousePan(const glm::vec2& delta);
 		void MouseRotate(const glm::vec2& delta);
 		void MouseDrag(const glm::vec2& delta);
@@ -77,7 +81,8 @@ namespace VulkanCore {
 		float m_Distance = 10.0f;
 		float m_Pitch = 0.0f, m_Yaw = 0.0f;
 
-		float m_ViewportWidth = 1280, m_ViewportHeight = 720;
+		float m_ViewportWidth = 1280.0f, m_ViewportHeight = 720.0f;
+		bool m_FlyMode = false;
 	};
 
 }
