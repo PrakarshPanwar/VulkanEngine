@@ -3,6 +3,7 @@
 #include "VulkanCore/Asset/AssetManagerBase.h"
 #include "VulkanCore/Events/KeyEvent.h"
 #include "VulkanCore/Events/MouseEvent.h"
+#include "VulkanCore/Events/ApplicationEvent.h"
 #include "VulkanCore/Scene/Scene.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
@@ -31,6 +32,7 @@ namespace VulkanCore {
 		void OnImGuiRender() override;
 	private:
 		bool OnKeyEvent(KeyPressedEvent& e);
+		bool OnMouseButtonEvent(MouseButtonPressedEvent& e);
 		bool OnMouseScroll(MouseScrolledEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
 		void RenderGizmo();

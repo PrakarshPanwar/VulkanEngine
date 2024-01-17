@@ -72,7 +72,7 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
-		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
+		if ((m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing()) || m_EditorCamera.GetFlyMode())
 			m_EditorCamera.OnUpdate();
 
 		// Mouse Position relative to Viewport
@@ -93,11 +93,12 @@ namespace VulkanCore {
 
 	void EditorLayer::OnEvent(Event& e)
 	{
-		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents())
+		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents() || m_EditorCamera.GetFlyMode())
 			m_EditorCamera.OnEvent(e);
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnKeyEvent));
+		dispatcher.Dispatch<MouseButtonPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnMouseButtonEvent));
 		dispatcher.Dispatch<WindowResizeEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnWindowResize));
 	}
 
@@ -283,6 +284,10 @@ namespace VulkanCore {
 
 	bool EditorLayer::OnKeyEvent(KeyPressedEvent& e)
 	{
+		bool shiftKey = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+
+		bool isFlying = m_EditorCamera.GetFlyMode();
+
 		// Gizmos: Unreal Engine Controls
 		switch (e.GetKeyCode())
 		{
@@ -294,7 +299,7 @@ namespace VulkanCore {
 		}
 		case Key::W:
 		{
-			if (!ImGuizmo::IsUsing())
+			if (!ImGuizmo::IsUsing() && !isFlying)
 				m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
 			break;
 		}
@@ -310,7 +315,28 @@ namespace VulkanCore {
 				m_GizmoType = ImGuizmo::OPERATION::SCALE;
 			break;
 		}
+		case Key::GraveAccent:
+		{
+			if (shiftKey)
+				m_EditorCamera.SetFlyMode(true);
 		}
+		}
+
+		return false;
+	}
+
+	bool EditorLayer::OnMouseButtonEvent(MouseButtonPressedEvent& e)
+	{
+		switch (e.GetMouseButton())
+		{
+		case Mouse::ButtonLeft:
+		{
+			bool isFlying = m_EditorCamera.GetFlyMode();
+			if (isFlying)
+				m_EditorCamera.SetFlyMode(false);
+		}
+		}
+
 		return false;
 	}
 
