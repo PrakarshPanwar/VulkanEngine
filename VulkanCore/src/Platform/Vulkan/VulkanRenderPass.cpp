@@ -409,8 +409,8 @@ namespace VulkanCore {
 			viewport.maxDepth = 1.0f;
 
 			VkRect2D scissor{ { 0, 0 }, framebufferExtent };
-			vkCmdSetViewport(vulkanCommandBuffer, 0, 1, &viewport);
-			vkCmdSetScissor(vulkanCommandBuffer, 0, 1, &scissor);
+			vkCmdSetViewportWithCount(vulkanCommandBuffer, 1, &viewport);
+			vkCmdSetScissorWithCount(vulkanCommandBuffer, 1, &scissor);
 		});
 	}
 

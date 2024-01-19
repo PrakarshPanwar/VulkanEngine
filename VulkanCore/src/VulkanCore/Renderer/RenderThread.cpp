@@ -44,17 +44,6 @@ namespace VulkanCore {
 			for (const auto& executeCommand : executeQueue)
 				executeCommand();
 
-			// Swap Deletion Queues
-			std::vector<std::function<void()>> deletionQueue;
-			{
-				std::scoped_lock swapLock(m_DeletionMutex);
-				deletionQueue.swap(m_DeletionCommandQueue);
-			}
-
-			// Execute Delete Commands
-			for (const auto& deletionCommand : deletionQueue)
-				deletionCommand();
-
 			m_RenderThreadAtomic.notify_one();
 
 			m_RenderThreadAtomic.wait(false);

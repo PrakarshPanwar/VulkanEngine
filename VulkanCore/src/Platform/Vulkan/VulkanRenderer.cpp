@@ -693,6 +693,14 @@ namespace VulkanCore {
 		m_CommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetRenderThreadCommandPool());
 	}
 
+	void VulkanRenderer::DeleteResources()
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		vkDeviceWaitIdle(device->GetVulkanDevice());
+		RenderThread::ExecuteDeletionQueue();
+	}
+
 	void VulkanRenderer::InitDescriptorPool()
 	{
 		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
@@ -745,6 +753,9 @@ namespace VulkanCore {
 	void VulkanRenderer::FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers)
 	{
 		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
+
+		if (!RenderThread::IsDeletionQueueEmpty())
+			DeleteResources();
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
 		{
