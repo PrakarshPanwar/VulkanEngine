@@ -169,6 +169,7 @@ namespace VulkanCore {
 			skyboxPipelineSpec.DebugName = "Skybox Pipeline";
 			skyboxPipelineSpec.pShader = Renderer::GetShader("Skybox");
 			skyboxPipelineSpec.pRenderPass = m_GeometryPipeline->GetSpecification().pRenderPass;
+			skyboxPipelineSpec.DepthCompareOp = CompareOp::LessOrEqual;
 
 			m_SkyboxPipeline = std::make_shared<VulkanPipeline>(skyboxPipelineSpec);
 		}

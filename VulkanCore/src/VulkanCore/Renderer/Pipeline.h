@@ -5,6 +5,13 @@
 
 namespace VulkanCore {
 
+	enum class CompareOp
+	{
+		None,
+		Less,
+		LessOrEqual
+	};
+
 	struct PipelineSpecification
 	{
 		PipelineSpecification() = default;
@@ -16,6 +23,8 @@ namespace VulkanCore {
 		bool DepthTest = true;
 		bool DepthWrite = true;
 		bool Blend = false;
+		CompareOp DepthCompareOp = CompareOp::Less;
+
 		VertexBufferLayout Layout{};
 		VertexBufferLayout InstanceLayout{};
 	};

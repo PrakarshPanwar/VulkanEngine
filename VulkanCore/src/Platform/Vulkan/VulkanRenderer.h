@@ -63,6 +63,7 @@ namespace VulkanCore {
 		static VulkanRenderer* Get() { return s_Instance; }
 	private:
 		void CreateCommandBuffers();
+		void DeleteResources();
 		void InitDescriptorPool();
 	private:
 		std::shared_ptr<WindowsWindow> m_Window;

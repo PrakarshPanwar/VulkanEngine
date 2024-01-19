@@ -55,7 +55,6 @@ namespace VulkanCore {
 		RT_InvalidateComputePipeline();
 	}
 
-	// TODO: Do this process in Render Thread
 	VulkanComputePipeline::~VulkanComputePipeline()
 	{
 		Release();
@@ -63,14 +62,17 @@ namespace VulkanCore {
 
 	void VulkanComputePipeline::Release()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
+		Renderer::SubmitResourceFree([pipeline = m_ComputePipeline, layout = m_PipelineLayout, computeShaderModule = m_ComputeShaderModule]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
 
-		vkDestroyShaderModule(device->GetVulkanDevice(), m_ComputeShaderModule, nullptr);
+			vkDestroyShaderModule(device->GetVulkanDevice(), computeShaderModule, nullptr);
 
-		if (m_PipelineLayout)
-			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
+			if (layout)
+				vkDestroyPipelineLayout(device->GetVulkanDevice(), layout, nullptr);
 
-		vkDestroyPipeline(device->GetVulkanDevice(), m_ComputePipeline, nullptr);
+			vkDestroyPipeline(device->GetVulkanDevice(), pipeline, nullptr);
+		});
 
 		m_ComputePipeline = nullptr;
 	}
