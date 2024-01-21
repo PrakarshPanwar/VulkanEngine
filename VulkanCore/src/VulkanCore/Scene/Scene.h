@@ -1,11 +1,19 @@
 #pragma once
 #include <entt.hpp>
 #include "VulkanCore/Core/Components.h"
+#include "VulkanCore/Renderer/EditorCamera.h"
 
 namespace VulkanCore {
 
 	class Entity;
 	class SceneRenderer;
+
+	struct SceneEditorData
+	{
+		EditorCamera CameraData;
+		glm::ivec2 ViewportMousePos;
+		bool ViewportHovered;
+	};
 
 	class Scene
 	{
@@ -16,12 +24,13 @@ namespace VulkanCore {
 		Entity CreateEntity(const std::string& name);
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name);
 
-		void UpdateGeometry(SceneRenderer* renderer);
-		void OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions);
+		void OnUpdateGeometry(SceneRenderer* renderer);
+		void OnUpdateRayTracedGeometry(SceneRenderer* renderer);
+		void OnSelectGeometry(SceneRenderer* renderer);
+		void OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions, std::vector<uint32_t>& lightHandles);
 		void UpdatePointLightUB(UBPointLights& ubo);
 		void UpdateSpotLightUB(UBSpotLights& ubo);
 		void DestroyEntity(Entity entity);
-		void UpdateRayTracedGeometry(SceneRenderer* renderer);
 	private:
 		entt::registry m_Registry;
 

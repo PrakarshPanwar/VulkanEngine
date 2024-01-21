@@ -99,6 +99,12 @@ namespace VulkanCore {
 		glm::vec4 MRow[3];
 	};
 
+	struct SelectTransformData
+	{
+		glm::vec4 MRow[3];
+		int EntityID = -1;
+	};
+
 	struct PointLightComponent
 	{
 		glm::vec4 Position{ 0.0f };
@@ -150,6 +156,7 @@ namespace VulkanCore {
 		glm::mat4 View{ 1.0f };
 		glm::mat4 InverseProjection{ 1.0f };
 		glm::mat4 InverseView{ 1.0f };
+		glm::vec2 DepthUnpackConsts{ 0.0f };
 	};
 
 	struct UBPointLights

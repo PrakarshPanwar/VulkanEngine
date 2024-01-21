@@ -67,6 +67,7 @@ layout(set = 0, binding = 3) uniform Camera
 	mat4 View;
     mat4 InverseProjection;
 	mat4 InverseView;
+    vec2 DepthUnpackConsts;
 } u_Camera;
 
 layout(set = 0, binding = 4) uniform PointLightData

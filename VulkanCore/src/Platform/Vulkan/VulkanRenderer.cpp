@@ -8,6 +8,7 @@
 #include "VulkanContext.h"
 #include "VulkanDescriptor.h"
 #include "VulkanMaterial.h"
+#include "VulkanVertexBuffer.h"
 #include "VulkanIndexBuffer.h"
 #include "VulkanRenderPass.h"
 #include "VulkanPipeline.h"
@@ -317,7 +318,7 @@ namespace VulkanCore {
 				1,
 				&region);
 
-			// Changing source image back to its previous layout
+			// Changing Source Image back to its previous layout
 			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, srcImage,
 				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
 				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, srcImageLayout,
@@ -457,6 +458,9 @@ namespace VulkanCore {
 
 	std::shared_ptr<Texture2D> VulkanRenderer::GetWhiteTexture(ImageFormat format)
 	{
+		if (m_WhiteTextureAssets.contains(format))
+			return AssetManager::GetAsset<Texture2D>(m_WhiteTextureAssets[format]);
+
 		TextureSpecification whiteTexSpec{};
 		whiteTexSpec.Width = 1;
 		whiteTexSpec.Height = 1;
@@ -464,14 +468,19 @@ namespace VulkanCore {
 		whiteTexSpec.GenerateMips = false;
 
 		uint32_t* textureData = new uint32_t;
-		*textureData = 0xffffffff;
+		*textureData = 0xFFFFFFFF;
 
-		auto whiteTexture = std::make_shared<VulkanTexture>(textureData, whiteTexSpec);
+		auto whiteTexture = AssetManager::CreateMemoryOnlyAsset<VulkanTexture>(textureData, whiteTexSpec);
+		m_WhiteTextureAssets[format] = whiteTexture->Handle;
+
 		return whiteTexture;
 	}
 
 	std::shared_ptr<TextureCube> VulkanRenderer::GetBlackTextureCube(ImageFormat format)
 	{
+		if (m_BlackCubeTextureAssets.contains(format))
+			return AssetManager::GetAsset<TextureCube>(m_BlackCubeTextureAssets[format]);
+
 		TextureSpecification cubeTexSpec{};
 		cubeTexSpec.Width = 1;
 		cubeTexSpec.Height = 1;
@@ -479,12 +488,12 @@ namespace VulkanCore {
 		cubeTexSpec.GenerateMips = false;
 
 		uint32_t* textureData = new uint32_t[6];
-		for (uint32_t i = 0; i < 6; ++i)
-			textureData[i] = 0x0;
+		memset(textureData, 0, 24);
 
-		auto blackCubeTexture = std::make_shared<VulkanTextureCube>(textureData, cubeTexSpec);
+		auto blackCubeTexture = AssetManager::CreateMemoryOnlyAsset<VulkanTextureCube>(textureData, cubeTexSpec);
 		blackCubeTexture->Invalidate();
 
+		m_BlackCubeTextureAssets[format] = blackCubeTexture->Handle;
 		return blackCubeTexture;
 	}
 
@@ -500,9 +509,9 @@ namespace VulkanCore {
 		vulkanRenderPass->End(std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer));
 	}
 
-	void VulkanRenderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& skyboxVB, const std::shared_ptr<Material>& skyboxMaterial, void* pcData /*= nullptr*/)
+	void VulkanRenderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& skyboxMaterial, void* pcData)
 	{
-		Renderer::Submit([cmdBuffer, pipeline, skyboxMaterial, pcData, skyboxVB]
+		Renderer::Submit([cmdBuffer, pipeline, skyboxMaterial, pcData]
 		{
 			VK_CORE_PROFILE_FN("Renderer::RenderSkybox");
 
@@ -510,7 +519,6 @@ namespace VulkanCore {
 			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
 			vulkanPipeline->Bind(vulkanDrawCmd);
 
-			auto vulkanSkyboxVB = std::static_pointer_cast<VulkanVertexBuffer>(skyboxVB);
 			auto vulkanSkyboxMaterial = std::static_pointer_cast<VulkanMaterial>(skyboxMaterial);
 			vkCmdBindDescriptorSets(vulkanDrawCmd,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -525,9 +533,6 @@ namespace VulkanCore {
 				(uint32_t)sizeof(glm::vec2),
 				pcData);
 
-			VkBuffer skyboxBuffer[] = { vulkanSkyboxVB->GetVulkanBuffer() };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(vulkanDrawCmd, 0, 1, skyboxBuffer, offsets);
 			vkCmdDraw(vulkanDrawCmd, 36, 1, 0, 0);
 		});
 	}
@@ -620,6 +625,42 @@ namespace VulkanCore {
 		});
 	}
 
+	void VulkanRenderer::RenderSelectedMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<SelectTransformData>& transformData, uint32_t instanceCount)
+	{
+		Renderer::Submit([cmdBuffer, mesh, pipeline, material, transformBuffer, transformData, submeshIndex, instanceCount]
+		{
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderSelectedMesh");
+
+			// Bind Vertex Buffer
+			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
+			vulkanPipeline->Bind(drawCmd);
+
+			auto meshSource = mesh->GetMeshSource();
+			auto vulkanMeshVB = std::static_pointer_cast<VulkanVertexBuffer>(meshSource->GetVertexBuffer());
+			auto vulkanMeshIB = std::static_pointer_cast<VulkanIndexBuffer>(meshSource->GetIndexBuffer());
+			auto vulkanTransformBuffer = std::static_pointer_cast<VulkanVertexBuffer>(transformBuffer);
+			vulkanTransformBuffer->WriteData((void*)transformData.data(), 0);
+			VkBuffer buffers[] = { vulkanMeshVB->GetVulkanBuffer(), vulkanTransformBuffer->GetVulkanBuffer() };
+			VkDeviceSize offsets[] = { 0, 0 };
+			vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
+			vkCmdBindIndexBuffer(drawCmd, vulkanMeshIB->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+			auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
+			VkDescriptorSet descriptorSets[1] = { vulkanMaterial->RT_GetVulkanMaterialDescriptorSet() };
+
+			vkCmdBindDescriptorSets(drawCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				vulkanPipeline->GetVulkanPipelineLayout(),
+				0, 1, descriptorSets,
+				0, nullptr);
+
+			const auto& submeshes = meshSource->GetSubmeshes();
+			const Submesh& submesh = submeshes[submeshIndex];
+			vkCmdDrawIndexed(drawCmd, submesh.IndexCount, instanceCount, submesh.BaseIndex, submesh.BaseVertex, 0);
+		});
+	}
+
 	void VulkanRenderer::RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 
@@ -698,6 +739,14 @@ namespace VulkanCore {
 		m_CommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetRenderThreadCommandPool());
 	}
 
+	void VulkanRenderer::DeleteResources()
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		vkDeviceWaitIdle(device->GetVulkanDevice());
+		RenderThread::ExecuteDeletionQueue();
+	}
+
 	void VulkanRenderer::InitDescriptorPool()
 	{
 		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
@@ -752,6 +801,9 @@ namespace VulkanCore {
 	void VulkanRenderer::FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers)
 	{
 		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
+
+		if (!RenderThread::IsDeletionQueueEmpty())
+			DeleteResources();
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
 		{

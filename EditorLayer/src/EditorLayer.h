@@ -3,6 +3,7 @@
 #include "VulkanCore/Asset/AssetManagerBase.h"
 #include "VulkanCore/Events/KeyEvent.h"
 #include "VulkanCore/Events/MouseEvent.h"
+#include "VulkanCore/Events/ApplicationEvent.h"
 #include "VulkanCore/Scene/Scene.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
@@ -30,9 +31,10 @@ namespace VulkanCore {
 		void OnEvent(Event& e) override;
 		void OnImGuiRender() override;
 	private:
-		bool OnKeyEvent(KeyPressedEvent& keyEvent);
-		bool OnMouseScroll(MouseScrolledEvent& mouseScroll);
-		bool OnWindowResize(WindowResizeEvent& windowEvent);
+		bool OnKeyEvent(KeyPressedEvent& e);
+		bool OnMouseButtonEvent(MouseButtonPressedEvent& e);
+		bool OnMouseScroll(MouseScrolledEvent& e);
+		bool OnWindowResize(WindowResizeEvent& e);
 		void RenderGizmo();
 
 		void NewScene();
@@ -53,7 +55,7 @@ namespace VulkanCore {
 			m_ViewportFocused = false, m_WindowResized = false,
 			m_RayTraced = false, m_EnableSnap = false;
 
-		ImVec2 m_ViewportSize = { 1904.0f, 991.0f }; // TODO: Calculate this by function
+		ImVec2 m_ViewportSize;
 		glm::vec2 m_ViewportBounds[2];
 		int m_GizmoType = -1;
 		float m_TranslationSnapValue = 0.5f, m_RotationSnapValue = 45.0f, m_ScaleSnapValue = 0.5f;

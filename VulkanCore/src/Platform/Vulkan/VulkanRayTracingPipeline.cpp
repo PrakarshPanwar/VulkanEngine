@@ -71,28 +71,36 @@ namespace VulkanCore {
 
 	void VulkanRayTracingPipeline::Release()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
+		Renderer::SubmitResourceFree([pipeline = m_RayTracingPipeline, layout = m_PipelineLayout,
+			rayGenShaderModule = m_RayGenShaderModule,
+			rayClosestHitShaderModules = m_RayClosestHitShaderModules,
+			rayAnyHitShaderModules = m_RayAnyHitShaderModules,
+			rayIntersectionShaderModules = m_RayIntersectionShaderModules,
+			rayMissShaderModules = m_RayMissShaderModules]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
 
-		// Destroy Shader Modules
-		vkDestroyShaderModule(device->GetVulkanDevice(), m_RayGenShaderModule, nullptr);
+			// Destroy Shader Modules
+			vkDestroyShaderModule(device->GetVulkanDevice(), rayGenShaderModule, nullptr);
 
-		for (auto& rayClosestHitModule : m_RayClosestHitShaderModules)
-			vkDestroyShaderModule(device->GetVulkanDevice(), rayClosestHitModule, nullptr);
+			for (auto& rayClosestHitModule : rayClosestHitShaderModules)
+				vkDestroyShaderModule(device->GetVulkanDevice(), rayClosestHitModule, nullptr);
 
-		for (auto& rayAnyHitModule : m_RayAnyHitShaderModules)
-			vkDestroyShaderModule(device->GetVulkanDevice(), rayAnyHitModule, nullptr);
+			for (auto& rayAnyHitModule : rayAnyHitShaderModules)
+				vkDestroyShaderModule(device->GetVulkanDevice(), rayAnyHitModule, nullptr);
 
-		for (auto& rayIntersectionModule : m_RayIntersectionShaderModules)
-			vkDestroyShaderModule(device->GetVulkanDevice(), rayIntersectionModule, nullptr);
+			for (auto& rayIntersectionModule : rayIntersectionShaderModules)
+				vkDestroyShaderModule(device->GetVulkanDevice(), rayIntersectionModule, nullptr);
 
-		for (auto& rayMissModule : m_RayMissShaderModules)
-			vkDestroyShaderModule(device->GetVulkanDevice(), rayMissModule, nullptr);
+			for (auto& rayMissModule : rayMissShaderModules)
+				vkDestroyShaderModule(device->GetVulkanDevice(), rayMissModule, nullptr);
 
-		if (m_PipelineLayout)
-			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
+			if (layout)
+				vkDestroyPipelineLayout(device->GetVulkanDevice(), layout, nullptr);
 
-		// Destroy Pipeline
-		vkDestroyPipeline(device->GetVulkanDevice(), m_RayTracingPipeline, nullptr);
+			// Destroy Pipeline
+			vkDestroyPipeline(device->GetVulkanDevice(), pipeline, nullptr);
+		});
 
 		m_RayTracingPipeline = nullptr;
 	}

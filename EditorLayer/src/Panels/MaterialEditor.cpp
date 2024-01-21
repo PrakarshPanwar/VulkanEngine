@@ -36,18 +36,16 @@ namespace VulkanCore {
 			{
 				if (ImGui::MenuItem("Remove Texture"))
 				{
-					auto whiteTexture = Renderer::GetWhiteTexture();
-
 					switch (textureType)
 					{
 					case TextureType::Diffuse:
-						material->SetDiffuseTexture(whiteTexture);
+						material->SetDiffuseTexture(Renderer::GetWhiteTexture(ImageFormat::RGBA8_SRGB));
 						break;
 					case TextureType::Normal:
-						material->SetNormalTexture(whiteTexture);
+						material->SetNormalTexture(Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM));
 						break;
 					case TextureType::ARM:
-						material->SetARMTexture(whiteTexture);
+						material->SetARMTexture(Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM));
 						break;
 					default:
 						break;

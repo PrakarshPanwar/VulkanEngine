@@ -68,16 +68,16 @@ namespace VulkanCore {
 	class VertexBufferLayout
 	{
 	public:
-		VertexBufferLayout(std::initializer_list<BufferElement> elements)
+		VertexBufferLayout(std::initializer_list<BufferElement> elements, uint32_t alignment = 0)
 			: m_Elements(elements)
 		{
-			CalculateOffsetsAndStride();
+			CalculateOffsetsAndStride(alignment);
 		}
 
 		uint32_t GetStride() const { return m_Stride; }
 		const std::vector<BufferElement>& GetElements() const { return m_Elements; }
 	private:
-		void CalculateOffsetsAndStride()
+		void CalculateOffsetsAndStride(uint32_t alignment)
 		{
 			uint32_t offset = 0;
 			m_Stride = 0;
@@ -87,6 +87,9 @@ namespace VulkanCore {
 				offset += element.Size;
 				m_Stride += element.Size;
 			}
+
+			if (alignment > 0)
+				m_Stride = (m_Stride + alignment - 1) & ~(alignment - 1);
 		}
 	private:
 		std::vector<BufferElement> m_Elements;

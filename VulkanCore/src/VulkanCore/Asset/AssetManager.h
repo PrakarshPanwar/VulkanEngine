@@ -75,6 +75,8 @@ namespace VulkanCore {
 			auto& memoryAssets = editorAssetManager->GetMemoryAssetMap();
 
 			std::shared_ptr<Asset> asset = std::make_shared<T>(std::forward<Args>(args)...);
+			asset->Handle = handle;
+
 			memoryAssets[handle] = asset;
 
 			return std::static_pointer_cast<T>(asset);
@@ -127,7 +129,6 @@ namespace VulkanCore {
 
 			auto editorAssetManager = GetEditorAssetManager();
 			const auto& assetRegistry = editorAssetManager->GetAssetRegistry();
-			const auto& assetMap = editorAssetManager->GetAssetMap();
 
 			for (auto&& [handle, metadata] : assetRegistry)
 			{

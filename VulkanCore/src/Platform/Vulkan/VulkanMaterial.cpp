@@ -1,9 +1,9 @@
 #include "vulkanpch.h"
 #include "VulkanMaterial.h"
 
-#include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
+#include "VulkanRenderer.h"
 #include "VulkanShader.h"
 #include "VulkanUniformBuffer.h"
 #include "VulkanStorageBuffer.h"
