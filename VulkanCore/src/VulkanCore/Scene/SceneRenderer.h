@@ -6,7 +6,6 @@
 #include "VulkanCore/Renderer/VertexBuffer.h"
 #include "VulkanCore/Renderer/RenderCommandBuffer.h"
 #include "VulkanCore/Renderer/AccelerationStructure.h"
-#include "Platform/Vulkan/VulkanVertexBuffer.h"
 #include "Platform/Vulkan/VulkanRayTracingPipeline.h"
 
 #include <glm/glm.hpp>
@@ -28,11 +27,12 @@ namespace VulkanCore {
 
 		void SetActiveScene(std::shared_ptr<Scene> scene);
 		void SetViewportSize(uint32_t width, uint32_t height);
-		void SetBuffersData(EditorCamera& camera);
 		void RasterizeScene();
 		void TraceScene();
 		void RenderLights();
+		void SelectionPass();
 		void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
+		void SubmitSelectedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform, uint32_t entityID);
 		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void SubmitRayTracedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
@@ -44,8 +44,10 @@ namespace VulkanCore {
 		static inline VkDescriptorSet GetTextureCubeID() { return s_Instance->m_SkyboxTextureID; }
 		static std::shared_ptr<RenderCommandBuffer> GetRenderCommandBuffer() { return s_Instance->m_SceneCommandBuffer; }
 		static void SetSkybox(const std::string& filepath);
+		void SetSceneEditorData(const SceneEditorData& sceneEditorData) { m_SceneEditorData = sceneEditorData; }
 
 		inline bool IsRayTraced() const { return m_RayTraced; }
+		inline int GetHoveredEntity() const { return m_HoveredEntity; }
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		std::shared_ptr<Image2D> GetFinalPassImage(uint32_t index) const;
 		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
@@ -81,6 +83,14 @@ namespace VulkanCore {
 			uint32_t SubmeshIndex;
 			uint32_t InstanceCount;
 		};
+		
+		struct DrawSelectCommand
+		{
+			std::shared_ptr<Mesh> MeshInstance;
+			std::shared_ptr<VertexBuffer> TransformBuffer;
+			uint32_t SubmeshIndex;
+			uint32_t InstanceCount;
+		};
 
 		struct MeshBuffersAddress
 		{
@@ -95,8 +105,16 @@ namespace VulkanCore {
 				Transforms.reserve(10);
 			}
 
-			std::vector<TransformData> Transforms;
-			std::shared_ptr<VertexBuffer> TransformBuffer = std::make_shared<VulkanVertexBuffer>(10 * sizeof(TransformData));
+			std::vector<TransformData> Transforms = std::vector<TransformData>{ 10 };
+			std::shared_ptr<VertexBuffer> TransformBuffer = VertexBuffer::Create(10 * sizeof(TransformData));
+		};
+
+		struct MeshSelectTransform
+		{
+			MeshSelectTransform() = default;
+
+			std::vector<SelectTransformData> Transforms = std::vector<SelectTransformData>{ 10 };
+			std::shared_ptr<VertexBuffer> TransformBuffer = VertexBuffer::Create(10 * sizeof(SelectTransformData));
 		};
 
 		struct LodAndMode
@@ -109,6 +127,7 @@ namespace VulkanCore {
 		{
 			float Exposure = 1.0f;
 			float DirtIntensity = 0.0f;
+			uint32_t Fog = 0;
 		} m_SceneSettings;
 
 		struct BloomParams
@@ -140,7 +159,9 @@ namespace VulkanCore {
 
 		// Pipelines
 		std::shared_ptr<Pipeline> m_GeometryPipeline;
+		std::shared_ptr<Pipeline> m_GeometrySelectPipeline;
 		std::shared_ptr<Pipeline> m_LightPipeline;
+		std::shared_ptr<Pipeline> m_LightSelectPipeline;
 		std::shared_ptr<Pipeline> m_CompositePipeline;
 		std::shared_ptr<Pipeline> m_SkyboxPipeline;
 		std::shared_ptr<ComputePipeline> m_BloomPipeline;
@@ -153,8 +174,10 @@ namespace VulkanCore {
 		// Material Resources
 		// Material per Shader set
 		std::shared_ptr<Material> m_GeometryMaterial;
+		std::shared_ptr<Material> m_GeometrySelectMaterial;
 		std::shared_ptr<Material> m_PointLightShaderMaterial;
 		std::shared_ptr<Material> m_SpotLightShaderMaterial;
+		std::shared_ptr<Material> m_LightSelectMaterial;
 		std::shared_ptr<Material> m_CompositeShaderMaterial;
 		std::shared_ptr<Material> m_SkyboxMaterial;
 
@@ -175,11 +198,13 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBPointLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSpotLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSkyboxSettings;
+		std::vector<std::shared_ptr<IndexBuffer>> m_ImageBuffer;
 
 		std::vector<std::shared_ptr<StorageBuffer>> m_SBMeshBuffersData;
 		std::vector<std::shared_ptr<StorageBuffer>> m_SBMaterialDataBuffer;
 
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
+		std::vector<uint32_t> m_LightHandles;
 
 		std::vector<std::shared_ptr<Image2D>> m_BloomTextures;
 		std::vector<std::shared_ptr<Image2D>> m_SceneRenderTextures;
@@ -197,17 +222,21 @@ namespace VulkanCore {
 		// Skybox Resources
 		std::shared_ptr<TextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;
 		std::shared_ptr<Image2D> m_BRDFTexture;
-		std::shared_ptr<VertexBuffer> m_SkyboxVBData;
 		VkDescriptorSet m_SkyboxTextureID;
 
 		std::map<MeshKey, DrawCommand> m_MeshDrawList;
 		std::map<MeshKey, TraceCommand> m_MeshTraceList;
 		std::map<MeshKey, MeshTransform> m_MeshTransformMap;
+		std::map<MeshKey, DrawSelectCommand> m_SelectedMeshDrawList;
+		std::map<MeshKey, MeshSelectTransform> m_SelectedMeshTransformMap;
 
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
 		uint32_t m_MaxAccumulateFrameCount = 10000;
 		bool m_RayTraced = false, m_Accumulate = false, m_UpdateTLAS = false;
+		int m_HoveredEntity;
+
+		SceneEditorData m_SceneEditorData;
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;

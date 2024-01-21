@@ -32,21 +32,6 @@ namespace VulkanCore {
 			return std::make_shared<VulkanShader>();
 		}
 
-		std::shared_ptr<Shader> MakeRTShader(const std::string& path)
-		{
-			const std::filesystem::path shaderPath = "assets\\shaders";
-			std::filesystem::path rayGenShaderPath = shaderPath / path, rayClosestHitShaderPath = shaderPath / path, rayMissShaderPath = shaderPath / path;
-			rayGenShaderPath.replace_extension(".rgen");
-			rayClosestHitShaderPath.replace_extension(".rchit");
-			rayMissShaderPath.replace_extension(".rmiss");
-
-			if (std::filesystem::exists(rayGenShaderPath) && std::filesystem::exists(rayClosestHitShaderPath) && std::filesystem::exists(rayMissShaderPath))
-				return std::make_shared<VulkanRayTraceShader>(rayGenShaderPath.string(), rayClosestHitShaderPath.string(), rayMissShaderPath.string());
-
-			VK_CORE_ASSERT(false, "Shader: {}, does not exist!", path);
-			return std::make_shared<VulkanRayTraceShader>();
-		}
-
 	}
 
 	void Renderer::SetRendererAPI(VulkanRenderer* vkRenderer)
@@ -87,7 +72,9 @@ namespace VulkanCore {
 	void Renderer::BuildShaders()
 	{
 		m_Shaders["CorePBR"] = Utils::MakeShader("CorePBR");
+		m_Shaders["CoreEditor"] = Utils::MakeShader("CoreEditor");
 		m_Shaders["LightShader"] = Utils::MakeShader("LightShader");
+		m_Shaders["LightEditor"] = Utils::MakeShader("LightEditor");
 		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
 		m_Shaders["Bloom"] = Utils::MakeShader("Bloom");
 		m_Shaders["Skybox"] = Utils::MakeShader("Skybox");
@@ -103,9 +90,9 @@ namespace VulkanCore {
 		m_Shaders.clear();
 	}
 
-	void Renderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& skyboxVB, const std::shared_ptr<Material>& skyboxMaterial, void* pcData)
+	void Renderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& skyboxMaterial, void* pcData)
 	{
-		s_Renderer->RenderSkybox(cmdBuffer, pipeline, skyboxVB, skyboxMaterial, pcData);
+		s_Renderer->RenderSkybox(cmdBuffer, pipeline, skyboxMaterial, pcData);
 	}	
 	
 	void Renderer::BeginTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
@@ -141,6 +128,11 @@ namespace VulkanCore {
 	void Renderer::RenderMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 		s_Renderer->RenderMesh(cmdBuffer, mesh, material, submeshIndex, pipeline, transformBuffer, transformData, instanceCount);
+	}
+
+	void Renderer::RenderSelectedMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<SelectTransformData>& transformData, uint32_t instanceCount)
+	{
+		s_Renderer->RenderSelectedMesh(cmdBuffer, mesh, material, submeshIndex, pipeline, transformBuffer, transformData, instanceCount);
 	}
 
 	void Renderer::RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)

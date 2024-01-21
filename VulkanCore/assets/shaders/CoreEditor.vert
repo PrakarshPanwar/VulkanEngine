@@ -11,22 +11,15 @@ layout(location = 4) in vec2 a_TexCoord;
 layout(location = 5) in vec4 a_MRow0;
 layout(location = 6) in vec4 a_MRow1;
 layout(location = 7) in vec4 a_MRow2;
+layout(location = 8) in int a_EntityID;
 
-struct VertexOutput
-{
-	vec3 WorldPosition;
-	vec3 Normal;
-	mat3 WorldNormals;
-	vec2 TexCoord;
-};
-
-layout(location = 0) out VertexOutput Output;
+layout(location = 0) out flat int v_InstanceID;
 
 layout(set = 0, binding = 0) uniform Camera
 {
 	mat4 Projection;
 	mat4 View;
-    mat4 InverseProjection;
+	mat4 InverseProjection;
 	mat4 InverseView;
 	vec2 DepthUnpackConsts;
 } u_Camera;
@@ -42,14 +35,6 @@ void main()
 
 	vec4 positionWorld = transform * vec4(a_Position, 1.0);
 	gl_Position = u_Camera.Projection * u_Camera.View * positionWorld;
-	Output.Normal = mat3(transform) * a_Normal;
-	Output.WorldPosition = positionWorld.xyz;
 
-	vec3 T = normalize(mat3(transform) * a_Tangent);
-    vec3 N = normalize(mat3(transform) * a_Normal);
-    T = normalize(T - dot(T, N) * N);
-    vec3 B = cross(N, T);
-
-	Output.WorldNormals = mat3(T, B, N);
-	Output.TexCoord = vec2(a_TexCoord.x, 1.0 - a_TexCoord.y);
+	v_InstanceID = a_EntityID;
 }

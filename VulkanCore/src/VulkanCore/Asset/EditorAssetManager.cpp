@@ -53,11 +53,15 @@ namespace VulkanCore {
 
 	std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
 	{
-		// 1. Check if handle is valid
+		// 1. Check if it is a memory only asset
+		if (m_MemoryAssets.contains(handle))
+			return m_MemoryAssets.at(handle);
+
+		// 2. Check if handle is valid
 		if (!IsAssetHandleValid(handle))
 			return nullptr;
 
-		// 2. Check if asset needs load (and if so, load)
+		// 3. Check if asset needs load (and if so, load)
 		std::shared_ptr<Asset> asset = nullptr;
 		if (IsAssetLoaded(handle))
 		{
@@ -77,7 +81,7 @@ namespace VulkanCore {
 
 			m_LoadedAssets[handle] = asset;
 		}
-		// 3. Return asset
+		// 4. Return asset
 		return asset;
 	}
 

@@ -5,6 +5,7 @@
 #include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/Timer.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
+#include "VulkanCore/Events/Input.h"
 #include "VulkanCore/Asset/AssetManager.h"
 #include "VulkanCore/Asset/TextureImporter.h"
 #include "VulkanCore/Asset/MaterialAsset.h"
@@ -20,61 +21,14 @@
 #include "Platform/Vulkan/VulkanIndexBuffer.h"
 #include "Platform/Vulkan/VulkanUniformBuffer.h"
 #include "Platform/Vulkan/VulkanStorageBuffer.h"
+#include "Platform/Vulkan/VulkanVertexBuffer.h"
+#include "Platform/Vulkan/VulkanIndexBuffer.h"
 
 #include <imgui.h>
 
 namespace VulkanCore {
 
 	namespace Utils {
-
-		std::shared_ptr<VulkanVertexBuffer> CreateCubeModel()
-		{
-			float skyboxVertices[] = {       
-				-1.0f,  1.0f, -1.0f,
-				-1.0f, -1.0f, -1.0f,
-				 1.0f, -1.0f, -1.0f,
-				 1.0f, -1.0f, -1.0f,
-				 1.0f,  1.0f, -1.0f,
-				-1.0f,  1.0f, -1.0f,
-
-				-1.0f, -1.0f,  1.0f,
-				-1.0f, -1.0f, -1.0f,
-				-1.0f,  1.0f, -1.0f,
-				-1.0f,  1.0f, -1.0f,
-				-1.0f,  1.0f,  1.0f,
-				-1.0f, -1.0f,  1.0f,
-
-				 1.0f, -1.0f, -1.0f,
-				 1.0f, -1.0f,  1.0f,
-				 1.0f,  1.0f,  1.0f,
-				 1.0f,  1.0f,  1.0f,
-				 1.0f,  1.0f, -1.0f,
-				 1.0f, -1.0f, -1.0f,
-
-				-1.0f, -1.0f,  1.0f,
-				-1.0f,  1.0f,  1.0f,
-				 1.0f,  1.0f,  1.0f,
-				 1.0f,  1.0f,  1.0f,
-				 1.0f, -1.0f,  1.0f,
-				-1.0f, -1.0f,  1.0f,
-
-				-1.0f,  1.0f, -1.0f,
-				 1.0f,  1.0f, -1.0f,
-				 1.0f,  1.0f,  1.0f,
-				 1.0f,  1.0f,  1.0f,
-				-1.0f,  1.0f,  1.0f,
-				-1.0f,  1.0f, -1.0f,
-
-				-1.0f, -1.0f, -1.0f,
-				-1.0f, -1.0f,  1.0f,
-				 1.0f, -1.0f, -1.0f,
-				 1.0f, -1.0f, -1.0f,
-				-1.0f, -1.0f,  1.0f,
-				 1.0f, -1.0f,  1.0f
-			};
-
-			return std::make_shared<VulkanVertexBuffer>(skyboxVertices, (uint32_t)sizeof(skyboxVertices));
-		}
 
 		static uint32_t CalculateMipCount(uint32_t width, uint32_t height)
 		{
@@ -123,7 +77,7 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
-		m_Scene->UpdateRayTracedGeometry(this);
+		m_Scene->OnUpdateRayTracedGeometry(this);
 
 		std::vector<MeshBuffersAddress> meshBuffersData;
 		std::vector<MaterialData> meshMaterialData;
@@ -140,8 +94,8 @@ namespace VulkanCore {
 			auto& submesh = submeshData[tc.SubmeshIndex];
 
 			auto& bufferData = meshBuffersData.emplace_back();
-			bufferData.VertexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshVB->GetVulkanBuffer(), submesh.BaseVertex * sizeof(Vertex));
-			bufferData.IndexBufferAddress = Utils::GetBufferDeviceAddress(vulkanMeshIB->GetVulkanBuffer(), submesh.BaseIndex * sizeof(uint32_t));
+			bufferData.VertexBufferAddress = vulkanMeshVB->GetVulkanBufferDeviceAddress(submesh.BaseVertex * sizeof(Vertex));
+			bufferData.IndexBufferAddress = vulkanMeshIB->GetVulkanBufferDeviceAddress(submesh.BaseIndex * sizeof(uint32_t));
 
 			// Submit Mesh Material Data
 			meshMaterialData.push_back(tc.MaterialInstance->GetMaterial()->GetMaterialData());
@@ -215,9 +169,9 @@ namespace VulkanCore {
 		{
 			m_RayTracingSkyboxMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Skybox Material", 2);
 
-			m_RayTracingSkyboxMaterial->SetTexture(0, m_PrefilteredTexture);
-			m_RayTracingSkyboxMaterial->SetTexture(1, m_IrradianceTexture);
-			m_RayTracingSkyboxMaterial->SetImage(2, m_BRDFTexture);
+			//m_RayTracingSkyboxMaterial->SetTexture(0, m_PrefilteredTexture);
+			//m_RayTracingSkyboxMaterial->SetTexture(1, m_IrradianceTexture);
+			//m_RayTracingSkyboxMaterial->SetImage(2, m_BRDFTexture);
 			m_RayTracingSkyboxMaterial->SetTexture(3, m_CubemapTexture);
 			m_RayTracingSkyboxMaterial->SetBuffers(4, m_UBSkyboxSettings);
 			m_RayTracingSkyboxMaterial->PrepareShaderMaterial();
@@ -226,12 +180,13 @@ namespace VulkanCore {
 
 	void SceneRenderer::CreatePipelines()
 	{
-		VertexBufferLayout vertexLayout = {
+		VertexBufferLayout vertexLayout = { {
 			{ ShaderDataType::Float3, "a_Position" },
 			{ ShaderDataType::Float3, "a_Normal" },
 			{ ShaderDataType::Float3, "a_Tangent" },
 			{ ShaderDataType::Float3, "a_Binormal" },
-			{ ShaderDataType::Float2, "a_TexCoord" }
+			{ ShaderDataType::Float2, "a_TexCoord" } },
+			16 // Alignment
 		};
 
 		VertexBufferLayout instanceLayout = {
@@ -245,7 +200,8 @@ namespace VulkanCore {
 			FramebufferSpecification geomFramebufferSpec;
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
-			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::DEPTH24STENCIL8 };
+			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::DEPTH32F };
+			geomFramebufferSpec.ReadDepthTexture = true;
 			geomFramebufferSpec.Transfer = true;
 			geomFramebufferSpec.Samples = 8;
 
@@ -268,6 +224,41 @@ namespace VulkanCore {
 
 			m_GeometryPipeline = std::make_shared<VulkanPipeline>(geomPipelineSpec);
 			m_LightPipeline = std::make_shared<VulkanPipeline>(lightPipelineSpec);
+		}
+
+		// Geometry/Light Selection Pipeline(Editor Only)
+		{
+			FramebufferSpecification geomSelectFramebufferSpec;
+			geomSelectFramebufferSpec.Width = 1920;
+			geomSelectFramebufferSpec.Height = 1080;
+			geomSelectFramebufferSpec.Attachments = { ImageFormat::R32I, ImageFormat::DEPTH24STENCIL8 };
+			geomSelectFramebufferSpec.Transfer = true;
+			geomSelectFramebufferSpec.Samples = 1;
+			memset(&geomSelectFramebufferSpec.ClearColor, -1, sizeof(glm::vec4));
+
+			RenderPassSpecification geomSelectRenderPassSpec;
+			geomSelectRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(geomSelectFramebufferSpec);
+
+			PipelineSpecification geomSelectPipelineSpec;
+			geomSelectPipelineSpec.DebugName = "Geometry Select Pipeline";
+			geomSelectPipelineSpec.pShader = Renderer::GetShader("CoreEditor");
+			geomSelectPipelineSpec.pRenderPass = std::make_shared<VulkanRenderPass>(geomSelectRenderPassSpec);
+			geomSelectPipelineSpec.Layout = vertexLayout;
+			geomSelectPipelineSpec.InstanceLayout = {
+				{ ShaderDataType::Float4, "a_MRow0" },
+				{ ShaderDataType::Float4, "a_MRow1" },
+				{ ShaderDataType::Float4, "a_MRow2" },
+				{ ShaderDataType::Int, "a_EntityID" }
+			};
+
+			m_GeometrySelectPipeline = std::make_shared<VulkanPipeline>(geomSelectPipelineSpec);
+
+			PipelineSpecification lightSelectPipelineSpec;
+			lightSelectPipelineSpec.DebugName = "Light Select Pipeline";
+			lightSelectPipelineSpec.pShader = Renderer::GetShader("LightEditor");
+			lightSelectPipelineSpec.pRenderPass = geomSelectPipelineSpec.pRenderPass;
+
+			m_LightSelectPipeline = std::make_shared<VulkanPipeline>(lightSelectPipelineSpec);
 		}
 
 		// Composite Pipeline
@@ -297,11 +288,8 @@ namespace VulkanCore {
 			PipelineSpecification skyboxPipelineSpec;
 			skyboxPipelineSpec.DebugName = "Skybox Pipeline";
 			skyboxPipelineSpec.pShader = Renderer::GetShader("Skybox");
-			skyboxPipelineSpec.Layout = {
-				{ ShaderDataType::Float3, "a_Position" }
-			};
-
 			skyboxPipelineSpec.pRenderPass = m_GeometryPipeline->GetSpecification().pRenderPass;
+			skyboxPipelineSpec.DepthCompareOp = CompareOp::LessOrEqual;
 
 			m_SkyboxPipeline = std::make_shared<VulkanPipeline>(skyboxPipelineSpec);
 		}
@@ -341,6 +329,14 @@ namespace VulkanCore {
 			m_GeometryMaterial->PrepareShaderMaterial();
 		}
 
+		// Geometry Select Material
+		{
+			m_GeometrySelectMaterial = std::make_shared<VulkanMaterial>(m_GeometrySelectPipeline->GetSpecification().pShader, "Geometry Select Shader Material");
+
+			m_GeometrySelectMaterial->SetBuffers(0, m_UBCamera);
+			m_GeometrySelectMaterial->PrepareShaderMaterial();
+		}
+
 		// Light Materials
 		{
 			m_PointLightShaderMaterial = std::make_shared<VulkanMaterial>(m_LightPipeline->GetSpecification().pShader, "Point Light Shader Material");
@@ -353,6 +349,11 @@ namespace VulkanCore {
 			m_SpotLightShaderMaterial->SetBuffers(0, m_UBCamera);
 			m_SpotLightShaderMaterial->SetTexture(1, std::dynamic_pointer_cast<VulkanTexture>(m_SpotLightTextureIcon));
 			m_SpotLightShaderMaterial->PrepareShaderMaterial();
+
+			m_LightSelectMaterial = std::make_shared<VulkanMaterial>(m_LightSelectPipeline->GetSpecification().pShader, "Light Select Shader Material");
+
+			m_LightSelectMaterial->SetBuffers(0, m_UBCamera);
+			m_LightSelectMaterial->PrepareShaderMaterial();
 		}
 
 		// Bloom Materials
@@ -442,9 +443,11 @@ namespace VulkanCore {
 			m_CompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_CompositePipeline->GetSpecification().pShader, "Composite Shader Material");
 
 			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
-			m_CompositeShaderMaterial->SetImages(0, m_RayTraced ? m_SceneRTOutputImages : geomFB->GetAttachment(true));
-			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
-			m_CompositeShaderMaterial->SetTexture(2, m_BloomDirtTexture);
+			m_CompositeShaderMaterial->SetBuffers(0, m_UBCamera);
+			m_CompositeShaderMaterial->SetImages(1, m_RayTraced ? m_SceneRTOutputImages : geomFB->GetAttachment(true));
+			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment(true));
+			m_CompositeShaderMaterial->SetImage(3, m_BloomTextures[2]);
+			m_CompositeShaderMaterial->SetTexture(4, m_BloomDirtTexture);
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -546,9 +549,11 @@ namespace VulkanCore {
 		{
 			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
 
-			m_CompositeShaderMaterial->SetImages(0, m_RayTraced ? m_SceneRTOutputImages : geomFB->GetAttachment(true));
-			m_CompositeShaderMaterial->SetImage(1, m_BloomTextures[2]);
-			m_CompositeShaderMaterial->SetTexture(2, m_BloomDirtTexture);
+			m_CompositeShaderMaterial->SetBuffers(0, m_UBCamera);
+			m_CompositeShaderMaterial->SetImages(1, m_RayTraced ? m_SceneRTOutputImages : geomFB->GetAttachment(true));
+			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment(true));
+			m_CompositeShaderMaterial->SetImage(3, m_BloomTextures[2]);
+			m_CompositeShaderMaterial->SetTexture(4, m_BloomDirtTexture);
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
@@ -591,6 +596,7 @@ namespace VulkanCore {
 		m_UBPointLight.reserve(framesInFlight);
 		m_UBSpotLight.reserve(framesInFlight);
 		m_UBSkyboxSettings.reserve(framesInFlight);
+		m_ImageBuffer.reserve(framesInFlight);
 		m_SBMeshBuffersData.reserve(framesInFlight);
 		m_SBMaterialDataBuffer.reserve(framesInFlight);
 
@@ -601,6 +607,7 @@ namespace VulkanCore {
 			m_UBPointLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBPointLights)));
 			m_UBSpotLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBSpotLights)));
 			m_UBSkyboxSettings.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(SkyboxSettings)));
+			m_ImageBuffer.emplace_back(std::make_shared<VulkanIndexBuffer>(m_ViewportSize.x * m_ViewportSize.y * sizeof(int)));
 		}
 
 		m_BloomMipSize = (glm::uvec2(m_ViewportSize.x, m_ViewportSize.y) + 1u) / 2u;
@@ -716,8 +723,6 @@ namespace VulkanCore {
 		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/SpotLightIcon.png");
 
 		m_SceneAccelerationStructure = std::make_shared<VulkanAccelerationStructure>();
-
-		m_SkyboxVBData = Utils::CreateCubeModel();
 	}
 
 	void SceneRenderer::Release()
@@ -729,8 +734,9 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
-		VK_CORE_INFO("Scene has been Recreated!");
+		VK_CORE_INFO("Scene Resized!");
 		m_GeometryPipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
+		m_GeometrySelectPipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 		m_CompositePipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 
 		// Recreate Resources
@@ -813,6 +819,7 @@ namespace VulkanCore {
 			ImGui::DragFloat("Dirt Intensity", &m_SceneSettings.DirtIntensity, 0.01f, 0.0f, 100.0f);
 			ImGui::DragFloat("Skybox LOD", &m_SkyboxSettings.LOD, 0.01f, 0.0f, 11.0f);
 			ImGui::DragFloat("Skybox Intensity", &m_SkyboxSettings.Intensity, 0.01f, 0.0f, 20.0f);
+			ImGui::Checkbox("Fog", (bool*)&m_SceneSettings.Fog);
 
 			ImGui::TreePop();
 		}
@@ -940,42 +947,19 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE_FN("Submit-SceneRenderer");
 
-		m_SceneCommandBuffer->Begin();
-
-		GeometryPass();
-		BloomCompute();
-		CompositePass();
-
-		ResetDrawCommands();
-
-		m_SceneCommandBuffer->End();
-	}
-
-	void SceneRenderer::TraceScene()
-	{
-		VK_CORE_PROFILE_FN("Submit-SceneRenderer");
-
-		m_SceneCommandBuffer->Begin();
-
-		RayTracePass();
-		BloomCompute();
-		CompositePass();
-
-		ResetTraceCommands();
-
-		m_SceneCommandBuffer->End();
-	}
-
-	void SceneRenderer::SetBuffersData(EditorCamera& camera)
-	{
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
 		// Camera
 		UBCamera cameraUB{};
-		cameraUB.Projection = camera.GetProjectionMatrix();
-		cameraUB.View = camera.GetViewMatrix();
-		cameraUB.InverseProjection = glm::inverse(camera.GetProjectionMatrix());
-		cameraUB.InverseView = glm::inverse(camera.GetViewMatrix());
+		cameraUB.Projection = m_SceneEditorData.CameraData.GetProjectionMatrix();
+		cameraUB.View = m_SceneEditorData.CameraData.GetViewMatrix();
+		cameraUB.InverseView = glm::inverse(m_SceneEditorData.CameraData.GetViewMatrix());
+		cameraUB.InverseProjection = glm::inverse(m_SceneEditorData.CameraData.GetProjectionMatrix());
+
+		glm::vec2 nearFarClip = m_SceneEditorData.CameraData.GetNearFarClip();
+		cameraUB.DepthUnpackConsts.x = (nearFarClip.y * nearFarClip.x) / (nearFarClip.y - nearFarClip.x);
+		cameraUB.DepthUnpackConsts.y = (nearFarClip.y + nearFarClip.x) / (nearFarClip.y - nearFarClip.x);
+
 		m_UBCamera[frameIndex]->WriteAndFlushBuffer(&cameraUB);
 
 		// Lights
@@ -989,6 +973,64 @@ namespace VulkanCore {
 
 		// Skybox Data
 		m_UBSkyboxSettings[frameIndex]->WriteAndFlushBuffer(&m_SkyboxSettings);
+
+		m_SceneCommandBuffer->Begin();
+
+		GeometryPass();
+		BloomCompute();
+		CompositePass();
+
+		if (m_SceneEditorData.ViewportHovered)
+			SelectionPass();
+
+		ResetDrawCommands();
+
+		m_SceneCommandBuffer->End();
+	}
+
+	void SceneRenderer::TraceScene()
+	{
+		VK_CORE_PROFILE_FN("Submit-SceneRenderer");
+
+		int frameIndex = Renderer::GetCurrentFrameIndex();
+
+		// Camera
+		UBCamera cameraUB{};
+		cameraUB.Projection = m_SceneEditorData.CameraData.GetProjectionMatrix();
+		cameraUB.View = m_SceneEditorData.CameraData.GetViewMatrix();
+		cameraUB.InverseProjection = glm::inverse(m_SceneEditorData.CameraData.GetProjectionMatrix());
+		cameraUB.InverseView = glm::inverse(m_SceneEditorData.CameraData.GetViewMatrix());
+
+		glm::vec2 nearFarClip = m_SceneEditorData.CameraData.GetNearFarClip();
+		cameraUB.DepthUnpackConsts.x = (nearFarClip.y * nearFarClip.x) / (nearFarClip.y - nearFarClip.x);
+		cameraUB.DepthUnpackConsts.y = (nearFarClip.y + nearFarClip.x) / (nearFarClip.y - nearFarClip.x);
+
+		m_UBCamera[frameIndex]->WriteAndFlushBuffer(&cameraUB);
+
+		// Lights
+		UBPointLights pointLightUB{};
+		m_Scene->UpdatePointLightUB(pointLightUB);
+		m_UBPointLight[frameIndex]->WriteAndFlushBuffer(&pointLightUB);
+
+		UBSpotLights spotLightUB{};
+		m_Scene->UpdateSpotLightUB(spotLightUB);
+		m_UBSpotLight[frameIndex]->WriteAndFlushBuffer(&spotLightUB);
+
+		// Skybox Data
+		m_UBSkyboxSettings[frameIndex]->WriteAndFlushBuffer(&m_SkyboxSettings);
+
+		m_SceneCommandBuffer->Begin();
+
+		RayTracePass();
+		BloomCompute();
+		CompositePass();
+
+		if (m_SceneEditorData.ViewportHovered)
+			SelectionPass();
+
+		ResetTraceCommands();
+
+		m_SceneCommandBuffer->End();
 	}
 
 	void SceneRenderer::RenderLights()
@@ -1066,6 +1108,40 @@ namespace VulkanCore {
 			dc.MaterialInstance = materialAsset->GetMaterial();
 			dc.SubmeshIndex = submeshIndex;
 			dc.TransformBuffer = m_MeshTransformMap[meshKey].TransformBuffer;
+			dc.InstanceCount++;
+		}
+	}
+
+	void SceneRenderer::SubmitSelectedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform, uint32_t entityID)
+	{
+		VK_CORE_PROFILE();
+
+		if (!mesh || !materialAsset)
+			return;
+
+		auto meshSource = mesh->GetMeshSource();
+		auto& submeshData = meshSource->GetSubmeshes();
+		uint64_t meshHandle = mesh->Handle;
+		uint64_t materialHandle = materialAsset->Handle;
+
+		if (meshSource->GetVertexCount() == 0)
+			return;
+
+		for (uint32_t submeshIndex : mesh->GetSubmeshes())
+		{
+			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
+			auto& transformBuffer = m_SelectedMeshTransformMap[meshKey].Transforms.emplace_back();
+
+			glm::mat4 submeshTransform = transform * submeshData[submeshIndex].LocalTransform;
+			transformBuffer.MRow[0] = { submeshTransform[0][0], submeshTransform[1][0], submeshTransform[2][0], submeshTransform[3][0] };
+			transformBuffer.MRow[1] = { submeshTransform[0][1], submeshTransform[1][1], submeshTransform[2][1], submeshTransform[3][1] };
+			transformBuffer.MRow[2] = { submeshTransform[0][2], submeshTransform[1][2], submeshTransform[2][2], submeshTransform[3][2] };
+			transformBuffer.EntityID = entityID;
+
+			auto& dc = m_SelectedMeshDrawList[meshKey];
+			dc.MeshInstance = mesh;
+			dc.SubmeshIndex = submeshIndex;
+			dc.TransformBuffer = m_SelectedMeshTransformMap[meshKey].TransformBuffer;
 			dc.InstanceCount++;
 		}
 	}
@@ -1186,8 +1262,8 @@ namespace VulkanCore {
 
 	void SceneRenderer::GeometryPass()
 	{
-		m_Scene->UpdateGeometry(this);
-		m_Scene->OnUpdateLights(m_PointLightPositions, m_SpotLightPositions);
+		m_Scene->OnUpdateGeometry(this);
+		m_Scene->OnUpdateLights(m_PointLightPositions, m_SpotLightPositions, m_LightHandles);
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().pRenderPass);
 
@@ -1195,7 +1271,7 @@ namespace VulkanCore {
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		// Rendering Skybox
-		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxVBData, m_SkyboxMaterial, &m_SkyboxSettings);
+		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxMaterial, &m_SkyboxSettings);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 
@@ -1244,6 +1320,74 @@ namespace VulkanCore {
 		Renderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+	}
+
+	void SceneRenderer::SelectionPass()
+	{
+		m_Scene->OnSelectGeometry(this);
+
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Selection-Pass", DebugLabelColor::Green);
+		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometrySelectPipeline->GetSpecification().pRenderPass);
+
+		for (auto& [mk, dc] : m_SelectedMeshDrawList)
+			Renderer::RenderSelectedMesh(m_SceneCommandBuffer, dc.MeshInstance, m_GeometrySelectMaterial, dc.SubmeshIndex, m_GeometrySelectPipeline, dc.TransformBuffer, m_SelectedMeshTransformMap[mk].Transforms, dc.InstanceCount);
+
+		// Lights
+		{
+			auto commandBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
+			auto lightPipeline = std::static_pointer_cast<VulkanPipeline>(m_LightSelectPipeline);
+
+			Renderer::Submit([this, commandBuffer, lightPipeline]
+			{
+				VkCommandBuffer bindCmd = commandBuffer->RT_GetActiveCommandBuffer();
+				lightPipeline->Bind(bindCmd);
+
+				// Binding Point Light Descriptor Set
+				m_LightSelectMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_LightSelectPipeline);
+			});
+
+			int index = 0;
+
+			// Point Lights
+			for (auto pointLightPosition : m_PointLightPositions)
+			{
+				uint32_t lightEntity = m_LightHandles[index++];
+
+				Renderer::Submit([this, commandBuffer, lightPipeline, pointLightPosition, lightEntity]
+				{
+					VkCommandBuffer drawCmd = commandBuffer->RT_GetActiveCommandBuffer();
+
+					lightPipeline->SetPushConstants(drawCmd, (void*)&pointLightPosition, sizeof(glm::vec4) + sizeof(int));
+					vkCmdDraw(drawCmd, 6, 1, 0, 0);
+				});
+			}
+
+			// Spot Lights
+			for (auto spotLightPosition : m_SpotLightPositions)
+			{
+				uint32_t lightEntity = m_LightHandles[index++];
+
+				Renderer::Submit([this, commandBuffer, lightPipeline, spotLightPosition, lightEntity]
+				{
+					VkCommandBuffer drawCmd = commandBuffer->RT_GetActiveCommandBuffer();
+
+					lightPipeline->SetPushConstants(drawCmd, (void*)&spotLightPosition, sizeof(glm::vec4) + sizeof(int));
+					vkCmdDraw(drawCmd, 6, 1, 0, 0);
+				});
+			}
+		}
+
+		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometrySelectPipeline->GetSpecification().pRenderPass);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+
+		Renderer::Submit([this]
+		{
+			int frameIndex = Renderer::RT_GetCurrentFrameIndex();
+			auto frameBuffer = std::static_pointer_cast<VulkanFramebuffer>(m_GeometrySelectPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
+
+			void* pixelData = frameBuffer->ReadPixel(m_SceneCommandBuffer, m_ImageBuffer[frameIndex], 0, m_SceneEditorData.ViewportMousePos.x, m_SceneEditorData.ViewportMousePos.y);
+			m_HoveredEntity = *(int*)pixelData;
+		});
 	}
 
 	void SceneRenderer::BloomCompute()
@@ -1326,7 +1470,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::RayTracePass()
 	{
-		m_Scene->UpdateRayTracedGeometry(this);
+		m_Scene->OnUpdateRayTracedGeometry(this);
 
 		if (m_UpdateTLAS)
 		{
@@ -1392,8 +1536,15 @@ namespace VulkanCore {
 			dc.InstanceCount = 0;
 		}
 
+		for (auto& [mk, dc] : m_SelectedMeshDrawList)
+		{
+			m_SelectedMeshTransformMap[mk].Transforms.clear();
+			dc.InstanceCount = 0;
+		}
+
 		m_PointLightPositions.clear();
 		m_SpotLightPositions.clear();
+		m_LightHandles.clear();
 	}
 
 	void SceneRenderer::ResetTraceCommands()
@@ -1403,6 +1554,16 @@ namespace VulkanCore {
 			m_MeshTransformMap[mk].Transforms.clear();
 			tc.InstanceCount = 0;
 		}
+
+		for (auto& [mk, dc] : m_SelectedMeshDrawList)
+		{
+			m_SelectedMeshTransformMap[mk].Transforms.clear();
+			dc.InstanceCount = 0;
+		}
+
+		m_PointLightPositions.clear();
+		m_SpotLightPositions.clear();
+		m_LightHandles.clear();
 	}
 
 }

@@ -32,7 +32,7 @@ namespace VulkanCore {
 		return entity;
 	}
 
-	void Scene::UpdateGeometry(SceneRenderer* renderer)
+	void Scene::OnUpdateGeometry(SceneRenderer* renderer)
 	{
 		VK_CORE_PROFILE_FN("Submit-SubmitMeshes");
 		auto view = m_Registry.view<TransformComponent, MeshComponent>();
@@ -47,7 +47,7 @@ namespace VulkanCore {
 		}
 	}
 
-	void Scene::UpdateRayTracedGeometry(SceneRenderer* renderer)
+	void Scene::OnUpdateRayTracedGeometry(SceneRenderer* renderer)
 	{
 		VK_CORE_PROFILE_FN("Submit-SubmitMeshes");
 		auto view = m_Registry.view<TransformComponent, MeshComponent>();
@@ -61,8 +61,22 @@ namespace VulkanCore {
 			renderer->SubmitRayTracedMesh(mesh, materialAsset, transform.GetTransform());
 		}
 	}
+	
+	void Scene::OnSelectGeometry(SceneRenderer* renderer)
+	{
+		auto view = m_Registry.view<TransformComponent, MeshComponent>();
 
-	void Scene::OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions)
+		for (auto ent : view)
+		{
+			auto [transform, meshComponent] = view.get<TransformComponent, MeshComponent>(ent);
+
+			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshComponent.MeshHandle);
+			std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(meshComponent.MaterialTableHandle);
+			renderer->SubmitSelectedMesh(mesh, materialAsset, transform.GetTransform(), (uint32_t)ent);
+		}
+	}
+
+	void Scene::OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions, std::vector<uint32_t>& lightHandles)
 	{
 		{
 			// Point Lights
@@ -75,6 +89,7 @@ namespace VulkanCore {
 
 				glm::vec4 position = glm::vec4(transform.Translation, pointLightComponent.Radius);
 				pointLightPositions.push_back(position);
+				lightHandles.push_back((uint32_t)ent);
 			}
 		}
 
@@ -89,6 +104,7 @@ namespace VulkanCore {
 
 				glm::vec4 position = glm::vec4(transform.Translation, spotLightComponent.Radius);
 				spotLightPositions.push_back(position);
+				lightHandles.push_back((uint32_t)ent);
 			}
 		}
 	}

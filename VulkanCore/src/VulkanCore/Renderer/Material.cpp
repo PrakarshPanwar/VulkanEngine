@@ -1,5 +1,6 @@
 #include "vulkanpch.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
+#include "VulkanCore/Asset/AssetManager.h"
 #include "Renderer.h"
 
 #include <imgui.h>
@@ -37,7 +38,11 @@ namespace VulkanCore {
 
 	std::tuple<AssetHandle, AssetHandle, AssetHandle> Material::GetMaterialHandles() const
 	{
-		return { m_DiffuseTexture->Handle, m_NormalTexture->Handle, m_ARMTexture->Handle };
+		auto diffuseHandle = AssetManager::GetAssetManager()->IsAssetHandleValid(m_DiffuseTexture->Handle) ? m_DiffuseTexture->Handle : (AssetHandle)0;
+		auto normalHandle = AssetManager::GetAssetManager()->IsAssetHandleValid(m_NormalTexture->Handle) ? m_NormalTexture->Handle : (AssetHandle)0;
+		auto armHandle = AssetManager::GetAssetManager()->IsAssetHandleValid(m_ARMTexture->Handle) ? m_ARMTexture->Handle : (AssetHandle)0;
+
+		return { diffuseHandle, normalHandle, armHandle };
 	}
 
 	void Material::SetDiffuseTexture(std::shared_ptr<Texture2D> texture)

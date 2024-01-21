@@ -74,6 +74,19 @@ namespace VulkanCore {
 			return pipelineLayout;
 		}
 
+		static VkCompareOp VulkanCompareOp(CompareOp compareOp)
+		{
+			switch (compareOp)
+			{
+			case VulkanCore::CompareOp::None:		 return VK_COMPARE_OP_NEVER;
+			case VulkanCore::CompareOp::Less:		 return VK_COMPARE_OP_LESS;
+			case VulkanCore::CompareOp::LessOrEqual: return VK_COMPARE_OP_LESS_OR_EQUAL;
+			default:
+				VK_CORE_ASSERT(false, "Compare Op not supported!");
+				return VK_COMPARE_OP_LESS;
+			}
+		}
+
 		static VkSampleCountFlagBits VulkanSampleCount(uint32_t sampleCount)
 		{
 			switch (sampleCount)
@@ -174,7 +187,7 @@ namespace VulkanCore {
 			pipelineConfig.DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 			pipelineConfig.DepthStencilInfo.depthTestEnable = spec.DepthTest ? VK_TRUE : VK_FALSE;
 			pipelineConfig.DepthStencilInfo.depthWriteEnable = spec.DepthWrite ? VK_TRUE : VK_FALSE;
-			pipelineConfig.DepthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+			pipelineConfig.DepthStencilInfo.depthCompareOp = Utils::VulkanCompareOp(spec.DepthCompareOp);
 			pipelineConfig.DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
 			pipelineConfig.DepthStencilInfo.minDepthBounds = 0.0f;  // Optional
 			pipelineConfig.DepthStencilInfo.maxDepthBounds = 1.0f;  // Optional
@@ -478,9 +491,9 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkCreateShaderModule(device->GetVulkanDevice(), &createInfo, nullptr, shaderModule), "Failed to Create Shader Module!");
 	}
 
+	// TODO: Caching could benefit greatly in performance
 	void VulkanPipeline::CreatePipelineCache()
 	{
-		// TODO: Caching could benefit greatly in performance
 		VkPipelineCacheCreateInfo cacheInfo{};
 		cacheInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 		cacheInfo.initialDataSize = 0;
@@ -488,21 +501,21 @@ namespace VulkanCore {
 		cacheInfo.pInitialData = nullptr;
 	}
 
-	// TODO: Do this process in Render Thread
 	void VulkanPipeline::Release()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
+		Renderer::SubmitResourceFree([pipeline = m_GraphicsPipeline, layout = m_PipelineLayout,
+			vertexShaderModule = m_VertexShaderModule, fragmentShaderModule = m_FragmentShaderModule]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
 
-		vkDestroyShaderModule(device->GetVulkanDevice(), m_VertexShaderModule, nullptr);
-		vkDestroyShaderModule(device->GetVulkanDevice(), m_FragmentShaderModule, nullptr);
+			vkDestroyShaderModule(device->GetVulkanDevice(), vertexShaderModule, nullptr);
+			vkDestroyShaderModule(device->GetVulkanDevice(), fragmentShaderModule, nullptr);
 
-		if (m_GeometryShaderModule)
-			vkDestroyShaderModule(device->GetVulkanDevice(), m_GeometryShaderModule, nullptr);
+			if (layout)
+				vkDestroyPipelineLayout(device->GetVulkanDevice(), layout, nullptr);
 
-		if (m_PipelineLayout)
-			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
-
-		vkDestroyPipeline(device->GetVulkanDevice(), m_GraphicsPipeline, nullptr);
+			vkDestroyPipeline(device->GetVulkanDevice(), pipeline, nullptr);
+		});
 
 		m_GraphicsPipeline = nullptr;
 	}

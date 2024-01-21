@@ -81,8 +81,20 @@ namespace VulkanCore {
 			if (m_EditorCamera.OnUpdate())
 				m_SceneRenderer->ResetAccumulationFrameIndex();
 		}
+		
+		// Mouse Position relative to Viewport
+		auto [mx, my] = Input::GetMousePosition();
+		mx -= m_ViewportBounds[0].x;
+		my -= m_ViewportBounds[0].y;
+		int mouseX = (int)mx;
+		int mouseY = (int)my;
 
-		m_SceneRenderer->SetBuffersData(m_EditorCamera);
+		SceneEditorData sceneEditorData{};
+		sceneEditorData.CameraData = m_EditorCamera;
+		sceneEditorData.ViewportMousePos = glm::max(glm::ivec2{ mouseX, mouseY }, 0);
+		sceneEditorData.ViewportHovered = m_ViewportHovered;
+		m_SceneRenderer->SetSceneEditorData(sceneEditorData);
+
 		if (m_RayTraced)
 			m_SceneRenderer->TraceScene();
 		else
@@ -91,7 +103,7 @@ namespace VulkanCore {
 
 	void EditorLayer::OnEvent(Event& e)
 	{
-		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents())
+		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents() || m_EditorCamera.GetFlyMode())
 			m_EditorCamera.OnEvent(e);
 
 		// Handling Camera Events
@@ -100,6 +112,7 @@ namespace VulkanCore {
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnKeyEvent));
+		dispatcher.Dispatch<MouseButtonPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnMouseButtonEvent));
 		dispatcher.Dispatch<WindowResizeEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnWindowResize));
 	}
 
@@ -266,6 +279,15 @@ namespace VulkanCore {
 			ImGui::EndPopup();
 		}
 
+		if (m_ViewportHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)
+			&& !ImGui::IsKeyDown(ImGuiKey_LeftAlt) && !ImGuizmo::IsOver())
+		{
+			int entityHandle = m_SceneRenderer->GetHoveredEntity();
+			Entity hoveredEntity = entityHandle == -1 ? Entity{} : Entity{ (entt::entity)entityHandle, m_Scene.get() };
+
+			m_SceneHierarchyPanel.SetSelectedEntity(hoveredEntity);
+		}
+
 		RenderGizmo();
 		ImGui::End(); // End of Viewport
 
@@ -276,10 +298,14 @@ namespace VulkanCore {
 		ImGui::End(); // End of DockSpace
 	}
 
-	bool EditorLayer::OnKeyEvent(KeyPressedEvent& keyevent)
+	bool EditorLayer::OnKeyEvent(KeyPressedEvent& e)
 	{
+		bool shiftKey = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+
+		bool isFlying = m_EditorCamera.GetFlyMode();
+
 		// Gizmos: Unreal Engine Controls
-		switch (keyevent.GetKeyCode())
+		switch (e.GetKeyCode())
 		{
 		case Key::Q:
 		{
@@ -289,7 +315,7 @@ namespace VulkanCore {
 		}
 		case Key::W:
 		{
-			if (!ImGuizmo::IsUsing())
+			if (!ImGuizmo::IsUsing() && !isFlying)
 				m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
 			break;
 		}
@@ -305,16 +331,37 @@ namespace VulkanCore {
 				m_GizmoType = ImGuizmo::OPERATION::SCALE;
 			break;
 		}
+		case Key::GraveAccent:
+		{
+			if (shiftKey)
+				m_EditorCamera.SetFlyMode(true);
 		}
+		}
+
 		return false;
 	}
 
-	bool EditorLayer::OnMouseScroll(MouseScrolledEvent& mouseScroll)
+	bool EditorLayer::OnMouseButtonEvent(MouseButtonPressedEvent& e)
+	{
+		switch (e.GetMouseButton())
+		{
+		case Mouse::ButtonLeft:
+		{
+			bool isFlying = m_EditorCamera.GetFlyMode();
+			if (isFlying)
+				m_EditorCamera.SetFlyMode(false);
+		}
+		}
+
+		return false;
+	}
+
+	bool EditorLayer::OnMouseScroll(MouseScrolledEvent& e)
 	{
 		return false;
 	}
 
-	bool EditorLayer::OnWindowResize(WindowResizeEvent& windowEvent)
+	bool EditorLayer::OnWindowResize(WindowResizeEvent& e)
 	{
 		m_WindowResized = true;
 		return false;
