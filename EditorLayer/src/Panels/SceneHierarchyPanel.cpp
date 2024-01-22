@@ -214,7 +214,7 @@ namespace VulkanCore {
 			bool removeComponent = false;
 			if (ImGui::BeginPopup("ComponentSettings"))
 			{
-				if (ImGui::MenuItem("Remove component"))
+				if (ImGui::MenuItem("Remove Component"))
 					removeComponent = true;
 
 				ImGui::EndPopup();

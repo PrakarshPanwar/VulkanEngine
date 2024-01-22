@@ -23,7 +23,7 @@ namespace std {
 		size_t operator()(const VulkanCore::Vertex& vertex) const
 		{
 			size_t seed = 0;
-			VulkanCore::HashCombine(seed, vertex.Position, vertex.Color, vertex.Normal, vertex.TexCoord);
+			VulkanCore::HashCombine(seed, vertex.Position, vertex.Normal, vertex.TexCoord);
 			return seed;
 		}
 	};

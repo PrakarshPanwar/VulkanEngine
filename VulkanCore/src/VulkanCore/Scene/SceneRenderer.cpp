@@ -65,7 +65,6 @@ namespace VulkanCore {
 			{ ShaderDataType::Float3, "a_Normal" },
 			{ ShaderDataType::Float3, "a_Tangent" },
 			{ ShaderDataType::Float3, "a_Binormal" },
-			{ ShaderDataType::Float3, "a_FragColor" },
 			{ ShaderDataType::Float2, "a_TexCoord" }
 		};
 
@@ -607,9 +606,21 @@ namespace VulkanCore {
 			ImGui::DragFloat("Dirt Intensity", &m_SceneSettings.DirtIntensity, 0.01f, 0.0f, 100.0f);
 			ImGui::DragFloat("Skybox LOD", &m_SkyboxSettings.LOD, 0.01f, 0.0f, 11.0f);
 			ImGui::DragFloat("Skybox Intensity", &m_SkyboxSettings.Intensity, 0.01f, 0.0f, 20.0f);
-			ImGui::Checkbox("Fog", (bool*)&m_SceneSettings.EnableFog);
+			ImGui::Checkbox("Fog", (bool*)&m_SceneSettings.Fog);
 
 			ImGui::TreePop();
+		}
+
+		if (m_SceneSettings.Fog)
+		{
+			ImGui::BeginChild("##FogSettings", { 0, 0 }, ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeY);
+			
+			ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - 100.0f);
+			ImGui::DragFloat("Start Distance", &m_SceneSettings.FogStartDistance, 0.01f, 0.01f);
+			ImGui::DragFloat("Falloff Distance", &m_SceneSettings.FogFallOffDistance, 0.01f, 0.1f);
+			ImGui::PopItemWidth();
+
+			ImGui::EndChild();
 		}
 
 		if (ImGui::TreeNodeEx("Scene Renderer Stats##GPUPerf", treeFlags))
@@ -702,16 +713,16 @@ namespace VulkanCore {
 		cameraUB.DepthUnpackConsts.x = (nearFarClip.y * nearFarClip.x) / (nearFarClip.y - nearFarClip.x);
 		cameraUB.DepthUnpackConsts.y = (nearFarClip.y + nearFarClip.x) / (nearFarClip.y - nearFarClip.x);
 
-		m_UBCamera[frameIndex]->WriteAndFlushBuffer(&cameraUB);
+		m_UBCamera[frameIndex]->WriteData(&cameraUB);
 
 		// Point Light
 		UBPointLights pointLightUB{};
 		m_Scene->UpdatePointLightUB(pointLightUB);
-		m_UBPointLight[frameIndex]->WriteAndFlushBuffer(&pointLightUB);
+		m_UBPointLight[frameIndex]->WriteData(&pointLightUB);
 
 		UBSpotLights spotLightUB{};
 		m_Scene->UpdateSpotLightUB(spotLightUB);
-		m_UBSpotLight[frameIndex]->WriteAndFlushBuffer(&spotLightUB);
+		m_UBSpotLight[frameIndex]->WriteData(&spotLightUB);
 
 		m_SceneCommandBuffer->Begin();
 
@@ -1062,7 +1073,7 @@ namespace VulkanCore {
 			m_BloomPrefilterShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
 			const uint32_t mips = m_BloomTextures[0]->GetSpecification().MipLevels;
-			glm::uvec2 workGroups = glm::ceil((glm::vec2)m_BloomMipSize / 16.0f);
+			glm::uvec2 workGroups = glm::ceil((glm::vec2)m_BloomMipSize / 32.0f);
 
 			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_BloomParams, sizeof(glm::vec2), sizeof(glm::vec2));
@@ -1076,7 +1087,7 @@ namespace VulkanCore {
 				int currentIdx = i - 1;
 
 				m_BloomPingShaderMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
-				glm::uvec2 workGroups = glm::ceil((glm::vec2)m_BloomTextures[0]->GetMipSize(i) / 16.0f);
+				workGroups = glm::ceil((glm::vec2)m_BloomTextures[0]->GetMipSize(i) / 32.0f);
 
 				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 				vulkanBloomPipeline->Dispatch(dispatchCmd, workGroups.x, workGroups.y, 1);
@@ -1090,12 +1101,11 @@ namespace VulkanCore {
 			}
 
 			// Upsample First
-			// TODO: Could have to use VkImageSubresourceRange to set correct mip level
 			m_LodAndMode.LOD = float(mips - 2);
 			m_LodAndMode.Mode = 2.0f;
 
 			m_BloomUpsampleFirstShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
-			workGroups = glm::ceil((glm::vec2)m_BloomTextures[2]->GetMipSize(mips - 1) / 16.0f);
+			workGroups = glm::ceil((glm::vec2)m_BloomTextures[2]->GetMipSize(mips - 1) / 32.0f);
 
 			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 			vulkanBloomPipeline->Dispatch(dispatchCmd, workGroups.x, workGroups.y, 1);
@@ -1107,7 +1117,7 @@ namespace VulkanCore {
 				m_LodAndMode.Mode = 3.0f;
 
 				m_BloomUpsampleShaderMaterials[i]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
-				workGroups = glm::ceil((glm::vec2)m_BloomTextures[2]->GetMipSize(i) / 16.0f);
+				workGroups = glm::ceil((glm::vec2)m_BloomTextures[2]->GetMipSize(i) / 32.0f);
 
 				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 				vulkanBloomPipeline->Dispatch(dispatchCmd, workGroups.x, workGroups.y, 1);

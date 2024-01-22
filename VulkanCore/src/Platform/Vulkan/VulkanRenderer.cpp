@@ -185,7 +185,7 @@ namespace VulkanCore {
 				&equirectSet, 0, nullptr);
 
 			equirectangularConversionPipeline->Bind(dispatchCmd);
-			equirectangularConversionPipeline->Dispatch(dispatchCmd, cubemapSize / 16, cubemapSize / 16, 6);
+			equirectangularConversionPipeline->Dispatch(dispatchCmd, cubemapSize / 32, cubemapSize / 32, 6);
 
 			device->FlushCommandBuffer(dispatchCmd, true);
 			
@@ -226,7 +226,7 @@ namespace VulkanCore {
 			const float deltaRoughness = 1.0f / glm::max((float)mipCount - 1.0f, 1.0f);
 			for (uint32_t i = 0, size = cubemapSize; i < mipCount; ++i, size /= 2)
 			{
-				uint32_t numGroups = glm::max(1u, size / 16);
+				uint32_t numGroups = glm::max(1u, size / 32);
 				float roughness = i * deltaRoughness;
 				environmentMipFilterPipeline->SetPushConstants(dispatchCmd, &roughness, sizeof(float));
 				environmentMipFilterPipeline->Execute(dispatchCmd, descriptorSets[i], numGroups, numGroups, 6);
@@ -261,7 +261,7 @@ namespace VulkanCore {
 			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
 
 			environmentIrradiancePipeline->Bind(dispatchCmd);
-			environmentIrradiancePipeline->Execute(dispatchCmd, descriptorSet, irradianceMapSize / 16, irradianceMapSize / 16, 6);
+			environmentIrradiancePipeline->Execute(dispatchCmd, descriptorSet, irradianceMapSize / 32, irradianceMapSize / 32, 6);
 
 			device->FlushCommandBuffer(dispatchCmd, true);
 
@@ -442,7 +442,7 @@ namespace VulkanCore {
 			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
 
 			generateBRDFPipeline->Bind(dispatchCmd);
-			generateBRDFPipeline->Execute(dispatchCmd, descriptorSet, textureSize / 16, textureSize / 16, 1);
+			generateBRDFPipeline->Execute(dispatchCmd, descriptorSet, textureSize / 32, textureSize / 32, 1);
 
 			device->FlushCommandBuffer(dispatchCmd, true);
 		});

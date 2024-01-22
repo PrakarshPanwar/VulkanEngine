@@ -21,7 +21,9 @@ layout(push_constant) uniform SceneData
 {
 	float Exposure;
 	float DirtIntensity;
-	uint EnableFog;
+	uint Fog;
+	float FogStartDistance;
+	float FogFallOffDistance;
 } u_SceneParams;
 
 vec3 ReinhardTonemap(vec3 hdrColor)
@@ -73,14 +75,14 @@ void main()
 	vec3 bloom = UpsampleTent9(u_BloomTexture, 0, v_TexCoord, 1.0 / fTexSize, 0.5);
 	vec3 bloomDirt = texture(u_BloomDirtTexture, v_TexCoord).rgb * u_SceneParams.DirtIntensity;
 
-	if (bool(u_SceneParams.EnableFog))
+	if (bool(u_SceneParams.Fog))
 	{
 		float depth = texture(u_DepthTexture, v_TexCoord).r;
 		depth = LinearizeDepth(depth);
 
-		const float fogStartDistance = 5.5;
-		const float bloomFogStartDistance = 5.0;
-		const float fogFallOffDistance = 30.0;
+		const float fogStartDistance = u_SceneParams.FogStartDistance;
+		const float bloomFogStartDistance = fogStartDistance;
+		const float fogFallOffDistance = u_SceneParams.FogFallOffDistance;
 
 		const float fogAmount = smoothstep(fogStartDistance, fogStartDistance + fogFallOffDistance, depth);
 		const float fogAmountBloom = smoothstep(bloomFogStartDistance, bloomFogStartDistance + fogFallOffDistance, depth);

@@ -9,7 +9,6 @@ namespace VulkanCore {
 	VulkanStorageBuffer::VulkanStorageBuffer(uint32_t size)
 		: m_Size(size)
 	{
-		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("StorageBuffer");
 
 		VkBufferCreateInfo storageBufferCreateInfo{};
@@ -34,7 +33,7 @@ namespace VulkanCore {
 		allocator.DestroyBuffer(m_VulkanBuffer, m_MemoryAllocation);
 	}
 
-	void VulkanStorageBuffer::WriteAndFlushBuffer(void* data, uint32_t offset)
+	void VulkanStorageBuffer::WriteData(void* data, uint32_t offset)
 	{
 		memcpy(m_MapDataPtr, data, m_Size);
 		vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, (VkDeviceSize)offset, (VkDeviceSize)m_Size);
