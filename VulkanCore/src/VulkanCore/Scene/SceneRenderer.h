@@ -129,26 +129,28 @@ namespace VulkanCore {
 		{
 			float LOD = 1.0f;
 			float Mode = 1.0f; // 0->PreFilter, 1->Downsample, 2->Upsample-First, 3->Upsample
-		};
+		} m_LodAndMode;
 
 		struct SceneSettings
 		{
 			float Exposure = 1.0f;
 			float DirtIntensity = 5.0f;
-			uint32_t EnableFog = 0;
-		};
+			uint32_t Fog = 0;
+			float FogStartDistance = 5.5f;
+			float FogFallOffDistance = 30.0f;
+		} m_SceneSettings;
 
 		struct BloomParams
 		{
 			float Threshold = 1.0f;
 			float Knee = 0.5f;
-		};
+		} m_BloomParams;
 
 		struct SkyboxSettings
 		{
 			float Intensity = 0.05f;
 			float LOD = 0.0f;
-		};
+		} m_SkyboxSettings;
 	private:
 		std::shared_ptr<Scene> m_Scene;
 
@@ -165,7 +167,6 @@ namespace VulkanCore {
 		std::shared_ptr<Pipeline> m_SkyboxPipeline;
 		std::shared_ptr<ComputePipeline> m_BloomPipeline;
 
-		// TODO: In future we have to setup Material Table
 		// Material Resources
 		// Material per Shader set
 		std::shared_ptr<Material> m_GeometryMaterial;
@@ -202,7 +203,6 @@ namespace VulkanCore {
 		// Skybox Resources
 		std::shared_ptr<TextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;
 		std::shared_ptr<Image2D> m_BRDFTexture;
-		SkyboxSettings m_SkyboxSettings;
 		VkDescriptorSet m_SkyboxTextureID;
 
 		std::map<MeshKey, DrawCommand> m_MeshDrawList;
@@ -215,9 +215,6 @@ namespace VulkanCore {
 		int m_HoveredEntity;
 
 		SceneEditorData m_SceneEditorData;
-		SceneSettings m_SceneSettings;
-		LodAndMode m_LodAndMode;
-		BloomParams m_BloomParams;
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;

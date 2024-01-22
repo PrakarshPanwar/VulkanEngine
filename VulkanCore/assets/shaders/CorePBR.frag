@@ -9,7 +9,6 @@ struct VertexOutput
 	vec3 Normal;
     mat3 WorldNormals;
 	vec2 TexCoord;
-	vec3 VertexColor;
 };
 
 layout(location = 0) in VertexOutput Input;

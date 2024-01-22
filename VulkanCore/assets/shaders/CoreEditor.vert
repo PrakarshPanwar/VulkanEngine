@@ -5,14 +5,13 @@ layout(location = 0) in vec3 a_Position;
 layout(location = 1) in vec3 a_Normal;
 layout(location = 2) in vec3 a_Tangent;
 layout(location = 3) in vec3 a_Binormal;
-layout(location = 4) in vec3 a_FragColor;
-layout(location = 5) in vec2 a_TexCoord;
+layout(location = 4) in vec2 a_TexCoord;
 
 // Instance Bindings
-layout(location = 6) in vec4 a_MRow0;
-layout(location = 7) in vec4 a_MRow1;
-layout(location = 8) in vec4 a_MRow2;
-layout(location = 9) in int a_EntityID;
+layout(location = 5) in vec4 a_MRow0;
+layout(location = 6) in vec4 a_MRow1;
+layout(location = 7) in vec4 a_MRow2;
+layout(location = 8) in int a_EntityID;
 
 layout(location = 0) out flat int v_InstanceID;
 

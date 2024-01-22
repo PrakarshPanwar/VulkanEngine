@@ -12,7 +12,7 @@ namespace VulkanCore {
 
 		~VulkanStorageBuffer();
 
-		void WriteAndFlushBuffer(void* data, uint32_t offset) override;
+		void WriteData(void* data, uint32_t offset) override;
 
 		inline const VkDescriptorBufferInfo& GetDescriptorBufferInfo() const { return m_DescriptorBufferInfo; }
 	private:

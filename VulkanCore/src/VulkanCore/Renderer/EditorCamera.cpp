@@ -12,14 +12,14 @@ namespace VulkanCore {
 	EditorCamera::EditorCamera(float fov, float aspectRatio, float nearClip, float farClip)
 		: m_FOV(fov), m_AspectRatio(aspectRatio), m_NearClip(nearClip), m_FarClip(farClip)
 	{
-		m_Projection = glm::perspective(fov, aspectRatio, nearClip, farClip);
+		m_ProjectionMatrix = glm::perspective(fov, aspectRatio, nearClip, farClip);
 		UpdateView();
 	}
 
 	void EditorCamera::UpdateProjection()
 	{
 		//m_AspectRatio = m_ViewportWidth / m_ViewportHeight;
-		m_Projection = glm::perspective(m_FOV, m_AspectRatio, m_NearClip, m_FarClip);
+		m_ProjectionMatrix = glm::perspective(m_FOV, m_AspectRatio, m_NearClip, m_FarClip);
 	}
 
 	void EditorCamera::UpdateView()
@@ -115,22 +115,22 @@ namespace VulkanCore {
 			{
 			case Key::W:
 			{
-				m_FocalPoint += GetForwardDirection() * 0.1f;
+				m_FocalPoint += GetForwardDirection() * m_FlySpeed;
 				break;
 			}
 			case Key::A:
 			{
-				m_FocalPoint -= GetRightDirection() * 0.1f;
+				m_FocalPoint -= GetRightDirection() * m_FlySpeed;
 				break;
 			}
 			case Key::S:
 			{
-				m_FocalPoint -= GetForwardDirection() * 0.1f;
+				m_FocalPoint -= GetForwardDirection() * m_FlySpeed;
 				break;
 			}
 			case Key::D:
 			{
-				m_FocalPoint += GetRightDirection() * 0.1f;
+				m_FocalPoint += GetRightDirection() * m_FlySpeed;
 				break;
 			}
 			}
@@ -141,8 +141,17 @@ namespace VulkanCore {
 
 	bool EditorCamera::OnMouseScroll(MouseScrolledEvent& e)
 	{
-		float delta = e.GetYOffset() * 0.1f;
-		MouseZoom(delta);
+		if (m_FlyMode)
+		{
+			m_FlySpeed += e.GetYOffset() * 0.01f;
+			m_FlySpeed = glm::max(m_FlySpeed, 0.01f);
+		}
+		else
+		{
+			float delta = e.GetYOffset() * 0.1f;
+			MouseZoom(delta);
+		}
+
 		UpdateView();
 		return true;
 	}
