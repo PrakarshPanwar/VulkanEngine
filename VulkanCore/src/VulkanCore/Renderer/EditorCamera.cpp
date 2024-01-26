@@ -108,7 +108,7 @@ namespace VulkanCore {
 		dispatcher.Dispatch<KeyPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorCamera::OnKeyEvent));
 	}
 
-	void EditorCamera::SetFlyMode(bool flyMode)
+	void EditorCamera::SetFly(bool flyMode)
 	{
 		m_FlyMode = flyMode;
 		Input::SetCursorMode(flyMode ? CursorMode::Locked : CursorMode::Normal);

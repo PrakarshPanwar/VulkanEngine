@@ -105,7 +105,7 @@ namespace VulkanCore {
 				Transforms.reserve(10);
 			}
 
-			std::vector<TransformData> Transforms = std::vector<TransformData>{ 10 };
+			std::vector<TransformData> Transforms;
 			std::shared_ptr<VertexBuffer> TransformBuffer = VertexBuffer::Create(10 * sizeof(TransformData));
 		};
 

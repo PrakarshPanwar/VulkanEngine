@@ -509,7 +509,7 @@ namespace VulkanCore {
 	{
 		std::filesystem::path shaderFilePath = m_RayGenFilePath;
 
-		VK_CORE_INFO("In {0}:", shaderFilePath.stem());
+		VK_CORE_INFO("In {0}:", shaderFilePath.stem().string());
 		for (auto&& [shaderPath, shader] : m_VulkanSPIRV)
 		{
 			spirv_cross::Compiler compiler(shader);
