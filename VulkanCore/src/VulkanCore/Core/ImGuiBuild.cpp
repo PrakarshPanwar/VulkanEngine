@@ -2,7 +2,6 @@
 
 #include "glfw_vulkan.h"
 
-#define IMGUI_DEFINE_MATH_OPERATORS
 #include <ImGuizmo.cpp>
 
 #ifndef SUBMIT_TO_MAIN_THREAD

@@ -241,7 +241,7 @@ namespace VulkanCore {
 		if (error == 0)
 			return;
 
-		VK_CORE_ERROR("[ImGui] Error: VkResult = {0}", error);
+		VK_CORE_ERROR("[ImGui] Error: VkResult = {0}", (int)error);
 	}
 
 	void ImGuiLayer::SetDarkThemeColor()

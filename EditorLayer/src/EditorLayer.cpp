@@ -103,7 +103,7 @@ namespace VulkanCore {
 
 	void EditorLayer::OnEvent(Event& e)
 	{
-		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents() || m_EditorCamera.GetFlyMode())
+		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents() || m_EditorCamera.IsInFly())
 			m_EditorCamera.OnEvent(e);
 
 		// Handling Camera Events
@@ -302,7 +302,7 @@ namespace VulkanCore {
 	{
 		bool shiftKey = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
 
-		bool isFlying = m_EditorCamera.GetFlyMode();
+		bool isFlying = m_EditorCamera.IsInFly();
 
 		// Gizmos: Unreal Engine Controls
 		switch (e.GetKeyCode())
@@ -334,7 +334,7 @@ namespace VulkanCore {
 		case Key::GraveAccent:
 		{
 			if (shiftKey)
-				m_EditorCamera.SetFlyMode(true);
+				m_EditorCamera.SetFly(true);
 		}
 		}
 
@@ -347,9 +347,8 @@ namespace VulkanCore {
 		{
 		case Mouse::ButtonLeft:
 		{
-			bool isFlying = m_EditorCamera.GetFlyMode();
-			if (isFlying)
-				m_EditorCamera.SetFlyMode(false);
+			if (m_EditorCamera.IsInFly())
+				m_EditorCamera.SetFly(false);
 		}
 		}
 

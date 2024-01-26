@@ -30,10 +30,9 @@ namespace VulkanCore {
 			auto Duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(Duration);
 
 			if (m_FunctionName.empty())
-				VK_CORE_TRACE("{0} ({1})", Duration_ms, Duration);
-
+				VK_CORE_TRACE("{0}ms ({1}ns)", Duration_ms.count(), Duration.count());
 			else
-				VK_CORE_TRACE("{0} took {1} ({2})", m_FunctionName, Duration_ms, Duration);
+				VK_CORE_TRACE("{0} took {1}ms ({2}ns)", m_FunctionName, Duration_ms.count(), Duration.count());
 		}
 	private:
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_StartTimePoint;

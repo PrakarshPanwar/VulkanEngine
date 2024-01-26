@@ -552,7 +552,7 @@ namespace VulkanCore {
 		if (!std::filesystem::exists(shaderFilePath))
 			shaderFilePath = m_ComputeFilePath;
 
-		VK_CORE_INFO("In {0}:", shaderFilePath.stem());
+		VK_CORE_INFO("In {0}:", shaderFilePath.stem().string());
 
 		for (auto&& [stage, shader] : m_VulkanSPIRV)
 		{
