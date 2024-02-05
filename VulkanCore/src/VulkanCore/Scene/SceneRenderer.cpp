@@ -232,15 +232,15 @@ namespace VulkanCore {
 			// Binding 0(o_Image): BloomTex[0]
 			// Binding 1(u_Texture): RenderTex
 			// Binding 2(u_BloomTexture): RenderTex
-			m_BloomPrefilterShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Prefilter Shader Material");
+			m_BloomComputeMaterial.PrefilterMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Prefilter Shader Material");
 
-			m_BloomPrefilterShaderMaterial->SetImage(0, m_BloomTextures[0]);
-			m_BloomPrefilterShaderMaterial->SetImages(1, m_SceneRenderTextures);
-			m_BloomPrefilterShaderMaterial->SetImages(2, m_SceneRenderTextures);
-			m_BloomPrefilterShaderMaterial->PrepareShaderMaterial();
+			m_BloomComputeMaterial.PrefilterMaterial->SetImage(0, m_BloomTextures[0]);
+			m_BloomComputeMaterial.PrefilterMaterial->SetImages(1, m_SceneRenderTextures);
+			m_BloomComputeMaterial.PrefilterMaterial->SetImages(2, m_SceneRenderTextures);
+			m_BloomComputeMaterial.PrefilterMaterial->PrepareShaderMaterial();
 
-			m_BloomPingShaderMaterials.resize(mipCount - 1);
-			m_BloomPongShaderMaterials.resize(mipCount - 1);
+			m_BloomComputeMaterial.PingMaterials.resize(mipCount - 1);
+			m_BloomComputeMaterial.PongMaterials.resize(mipCount - 1);
 			for (uint32_t i = 1; i < mipCount; ++i)
 			{
 				// Set B: Downsampling(Ping)
@@ -255,7 +255,7 @@ namespace VulkanCore {
 				bloomPingShaderMaterial->SetImages(2, m_SceneRenderTextures);
 				bloomPingShaderMaterial->PrepareShaderMaterial();
 
-				m_BloomPingShaderMaterials[i - 1] = bloomPingShaderMaterial;
+				m_BloomComputeMaterial.PingMaterials[i - 1] = bloomPingShaderMaterial;
 
 				// Set C: Downsampling(Pong)
 				// Binding 0(o_Image): BloomTex[0]
@@ -269,26 +269,26 @@ namespace VulkanCore {
 				bloomPongShaderMaterial->SetImages(2, m_SceneRenderTextures);
 				bloomPongShaderMaterial->PrepareShaderMaterial();
 
-				m_BloomPongShaderMaterials[i - 1] = bloomPongShaderMaterial;
+				m_BloomComputeMaterial.PongMaterials[i - 1] = bloomPongShaderMaterial;
 			}
 
 			// Set D: First Upsampling
 			// Binding 0(o_Image): BloomTex[2]
 			// Binding 1(u_Texture): BloomTex[0]
 			// Binding 2(u_BloomTexture): RenderTex
-			m_BloomUpsampleFirstShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample First Shader Material");
+			m_BloomComputeMaterial.FirstUpsampleMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample First Shader Material");
 
 			bloomTexture2->CreateImageViewSingleMip(mipCount - 1);
-			m_BloomUpsampleFirstShaderMaterial->SetImage(0, m_BloomTextures[2], mipCount - 1);
-			m_BloomUpsampleFirstShaderMaterial->SetImage(1, m_BloomTextures[0]);
-			m_BloomUpsampleFirstShaderMaterial->SetImages(2, m_SceneRenderTextures);
-			m_BloomUpsampleFirstShaderMaterial->PrepareShaderMaterial();
+			m_BloomComputeMaterial.FirstUpsampleMaterial->SetImage(0, m_BloomTextures[2], mipCount - 1);
+			m_BloomComputeMaterial.FirstUpsampleMaterial->SetImage(1, m_BloomTextures[0]);
+			m_BloomComputeMaterial.FirstUpsampleMaterial->SetImages(2, m_SceneRenderTextures);
+			m_BloomComputeMaterial.FirstUpsampleMaterial->PrepareShaderMaterial();
 
 			// Set E: Final Upsampling
 			// Binding 0(o_Image): BloomTex[2]
 			// Binding 1(u_Texture): BloomTex[0]
 			// Binding 2(u_BloomTexture): BloomTex[2]
-			m_BloomUpsampleShaderMaterials.resize(mipCount - 1);
+			m_BloomComputeMaterial.UpsampleMaterials.resize(mipCount - 1);
 			for (int i = mipCount - 2; i >= 0; --i)
 			{
 				auto bloomUpsampleShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample Shader Material");
@@ -299,7 +299,7 @@ namespace VulkanCore {
 				bloomUpsampleShaderMaterial->SetImage(2, m_BloomTextures[2]);
 				bloomUpsampleShaderMaterial->PrepareShaderMaterial();
 
-				m_BloomUpsampleShaderMaterials[i] = bloomUpsampleShaderMaterial;
+				m_BloomComputeMaterial.UpsampleMaterials[i] = bloomUpsampleShaderMaterial;
 			}
 		}
 
@@ -339,15 +339,15 @@ namespace VulkanCore {
 			// Binding 0(o_Image): BloomTex[0]
 			// Binding 1(u_Texture): RenderTex
 			// Binding 2(u_BloomTexture): RenderTex
-			m_BloomPrefilterShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Prefilter Shader Material");
+			m_BloomComputeMaterial.PrefilterMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Prefilter Shader Material");
 
-			m_BloomPrefilterShaderMaterial->SetImage(0, m_BloomTextures[0]);
-			m_BloomPrefilterShaderMaterial->SetImages(1, m_SceneRenderTextures);
-			m_BloomPrefilterShaderMaterial->SetImages(2, m_SceneRenderTextures);
-			m_BloomPrefilterShaderMaterial->PrepareShaderMaterial();
+			m_BloomComputeMaterial.PrefilterMaterial->SetImage(0, m_BloomTextures[0]);
+			m_BloomComputeMaterial.PrefilterMaterial->SetImages(1, m_SceneRenderTextures);
+			m_BloomComputeMaterial.PrefilterMaterial->SetImages(2, m_SceneRenderTextures);
+			m_BloomComputeMaterial.PrefilterMaterial->PrepareShaderMaterial();
 
-			m_BloomPingShaderMaterials.resize(mipCount - 1);
-			m_BloomPongShaderMaterials.resize(mipCount - 1);
+			m_BloomComputeMaterial.PingMaterials.resize(mipCount - 1);
+			m_BloomComputeMaterial.PongMaterials.resize(mipCount - 1);
 			for (uint32_t i = 1; i < mipCount; ++i)
 			{
 				// Set B: Downsampling(Ping)
@@ -362,7 +362,7 @@ namespace VulkanCore {
 				bloomPingShaderMaterial->SetImages(2, m_SceneRenderTextures);
 				bloomPingShaderMaterial->PrepareShaderMaterial();
 
-				m_BloomPingShaderMaterials[i - 1] = bloomPingShaderMaterial;
+				m_BloomComputeMaterial.PingMaterials[i - 1] = bloomPingShaderMaterial;
 
 				// Set C: Downsampling(Pong)
 				// Binding 0(o_Image): BloomTex[0]
@@ -376,26 +376,26 @@ namespace VulkanCore {
 				bloomPongShaderMaterial->SetImages(2, m_SceneRenderTextures);
 				bloomPongShaderMaterial->PrepareShaderMaterial();
 
-				m_BloomPongShaderMaterials[i - 1] = bloomPongShaderMaterial;
+				m_BloomComputeMaterial.PongMaterials[i - 1] = bloomPongShaderMaterial;
 			}
 
 			// Set D: First Upsampling
 			// Binding 0(o_Image): BloomTex[2]
 			// Binding 1(u_Texture): BloomTex[0]
 			// Binding 2(u_BloomTexture): RenderTex
-			m_BloomUpsampleFirstShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample First Shader Material");
+			m_BloomComputeMaterial.FirstUpsampleMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample First Shader Material");
 
 			bloomTexture2->CreateImageViewSingleMip(mipCount - 1);
-			m_BloomUpsampleFirstShaderMaterial->SetImage(0, m_BloomTextures[2], mipCount - 1);
-			m_BloomUpsampleFirstShaderMaterial->SetImage(1, m_BloomTextures[0]);
-			m_BloomUpsampleFirstShaderMaterial->SetImages(2, m_SceneRenderTextures);
-			m_BloomUpsampleFirstShaderMaterial->PrepareShaderMaterial();
+			m_BloomComputeMaterial.FirstUpsampleMaterial->SetImage(0, m_BloomTextures[2], mipCount - 1);
+			m_BloomComputeMaterial.FirstUpsampleMaterial->SetImage(1, m_BloomTextures[0]);
+			m_BloomComputeMaterial.FirstUpsampleMaterial->SetImages(2, m_SceneRenderTextures);
+			m_BloomComputeMaterial.FirstUpsampleMaterial->PrepareShaderMaterial();
 
 			// Set E: Final Upsampling
 			// Binding 0(o_Image): BloomTex[2]
 			// Binding 1(u_Texture): BloomTex[0]
 			// Binding 2(u_BloomTexture): BloomTex[2]
-			m_BloomUpsampleShaderMaterials.resize(mipCount - 1);
+			m_BloomComputeMaterial.UpsampleMaterials.resize(mipCount - 1);
 			for (int i = mipCount - 2; i >= 0; --i)
 			{
 				auto bloomUpsampleShaderMaterial = std::make_shared<VulkanMaterial>(m_BloomPipeline->GetShader(), "Bloom Upsample Shader Material");
@@ -406,7 +406,7 @@ namespace VulkanCore {
 				bloomUpsampleShaderMaterial->SetImage(2, m_BloomTextures[2]);
 				bloomUpsampleShaderMaterial->PrepareShaderMaterial();
 
-				m_BloomUpsampleShaderMaterials[i] = bloomUpsampleShaderMaterial;
+				m_BloomComputeMaterial.UpsampleMaterials[i] = bloomUpsampleShaderMaterial;
 			}
 		}
 
@@ -1070,7 +1070,7 @@ namespace VulkanCore {
 			m_LodAndMode.LOD = 0.0f;
 			m_LodAndMode.Mode = 0.0f;
 
-			m_BloomPrefilterShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
+			m_BloomComputeMaterial.PrefilterMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
 			const uint32_t mips = m_BloomTextures[0]->GetSpecification().MipLevels;
 			glm::uvec2 workGroups = glm::ceil((glm::vec2)m_BloomMipSize / 32.0f);
@@ -1086,7 +1086,7 @@ namespace VulkanCore {
 
 				int currentIdx = i - 1;
 
-				m_BloomPingShaderMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
+				m_BloomComputeMaterial.PingMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 				workGroups = glm::ceil((glm::vec2)m_BloomTextures[0]->GetMipSize(i) / 32.0f);
 
 				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
@@ -1094,17 +1094,17 @@ namespace VulkanCore {
 
 				m_LodAndMode.LOD = (float)i;
 				
-				m_BloomPongShaderMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
+				m_BloomComputeMaterial.PongMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
 				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
 				vulkanBloomPipeline->Dispatch(dispatchCmd, workGroups.x, workGroups.y, 1);
 			}
 
-			// Upsample First
+			// First Upsample
 			m_LodAndMode.LOD = float(mips - 2);
 			m_LodAndMode.Mode = 2.0f;
 
-			m_BloomUpsampleFirstShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
+			m_BloomComputeMaterial.FirstUpsampleMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 			workGroups = glm::ceil((glm::vec2)m_BloomTextures[2]->GetMipSize(mips - 1) / 32.0f);
 
 			vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
@@ -1116,7 +1116,7 @@ namespace VulkanCore {
 				m_LodAndMode.LOD = (float)i;
 				m_LodAndMode.Mode = 3.0f;
 
-				m_BloomUpsampleShaderMaterials[i]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
+				m_BloomComputeMaterial.UpsampleMaterials[i]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 				workGroups = glm::ceil((glm::vec2)m_BloomTextures[2]->GetMipSize(i) / 32.0f);
 
 				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));
