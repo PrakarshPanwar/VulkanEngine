@@ -160,6 +160,12 @@ namespace VulkanCore {
 			VK_QUERY_RESULT_64_BIT);
 	}
 
+	void VulkanRenderCommandBuffer::IncrementQueryIndex()
+	{
+		m_TimestampsQueryIndex += 2;
+		m_TimestampsQueryIndex = m_TimestampsQueryIndex % m_TimestampQueryBufferSize;
+	}
+
 	uint64_t VulkanRenderCommandBuffer::GetQueryTime(uint32_t index) const
 	{
 		return m_TimestampQueryPoolBuffer[(index << 1) + 1] - m_TimestampQueryPoolBuffer[index << 1];

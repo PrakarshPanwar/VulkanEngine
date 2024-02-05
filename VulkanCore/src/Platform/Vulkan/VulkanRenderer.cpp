@@ -532,24 +532,21 @@ namespace VulkanCore {
 
 	void VulkanRenderer::BeginTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
 	{
-		Renderer::Submit([cmdBuffer]
+		Renderer::Submit([vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)]
 		{
-			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer);
 			vkCmdWriteTimestamp(vulkanCmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-				vulkanCmdBuffer->RT_GetCurrentTimestampQueryPool(), vulkanCmdBuffer->m_TimestampsQueryIndex);
+				vulkanCmdBuffer->RT_GetCurrentTimestampQueryPool(), vulkanCmdBuffer->GetTimestampQueryIndex());
 		});
 	}
 
 	void VulkanRenderer::EndTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
 	{
-		Renderer::Submit([cmdBuffer]
+		Renderer::Submit([vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)]
 		{
-			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer);
 			vkCmdWriteTimestamp(vulkanCmdBuffer->RT_GetActiveCommandBuffer(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-				vulkanCmdBuffer->RT_GetCurrentTimestampQueryPool(), vulkanCmdBuffer->m_TimestampsQueryIndex + 1);
+				vulkanCmdBuffer->RT_GetCurrentTimestampQueryPool(), vulkanCmdBuffer->GetTimestampQueryIndex() + 1);
 
-			vulkanCmdBuffer->m_TimestampsQueryIndex += 2;
-			vulkanCmdBuffer->m_TimestampsQueryIndex = vulkanCmdBuffer->m_TimestampsQueryIndex % vulkanCmdBuffer->m_TimestampQueryBufferSize;
+			vulkanCmdBuffer->IncrementQueryIndex();
 		});
 	}
 

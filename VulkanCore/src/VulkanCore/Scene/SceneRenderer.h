@@ -178,13 +178,14 @@ namespace VulkanCore {
 		std::shared_ptr<Material> m_SkyboxMaterial;
 
 		// Bloom Materials
-		std::shared_ptr<Material> m_BloomPrefilterShaderMaterial;
-		std::vector<std::shared_ptr<Material>> m_BloomPingShaderMaterials;
-		std::vector<std::shared_ptr<Material>> m_BloomPongShaderMaterials;
-		std::shared_ptr<Material> m_BloomUpsampleFirstShaderMaterial;
-		std::vector<std::shared_ptr<Material>> m_BloomUpsampleShaderMaterials;
-
-		VkDescriptorSet m_BloomDebugImage;
+		struct BloomComputeMaterials
+		{
+			std::shared_ptr<Material> PrefilterMaterial;
+			std::vector<std::shared_ptr<Material>> PingMaterials;
+			std::vector<std::shared_ptr<Material>> PongMaterials;
+			std::shared_ptr<Material> FirstUpsampleMaterial;
+			std::vector<std::shared_ptr<Material>> UpsampleMaterials;
+		} m_BloomComputeMaterial;
 
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBCamera;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBPointLight;
