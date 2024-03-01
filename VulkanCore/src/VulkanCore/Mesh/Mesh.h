@@ -69,7 +69,6 @@ namespace VulkanCore {
 		static AssetType GetStaticType() { return AssetType::MeshAsset; }
 	private:
 		aiScene* m_Scene;
-		std::unique_ptr<Assimp::Importer> m_Importer;
 
 		std::vector<Submesh> m_Submeshes{};
 		std::vector<MeshNode> m_Nodes{};
@@ -82,6 +81,8 @@ namespace VulkanCore {
 
 		std::shared_ptr<VertexBuffer> m_VertexBuffer;
 		std::shared_ptr<IndexBuffer> m_IndexBuffer;
+
+		static std::unique_ptr<Assimp::Importer> s_Importer;
 
 		friend class Mesh;
 		friend class MeshImporter;
