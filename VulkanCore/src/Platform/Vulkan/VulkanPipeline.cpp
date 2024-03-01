@@ -155,12 +155,12 @@ namespace VulkanCore {
 				if (spec.Blend)
 				{
 					pipelineConfig.ColorBlendAttachments[i].blendEnable = VK_TRUE;
-					pipelineConfig.ColorBlendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;			// Optional
-					pipelineConfig.ColorBlendAttachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; 	// Optional
-					pipelineConfig.ColorBlendAttachments[i].colorBlendOp = VK_BLEND_OP_ADD;								// Optional
-					pipelineConfig.ColorBlendAttachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;					// Optional
-					pipelineConfig.ColorBlendAttachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;					// Optional
-					pipelineConfig.ColorBlendAttachments[i].alphaBlendOp = VK_BLEND_OP_ADD;								// Optional
+					pipelineConfig.ColorBlendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+					pipelineConfig.ColorBlendAttachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+					pipelineConfig.ColorBlendAttachments[i].colorBlendOp = VK_BLEND_OP_ADD;
+					pipelineConfig.ColorBlendAttachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+					pipelineConfig.ColorBlendAttachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+					pipelineConfig.ColorBlendAttachments[i].alphaBlendOp = VK_BLEND_OP_ADD;
 				}
 				else
 				{
