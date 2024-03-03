@@ -161,7 +161,7 @@ namespace VulkanCore {
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageCreateInfo.format = vulkanFormat;
 		imageCreateInfo.extent = { m_Specification.Width, m_Specification.Height, 1 };
-		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.arrayLayers = m_Specification.Layers;
 		imageCreateInfo.samples = Utils::VulkanSampleCount(m_Specification.Samples);
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCreateInfo.usage = usage;
@@ -181,7 +181,7 @@ namespace VulkanCore {
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
 		viewCreateInfo.subresourceRange.levelCount = m_Specification.MipLevels;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		viewCreateInfo.subresourceRange.layerCount = 1;
+		viewCreateInfo.subresourceRange.layerCount = m_Specification.Layers;
 
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &m_Info.ImageView), "Failed to Create Image View!");
 		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE_VIEW, std::format("{} default image view", m_Specification.DebugName), m_Info.ImageView);
@@ -221,7 +221,7 @@ namespace VulkanCore {
 			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			subresourceRange.baseMipLevel = 0;
 			subresourceRange.levelCount = m_Specification.MipLevels;
-			subresourceRange.layerCount = 1;
+			subresourceRange.layerCount = m_Specification.Layers;
 
 			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
 				0, 0,
@@ -241,7 +241,7 @@ namespace VulkanCore {
 			subresourceRange.baseMipLevel = 0;
 			subresourceRange.levelCount = m_Specification.MipLevels;
 			subresourceRange.baseArrayLayer = 0;
-			subresourceRange.layerCount = 1;
+			subresourceRange.layerCount = m_Specification.Layers;
 
 			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
 				0, VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -277,13 +277,42 @@ namespace VulkanCore {
 
 		VkImageView result;
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &result), "Failed to Create Image View!");
-		m_MipReferences.push_back(result);
 		
 		VkDescriptorImageInfo mipImageInfo{};
 		mipImageInfo.imageView = result;
 		mipImageInfo.imageLayout = m_DescriptorImageInfo.imageLayout;
 		mipImageInfo.sampler = m_DescriptorImageInfo.sampler;
 		m_DescriptorMipImagesInfo[mip] = mipImageInfo;
+	}
+
+	void VulkanImage::CreateImageViewPerLayer(uint32_t layer)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		if (m_DescriptorArrayImagesInfo.contains(layer))
+			return;
+
+		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
+
+		VkImageViewCreateInfo viewCreateInfo{};
+		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewCreateInfo.image = m_Info.Image;
+		viewCreateInfo.format = vulkanFormat;
+		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewCreateInfo.subresourceRange.baseMipLevel = 0;
+		viewCreateInfo.subresourceRange.levelCount = 1;
+		viewCreateInfo.subresourceRange.baseArrayLayer = layer;
+		viewCreateInfo.subresourceRange.layerCount = 1;
+
+		VkImageView result;
+		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &result), "Failed to Create Image View!");
+
+		VkDescriptorImageInfo layerImageInfo{};
+		layerImageInfo.imageView = result;
+		layerImageInfo.imageLayout = m_DescriptorImageInfo.imageLayout;
+		layerImageInfo.sampler = m_DescriptorImageInfo.sampler;
+		m_DescriptorArrayImagesInfo[layer] = layerImageInfo;
 	}
 
 	void VulkanImage::Resize(uint32_t width, uint32_t height, uint32_t mips)
@@ -323,7 +352,7 @@ namespace VulkanCore {
 
 	void VulkanImage::Release()
 	{
-		Renderer::SubmitResourceFree([mipRefs = m_MipReferences, imageInfo = m_Info]() mutable
+		Renderer::SubmitResourceFree([mipRefs = m_DescriptorMipImagesInfo, imageInfo = m_Info]() mutable
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 			VulkanAllocator allocator("Image2D");
@@ -332,11 +361,10 @@ namespace VulkanCore {
 			vkDestroySampler(device->GetVulkanDevice(), imageInfo.Sampler, nullptr);
 			allocator.DestroyImage(imageInfo.Image, imageInfo.MemoryAlloc);
 
-			for (auto& mipRef : mipRefs)
-				vkDestroyImageView(device->GetVulkanDevice(), mipRef, nullptr);
+			for (auto& [mipID, mipRef] : mipRefs)
+				vkDestroyImageView(device->GetVulkanDevice(), mipRef.imageView, nullptr);
 		});
 
-		m_MipReferences.clear();
 		m_DescriptorMipImagesInfo.clear();
 	}
 

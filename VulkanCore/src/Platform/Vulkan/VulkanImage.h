@@ -31,6 +31,7 @@ namespace VulkanCore {
 
 		void Invalidate();
 		void CreateImageViewSingleMip(uint32_t mip);
+		void CreateImageViewPerLayer(uint32_t layer);
 		void Resize(uint32_t width, uint32_t height, uint32_t mips = 1) override;
 
 		glm::uvec2 GetMipSize(uint32_t mipLevel) const override;
@@ -46,8 +47,7 @@ namespace VulkanCore {
 		VkDescriptorImageInfo m_DescriptorImageInfo{};
 		ImageSpecification m_Specification;
 
-		std::vector<VkImageView> m_MipReferences;
-		std::unordered_map<uint32_t, VkDescriptorImageInfo> m_DescriptorMipImagesInfo;
+		std::unordered_map<uint32_t, VkDescriptorImageInfo> m_DescriptorMipImagesInfo, m_DescriptorArrayImagesInfo;
 	};
 
 }
