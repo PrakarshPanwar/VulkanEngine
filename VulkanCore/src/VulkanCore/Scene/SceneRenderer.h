@@ -87,6 +87,10 @@ namespace VulkanCore {
 		void RecreateMaterials();
 		void RecreatePipelines();
 
+		std::vector<glm::vec4> GetFrustumCornersWorldSpace(const glm::mat4& projectionMatrix);
+		glm::mat4 GetLightSpaceMatrix(const float nearClip, const float farClip);
+		std::vector<glm::mat4> GetLightSpaceMatrices();
+
 		void GeometryPass();
 		void CompositePass();
 		void BloomCompute();
@@ -159,6 +163,7 @@ namespace VulkanCore {
 		std::vector<VkDescriptorSet> m_SceneImages;
 
 		// Pipelines
+		std::shared_ptr<Pipeline> m_PreDepthPipeline;
 		std::shared_ptr<Pipeline> m_GeometryPipeline;
 		std::shared_ptr<Pipeline> m_GeometrySelectPipeline;
 		std::shared_ptr<Pipeline> m_LightPipeline;
@@ -169,6 +174,7 @@ namespace VulkanCore {
 
 		// Material Resources
 		// Material per Shader set
+		std::shared_ptr<Material> m_PreDepthMaterial;
 		std::shared_ptr<Material> m_GeometryMaterial;
 		std::shared_ptr<Material> m_GeometrySelectMaterial;
 		std::shared_ptr<Material> m_PointLightShaderMaterial;
@@ -185,15 +191,17 @@ namespace VulkanCore {
 			std::vector<std::shared_ptr<Material>> PongMaterials;
 			std::shared_ptr<Material> FirstUpsampleMaterial;
 			std::vector<std::shared_ptr<Material>> UpsampleMaterials;
-		} m_BloomComputeMaterial;
+		} m_BloomComputeMaterials;
 
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBCamera;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBPointLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSpotLight;
+		std::vector<std::shared_ptr<UniformBuffer>> m_UBCascadeLightMatrices;
 		std::vector<std::shared_ptr<IndexBuffer>> m_ImageBuffer;
 
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 		std::vector<uint32_t> m_LightHandles;
+		std::array<float, 4> m_CascadeLevels;
 
 		std::vector<std::shared_ptr<Image2D>> m_BloomTextures;
 		std::vector<std::shared_ptr<Image2D>> m_SceneRenderTextures;

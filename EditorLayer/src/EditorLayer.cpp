@@ -324,6 +324,7 @@ namespace VulkanCore {
 		{
 			if (shiftKey)
 				m_EditorCamera.SetFlyMode(true);
+			break;
 		}
 		}
 
