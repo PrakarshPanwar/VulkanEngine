@@ -33,6 +33,7 @@ namespace VulkanCore {
 	{
 		Storage,
 		Attachment,
+		ReadAttachment,
 		Texture
 	};
 

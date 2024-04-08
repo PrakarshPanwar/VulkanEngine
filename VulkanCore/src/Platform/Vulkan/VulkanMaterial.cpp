@@ -157,7 +157,7 @@ namespace VulkanCore {
 			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
 			writeDescriptor.descriptorType = shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
 			writeDescriptor.dstBinding = binding;
-			writeDescriptor.pImageInfo = &vulkanImage->GetDescriptorImageInfo(mipLevel);
+			writeDescriptor.pImageInfo = &vulkanImage->GetDescriptorMipImageInfo(mipLevel);
 			writeDescriptor.descriptorCount = 1;
 			writeDescriptor.dstArrayElement = 0;
 

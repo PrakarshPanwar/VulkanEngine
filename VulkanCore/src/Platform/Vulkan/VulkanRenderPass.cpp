@@ -260,10 +260,10 @@ namespace VulkanCore {
 			depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			depthAttachment.finalLayout = multisampled ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 			attachmentDescriptions.push_back(depthAttachment);
 
-			if (Framebuffer->GetSpecification().ReadDepthTexture)
+			if (Framebuffer->GetSpecification().ReadDepthTexture && multisampled)
 			{
 				VkAttachmentDescription2 depthAttachmentResolve = {};
 				depthAttachmentResolve.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2;
@@ -331,7 +331,7 @@ namespace VulkanCore {
 		subpass.pColorAttachments = attachmentRefs.data();
 		subpass.pDepthStencilAttachment = Framebuffer->HasDepthAttachment() ? &depthAttachmentRef : nullptr;
 		subpass.pResolveAttachments = multisampled ? attachmentResolveRefs.data() : nullptr;
-		subpass.pNext = &depthResolveExt;
+		subpass.pNext = multisampled ? &depthResolveExt : nullptr;
 
 		VkSubpassDependency2 dependency = {}; // TODO: Changes need to be made
 		dependency.sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2;
@@ -374,6 +374,7 @@ namespace VulkanCore {
 
 			const FramebufferSpecification fbSpec = Framebuffer->GetSpecification();
 			const VkExtent2D framebufferExtent = { fbSpec.Width, fbSpec.Height };
+			bool multisampled = Utils::IsMultisampled(m_Specification);
 
 			VkCommandBuffer vulkanCommandBuffer = beginCmd->RT_GetActiveCommandBuffer();
 
@@ -387,7 +388,7 @@ namespace VulkanCore {
 			for (uint32_t i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
 				m_ClearValues[i].color = { fbSpec.ClearColor.x, fbSpec.ClearColor.y, fbSpec.ClearColor.z, fbSpec.ClearColor.w };
 
-			if (m_Specification.TargetFramebuffer->GetSpecification().ReadDepthTexture)
+			if (m_Specification.TargetFramebuffer->GetSpecification().ReadDepthTexture && multisampled)
 			{
 				m_ClearValues[m_ClearValues.size() - 2].depthStencil = { 1.0f, 0 };
 				m_ClearValues[m_ClearValues.size() - 1].depthStencil = { 1.0f, 0 };

@@ -122,7 +122,6 @@ namespace VulkanCore {
 
 	VulkanShader::~VulkanShader()
 	{
-
 	}
 
 	std::shared_ptr<VulkanDescriptorSetLayout> VulkanShader::CreateDescriptorSetLayout(int index)
@@ -230,7 +229,7 @@ namespace VulkanCore {
 					VkShaderStageFlags shaderStageFlags = 0;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 						shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
@@ -329,6 +328,7 @@ namespace VulkanCore {
 	{
 		std::unordered_map<uint32_t, std::string> Sources;
 
+		// TODO: Accomodate for Geometry Shader
 		if (!(m_VertexFilePath.empty() || m_FragmentFilePath.empty()))
 		{
 			std::ifstream VertexSource(m_VertexFilePath, std::ios::binary);
@@ -343,6 +343,16 @@ namespace VulkanCore {
 
 			Sources[(uint32_t)ShaderType::Vertex] = VertexStream.str();
 			Sources[(uint32_t)ShaderType::Fragment] = FragmentStream.str();
+
+			if (std::filesystem::exists(m_GeometryFilePath))
+			{
+				std::ifstream GeometrySource(m_GeometryFilePath, std::ios::binary);
+				
+				std::stringstream GeometryStream;
+				GeometryStream << GeometrySource.rdbuf();
+
+				Sources[(uint32_t)ShaderType::Geometry] = GeometryStream.str();
+			}
 		}
 		else
 		{
@@ -598,4 +608,3 @@ namespace VulkanCore {
 	}
 
 }
-

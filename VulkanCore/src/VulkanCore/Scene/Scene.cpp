@@ -19,7 +19,10 @@ namespace VulkanCore {
 
 	Entity Scene::CreateEntity(const std::string& name)
 	{
-		return CreateEntityWithUUID(UUID{}, name);
+		Entity entity = CreateEntityWithUUID(UUID{}, name);
+		entity.AddComponent<TransformComponent>();
+
+		return entity;
 	}
 
 	Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
@@ -27,7 +30,6 @@ namespace VulkanCore {
 		Entity entity = { m_Registry.create(), this };
 		entity.AddComponent<IDComponent>(uuid);
 		entity.AddComponent<TagComponent>(name);
-		entity.AddComponent<TransformComponent>();
 
 		return entity;
 	}
@@ -94,48 +96,80 @@ namespace VulkanCore {
 		}
 	}
 
-	void Scene::UpdatePointLightUB(UBPointLights& ubo)
+	void Scene::UpdateLightsBuffer(UBPointLights& pointLights, UBSpotLights& spotLights, UBDirectionalLights& directionalLights)
 	{
-		auto view = m_Registry.view<TransformComponent, PointLightComponent>();
-
-		int lightIndex = 0;
-		for (auto ent : view)
+		// Point Lights
 		{
-			auto [transform, lightComponent] = view.get<TransformComponent, PointLightComponent>(ent);
-			ubo.PointLights[lightIndex++] =
+			auto view = m_Registry.view<TransformComponent, PointLightComponent>();
+
+			int lightIndex = 0;
+			for (auto ent : view)
 			{
-				glm::vec4(transform.Translation, 1.0f),
-				lightComponent.Color,
-				lightComponent.Radius,
-				lightComponent.Falloff
-			};
+				auto [transform, lightComponent] = view.get<TransformComponent, PointLightComponent>(ent);
+				pointLights.PointLights[lightIndex++] =
+				{
+					glm::vec4(transform.Translation, 1.0f),
+					lightComponent.Color,
+					lightComponent.Radius,
+					lightComponent.Falloff
+				};
+			}
+
+			pointLights.LightCount = lightIndex;
 		}
 
-		ubo.LightCount = lightIndex;
+		// Spot Lights
+		{
+			auto view = m_Registry.view<TransformComponent, SpotLightComponent>();
+			int lightIndex = 0;
+
+			for (auto ent : view)
+			{
+				auto [transform, lightComponent] = view.get<TransformComponent, SpotLightComponent>(ent);
+				glm::vec3 direction = glm::normalize(transform.Rotation);
+				spotLights.SpotLights[lightIndex++] =
+				{
+					glm::vec4(transform.Translation, 1.0f),
+					lightComponent.Color,
+					direction,
+					lightComponent.InnerCutoff,
+					lightComponent.OuterCutoff,
+					lightComponent.Radius,
+					lightComponent.Falloff
+				};
+			}
+
+			spotLights.LightCount = lightIndex;
+		}
+
+		// Directional Lights
+		{
+			auto view = m_Registry.view<DirectionalLightComponent>();
+			int lightIndex = 0;
+
+			for (auto ent : view)
+			{
+				auto lightComponent = view.get<DirectionalLightComponent>(ent);
+
+				directionalLights.DirectionalLights[lightIndex++] =
+				{
+					lightComponent.Direction,
+					lightComponent.Color,
+					lightComponent.Falloff
+				};
+			}
+
+			directionalLights.LightCount = lightIndex;
+		}
 	}
 
-	void Scene::UpdateSpotLightUB(UBSpotLights& ubo)
+	DirectionalLightComponent Scene::GetDirectionalLightData(int index)
 	{
-		auto view = m_Registry.view<TransformComponent, SpotLightComponent>();
-		int lightIndex = 0;
+		auto view = m_Registry.view<DirectionalLightComponent>();
+		if (view.empty())
+			return {};
 
-		for (auto ent : view)
-		{
-			auto [transform, lightComponent] = view.get<TransformComponent, SpotLightComponent>(ent);
-			glm::vec3 direction = glm::normalize(transform.Rotation);
-			ubo.SpotLights[lightIndex++] =
-			{
-				glm::vec4(transform.Translation, 1.0f),
-				lightComponent.Color,
-				direction,
-				lightComponent.InnerCutoff,
-				lightComponent.OuterCutoff,
-				lightComponent.Radius,
-				lightComponent.Falloff
-			};
-		}
-
-		ubo.LightCount = lightIndex;
+		return view.get<DirectionalLightComponent>(view[index]);
 	}
 
 	void Scene::DestroyEntity(Entity entity)

@@ -107,6 +107,11 @@ namespace VulkanCore {
 		Input::SetCursorMode(flyMode ? CursorMode::Locked : CursorMode::Normal);
 	}
 
+	void EditorCamera::SetFocalPoint(const glm::vec3& focalPoint)
+	{
+		m_FocalPoint = focalPoint;
+	}
+
 	bool EditorCamera::OnKeyEvent(KeyPressedEvent& e)
 	{
 		if (m_FlyMode)

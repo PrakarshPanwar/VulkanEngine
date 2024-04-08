@@ -320,6 +320,17 @@ namespace VulkanCore {
 				m_GizmoType = ImGuizmo::OPERATION::SCALE;
 			break;
 		}
+		case Key::Period:
+		{
+			Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+			if (selectedEntity)
+			{
+				auto transform = selectedEntity.GetComponent<TransformComponent>();
+				m_EditorCamera.SetFocalPoint(transform.Translation);
+			}
+
+			break;
+		}
 		case Key::GraveAccent:
 		{
 			if (shiftKey)
@@ -372,46 +383,54 @@ namespace VulkanCore {
 			const glm::mat4& cameraProjection = m_EditorCamera.GetProjectionMatrix();
 			glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
 
-			// Entity transform
-			auto& tc = selectedEntity.GetComponent<TransformComponent>();
-			glm::mat4 transform = tc.GetTransform();
-
-			// Snapping
-			float snapValue = 0.0f; // Snap to 0.5m for translation/scale
-			switch (m_GizmoType)
+			if (selectedEntity.HasComponent<TransformComponent>())
 			{
-			case ImGuizmo::TRANSLATE:
-				snapValue = m_TranslationSnapValue;
-				break;
-			case ImGuizmo::ROTATE:
-				snapValue = m_RotationSnapValue;
-				break;
-			case ImGuizmo::SCALE:
-				snapValue = m_ScaleSnapValue;
-				break;
-			default:
-				break;
+				// Entity transform
+				auto& tc = selectedEntity.GetComponent<TransformComponent>();
+				glm::mat4 transform = tc.GetTransform();
+
+				// Snapping
+				float snapValue = 0.0f; // Snap to 0.5m for translation/scale
+				switch (m_GizmoType)
+				{
+				case ImGuizmo::TRANSLATE:
+					snapValue = m_TranslationSnapValue;
+					break;
+				case ImGuizmo::ROTATE:
+					snapValue = m_RotationSnapValue;
+					break;
+				case ImGuizmo::SCALE:
+					snapValue = m_ScaleSnapValue;
+					break;
+				default:
+					break;
+				}
+
+				bool snap = Input::IsKeyPressed(Key::LeftControl) || m_EnableSnap;
+				float snapValues[3] = { snapValue, snapValue, snapValue };
+
+				ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
+					(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::WORLD, glm::value_ptr(transform),
+					nullptr, snap ? snapValues : nullptr);
+
+				if (ImGuizmo::IsUsing())
+				{
+					glm::vec3 translation, scale, skew;
+					glm::vec4 perspective;
+					glm::quat rotation;
+
+					glm::decompose(transform, scale, rotation, translation, skew, perspective);
+
+					tc.Translation = translation;
+					tc.Rotation = glm::eulerAngles(rotation);
+					tc.Scale = scale;
+				}
 			}
-
-			bool snap = Input::IsKeyPressed(Key::LeftControl) || m_EnableSnap;
-			float snapValues[3] = { snapValue, snapValue, snapValue };
-
-			ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
-				(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::WORLD, glm::value_ptr(transform),
-				nullptr, snap ? snapValues : nullptr);
-
-			if (ImGuizmo::IsUsing())
+			/*else if (selectedEntity.HasComponent<DirectionalLightComponent>())
 			{
-				glm::vec3 translation, scale, skew;
-				glm::vec4 perspective;
-				glm::quat rotation;
-
-				glm::decompose(transform, scale, rotation, translation, skew, perspective);
-
-				tc.Translation = translation;
-				tc.Rotation = glm::eulerAngles(rotation);
-				tc.Scale = scale;
-			}
+				auto drlc = selectedEntity.GetComponent<DirectionalLightComponent>();
+				glm::mat4 rotation = glm::toMat4(glm::quat(drlc.Direction));
+			}*/
 		}
 	}
 

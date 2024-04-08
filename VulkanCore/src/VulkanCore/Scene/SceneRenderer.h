@@ -87,10 +87,12 @@ namespace VulkanCore {
 		void RecreateMaterials();
 		void RecreatePipelines();
 
-		std::vector<glm::vec4> GetFrustumCornersWorldSpace(const glm::mat4& projectionMatrix);
-		glm::mat4 GetLightSpaceMatrix(const float nearClip, const float farClip);
-		std::vector<glm::mat4> GetLightSpaceMatrices();
+		std::vector<glm::vec4> GetFrustumCornersWorldSpace();
 
+#define SHADOW_MAP_CASCADE_COUNT 4
+		void UpdateCascadeMap();
+
+		void ShadowPass();
 		void GeometryPass();
 		void CompositePass();
 		void BloomCompute();
@@ -129,6 +131,12 @@ namespace VulkanCore {
 			std::shared_ptr<VertexBuffer> TransformBuffer = VertexBuffer::Create(10 * sizeof(SelectTransformData));
 		};
 
+		struct CascadeMapData
+		{
+			std::array<float, SHADOW_MAP_CASCADE_COUNT> CascadeSplitLevels;
+			glm::mat4 CascadeLightMatrices[SHADOW_MAP_CASCADE_COUNT];
+		} m_CascadeData;
+
 		struct LodAndMode
 		{
 			float LOD = 1.0f;
@@ -161,11 +169,12 @@ namespace VulkanCore {
 		std::shared_ptr<RenderCommandBuffer> m_SceneCommandBuffer;
 		std::shared_ptr<Framebuffer> m_SceneFramebuffer;
 		std::vector<VkDescriptorSet> m_SceneImages;
+		std::vector<VkDescriptorSet> m_ShadowDepthPassImages;
 
 		// Pipelines
-		std::shared_ptr<Pipeline> m_PreDepthPipeline;
 		std::shared_ptr<Pipeline> m_GeometryPipeline;
 		std::shared_ptr<Pipeline> m_GeometrySelectPipeline;
+		std::shared_ptr<Pipeline> m_ShadowMapPipeline;
 		std::shared_ptr<Pipeline> m_LightPipeline;
 		std::shared_ptr<Pipeline> m_LightSelectPipeline;
 		std::shared_ptr<Pipeline> m_CompositePipeline;
@@ -174,9 +183,9 @@ namespace VulkanCore {
 
 		// Material Resources
 		// Material per Shader set
-		std::shared_ptr<Material> m_PreDepthMaterial;
 		std::shared_ptr<Material> m_GeometryMaterial;
 		std::shared_ptr<Material> m_GeometrySelectMaterial;
+		std::shared_ptr<Material> m_ShadowMapMaterial;
 		std::shared_ptr<Material> m_PointLightShaderMaterial;
 		std::shared_ptr<Material> m_SpotLightShaderMaterial;
 		std::shared_ptr<Material> m_LightSelectMaterial;
@@ -196,12 +205,15 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBCamera;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBPointLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSpotLight;
+		std::vector<std::shared_ptr<UniformBuffer>> m_UBDirectionalLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBCascadeLightMatrices;
 		std::vector<std::shared_ptr<IndexBuffer>> m_ImageBuffer;
 
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 		std::vector<uint32_t> m_LightHandles;
-		std::array<float, 4> m_CascadeLevels;
+		//const glm::vec3 m_ShadowLightDirection = { 10.0f, 0.0f, 25.0f };
+		float m_CascadeSplitLambda = 0.95f;
+		uint32_t m_ShadowMapSize = 2048;
 
 		std::vector<std::shared_ptr<Image2D>> m_BloomTextures;
 		std::vector<std::shared_ptr<Image2D>> m_SceneRenderTextures;
@@ -216,6 +228,8 @@ namespace VulkanCore {
 
 		std::map<MeshKey, DrawCommand> m_MeshDrawList;
 		std::map<MeshKey, MeshTransform> m_MeshTransformMap;
+		std::map<MeshKey, DrawCommand> m_ShadowMeshDrawList;
+		std::map<MeshKey, MeshTransform> m_ShadowMeshTransformMap;
 		std::map<MeshKey, DrawSelectCommand> m_SelectedMeshDrawList;
 		std::map<MeshKey, MeshSelectTransform> m_SelectedMeshTransformMap;
 
