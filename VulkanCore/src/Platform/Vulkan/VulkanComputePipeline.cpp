@@ -142,7 +142,6 @@ namespace VulkanCore {
 		computePipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 		computePipelineInfo.stage = shaderStage;
 		computePipelineInfo.layout = m_PipelineLayout;
-
 		computePipelineInfo.basePipelineIndex = -1;
 		computePipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
@@ -185,7 +184,6 @@ namespace VulkanCore {
 			computePipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 			computePipelineInfo.stage = shaderStage;
 			computePipelineInfo.layout = m_PipelineLayout;
-
 			computePipelineInfo.basePipelineIndex = -1;
 			computePipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 

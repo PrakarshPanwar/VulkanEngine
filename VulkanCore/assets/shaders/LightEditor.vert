@@ -19,7 +19,7 @@ layout(binding = 0) uniform Camera
 	vec2 DepthUnpackConsts;
 } u_Camera;
 
-layout(push_constant) uniform PointLight
+layout(push_constant) uniform LightSelectData
 {
 	vec4 Position;
 	int EntityID;

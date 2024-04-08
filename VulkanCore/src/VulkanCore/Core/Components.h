@@ -103,7 +103,7 @@ namespace VulkanCore {
 		int EntityID = -1;
 	};
 
-	struct PointLightComponent
+	struct alignas(16) PointLightComponent
 	{
 		glm::vec4 Position{ 0.0f };
 		glm::vec4 Color{ 0.0f };
@@ -116,15 +116,13 @@ namespace VulkanCore {
 
 		PointLightComponent(const glm::vec4& position, const glm::vec4& color, float radius, float falloff)
 			: Position(position), Color(color), Radius(radius), Falloff(falloff) {}
-	private:
-		glm::vec2 Padding{};
 	};
 
-	struct SpotLightComponent
+	struct alignas(8) SpotLightComponent
 	{
 		glm::vec4 Position{ 0.0f };
-		glm::vec4 Color{ 0.0f };
-		glm::vec3 Direction{ 0.0f };
+		glm::vec4 Color{ 1.0f };
+		glm::vec3 Direction{ 1.0f };
 		float InnerCutoff = 0.174f;
 		float OuterCutoff = 0.261f;
 		float Radius = 0.1f;
@@ -138,8 +136,13 @@ namespace VulkanCore {
 			: Position(position), Color(color), Direction(direction),
 			InnerCutoff(innerCutoff), OuterCutoff(outerCutoff),
 			Radius(radius), Falloff(falloff) {}
-	private:
-		float Padding = 0.0f;
+	};
+
+	struct DirectionalLightComponent
+	{
+		glm::vec3 Direction{ 1.0f };
+		glm::vec4 Color{ 1.0f };
+		float Falloff = 1.0f;
 	};
 
 	// TODO: More variables will be added
@@ -170,10 +173,17 @@ namespace VulkanCore {
 		SpotLightComponent SpotLights[10];
 	};
 
-	struct PCModelData
+	struct UBDirectionalLights
 	{
-		glm::mat4 ModelMatrix{ 1.f };
-		glm::mat4 NormalMatrix{};
+		int LightCount;
+		glm::vec3 Padding{};
+		DirectionalLightComponent DirectionalLights[2];
+	};
+
+	struct LightSelectData
+	{
+		glm::vec4 Position{};
+		int EntityID = -1;
 	};
 
 }

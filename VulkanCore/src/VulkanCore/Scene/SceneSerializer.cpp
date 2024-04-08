@@ -167,6 +167,19 @@ namespace VulkanCore {
 			out << YAML::EndMap;
 		}
 
+		if (entity.HasComponent<DirectionalLightComponent>())
+		{
+			out << YAML::Key << "DirectionalLightComponent";
+			out << YAML::BeginMap;
+
+			auto& drlc = entity.GetComponent<DirectionalLightComponent>();
+			out << YAML::Key << "Direction" << YAML::Value << drlc.Direction;
+			out << YAML::Key << "Color" << YAML::Value << drlc.Color;
+			out << YAML::Key << "Falloff" << YAML::Value << drlc.Falloff;
+
+			out << YAML::EndMap;
+		}
+
 		if (entity.HasComponent<SkyLightComponent>())
 		{
 			out << YAML::Key << "SkyLightComponent";
@@ -215,6 +228,7 @@ namespace VulkanCore {
 
 			SerializeEntity(out, entity);
 		});
+
 		out << YAML::EndSeq;
 		out << YAML::EndMap;
 
@@ -260,7 +274,7 @@ namespace VulkanCore {
 				auto transformComponent = entity["TransformComponent"];
 				if (transformComponent)
 				{
-					auto& tc = deserializedEntity.GetComponent<TransformComponent>();
+					auto& tc = deserializedEntity.AddComponent<TransformComponent>();
 
 					tc.Translation = transformComponent["Translation"].as<glm::vec3>();
 					tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
@@ -288,6 +302,16 @@ namespace VulkanCore {
 					slc.OuterCutoff = spotLightComponent["OuterCutoff"].as<float>();
 					slc.Falloff = spotLightComponent["Falloff"].as<float>();
 					slc.Radius = spotLightComponent["Radius"].as<float>();
+				}
+
+				auto directionalLightComponent = entity["DirectionalLightComponent"];
+				if (directionalLightComponent)
+				{
+					auto& drlc = deserializedEntity.AddComponent<DirectionalLightComponent>();
+
+					drlc.Direction = directionalLightComponent["Direction"].as<glm::vec3>();
+					drlc.Color = directionalLightComponent["Color"].as<glm::vec4>();
+					drlc.Falloff = directionalLightComponent["Falloff"].as<float>();
 				}
 
 				auto skyLightComponent = entity["SkyLightComponent"];

@@ -37,7 +37,8 @@ namespace VulkanCore {
 		glm::uvec2 GetMipSize(uint32_t mipLevel) const override;
 		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
 		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_DescriptorImageInfo; }
-		inline const VkDescriptorImageInfo& GetDescriptorImageInfo(uint32_t mipLevel) const { return m_DescriptorMipImagesInfo.at(mipLevel); }
+		inline const VkDescriptorImageInfo& GetDescriptorMipImageInfo(uint32_t mipLevel) const { return m_DescriptorMipImagesInfo.at(mipLevel); }
+		inline const VkDescriptorImageInfo& GetDescriptorArrayImageInfo(uint32_t layer) const { return m_DescriptorArrayImagesInfo.at(layer); }
 		inline const ImageSpecification& GetSpecification() const override { return m_Specification; }
 	private:
 		void UpdateImageDescriptor();

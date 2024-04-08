@@ -140,23 +140,29 @@ namespace VulkanCore {
 			m_LightSelectPipeline = std::make_shared<VulkanPipeline>(lightSelectPipelineSpec);
 		}
 
-		// Prepare Depth Pipeline
+		// Shadow Map Pipeline
 		{
-			FramebufferSpecification preDepthFramebufferSpec;
-			preDepthFramebufferSpec.Width = 1920;
-			preDepthFramebufferSpec.Height = 1080;
-			preDepthFramebufferSpec.Attachments = { ImageFormat::DEPTH16F };
-			preDepthFramebufferSpec.Transfer = true;
-			preDepthFramebufferSpec.Samples = 1;
+			FramebufferSpecification shadowMapFramebufferSpec;
+			shadowMapFramebufferSpec.Width = m_ShadowMapSize;
+			shadowMapFramebufferSpec.Height = m_ShadowMapSize;
+			shadowMapFramebufferSpec.Attachments = { ImageFormat::DEPTH16F };
+			shadowMapFramebufferSpec.ReadDepthTexture = true;
+			shadowMapFramebufferSpec.Transfer = true;
+			shadowMapFramebufferSpec.Samples = 1;
+			shadowMapFramebufferSpec.Layers = SHADOW_MAP_CASCADE_COUNT;
 
-			RenderPassSpecification preDepthRenderPassSpec;
-			preDepthRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(preDepthFramebufferSpec);
+			RenderPassSpecification shadowMapRenderPassSpec;
+			shadowMapRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(shadowMapFramebufferSpec);
 
-			PipelineSpecification preDepthPipelineSpec;
-			preDepthPipelineSpec.DebugName = "Pre Depth Pipeline";
-			preDepthPipelineSpec.pRenderPass = std::make_shared<VulkanRenderPass>(preDepthRenderPassSpec);
+			PipelineSpecification shadowMapPipelineSpec;
+			shadowMapPipelineSpec.DebugName = "Shadow Map Pipeline";
+			shadowMapPipelineSpec.pShader = Renderer::GetShader("ShadowDepth");
+			shadowMapPipelineSpec.pRenderPass = std::make_shared<VulkanRenderPass>(shadowMapRenderPassSpec);
+			shadowMapPipelineSpec.DepthClamp = true;
+			shadowMapPipelineSpec.Layout = vertexLayout;
+			shadowMapPipelineSpec.InstanceLayout = instanceLayout;
 
-			m_PreDepthPipeline = std::make_shared<VulkanPipeline>(preDepthPipelineSpec);
+			m_ShadowMapPipeline = std::make_shared<VulkanPipeline>(shadowMapPipelineSpec);
 		}
 
 		// Composite Pipeline
@@ -207,9 +213,12 @@ namespace VulkanCore {
 			m_GeometryMaterial->SetBuffers(0, m_UBCamera);
 			m_GeometryMaterial->SetBuffers(1, m_UBPointLight);
 			m_GeometryMaterial->SetBuffers(2, m_UBSpotLight);
+			m_GeometryMaterial->SetBuffers(3, m_UBDirectionalLight);
+			m_GeometryMaterial->SetBuffers(4, m_UBCascadeLightMatrices);
 			m_GeometryMaterial->SetTexture(6, m_IrradianceTexture);
 			m_GeometryMaterial->SetImage(7, m_BRDFTexture);
 			m_GeometryMaterial->SetTexture(8, m_PrefilteredTexture);
+			m_GeometryMaterial->SetImages(9, m_ShadowMapPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment());
 			m_GeometryMaterial->PrepareShaderMaterial();
 		}
 
@@ -238,6 +247,15 @@ namespace VulkanCore {
 
 			m_LightSelectMaterial->SetBuffers(0, m_UBCamera);
 			m_LightSelectMaterial->PrepareShaderMaterial();
+		}
+
+		// Pre Depth Material
+		{
+			m_ShadowMapMaterial = std::make_shared<VulkanMaterial>(m_ShadowMapPipeline->GetSpecification().pShader, "Pre Depth Material");
+
+			//m_PreDepthMaterial->SetBuffers(0, m_UBCamera);
+			m_ShadowMapMaterial->SetBuffers(1, m_UBCascadeLightMatrices);
+			m_ShadowMapMaterial->PrepareShaderMaterial();
 		}
 
 		// Bloom Materials
@@ -328,8 +346,8 @@ namespace VulkanCore {
 
 			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
 			m_CompositeShaderMaterial->SetBuffers(0, m_UBCamera);
-			m_CompositeShaderMaterial->SetImages(1, geomFB->GetAttachment(true));
-			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment(true));
+			m_CompositeShaderMaterial->SetImages(1, geomFB->GetAttachment());
+			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment());
 			m_CompositeShaderMaterial->SetImage(3, m_BloomTextures[2]);
 			m_CompositeShaderMaterial->SetTexture(4, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
@@ -347,6 +365,20 @@ namespace VulkanCore {
 
 	void SceneRenderer::RecreateMaterials()
 	{
+		// Geometry Material
+		{
+			m_GeometryMaterial->SetBuffers(4, m_UBCascadeLightMatrices);
+			m_GeometryMaterial->SetImages(9, m_ShadowMapPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment());
+			m_GeometryMaterial->PrepareShaderMaterial();
+		}
+
+		// Pre Depth Material
+		{
+			//m_PreDepthMaterial->SetBuffers(0, m_UBCamera);
+			m_ShadowMapMaterial->SetBuffers(1, m_UBCascadeLightMatrices);
+			m_ShadowMapMaterial->PrepareShaderMaterial();
+		}
+
 		// Bloom Materials
 		{
 			const uint32_t mipCount = m_BloomTextures[0]->GetSpecification().MipLevels;
@@ -434,8 +466,8 @@ namespace VulkanCore {
 			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
 
 			m_CompositeShaderMaterial->SetBuffers(0, m_UBCamera);
-			m_CompositeShaderMaterial->SetImages(1, geomFB->GetAttachment(true));
-			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment(true));
+			m_CompositeShaderMaterial->SetImages(1, geomFB->GetAttachment());
+			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment());
 			m_CompositeShaderMaterial->SetImage(3, m_BloomTextures[2]);
 			m_CompositeShaderMaterial->SetTexture(4, std::dynamic_pointer_cast<VulkanTexture>(m_BloomDirtTexture));
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
@@ -451,6 +483,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::RecreatePipelines()
 	{
+		m_ShadowMapPipeline->ReloadPipeline();
 		m_GeometryPipeline->ReloadPipeline();
 		m_LightPipeline->ReloadPipeline();
 		m_CompositePipeline->ReloadPipeline();
@@ -458,9 +491,9 @@ namespace VulkanCore {
 		m_BloomPipeline->ReloadPipeline();
 	}
 
-	std::vector<glm::vec4> SceneRenderer::GetFrustumCornersWorldSpace(const glm::mat4& projectionMatrix)
+	std::vector<glm::vec4> SceneRenderer::GetFrustumCornersWorldSpace()
 	{
-		const auto projViewInv = glm::inverse(projectionMatrix * m_SceneEditorData.CameraData.GetViewMatrix());
+		const auto projViewInv = glm::inverse(m_SceneEditorData.CameraData.GetProjectionMatrix() * m_SceneEditorData.CameraData.GetViewMatrix());
 
 		std::vector<glm::vec4> corners{};
 		for (uint32_t x = 0; x < 2; ++x)
@@ -478,21 +511,126 @@ namespace VulkanCore {
 		return corners;
 	}
 
-	glm::mat4 SceneRenderer::GetLightSpaceMatrix(const float nearClip, const float farClip)
+	void SceneRenderer::UpdateCascadeMap()
 	{
-		constexpr glm::vec3 LIGHT_DIRECTION = { 20.0f, 0.0f, 50.0f }; // TODO: Implement Directional Lights
+		std::array<float, SHADOW_MAP_CASCADE_COUNT> cascadeSplits{};
 
 		const auto& cameraData = m_SceneEditorData.CameraData;
-		const auto projectionMatrix = glm::perspective(cameraData.GetFieldOfView(), cameraData.GetAspectRatio(), nearClip, farClip);
-		const auto frustumCorners = GetFrustumCornersWorldSpace(projectionMatrix);
+		auto nearFarClip = cameraData.GetNearFarClip();
+		float clipRange = nearFarClip.y - nearFarClip.x;
 
-		glm::vec3 center = glm::vec3{ 0.0f };
+		float minZ = nearFarClip.x;
+		float maxZ = nearFarClip.x + clipRange;
+
+		float range = maxZ - minZ;
+		float ratio = maxZ / minZ;
+
+		DirectionalLightComponent shadowLight = m_Scene->GetDirectionalLightData(0);
+
+		// Calculate Split Depths based on View Camera Frustum
+		// Based on Method presented in https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html
+		for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; ++i)
+		{
+			float p = (i + 1) / (float)SHADOW_MAP_CASCADE_COUNT;
+			float log = minZ * std::pow(ratio, p);
+			float uniform = minZ + range * p;
+			float d = m_CascadeSplitLambda * (log - uniform) + uniform;
+			cascadeSplits[i] = (d - nearFarClip.x) / clipRange;
+		}
+
+		// Calculate Orthographic Projection Matrix for each Cascade
+		float lastSplitDist = 0.0f;
+		for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; ++i)
+		{
+			float splitDist = cascadeSplits[i];
+
+			glm::vec3 frustumCorners[8] = {
+				glm::vec3(-1.0f,  1.0f, -1.0f),
+				glm::vec3( 1.0f,  1.0f, -1.0f),
+				glm::vec3( 1.0f, -1.0f, -1.0f),
+				glm::vec3(-1.0f, -1.0f, -1.0f),
+				glm::vec3(-1.0f,  1.0f,  1.0f),
+				glm::vec3( 1.0f,  1.0f,  1.0f),
+				glm::vec3( 1.0f, -1.0f,  1.0f),
+				glm::vec3(-1.0f, -1.0f,  1.0f)
+			};
+
+			// Project Frustum Corners into World Space
+			glm::mat4 projViewInv = glm::inverse(cameraData.GetProjectionMatrix() * cameraData.GetViewMatrix());
+			for (uint32_t i = 0; i < 8; ++i)
+			{
+				glm::vec4 cornerInv = projViewInv * glm::vec4(frustumCorners[i], 1.0f);
+				frustumCorners[i] = cornerInv / cornerInv.w;
+			}
+
+			for (uint32_t i = 0; i < 4; ++i)
+			{
+				glm::vec3 dist = frustumCorners[i + 4] - frustumCorners[i];
+				frustumCorners[i + 4] = frustumCorners[i] + (dist * splitDist);
+				frustumCorners[i] = frustumCorners[i] + (dist * lastSplitDist);
+			}
+
+			// Get Frustum Center
+			glm::vec3 frustumCenter{ 0.0f };
+			for (uint32_t i = 0; i < 8; ++i)
+				frustumCenter += frustumCorners[i];
+
+			frustumCenter /= 8.0f;
+
+			float radius = 0.0f;
+			for (uint32_t i = 0; i < 8; ++i)
+			{
+				float distance = glm::length(frustumCorners[i] - frustumCenter);
+				radius = glm::max(radius, distance);
+			}
+
+			radius = std::ceil(radius * 16.0f) / 16.0f;
+
+			glm::vec3 maxExtents = glm::vec3(radius);
+			glm::vec3 minExtents = -maxExtents;
+
+			glm::vec3 lightDir = glm::normalize(-shadowLight.Direction);
+			glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
+			glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
+
+			float shadowMapSize = (float)m_ShadowMapSize;
+			glm::mat4 shadowMatrix = lightOrthoMatrix * lightViewMatrix;
+			glm::vec4 shadowOrigin = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			shadowOrigin = shadowMatrix * shadowOrigin;
+			shadowOrigin = shadowOrigin * shadowMapSize / 2.0f;
+
+			glm::vec4 roundedOrigin = glm::round(shadowOrigin);
+			glm::vec4 roundOffset = roundedOrigin - shadowOrigin;
+			roundOffset = roundOffset * 2.0f / shadowMapSize;
+			roundOffset.z = 0.0f;
+			roundOffset.w = 0.0f;
+
+			glm::mat4 shadowProj = lightOrthoMatrix;
+			shadowProj[3] += roundOffset;
+			lightOrthoMatrix = shadowProj;
+
+			// Store Split Distance and matrix in Cascade
+			m_CascadeData.CascadeSplitLevels[i] = (nearFarClip.x + splitDist * clipRange) * -1.0f;
+			m_CascadeData.CascadeLightMatrices[i] = lightOrthoMatrix * lightViewMatrix;
+
+			lastSplitDist = cascadeSplits[i];
+		}
+	}
+
+#if 0
+	glm::mat4 SceneRenderer::GetLightSpaceMatrix(const float nearClip, const float farClip)
+	{
+		const auto& cameraData = m_SceneEditorData.CameraData;
+		//const auto projectionMatrix = glm::perspective(cameraData.GetFieldOfView(), cameraData.GetAspectRatio(), nearClip, farClip);
+		const auto frustumCorners = GetFrustumCornersWorldSpace();
+
+		glm::vec3 center = m_ShadowLightPosition;
 		for (auto& frustumCorner : frustumCorners)
 			center += glm::vec3{ frustumCorner };
 
 		center /= frustumCorners.size();
 
-		const auto lightView = glm::lookAt(center + LIGHT_DIRECTION, center, glm::vec3{ 0.0f, 1.0f, 0.0f });
+		const auto lightView = glm::lookAt(center + glm::normalize(m_ShadowLightDirection), center, glm::vec3{ 0.0f, 1.0f, 0.0f });
 
 		float minX = std::numeric_limits<float>::max();
 		float maxX = std::numeric_limits<float>::lowest();
@@ -511,15 +649,14 @@ namespace VulkanCore {
 			maxZ = std::max(maxZ, transform.z);
 		}
 
-		constexpr float depthFactor = 10.0f; // TODO: Make this a runtime variable in future
 		if (minZ < 0)
-			minZ *= depthFactor;
+			minZ *= m_DepthFactor;
 		else
-			minZ /= depthFactor;
+			minZ /= m_DepthFactor;
 		if (maxZ < 0)
-			maxZ /= depthFactor;
+			maxZ /= m_DepthFactor;
 		else
-			maxZ *= depthFactor;
+			maxZ *= m_DepthFactor;
 
 		const glm::mat4 lightProjection = glm::ortho(minX, maxX, minY, maxY, minZ, maxZ);
 		return lightProjection * lightView;
@@ -536,6 +673,7 @@ namespace VulkanCore {
 		lightSpaceMatrices.push_back(GetLightSpaceMatrix(m_CascadeLevels.back(), cameraNearFarClip.y));
 		return lightSpaceMatrices;
 	}
+#endif
 
 	void SceneRenderer::CreateResources()
 	{
@@ -545,16 +683,22 @@ namespace VulkanCore {
 		Renderer::WaitAndExecute();
 
 		m_SceneImages.resize(framesInFlight);
+		m_ShadowDepthPassImages.resize(framesInFlight);
 
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
 			std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
 			m_SceneImages[i] = ImGuiLayer::AddTexture(*finalPassImage);
+
+			auto preDepthImage = m_ShadowMapPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[i];
+			m_ShadowDepthPassImages[i] = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanImage>(preDepthImage), 0);
 		}
 
 		m_UBCamera.reserve(framesInFlight);
 		m_UBPointLight.reserve(framesInFlight);
 		m_UBSpotLight.reserve(framesInFlight);
+		m_UBDirectionalLight.reserve(framesInFlight);
+		m_UBCascadeLightMatrices.reserve(framesInFlight);
 		m_ImageBuffer.reserve(framesInFlight);
 
 		// Uniform Buffers
@@ -563,6 +707,8 @@ namespace VulkanCore {
 			m_UBCamera.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBCamera)));
 			m_UBPointLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBPointLights)));
 			m_UBSpotLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBSpotLights)));
+			m_UBDirectionalLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBDirectionalLights)));
+			m_UBCascadeLightMatrices.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(CascadeMapData)));
 			m_ImageBuffer.emplace_back(std::make_shared<VulkanIndexBuffer>(m_ViewportSize.x * m_ViewportSize.y * sizeof(int)));
 		}
 
@@ -632,9 +778,6 @@ namespace VulkanCore {
 		m_BRDFTexture = Renderer::CreateBRDFTexture();
 		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/PointLightIcon.png");
 		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/SpotLightIcon.png");
-
-		float cameraFarPlane = m_SceneEditorData.CameraData.GetNearFarClip().y;
-		m_CascadeLevels = { cameraFarPlane / 50.0f, cameraFarPlane / 25.0f, cameraFarPlane / 10.0f, cameraFarPlane / 2.0f };
 	}
 
 	void SceneRenderer::Release()
@@ -647,6 +790,7 @@ namespace VulkanCore {
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
 		VK_CORE_INFO("Scene Resized!");
+		//m_ShadowMapPipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 		m_GeometryPipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 		m_GeometrySelectPipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 		m_CompositePipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
@@ -740,6 +884,17 @@ namespace VulkanCore {
 		{
 			ImGui::DragFloat("Threshold", &m_BloomParams.Threshold, 0.01f, 0.0f, 1000.0f);
 			ImGui::DragFloat("Knee", &m_BloomParams.Knee, 0.01f, 0.001f, 1.0f);
+
+			ImGui::TreePop();
+		}
+
+		if (ImGui::TreeNodeEx("Shadow Settings", treeFlags))
+		{
+			ImGui::DragFloat("Cascade Split Lambda", &m_CascadeSplitLambda, 0.01f, 0.0f, 10.0f);
+
+			ImVec2 quadSize = { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x };
+			ImGui::Image(m_ShadowDepthPassImages[Renderer::RT_GetCurrentFrameIndex()], quadSize);
+
 			ImGui::TreePop();
 		}
 
@@ -818,15 +973,20 @@ namespace VulkanCore {
 
 		// Lights
 		UBPointLights pointLightUB{};
-		m_Scene->UpdatePointLightUB(pointLightUB);
-		m_UBPointLight[frameIndex]->WriteData(&pointLightUB);
-
 		UBSpotLights spotLightUB{};
-		m_Scene->UpdateSpotLightUB(spotLightUB);
+		UBDirectionalLights directionLightUB{};
+		m_Scene->UpdateLightsBuffer(pointLightUB, spotLightUB, directionLightUB);
+
+		m_UBPointLight[frameIndex]->WriteData(&pointLightUB);
 		m_UBSpotLight[frameIndex]->WriteData(&spotLightUB);
+		m_UBDirectionalLight[frameIndex]->WriteData(&directionLightUB);
+
+		UpdateCascadeMap();
+		m_UBCascadeLightMatrices[frameIndex]->WriteData(&m_CascadeData);
 
 		m_SceneCommandBuffer->Begin();
 
+		ShadowPass();
 		GeometryPass();
 		BloomCompute();
 		CompositePass();
@@ -841,15 +1001,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::RenderLights()
 	{ 
-		Renderer::Submit([this]
-		{
-			VkCommandBuffer bindCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer)->RT_GetActiveCommandBuffer();
-			auto vulkanLightPipeline = std::static_pointer_cast<VulkanPipeline>(m_LightPipeline);
-			vulkanLightPipeline->Bind(bindCmd);
-
-			// Binding Point Light Descriptor Set
-			m_PointLightShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_LightPipeline);
-		});
+		Renderer::BindPipeline(m_SceneCommandBuffer, m_LightPipeline, m_PointLightShaderMaterial);
 
 		// Point Lights
 		for (auto pointLightPosition : m_PointLightPositions)
@@ -973,7 +1125,7 @@ namespace VulkanCore {
 	std::shared_ptr<Image2D> SceneRenderer::GetFinalPassImage(uint32_t index) const
 	{
 		auto framebuffer = std::dynamic_pointer_cast<VulkanFramebuffer>(m_SceneFramebuffer);
-		return framebuffer->GetAttachment(true)[index];
+		return framebuffer->GetAttachment()[index];
 	}
 		
 	void SceneRenderer::UpdateSkybox(const std::string& filepath)
@@ -1022,14 +1174,27 @@ namespace VulkanCore {
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 	}
 
-	void SceneRenderer::GeometryPass()
+	void SceneRenderer::ShadowPass()
 	{
 		m_Scene->OnUpdateGeometry(this);
 		m_Scene->OnUpdateLights(m_PointLightPositions, m_SpotLightPositions, m_LightHandles);
 
-		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().pRenderPass);
+		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_ShadowMapPipeline->GetSpecification().pRenderPass);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "ShadowPass", DebugLabelColor::Aqua);
+		Renderer::BindPipeline(m_SceneCommandBuffer, m_ShadowMapPipeline, m_ShadowMapMaterial);
 
+		for (auto& [mk, dc] : m_MeshDrawList)
+			Renderer::RenderMeshWithoutMaterial(m_SceneCommandBuffer, dc.MeshInstance, dc.SubmeshIndex, dc.TransformBuffer, m_MeshTransformMap[mk].Transforms, dc.InstanceCount);
+
+		Renderer::EndRenderPass(m_SceneCommandBuffer, m_ShadowMapPipeline->GetSpecification().pRenderPass);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
+	}
+
+	void SceneRenderer::GeometryPass()
+	{
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Skybox", DebugLabelColor::Orange);
+
+		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().pRenderPass);
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		// Rendering Skybox
@@ -1041,15 +1206,7 @@ namespace VulkanCore {
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Geometry-Pass", DebugLabelColor::Gold);
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
-		Renderer::Submit([this]
-		{
-			VkCommandBuffer bindCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer)->RT_GetActiveCommandBuffer();
-			auto vulkanGeometryPipeline = std::static_pointer_cast<VulkanPipeline>(m_GeometryPipeline);
-			vulkanGeometryPipeline->Bind(bindCmd);
-
-			// Binding Static Geometry Descriptor Sets
-			m_GeometryMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_GeometryPipeline);
-		});
+		Renderer::BindPipeline(m_SceneCommandBuffer, m_GeometryPipeline, m_GeometryMaterial);
 
 		for (auto& [mk, dc] : m_MeshDrawList)
 			Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk].Transforms, dc.InstanceCount);
@@ -1076,7 +1233,7 @@ namespace VulkanCore {
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
 		Renderer::CopyVulkanImage(m_SceneCommandBuffer,
-			m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetAttachment(true)[frameIndex],
+			m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetAttachment()[frameIndex],
 			m_SceneRenderTextures[frameIndex]);
 
 		Renderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
@@ -1090,53 +1247,23 @@ namespace VulkanCore {
 
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Selection-Pass", DebugLabelColor::Green);
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometrySelectPipeline->GetSpecification().pRenderPass);
+		Renderer::BindPipeline(m_SceneCommandBuffer, m_GeometrySelectPipeline, m_GeometrySelectMaterial);
 
 		for (auto& [mk, dc] : m_SelectedMeshDrawList)
-			Renderer::RenderSelectedMesh(m_SceneCommandBuffer, dc.MeshInstance, m_GeometrySelectMaterial, dc.SubmeshIndex, m_GeometrySelectPipeline, dc.TransformBuffer, m_SelectedMeshTransformMap[mk].Transforms, dc.InstanceCount);
+			Renderer::RenderSelectedMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.SubmeshIndex, dc.TransformBuffer, m_SelectedMeshTransformMap[mk].Transforms, dc.InstanceCount);
 
 		// Lights
 		{
-			auto commandBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
-			auto lightPipeline = std::static_pointer_cast<VulkanPipeline>(m_LightSelectPipeline);
-
-			Renderer::Submit([this, commandBuffer, lightPipeline]
-			{
-				VkCommandBuffer bindCmd = commandBuffer->RT_GetActiveCommandBuffer();
-				lightPipeline->Bind(bindCmd);
-
-				// Binding Point Light Descriptor Set
-				m_LightSelectMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_LightSelectPipeline);
-			});
+			Renderer::BindPipeline(m_SceneCommandBuffer, m_LightSelectPipeline, m_LightSelectMaterial);
 
 			int index = 0;
-
 			// Point Lights
-			for (auto pointLightPosition : m_PointLightPositions)
-			{
-				uint32_t lightEntity = m_LightHandles[index++];
-
-				Renderer::Submit([this, commandBuffer, lightPipeline, pointLightPosition, lightEntity]
-				{
-					VkCommandBuffer drawCmd = commandBuffer->RT_GetActiveCommandBuffer();
-
-					lightPipeline->SetPushConstants(drawCmd, (void*)&pointLightPosition, sizeof(glm::vec4) + sizeof(int));
-					vkCmdDraw(drawCmd, 6, 1, 0, 0);
-				});
-			}
+			for (auto& pointLightPosition : m_PointLightPositions)
+				Renderer::RenderLight(m_SceneCommandBuffer, m_LightSelectPipeline, { pointLightPosition, (int)m_LightHandles[index++] });
 
 			// Spot Lights
-			for (auto spotLightPosition : m_SpotLightPositions)
-			{
-				uint32_t lightEntity = m_LightHandles[index++];
-
-				Renderer::Submit([this, commandBuffer, lightPipeline, spotLightPosition, lightEntity]
-				{
-					VkCommandBuffer drawCmd = commandBuffer->RT_GetActiveCommandBuffer();
-
-					lightPipeline->SetPushConstants(drawCmd, (void*)&spotLightPosition, sizeof(glm::vec4) + sizeof(int));
-					vkCmdDraw(drawCmd, 6, 1, 0, 0);
-				});
-			}
+			for (auto& spotLightPosition : m_SpotLightPositions)
+				Renderer::RenderLight(m_SceneCommandBuffer, m_LightSelectPipeline, { spotLightPosition, (int)m_LightHandles[index++] });
 		}
 
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometrySelectPipeline->GetSpecification().pRenderPass);

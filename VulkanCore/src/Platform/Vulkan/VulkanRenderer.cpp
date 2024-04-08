@@ -570,6 +570,18 @@ namespace VulkanCore {
 		});
 	}
 
+	void VulkanRenderer::BindPipeline(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& material)
+	{
+		Renderer::Submit([cmdBuffer, pipeline, material]
+		{
+			VkCommandBuffer bindCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
+
+			vulkanPipeline->Bind(bindCmd);
+			material->RT_BindMaterial(cmdBuffer, pipeline);
+		});
+	}
+
 	void VulkanRenderer::RenderMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 		Renderer::Submit([cmdBuffer, mesh, pipeline, material, transformBuffer, transformData, submeshIndex, instanceCount]
@@ -615,16 +627,14 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::RenderSelectedMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<SelectTransformData>& transformData, uint32_t instanceCount)
+	void VulkanRenderer::RenderSelectedMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, uint32_t submeshIndex, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<SelectTransformData>& transformData, uint32_t instanceCount)
 	{
-		Renderer::Submit([cmdBuffer, mesh, pipeline, material, transformBuffer, transformData, submeshIndex, instanceCount]
+		Renderer::Submit([cmdBuffer, mesh, transformBuffer, transformData, submeshIndex, instanceCount]
 		{
 			VK_CORE_PROFILE_FN("VulkanRenderer::RenderSelectedMesh");
 
 			// Bind Vertex Buffer
 			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
-			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
-			vulkanPipeline->Bind(drawCmd);
 
 			auto meshSource = mesh->GetMeshSource();
 			auto vulkanMeshVB = std::static_pointer_cast<VulkanVertexBuffer>(meshSource->GetVertexBuffer());
@@ -636,14 +646,30 @@ namespace VulkanCore {
 			vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
 			vkCmdBindIndexBuffer(drawCmd, vulkanMeshIB->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-			auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(material);
-			VkDescriptorSet descriptorSets[1] = { vulkanMaterial->RT_GetVulkanMaterialDescriptorSet() };
+			const auto& submeshes = meshSource->GetSubmeshes();
+			const Submesh& submesh = submeshes[submeshIndex];
+			vkCmdDrawIndexed(drawCmd, submesh.IndexCount, instanceCount, submesh.BaseIndex, submesh.BaseVertex, 0);
+		});
+	}
 
-			vkCmdBindDescriptorSets(drawCmd,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				vulkanPipeline->GetVulkanPipelineLayout(),
-				0, 1, descriptorSets,
-				0, nullptr);
+	void VulkanRenderer::RenderMeshWithoutMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, uint32_t submeshIndex, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	{
+		Renderer::Submit([cmdBuffer, mesh, transformBuffer, transformData, submeshIndex, instanceCount]
+		{
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMeshWithoutMaterial");
+
+			// Bind Vertex Buffer
+			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+
+			auto meshSource = mesh->GetMeshSource();
+			auto vulkanMeshVB = std::static_pointer_cast<VulkanVertexBuffer>(meshSource->GetVertexBuffer());
+			auto vulkanMeshIB = std::static_pointer_cast<VulkanIndexBuffer>(meshSource->GetIndexBuffer());
+			auto vulkanTransformBuffer = std::static_pointer_cast<VulkanVertexBuffer>(transformBuffer);
+			vulkanTransformBuffer->WriteData((void*)transformData.data(), 0);
+			VkBuffer buffers[] = { vulkanMeshVB->GetVulkanBuffer(), vulkanTransformBuffer->GetVulkanBuffer() };
+			VkDeviceSize offsets[] = { 0, 0 };
+			vkCmdBindVertexBuffers(drawCmd, 0, 2, buffers, offsets);
+			vkCmdBindIndexBuffer(drawCmd, vulkanMeshIB->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 			const auto& submeshes = meshSource->GetSubmeshes();
 			const Submesh& submesh = submeshes[submeshIndex];
@@ -654,6 +680,18 @@ namespace VulkanCore {
 	void VulkanRenderer::RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 
+	}
+
+	void VulkanRenderer::RenderLight(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const LightSelectData& lightData)
+	{
+		Renderer::Submit([cmdBuffer, pipeline, lightData]
+		{
+			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+
+			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
+			vulkanPipeline->SetPushConstants(drawCmd, (void*)&lightData, sizeof(LightSelectData));
+			vkCmdDraw(drawCmd, 6, 1, 0, 0);
+		});
 	}
 
 	void VulkanRenderer::SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial)

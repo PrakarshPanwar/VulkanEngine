@@ -256,6 +256,7 @@ namespace VulkanCore {
 		{
 			DisplayAddComponentEntry<PointLightComponent>("Point Light");
 			DisplayAddComponentEntry<SpotLightComponent>("Spot Light");
+			DisplayAddComponentEntry<DirectionalLightComponent>("Directional Light");
 			DisplayAddComponentEntry<SkyLightComponent>("Skybox");
 			DisplayAddComponentEntry<MeshComponent>("Mesh");
 
@@ -271,6 +272,7 @@ namespace VulkanCore {
 			DrawVec3Control("Rotation", rotation);
 			component.Rotation = glm::radians(rotation);
 			DrawVec3Control("Scale", component.Scale, 1.0f);
+			ImGui::Spacing();
 		});
 
 		DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
@@ -294,6 +296,14 @@ namespace VulkanCore {
 
 			ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 10000.0f);
 			ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.001f, 1000.0f);
+		});
+
+		DrawComponent<DirectionalLightComponent>("Directional Light", entity, [](auto& component)
+		{
+			DrawVec3Control("Direction", component.Direction, 1.0f, 75.0f);
+			ImGui::Spacing();
+			ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
+			ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 10000.0f);
 		});
 
 		DrawComponent<SkyLightComponent>("Skybox", entity, [](auto& component)

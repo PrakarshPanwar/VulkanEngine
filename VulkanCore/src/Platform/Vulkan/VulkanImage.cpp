@@ -136,7 +136,7 @@ namespace VulkanCore {
 		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
 		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT; // TODO: This shouldn't(probably) be implied
 
-		if (m_Specification.Usage == ImageUsage::Attachment)
+		if (m_Specification.Usage == ImageUsage::Attachment || m_Specification.Usage == ImageUsage::ReadAttachment)
 		{
 			if (Utils::IsDepthFormat(m_Specification.Format))
 				usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -174,7 +174,7 @@ namespace VulkanCore {
 		// Create a view for Image
 		VkImageViewCreateInfo viewCreateInfo{};
 		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewCreateInfo.viewType = m_Specification.Layers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
 		viewCreateInfo.image = m_Info.Image;
 		viewCreateInfo.format = vulkanFormat;
 		viewCreateInfo.subresourceRange.aspectMask = aspectMask;
@@ -186,6 +186,7 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &m_Info.ImageView), "Failed to Create Image View!");
 		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE_VIEW, std::format("{} default image view", m_Specification.DebugName), m_Info.ImageView);
 
+		auto deviceProps = device->GetPhysicalDeviceProperties();
 		VkSamplerAddressMode addressMode = Utils::VulkanSamplerWrap(m_Specification.SamplerWrap);
 
 		// Create a sampler for Image
@@ -197,10 +198,7 @@ namespace VulkanCore {
 		sampler.addressModeV = addressMode;
 		sampler.addressModeW = addressMode;
 		sampler.anisotropyEnable = VK_TRUE;
-
-		auto deviceProps = device->GetPhysicalDeviceProperties();
 		sampler.maxAnisotropy = deviceProps.limits.maxSamplerAnisotropy;
-
 		sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 		sampler.unnormalizedCoordinates = VK_FALSE;
 		sampler.compareEnable = VK_FALSE;
@@ -218,7 +216,7 @@ namespace VulkanCore {
 			auto barrierCmd = device->GetCommandBuffer();
 
 			VkImageSubresourceRange subresourceRange{};
-			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.aspectMask = aspectMask;
 			subresourceRange.baseMipLevel = 0;
 			subresourceRange.levelCount = m_Specification.MipLevels;
 			subresourceRange.layerCount = m_Specification.Layers;
@@ -227,6 +225,29 @@ namespace VulkanCore {
 				0, 0,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+				subresourceRange);
+
+			device->FlushCommandBuffer(barrierCmd);
+		}
+
+		if (m_Specification.Usage == ImageUsage::ReadAttachment)
+		{
+			auto barrierCmd = device->GetCommandBuffer();
+
+			VkImageSubresourceRange subresourceRange{};
+			subresourceRange.aspectMask = aspectMask;
+			subresourceRange.baseMipLevel = 0;
+			subresourceRange.levelCount = m_Specification.MipLevels;
+			subresourceRange.baseArrayLayer = 0;
+			subresourceRange.layerCount = m_Specification.Layers;
+
+			VkImageLayout finalImageLayout = Utils::IsDepthFormat(m_Specification.Format) ?
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
+				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED, finalImageLayout,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				subresourceRange);
 
 			device->FlushCommandBuffer(barrierCmd);
@@ -299,7 +320,7 @@ namespace VulkanCore {
 		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		viewCreateInfo.image = m_Info.Image;
 		viewCreateInfo.format = vulkanFormat;
-		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewCreateInfo.subresourceRange.aspectMask = Utils::IsDepthFormat(m_Specification.Format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
 		viewCreateInfo.subresourceRange.levelCount = 1;
 		viewCreateInfo.subresourceRange.baseArrayLayer = layer;
@@ -352,7 +373,8 @@ namespace VulkanCore {
 
 	void VulkanImage::Release()
 	{
-		Renderer::SubmitResourceFree([mipRefs = m_DescriptorMipImagesInfo, imageInfo = m_Info]() mutable
+		Renderer::SubmitResourceFree([mipRefs = m_DescriptorMipImagesInfo, layerRefs = m_DescriptorArrayImagesInfo,
+			imageInfo = m_Info]() mutable
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 			VulkanAllocator allocator("Image2D");
@@ -363,9 +385,13 @@ namespace VulkanCore {
 
 			for (auto& [mipID, mipRef] : mipRefs)
 				vkDestroyImageView(device->GetVulkanDevice(), mipRef.imageView, nullptr);
+
+			for (auto& [layerID, layerRef] : layerRefs)
+				vkDestroyImageView(device->GetVulkanDevice(), layerRef.imageView, nullptr);
 		});
 
 		m_DescriptorMipImagesInfo.clear();
+		m_DescriptorArrayImagesInfo.clear();
 	}
 
 }
