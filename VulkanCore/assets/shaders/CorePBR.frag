@@ -326,9 +326,12 @@ float ShadowTextureProjection(vec4 coords, vec2 offset, uint index)
     float shadow = 1.0;
 	float bias = 0.005;
 
+    vec2 texCoord = coords.st;
+    texCoord = vec2(texCoord.x, 1.0 - texCoord.y) + offset;
+
 	if (coords.z > -1.0 && coords.z < 1.0)
     {
-		float dist = texture(u_ShadowMap, vec3(coords.st + offset, index)).r;
+		float dist = texture(u_ShadowMap, vec3(texCoord, index)).r;
 		if (coords.w > 0 && dist < coords.z - bias)
 			shadow = 0.5; // Ambient Value
 	}
@@ -370,8 +373,8 @@ float CalculateShadow()
 
 	// Depth Compare for Shadowing
 	vec4 shadowCoord = (BIAS_MATRIX * u_CascadeData.LightSpaceMatrices[cascadeIndex]) * vec4(Input.WorldPosition, 1.0);
-	//float shadow = FilterPCF(shadowCoord / shadowCoord.w, cascadeIndex);
-    float shadow = ShadowTextureProjection(shadowCoord / shadowCoord.w, vec2(0.0), cascadeIndex);
+	float shadow = FilterPCF(shadowCoord / shadowCoord.w, cascadeIndex);
+    //float shadow = ShadowTextureProjection(shadowCoord / shadowCoord.w, vec2(0.0), cascadeIndex);
 
     return shadow;
 }
