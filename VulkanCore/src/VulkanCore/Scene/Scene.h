@@ -15,7 +15,7 @@ namespace VulkanCore {
 		bool ViewportHovered;
 	};
 
-	class Scene
+	class Scene : public Asset
 	{
 	public:
 		Scene();
@@ -30,6 +30,9 @@ namespace VulkanCore {
 		void UpdateLightsBuffer(UBPointLights& pointLights, UBSpotLights& spotLights, UBDirectionalLights& directionalLights);
 		DirectionalLightComponent GetDirectionalLightData(int index = 0);
 		void DestroyEntity(Entity entity);
+
+		inline AssetType GetType() const override { return AssetType::Scene; }
+		static AssetType GetStaticType() { return AssetType::Scene; }
 	private:
 		entt::registry m_Registry;
 

@@ -72,7 +72,7 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
-		if ((m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing()) || m_EditorCamera.GetFlyMode())
+		if ((m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing()) || m_EditorCamera.IsInFly())
 			m_EditorCamera.OnUpdate();
 
 		// Mouse Position relative to Viewport
@@ -93,7 +93,7 @@ namespace VulkanCore {
 
 	void EditorLayer::OnEvent(Event& e)
 	{
-		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents() || m_EditorCamera.GetFlyMode())
+		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents() || m_EditorCamera.IsInFly())
 			m_EditorCamera.OnEvent(e);
 
 		EventDispatcher dispatcher(e);
@@ -152,7 +152,7 @@ namespace VulkanCore {
 			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 		}
 
-		if (m_EditorCamera.GetFlyMode())
+		if (m_EditorCamera.IsInFly())
 			io.ConfigFlags |= ImGuiConfigFlags_NoMouse;
 		else if (io.ConfigFlags & ImGuiConfigFlags_NoMouse)
 			io.ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
@@ -291,7 +291,7 @@ namespace VulkanCore {
 	{
 		bool shiftKey = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
 
-		bool isFlying = m_EditorCamera.GetFlyMode();
+		bool isFlying = m_EditorCamera.IsInFly();
 
 		// Gizmos: Unreal Engine Controls
 		switch (e.GetKeyCode())
@@ -334,7 +334,7 @@ namespace VulkanCore {
 		case Key::GraveAccent:
 		{
 			if (shiftKey)
-				m_EditorCamera.SetFlyMode(true);
+				m_EditorCamera.SetFly(true);
 			break;
 		}
 		}
@@ -348,9 +348,8 @@ namespace VulkanCore {
 		{
 		case Mouse::ButtonLeft:
 		{
-			bool isFlying = m_EditorCamera.GetFlyMode();
-			if (isFlying)
-				m_EditorCamera.SetFlyMode(false);
+			if (m_EditorCamera.IsInFly())
+				m_EditorCamera.SetFly(false);
 		}
 		}
 
@@ -460,9 +459,8 @@ namespace VulkanCore {
 			return;
 		}
 
-		std::shared_ptr<Scene> newScene = std::make_shared<Scene>();
-		SceneSerializer serializer(newScene);
-		if (serializer.Deserialize(filepath.string()))
+		auto newScene = AssetManager::GetAsset<Scene>(path);
+		if (newScene)
 		{
 			m_Scene = newScene;
 			m_SceneRenderer->SetActiveScene(m_Scene);

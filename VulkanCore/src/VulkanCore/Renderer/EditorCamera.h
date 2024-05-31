@@ -16,8 +16,8 @@ namespace VulkanCore {
 
 		inline float GetDistance() const { return m_Distance; }
 		inline void SetDistance(float distance) { m_Distance = distance; }
-		inline bool GetFlyMode() const { return m_FlyMode; }
-		void SetFlyMode(bool flyMode);
+		inline bool IsInFly() const { return m_FlyMode; }
+		void SetFly(bool flyMode);
 
 		inline void SetViewportSize(float width, float height)
 		{ 

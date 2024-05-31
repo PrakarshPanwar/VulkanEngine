@@ -249,11 +249,10 @@ namespace VulkanCore {
 			m_LightSelectMaterial->PrepareShaderMaterial();
 		}
 
-		// Pre Depth Material
+		// Shadow Map Material
 		{
-			m_ShadowMapMaterial = std::make_shared<VulkanMaterial>(m_ShadowMapPipeline->GetSpecification().pShader, "Pre Depth Material");
+			m_ShadowMapMaterial = std::make_shared<VulkanMaterial>(m_ShadowMapPipeline->GetSpecification().pShader, "Shadow Map Material");
 
-			//m_PreDepthMaterial->SetBuffers(0, m_UBCamera);
 			m_ShadowMapMaterial->SetBuffers(1, m_UBCascadeLightMatrices);
 			m_ShadowMapMaterial->PrepareShaderMaterial();
 		}
@@ -372,9 +371,8 @@ namespace VulkanCore {
 			m_GeometryMaterial->PrepareShaderMaterial();
 		}
 
-		// Pre Depth Material
+		// Shadow Map Material
 		{
-			//m_PreDepthMaterial->SetBuffers(0, m_UBCamera);
 			m_ShadowMapMaterial->SetBuffers(1, m_UBCascadeLightMatrices);
 			m_ShadowMapMaterial->PrepareShaderMaterial();
 		}
@@ -690,8 +688,8 @@ namespace VulkanCore {
 			std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
 			m_SceneImages[i] = ImGuiLayer::AddTexture(*finalPassImage);
 
-			auto preDepthImage = m_ShadowMapPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[i];
-			m_ShadowDepthPassImages[i] = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanImage>(preDepthImage), 0);
+			auto shadowMapImage = m_ShadowMapPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[i];
+			m_ShadowDepthPassImages[i] = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanImage>(shadowMapImage), 0);
 		}
 
 		m_UBCamera.reserve(framesInFlight);
@@ -890,7 +888,7 @@ namespace VulkanCore {
 
 		if (ImGui::TreeNodeEx("Shadow Settings", treeFlags))
 		{
-			ImGui::DragFloat("Cascade Split Lambda", &m_CascadeSplitLambda, 0.01f, 0.0f, 10.0f);
+			ImGui::DragFloat("Cascade Split Lambda", &m_CascadeSplitLambda, 0.001f, 0.0f, 1.0f);
 
 			ImVec2 quadSize = { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x };
 			ImGui::Image(m_ShadowDepthPassImages[Renderer::RT_GetCurrentFrameIndex()], quadSize);

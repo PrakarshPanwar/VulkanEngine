@@ -117,17 +117,23 @@ namespace VulkanCore {
 
 		struct MeshTransform
 		{
-			MeshTransform() = default;
+			MeshTransform()
+			{
+				Transforms.reserve(10);
+			}
 
-			std::vector<TransformData> Transforms = std::vector<TransformData>{ 10 };
+			std::vector<TransformData> Transforms;
 			std::shared_ptr<VertexBuffer> TransformBuffer = VertexBuffer::Create(10 * sizeof(TransformData));
 		};
 
 		struct MeshSelectTransform
 		{
-			MeshSelectTransform() = default;
+			MeshSelectTransform()
+			{
+				Transforms.reserve(10);
+			}
 
-			std::vector<SelectTransformData> Transforms = std::vector<SelectTransformData>{ 10 };
+			std::vector<SelectTransformData> Transforms;
 			std::shared_ptr<VertexBuffer> TransformBuffer = VertexBuffer::Create(10 * sizeof(SelectTransformData));
 		};
 
