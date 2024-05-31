@@ -145,7 +145,8 @@ namespace VulkanCore {
 		std::vector<VkExtensionProperties> extensions(extensionCount);
 		vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, &extensionCount, extensions.data());
 
-		for (auto extension : extensions) {
+		for (auto extension : extensions)
+		{
 			if (strcmp(extension.extensionName, extensionName) == 0)
 				return true;
 		}
@@ -154,7 +155,7 @@ namespace VulkanCore {
 	}
 
 	VkCommandBuffer VulkanDevice::GetCommandBuffer(bool compute)
-{
+	{
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -289,7 +290,6 @@ namespace VulkanCore {
 
 		VkDeviceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
@@ -313,7 +313,6 @@ namespace VulkanCore {
 			createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 			createInfo.ppEnabledLayerNames = validationLayers.data();
 		}
-
 		else
 			createInfo.enabledLayerCount = 0;
 

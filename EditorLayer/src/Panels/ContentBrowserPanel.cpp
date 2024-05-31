@@ -348,7 +348,7 @@ namespace VulkanCore {
 		{
 			std::shared_ptr<MaterialAsset> materialAsset = nullptr;
 
-			ImGui::Text("Creating a material asset will write to asset registry");
+			ImGui::Text("Creating a Material Asset will write to Asset Registry");
 
 			static char buffer[512];
 			ImGui::Text("assets/materials/");
