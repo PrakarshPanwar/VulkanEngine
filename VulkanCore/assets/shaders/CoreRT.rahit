@@ -3,13 +3,7 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_control_flow_attributes : require
 
-struct RayPayload
-{
-	vec3 Color;
-	vec4 ScatterDirection;
-	float Distance;
-	uint Seed;
-};
+#include "Utils/Payload.glslh"
 
 layout(location = 0) rayPayloadInEXT RayPayload o_RayPayload;
 

@@ -25,7 +25,8 @@ project "VulkanCore"
 		"assets/shaders/*.rchit",
 		"assets/shaders/*.rahit",
 		"assets/shaders/*.rint",
-		"assets/shaders/*.rmiss"
+		"assets/shaders/*.rmiss",
+		"assets/shaders/**.glslh"
 	}
 
 	includedirs {

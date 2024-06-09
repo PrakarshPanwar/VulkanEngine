@@ -166,6 +166,11 @@ namespace VulkanCore {
 			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 		}
 
+		if (m_EditorCamera.IsInFly())
+			io.ConfigFlags |= ImGuiConfigFlags_NoMouse;
+		else if (io.ConfigFlags & ImGuiConfigFlags_NoMouse)
+			io.ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+
 		if (ImGui::BeginMenuBar())
 		{
 			if (ImGui::BeginMenu("File"))
@@ -335,6 +340,7 @@ namespace VulkanCore {
 		{
 			if (shiftKey)
 				m_EditorCamera.SetFly(true);
+			break;
 		}
 		}
 

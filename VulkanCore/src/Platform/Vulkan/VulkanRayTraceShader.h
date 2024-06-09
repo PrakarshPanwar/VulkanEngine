@@ -25,11 +25,10 @@ namespace VulkanCore {
 		inline bool HasIntersectionShader() const { return !m_RayIntersectionFilePaths.empty(); }
 	private:
 		std::tuple<std::string, std::string, std::string> ParseShader(const std::string& rayGenPath, const std::string& rayClosestHitPath, const std::string& rayMissPath);
-		void ParseShader();
-		void CompileOrGetVulkanBinaries(const std::unordered_map<std::filesystem::path, std::string>& shaderSources);
+		std::unordered_map<std::filesystem::path, std::string> ParseShaders();
+		void CompileOrGetVulkanBinaries(std::unordered_map<std::filesystem::path, std::string>& shaderSources);
 		void ReflectShaderData();
 	private:
-		std::unordered_map<std::filesystem::path, std::string> m_ShaderSources;
 		std::unordered_map<std::filesystem::path, std::vector<uint32_t>> m_VulkanSPIRV;
 
 		std::string m_RayGenFilePath;

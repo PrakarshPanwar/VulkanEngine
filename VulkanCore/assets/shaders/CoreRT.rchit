@@ -5,13 +5,7 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_EXT_scalar_block_layout : enable
 
-struct RayPayload
-{
-	vec3 Color;
-	vec4 ScatterDirection;
-	float Distance;
-	uint Seed;
-};
+#include "Utils/Payload.glslh"
 
 layout(location = 0) rayPayloadInEXT RayPayload o_RayPayload;
 

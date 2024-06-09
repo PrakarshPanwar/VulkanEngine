@@ -146,8 +146,10 @@ namespace VulkanCore {
 			switch (stage)
 			{
 			case ShaderType::RayGeneration:
+			{
 				m_RayGenShaderModule = Utils::CreateShaderModule(source);
 				break;
+			}
 			case ShaderType::RayClosestHit:
 			{
 				VkShaderModule closestHitModule = Utils::CreateShaderModule(source);

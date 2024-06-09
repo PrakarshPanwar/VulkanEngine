@@ -1,0 +1,9 @@
+#pragma once
+
+struct RayPayload
+{
+	vec3 Color;
+	vec4 ScatterDirection;
+	float Distance;
+	uint Seed;
+};

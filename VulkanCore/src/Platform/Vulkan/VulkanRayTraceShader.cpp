@@ -92,33 +92,29 @@ namespace VulkanCore {
 		Sources[rayClosestHitPath] = RayHitSrc;
 		Sources[rayMissPath] = RayMissSrc;
 
-		m_ShaderSources = Sources;
 		CompileOrGetVulkanBinaries(Sources);
-
 		ReflectShaderData();
 	}
 
 	// TODO: Will be handled in future
 	VulkanRayTraceShader::VulkanRayTraceShader(const std::string& rayGenPath, const std::string& rayClosestHitPath, const std::string& rayAnyHitPath, const std::string& rayIntersectionPath, const std::string& rayMissPath)
 	{
-
 	}
 
 	VulkanRayTraceShader::VulkanRayTraceShader(const std::string& rayGenPath, const std::vector<std::string>& rayClosestHitPaths, const std::vector<std::string>& rayAnyHitPaths, const std::vector<std::string>& rayIntersectionPaths, const std::vector<std::string>& rayMissPaths)
 		: m_RayGenFilePath(rayGenPath), m_RayClosestHitFilePaths(rayClosestHitPaths), m_RayAnyHitFilePaths(rayAnyHitPaths), m_RayIntersectionFilePaths(rayIntersectionPaths), m_RayMissFilePaths(rayMissPaths)
 	{
-		ParseShader();
+		auto Sources = ParseShaders();
 
 		// If directory is not found
 		Utils::CreateCacheDirectoryIfRequired();
 
-		CompileOrGetVulkanBinaries(m_ShaderSources);
+		CompileOrGetVulkanBinaries(Sources);
 		ReflectShaderData();
 	}
 
 	VulkanRayTraceShader::~VulkanRayTraceShader()
 	{
-
 	}
 
 	std::shared_ptr<VulkanDescriptorSetLayout> VulkanRayTraceShader::CreateDescriptorSetLayout(int index)
@@ -262,7 +258,7 @@ namespace VulkanCore {
 
 	void VulkanRayTraceShader::Reload()
 	{
-		ParseShader();
+		auto shaderSources = ParseShaders();
 
 		shaderc::Compiler compiler;
 		shaderc::CompileOptions options;
@@ -278,7 +274,6 @@ namespace VulkanCore {
 
 		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
 
-		auto& shaderSources = m_ShaderSources;
 		auto& shaderData = m_VulkanSPIRV;
 		shaderData.clear();
 		m_Futures.clear();
@@ -345,10 +340,10 @@ namespace VulkanCore {
 		RayClosestHitStream << RayClosestHitSource.rdbuf();
 		RayMissStream << RayMissSource.rdbuf();
 
-		return { RayGenStream.str(), RayClosestHitStream.str(), RayMissStream.str() };
+		return { ParsePreprocessIncludes(RayGenStream), ParsePreprocessIncludes(RayClosestHitStream), ParsePreprocessIncludes(RayMissStream) };
 	}
 
-	void VulkanRayTraceShader::ParseShader()
+	std::unordered_map<std::filesystem::path, std::string> VulkanRayTraceShader::ParseShaders()
 	{
 		std::unordered_map<std::filesystem::path, std::string> Sources;
 
@@ -361,7 +356,7 @@ namespace VulkanCore {
 			std::stringstream RayGenStream;
 			RayGenStream << RayGenSource.rdbuf();
 
-			Sources[m_RayGenFilePath] = RayGenStream.str();
+			Sources[m_RayGenFilePath] = ParsePreprocessIncludes(RayGenStream);
 		}
 
 		// Closest Hit
@@ -375,7 +370,7 @@ namespace VulkanCore {
 				std::stringstream RayClosestHitStream;
 				RayClosestHitStream << RayClosestHitSource.rdbuf();
 
-				Sources[rayClosestHitFilePath] = RayClosestHitStream.str();
+				Sources[rayClosestHitFilePath] = ParsePreprocessIncludes(RayClosestHitStream);
 			}
 		}
 
@@ -390,7 +385,7 @@ namespace VulkanCore {
 				std::stringstream RayAnyHitStream;
 				RayAnyHitStream << RayAnyHitSource.rdbuf();
 
-				Sources[rayAnyHitFilePath] = RayAnyHitStream.str();
+				Sources[rayAnyHitFilePath] = ParsePreprocessIncludes(RayAnyHitStream);
 			}
 		}
 
@@ -405,7 +400,7 @@ namespace VulkanCore {
 				std::stringstream RayIntersectionStream;
 				RayIntersectionStream << RayIntersectionSource.rdbuf();
 
-				Sources[rayIntersectionFilePath] = RayIntersectionStream.str();
+				Sources[rayIntersectionFilePath] = ParsePreprocessIncludes(RayIntersectionStream);
 			}
 		}
 
@@ -420,14 +415,14 @@ namespace VulkanCore {
 				std::stringstream RayMissStream;
 				RayMissStream << RayMissSource.rdbuf();
 
-				Sources[rayMissFilePath] = RayMissStream.str();
+				Sources[rayMissFilePath] = ParsePreprocessIncludes(RayMissStream);
 			}
 		}
 
-		m_ShaderSources = Sources;
+		return Sources;
 	}
 
-	void VulkanRayTraceShader::CompileOrGetVulkanBinaries(const std::unordered_map<std::filesystem::path, std::string>& shaderSources)
+	void VulkanRayTraceShader::CompileOrGetVulkanBinaries(std::unordered_map<std::filesystem::path, std::string>& shaderSources)
 	{
 		shaderc::Compiler compiler;
 		shaderc::CompileOptions options;

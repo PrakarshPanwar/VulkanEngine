@@ -271,6 +271,7 @@ namespace VulkanCore {
 			DrawVec3Control("Rotation", rotation);
 			component.Rotation = glm::radians(rotation);
 			DrawVec3Control("Scale", component.Scale, 1.0f);
+			ImGui::Spacing();
 		});
 
 		DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
