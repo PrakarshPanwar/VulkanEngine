@@ -113,7 +113,7 @@ namespace VulkanCore {
 		{
 			MeshSelectTransform() = default;
 
-			std::vector<SelectTransformData> Transforms = std::vector<SelectTransformData>{ 10 };
+			std::vector<SelectTransformData> Transforms;
 			std::shared_ptr<VertexBuffer> TransformBuffer = VertexBuffer::Create(10 * sizeof(SelectTransformData));
 		};
 

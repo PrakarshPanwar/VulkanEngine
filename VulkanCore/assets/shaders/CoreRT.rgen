@@ -3,6 +3,8 @@
 #extension GL_ARB_shader_clock : require
 #extension GL_EXT_control_flow_attributes : require
 
+#include "Utils/Payload.glslh"
+
 layout(set = 0, binding = 0) uniform accelerationStructureEXT u_TopLevelAS;
 layout(set = 0, binding = 1, rgba32f) uniform image2D o_Image;
 layout(set = 0, binding = 2, rgba32f) uniform image2D u_AccumulationImage;
@@ -15,14 +17,6 @@ layout(set = 0, binding = 3) uniform Camera
 	mat4 InverseView;
 	vec2 DepthUnpackConsts;
 } u_Camera;
-
-struct RayPayload
-{
-	vec3 Color;
-	vec4 ScatterDirection;
-	float Distance;
-	uint Seed;
-};
 
 layout(location = 0) rayPayloadEXT RayPayload o_RayPayload;
 
@@ -118,7 +112,7 @@ void main()
 			
 			// Trace Ray
 			traceRayEXT(u_TopLevelAS,
-				gl_RayFlagsOpaqueEXT,
+				gl_RayFlagsNoneEXT,
 				0xFF,
 				0,
 				0,

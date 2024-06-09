@@ -287,7 +287,6 @@ namespace VulkanCore {
 			VkImageLayout srcImageLayout = srcSpec.Usage == ImageUsage::Attachment ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 				: VK_IMAGE_LAYOUT_GENERAL;
 
-			// TODO: We cannot determine layout like this for image but we are doing this for now to get Bloom
 			// Changing Source Image Layout
 			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, srcImage,
 				VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,

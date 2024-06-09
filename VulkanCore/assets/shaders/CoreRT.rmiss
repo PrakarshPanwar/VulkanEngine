@@ -1,13 +1,7 @@
 #version 460 core
 #extension GL_EXT_ray_tracing : require
 
-struct RayPayload
-{
-	vec3 Color;
-	vec4 ScatterDirection;
-	float Distance;
-	uint Seed;
-};
+#include "Utils/Payload.glslh"
 
 layout(location = 0) rayPayloadInEXT RayPayload o_RayPayload;
 

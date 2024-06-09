@@ -302,7 +302,7 @@ namespace VulkanCore {
 		// Ray Tracing Pipeline
 		{
 			std::vector<HitShaderInfo> hitShaderInfos = {
-				{ "CoreRT.rchit"/*, "CoreRT.rahit"*/ }
+				{ "CoreRT.rchit", "CoreRT.rahit" }
 			};
 
 			std::vector<std::string> missPaths = {
