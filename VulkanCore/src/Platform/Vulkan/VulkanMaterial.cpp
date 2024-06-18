@@ -1,11 +1,12 @@
 #include "vulkanpch.h"
 #include "VulkanMaterial.h"
 
-#include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
+#include "VulkanRenderer.h"
 #include "VulkanShader.h"
 #include "VulkanUniformBuffer.h"
+#include "VulkanStorageBuffer.h"
 #include "VulkanPipeline.h"
 #include "VulkanComputePipeline.h"
 
@@ -111,19 +112,13 @@ namespace VulkanCore {
 	void VulkanMaterial::SetNormalTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_NormalTexture = texture;
-		std::shared_ptr<VulkanTexture> normalTexture = std::static_pointer_cast<VulkanTexture>(m_NormalTexture);
-		normalTexture->Reload(ImageFormat::RGBA8_UNORM);
-
-		UpdateNormalMap(normalTexture);
+		UpdateNormalMap(std::static_pointer_cast<VulkanTexture>(m_NormalTexture));
 	}
 
 	void VulkanMaterial::SetARMTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_ARMTexture = texture;
-		std::shared_ptr<VulkanTexture> armTexture = std::static_pointer_cast<VulkanTexture>(m_ARMTexture);
-		armTexture->Reload(ImageFormat::RGBA8_UNORM);
-
-		UpdateARMMap(armTexture);
+		UpdateARMMap(std::static_pointer_cast<VulkanTexture>(m_ARMTexture));
 	}
 
 	void VulkanMaterial::SetImage(uint32_t binding, std::shared_ptr<Image2D> image)
@@ -162,7 +157,7 @@ namespace VulkanCore {
 			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
 			writeDescriptor.descriptorType = shader->GetDescriptorSetLayout(0)->GetVulkanDescriptorType(binding);
 			writeDescriptor.dstBinding = binding;
-			writeDescriptor.pImageInfo = &vulkanImage->GetDescriptorImageInfo(mipLevel);
+			writeDescriptor.pImageInfo = &vulkanImage->GetDescriptorMipImageInfo(mipLevel);
 			writeDescriptor.descriptorCount = 1;
 			writeDescriptor.dstArrayElement = 0;
 
@@ -239,6 +234,28 @@ namespace VulkanCore {
 		m_MaterialDescriptorWriter[binding] = writeDescriptors;
 	}
 
+	void VulkanMaterial::SetBuffer(uint32_t binding, std::shared_ptr<StorageBuffer> storageBuffer)
+	{
+		auto vulkanSB = std::static_pointer_cast<VulkanStorageBuffer>(storageBuffer);
+
+		std::vector<VkWriteDescriptorSet> writeDescriptors{};
+		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
+		{
+			VkWriteDescriptorSet writeDescriptor{};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
+			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			writeDescriptor.dstBinding = binding;
+			writeDescriptor.pBufferInfo = &vulkanSB->GetDescriptorBufferInfo();
+			writeDescriptor.descriptorCount = 1;
+			writeDescriptor.dstArrayElement = 0;
+
+			writeDescriptors.push_back(writeDescriptor);
+		}
+
+		m_MaterialDescriptorWriter[binding] = writeDescriptors;
+	}
+
 	void VulkanMaterial::SetImages(uint32_t binding, const std::vector<std::shared_ptr<Image2D>>& images)
 	{
 		auto shader = std::dynamic_pointer_cast<VulkanShader>(m_Shader);
@@ -298,6 +315,28 @@ namespace VulkanCore {
 			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			writeDescriptor.dstBinding = binding;
 			writeDescriptor.pBufferInfo = &vulkanUB->GetDescriptorBufferInfo();
+			writeDescriptor.descriptorCount = 1;
+			writeDescriptor.dstArrayElement = 0;
+
+			writeDescriptors.push_back(writeDescriptor);
+		}
+
+		m_MaterialDescriptorWriter[binding] = writeDescriptors;
+	}
+
+	void VulkanMaterial::SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<StorageBuffer>>& storageBuffers)
+	{
+		std::vector<VkWriteDescriptorSet> writeDescriptors{};
+		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
+		{
+			auto vulkanSB = std::static_pointer_cast<VulkanStorageBuffer>(storageBuffers[i]);
+
+			VkWriteDescriptorSet writeDescriptor{};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
+			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			writeDescriptor.dstBinding = binding;
+			writeDescriptor.pBufferInfo = &vulkanSB->GetDescriptorBufferInfo();
 			writeDescriptor.descriptorCount = 1;
 			writeDescriptor.dstArrayElement = 0;
 

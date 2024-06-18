@@ -27,7 +27,7 @@ project "EditorLayer"
 		"%{IncludeDir.ImGuizmo}"
 	}
 
-	defines { "_CRT_SECURE_NO_WARNINGS" }
+	defines { "_CRT_SECURE_NO_WARNINGS", "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING" }
 	links { "VulkanCore" }
 
 	filter "system:windows"

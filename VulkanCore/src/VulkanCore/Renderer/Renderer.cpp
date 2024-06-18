@@ -17,13 +17,19 @@ namespace VulkanCore {
 		std::shared_ptr<Shader> MakeShader(const std::string& path)
 		{
 			const std::filesystem::path shaderPath = "assets\\shaders";
-			std::filesystem::path vertexShaderPath = shaderPath / path, fragmentShaderPath = shaderPath / path, computeShaderPath = shaderPath / path;
+			std::filesystem::path vertexShaderPath = shaderPath / path, fragmentShaderPath = shaderPath / path, geometryShaderPath = shaderPath / path, computeShaderPath = shaderPath / path;
 			vertexShaderPath.replace_extension(".vert");
 			fragmentShaderPath.replace_extension(".frag");
+			geometryShaderPath.replace_extension(".geom");
 			computeShaderPath.replace_extension(".comp");
 
 			if (std::filesystem::exists(vertexShaderPath) && std::filesystem::exists(fragmentShaderPath))
+			{
+				if (std::filesystem::exists(geometryShaderPath))
+					return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string(), geometryShaderPath.string());
+
 				return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string());
+			}
 
 			if (std::filesystem::exists(computeShaderPath))
 				return std::make_shared<VulkanShader>(computeShaderPath.string());
@@ -72,7 +78,10 @@ namespace VulkanCore {
 	void Renderer::BuildShaders()
 	{
 		m_Shaders["CorePBR"] = Utils::MakeShader("CorePBR");
+		m_Shaders["ShadowDepth"] = Utils::MakeShader("ShadowDepth");
+		m_Shaders["CoreEditor"] = Utils::MakeShader("CoreEditor");
 		m_Shaders["LightShader"] = Utils::MakeShader("LightShader");
+		m_Shaders["LightEditor"] = Utils::MakeShader("LightEditor");
 		m_Shaders["ExtComposite"] = Utils::MakeShader("ExtComposite");
 		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
 		m_Shaders["Bloom"] = Utils::MakeShader("Bloom");
@@ -90,9 +99,9 @@ namespace VulkanCore {
 		m_Shaders.clear();
 	}
 
-	void Renderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& skyboxVB, const std::shared_ptr<Material>& skyboxMaterial, void* pcData)
+	void Renderer::RenderSkybox(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& skyboxMaterial, void* pcData)
 	{
-		s_Renderer->RenderSkybox(cmdBuffer, pipeline, skyboxVB, skyboxMaterial, pcData);
+		s_Renderer->RenderSkybox(cmdBuffer, pipeline, skyboxMaterial, pcData);
 	}	
 	
 	void Renderer::BeginTimestampsQuery(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
@@ -115,6 +124,11 @@ namespace VulkanCore {
 		s_Renderer->EndGPUPerfMarker(cmdBuffer);
 	}
 
+	void Renderer::BindPipeline(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& material)
+	{
+		s_Renderer->BindPipeline(cmdBuffer, pipeline, material);
+	}
+
 	void Renderer::CopyVulkanImage(const std::shared_ptr<RenderCommandBuffer>& commandBuffer, const std::shared_ptr<Image2D>& sourceImage, const std::shared_ptr<Image2D>& destImage)
 	{
 		s_Renderer->CopyVulkanImage(commandBuffer, sourceImage, destImage);
@@ -130,9 +144,24 @@ namespace VulkanCore {
 		s_Renderer->RenderMesh(cmdBuffer, mesh, material, submeshIndex, pipeline, transformBuffer, transformData, instanceCount);
 	}
 
+	void Renderer::RenderSelectedMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, uint32_t submeshIndex, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<SelectTransformData>& transformData, uint32_t instanceCount)
+	{
+		s_Renderer->RenderSelectedMesh(cmdBuffer, mesh, submeshIndex, transformBuffer, transformData, instanceCount);
+	}
+
 	void Renderer::RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 		s_Renderer->RenderTransparentMesh(cmdBuffer, mesh, material, submeshIndex, pipeline, transformBuffer, transformData, instanceCount);
+	}
+
+	void Renderer::RenderMeshWithoutMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, uint32_t submeshIndex, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	{
+		s_Renderer->RenderMeshWithoutMaterial(cmdBuffer, mesh, submeshIndex, transformBuffer, transformData, instanceCount);
+	}
+
+	void Renderer::RenderLight(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const LightSelectData& lightData)
+	{
+		s_Renderer->RenderLight(cmdBuffer, pipeline, lightData);
 	}
 
 	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial)

@@ -58,7 +58,7 @@ namespace VulkanCore {
 			pushConstantRange.offset = 0;
 			pushConstantRange.size = (uint32_t)pushConstantSize;
 
-			std::vector<VkDescriptorSetLayout> vulkanDescriptorSetsLayout;
+			std::vector<VkDescriptorSetLayout> vulkanDescriptorSetsLayout{};
 			for (auto& descriptorSetLayout : descriptorSetLayouts)
 				vulkanDescriptorSetsLayout.push_back(descriptorSetLayout->GetVulkanDescriptorSetLayout());
 
@@ -72,6 +72,33 @@ namespace VulkanCore {
 			VkPipelineLayout pipelineLayout;
 			VK_CHECK_RESULT(vkCreatePipelineLayout(device->GetVulkanDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout), "Failed to Create Pipeline Layout!");
 			return pipelineLayout;
+		}
+
+		static VkCompareOp VulkanCompareOp(CompareOp compareOp)
+		{
+			switch (compareOp)
+			{
+			case CompareOp::None:		 return VK_COMPARE_OP_NEVER;
+			case CompareOp::Less:		 return VK_COMPARE_OP_LESS;
+			case CompareOp::LessOrEqual: return VK_COMPARE_OP_LESS_OR_EQUAL;
+			default:
+				VK_CORE_ASSERT(false, "Compare Op not supported!");
+				return VK_COMPARE_OP_LESS;
+			}
+		}
+
+		static VkCullModeFlags VulkanCullModeFlags(CullMode cullMode)
+		{
+			switch (cullMode)
+			{
+			case CullMode::None:		 return VK_CULL_MODE_NONE;
+			case CullMode::Front:		 return VK_CULL_MODE_FRONT_BIT;
+			case CullMode::Back:		 return VK_CULL_MODE_BACK_BIT;
+			case CullMode::FrontAndBack: return VK_CULL_MODE_FRONT_AND_BACK;
+			default:
+				VK_CORE_ASSERT(false, "Culling Mode not supported!");
+				return VK_CULL_MODE_NONE;
+			}
 		}
 
 		static VkSampleCountFlagBits VulkanSampleCount(uint32_t sampleCount)
@@ -106,11 +133,11 @@ namespace VulkanCore {
 			pipelineConfig.ViewportInfo.pScissors = nullptr;
 
 			pipelineConfig.RasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-			pipelineConfig.RasterizationInfo.depthClampEnable = VK_FALSE;
+			pipelineConfig.RasterizationInfo.depthClampEnable = spec.DepthClamp ? VK_TRUE : VK_FALSE;
 			pipelineConfig.RasterizationInfo.rasterizerDiscardEnable = VK_FALSE;
 			pipelineConfig.RasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;
 			pipelineConfig.RasterizationInfo.lineWidth = 1.0f;
-			pipelineConfig.RasterizationInfo.cullMode = spec.BackfaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
+			pipelineConfig.RasterizationInfo.cullMode = Utils::VulkanCullModeFlags(spec.CullingMode);
 			pipelineConfig.RasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
 			pipelineConfig.RasterizationInfo.depthBiasEnable = VK_FALSE;
 			pipelineConfig.RasterizationInfo.depthBiasConstantFactor = 0.0f;
@@ -142,12 +169,12 @@ namespace VulkanCore {
 				if (spec.Blend)
 				{
 					pipelineConfig.ColorBlendAttachments[i].blendEnable = VK_TRUE;
-					pipelineConfig.ColorBlendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;			// Optional
-					pipelineConfig.ColorBlendAttachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; 	// Optional
-					pipelineConfig.ColorBlendAttachments[i].colorBlendOp = VK_BLEND_OP_ADD;								// Optional
-					pipelineConfig.ColorBlendAttachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;					// Optional
-					pipelineConfig.ColorBlendAttachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;					// Optional
-					pipelineConfig.ColorBlendAttachments[i].alphaBlendOp = VK_BLEND_OP_ADD;								// Optional
+					pipelineConfig.ColorBlendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+					pipelineConfig.ColorBlendAttachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+					pipelineConfig.ColorBlendAttachments[i].colorBlendOp = VK_BLEND_OP_ADD;
+					pipelineConfig.ColorBlendAttachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+					pipelineConfig.ColorBlendAttachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+					pipelineConfig.ColorBlendAttachments[i].alphaBlendOp = VK_BLEND_OP_ADD;
 				}
 				else
 				{
@@ -174,7 +201,7 @@ namespace VulkanCore {
 			pipelineConfig.DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 			pipelineConfig.DepthStencilInfo.depthTestEnable = spec.DepthTest ? VK_TRUE : VK_FALSE;
 			pipelineConfig.DepthStencilInfo.depthWriteEnable = spec.DepthWrite ? VK_TRUE : VK_FALSE;
-			pipelineConfig.DepthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+			pipelineConfig.DepthStencilInfo.depthCompareOp = Utils::VulkanCompareOp(spec.DepthCompareOp);
 			pipelineConfig.DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
 			pipelineConfig.DepthStencilInfo.minDepthBounds = 0.0f;  // Optional
 			pipelineConfig.DepthStencilInfo.maxDepthBounds = 1.0f;  // Optional
@@ -344,11 +371,9 @@ namespace VulkanCore {
 		graphicsPipelineInfo.pDepthStencilState = &pipelineInfo.DepthStencilInfo;
 		graphicsPipelineInfo.pMultisampleState = &pipelineInfo.MultisampleInfo;
 		graphicsPipelineInfo.pDynamicState = &pipelineInfo.DynamicStateInfo;
-
 		graphicsPipelineInfo.layout = m_PipelineLayout;
 		graphicsPipelineInfo.renderPass = std::dynamic_pointer_cast<VulkanRenderPass>(m_Specification.pRenderPass)->GetVulkanRenderPass();
 		graphicsPipelineInfo.subpass = pipelineInfo.Subpass;
-
 		graphicsPipelineInfo.basePipelineIndex = -1;
 		graphicsPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
@@ -435,11 +460,9 @@ namespace VulkanCore {
 			graphicsPipelineInfo.pDepthStencilState = &pipelineInfo.DepthStencilInfo;
 			graphicsPipelineInfo.pMultisampleState = &pipelineInfo.MultisampleInfo;
 			graphicsPipelineInfo.pDynamicState = &pipelineInfo.DynamicStateInfo;
-
 			graphicsPipelineInfo.layout = m_PipelineLayout;
 			graphicsPipelineInfo.renderPass = std::dynamic_pointer_cast<VulkanRenderPass>(m_Specification.pRenderPass)->GetVulkanRenderPass();
 			graphicsPipelineInfo.subpass = pipelineInfo.Subpass;
-
 			graphicsPipelineInfo.basePipelineIndex = -1;
 			graphicsPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
@@ -453,6 +476,7 @@ namespace VulkanCore {
 				"Failed to Create Graphics Pipeline!");
 
 			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_Specification.DebugName, m_GraphicsPipeline);
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE_LAYOUT, std::format("{0} Layout", m_Specification.DebugName), m_PipelineLayout);
 		});
 	}
 
@@ -480,9 +504,9 @@ namespace VulkanCore {
 		VK_CHECK_RESULT(vkCreateShaderModule(device->GetVulkanDevice(), &createInfo, nullptr, shaderModule), "Failed to Create Shader Module!");
 	}
 
+	// TODO: Caching could benefit greatly in performance
 	void VulkanPipeline::CreatePipelineCache()
 	{
-		// TODO: Caching could benefit greatly in performance
 		VkPipelineCacheCreateInfo cacheInfo{};
 		cacheInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 		cacheInfo.initialDataSize = 0;
@@ -490,21 +514,24 @@ namespace VulkanCore {
 		cacheInfo.pInitialData = nullptr;
 	}
 
-	// TODO: Do this process in Render Thread
 	void VulkanPipeline::Release()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
+		Renderer::SubmitResourceFree([pipeline = m_GraphicsPipeline, layout = m_PipelineLayout,
+			vertexShaderModule = m_VertexShaderModule, fragmentShaderModule = m_FragmentShaderModule, geometryShaderModule = m_GeometryShaderModule]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
 
-		vkDestroyShaderModule(device->GetVulkanDevice(), m_VertexShaderModule, nullptr);
-		vkDestroyShaderModule(device->GetVulkanDevice(), m_FragmentShaderModule, nullptr);
+			vkDestroyShaderModule(device->GetVulkanDevice(), vertexShaderModule, nullptr);
+			vkDestroyShaderModule(device->GetVulkanDevice(), fragmentShaderModule, nullptr);
 
-		if (m_GeometryShaderModule)
-			vkDestroyShaderModule(device->GetVulkanDevice(), m_GeometryShaderModule, nullptr);
+			if (geometryShaderModule)
+				vkDestroyShaderModule(device->GetVulkanDevice(), geometryShaderModule, nullptr);
 
-		if (m_PipelineLayout)
-			vkDestroyPipelineLayout(device->GetVulkanDevice(), m_PipelineLayout, nullptr);
+			if (layout)
+				vkDestroyPipelineLayout(device->GetVulkanDevice(), layout, nullptr);
 
-		vkDestroyPipeline(device->GetVulkanDevice(), m_GraphicsPipeline, nullptr);
+			vkDestroyPipeline(device->GetVulkanDevice(), pipeline, nullptr);
+		});
 
 		m_GraphicsPipeline = nullptr;
 	}

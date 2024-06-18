@@ -1,6 +1,7 @@
 #include <vector>
 #include <memory>
 #include <filesystem>
+#include <map>
 
 #include "ContentBrowserPanel.h"
 #include "VulkanCore/Core/Core.h"
@@ -17,16 +18,15 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		static AssetType AssetTypeFromExtension(const std::filesystem::path& fileExtension)
-		{
-			if (fileExtension == ".png" || fileExtension == ".jpg") return AssetType::Texture2D;
-			if (fileExtension == ".hdr")							return AssetType::Texture2D;
-			if (fileExtension == ".fbx" || fileExtension == ".obj") return AssetType::MeshAsset;
-			if (fileExtension == ".vkmesh")							return AssetType::Mesh;
-			if (fileExtension == ".vkmat")							return AssetType::Material;
-
-			return AssetType::None;
-		}
+		static std::map<std::filesystem::path, AssetType> s_AssetExtensionMap = {
+			{ ".png", AssetType::Texture2D },
+			{ ".jpg", AssetType::Texture2D },
+			{ ".hdr", AssetType::Texture2D },
+			{ ".fbx", AssetType::MeshAsset },
+			{ ".obj", AssetType::MeshAsset },
+			{ ".vkmesh", AssetType::Mesh },
+			{ ".vkmat", AssetType::Material }
+		};
 
 		static bool IsAssetValid(const std::filesystem::path& filePath)
 		{
@@ -118,7 +118,7 @@ namespace VulkanCore {
 				ImTextureID icon = std::filesystem::is_directory(path) ? m_DirectoryIconID : m_FileIconID;
 
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-				ImGui::ImageButton((ImTextureID)icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
+				ImGui::ImageButton(filenameString.c_str(), icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
 
 				if (ImGui::BeginDragDropSource())
 				{
@@ -134,7 +134,7 @@ namespace VulkanCore {
 					if (std::filesystem::is_directory(path))
 						tempNode = &directoryNode;
 
-					AssetType assetType = Utils::AssetTypeFromExtension(path.extension());
+					AssetType assetType = Utils::s_AssetExtensionMap[path.extension()];
 					if (assetType == AssetType::Material)
 					{
 						std::string pathStr = path.string();
@@ -160,7 +160,7 @@ namespace VulkanCore {
 				ImTextureID icon = directoryEntry.is_directory() ? m_DirectoryIconID : m_FileIconID;
 
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-				ImGui::ImageButton((ImTextureID)icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
+				ImGui::ImageButton(filenameString.c_str(), icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
 
 				if (ImGui::BeginDragDropSource())
 				{
@@ -176,7 +176,7 @@ namespace VulkanCore {
 					if (directoryEntry.is_directory())
 						m_CurrentDirectory /= path.filename();
 
-					AssetType assetType = Utils::AssetTypeFromExtension(path.extension());
+					AssetType assetType = Utils::s_AssetExtensionMap[path.extension()];
 					if (assetType == AssetType::Material)
 					{
 						std::string pathStr = path.string();
@@ -194,7 +194,7 @@ namespace VulkanCore {
 				{
 					if (ImGui::MenuItem("Import"))
 					{
-						AssetType assetType = Utils::AssetTypeFromExtension(path.extension());
+						AssetType assetType = Utils::s_AssetExtensionMap[path.extension()];
 						std::string filepath = path.generic_string();
 
 						if (assetType == AssetType::Texture2D)
@@ -288,7 +288,7 @@ namespace VulkanCore {
 		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 		if (ImGui::BeginPopupModal("Remove Asset", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 		{
-			AssetType assetType = Utils::AssetTypeFromExtension(path.extension());
+			AssetType assetType = Utils::s_AssetExtensionMap[path.extension()];
 			std::string filepath = path.generic_string();
 
 			ImGui::Text("Are you sure, you want to delete %s?", filepath.data());
@@ -308,9 +308,9 @@ namespace VulkanCore {
 
 				// TODO: Here we should prompt another popup stating whether file has been deleted or not
 				if (removed)
-					VK_WARN("File: {} is removed from ContentBrowser!", filepath);
+					VK_WARN("File {} is removed from ContentBrowser!", filepath);
 				else
-					VK_WARN("Unable to remove file: {}! It could be referencing in memory!", filepath);
+					VK_WARN("Unable to remove file {}! It could be referencing in memory!", filepath);
 
 				ImGui::CloseCurrentPopup();
 			}
@@ -348,7 +348,7 @@ namespace VulkanCore {
 		{
 			std::shared_ptr<MaterialAsset> materialAsset = nullptr;
 
-			ImGui::Text("Creating a material asset will write to asset registry");
+			ImGui::Text("Creating a Material Asset will write to Asset Registry");
 
 			static char buffer[512];
 			ImGui::Text("assets/materials/");

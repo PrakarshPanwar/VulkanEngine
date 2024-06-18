@@ -27,7 +27,9 @@ namespace VulkanCore {
 		inline VkQueryPool RT_GetCurrentTimestampQueryPool() const { return m_TimestampQueryPools[Renderer::RT_GetCurrentFrameIndex()]; }
 
 		void RetrieveQueryPoolResults();
+		void IncrementQueryIndex();
 		uint64_t GetQueryTime(uint32_t index) const;
+		inline uint32_t GetTimestampQueryIndex() const { return m_TimestampsQueryIndex; }
 
 		static void SubmitCommandBuffersToQueue();
 	private:
@@ -43,8 +45,6 @@ namespace VulkanCore {
 		std::vector<uint64_t> m_TimestampQueryPoolBuffer;
 
 		static std::vector<std::vector<VkCommandBuffer>> m_AllCommandBuffers;
-
-		friend class VulkanRenderer;
 	};
 
 }

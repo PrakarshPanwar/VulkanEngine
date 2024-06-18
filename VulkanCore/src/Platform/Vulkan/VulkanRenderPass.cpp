@@ -15,6 +15,8 @@ namespace VulkanCore {
 		{
 			switch (format)
 			{
+			case ImageFormat::R32I:			   return VK_FORMAT_R32_SINT;
+			case ImageFormat::R32F:			   return VK_FORMAT_R32_SFLOAT;
 			case ImageFormat::RGBA8_SRGB:	   return VK_FORMAT_R8G8B8A8_SRGB;
 			case ImageFormat::RGBA8_NORM:	   return VK_FORMAT_R8G8B8A8_SNORM;
 			case ImageFormat::RGBA8_UNORM:	   return VK_FORMAT_R8G8B8A8_UNORM;
@@ -203,6 +205,7 @@ namespace VulkanCore {
 
 		VkSampleCountFlagBits samples = Utils::VulkanSampleCount(Framebuffer->GetSpecification().Samples);
 
+		bool multisampled = Utils::IsMultisampled(m_Specification);
 		std::vector<VkAttachmentDescription2> attachmentDescriptions;
 		std::vector<VkAttachmentReference2> attachmentRefs;
 		std::vector<VkAttachmentReference2> attachmentResolveRefs;
@@ -219,7 +222,7 @@ namespace VulkanCore {
 			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			colorAttachment.finalLayout = Utils::IsMultisampled(m_Specification) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
+			colorAttachment.finalLayout = multisampled ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			attachmentDescriptions.push_back(colorAttachment);
@@ -227,7 +230,7 @@ namespace VulkanCore {
 
 		// Resolve Attachment Description
 		VkAttachmentDescription2 colorAttachmentResolve = {};
-		if (Utils::IsMultisampled(m_Specification))
+		if (multisampled)
 		{
 			for (const auto& attachmentSpec : Framebuffer->GetColorAttachmentsTextureSpec())
 			{
@@ -257,10 +260,10 @@ namespace VulkanCore {
 			depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			depthAttachment.finalLayout = multisampled ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 			attachmentDescriptions.push_back(depthAttachment);
 
-			if (Framebuffer->GetSpecification().ReadDepthTexture)
+			if (Framebuffer->GetSpecification().ReadDepthTexture && multisampled)
 			{
 				VkAttachmentDescription2 depthAttachmentResolve = {};
 				depthAttachmentResolve.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2;
@@ -288,7 +291,7 @@ namespace VulkanCore {
 		}
 
 		// Resolve Attachment Reference(Only applicable if multisampling is present)
-		if (Utils::IsMultisampled(m_Specification))
+		if (multisampled)
 		{
 			for (int i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
 			{
@@ -317,7 +320,7 @@ namespace VulkanCore {
 		// Depth Resolve Extension
 		VkSubpassDescriptionDepthStencilResolve depthResolveExt = {};
 		depthResolveExt.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE;
-		depthResolveExt.depthResolveMode = VK_RESOLVE_MODE_MIN_BIT;
+		depthResolveExt.depthResolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
 		depthResolveExt.stencilResolveMode = VK_RESOLVE_MODE_NONE;
 		depthResolveExt.pDepthStencilResolveAttachment = &depthAttachmentResolveRef;
 
@@ -327,8 +330,8 @@ namespace VulkanCore {
 		subpass.colorAttachmentCount = static_cast<uint32_t>(Framebuffer->GetColorAttachmentsTextureSpec().size());
 		subpass.pColorAttachments = attachmentRefs.data();
 		subpass.pDepthStencilAttachment = Framebuffer->HasDepthAttachment() ? &depthAttachmentRef : nullptr;
-		subpass.pResolveAttachments = Utils::IsMultisampled(m_Specification) ? attachmentResolveRefs.data() : nullptr;
-		subpass.pNext = &depthResolveExt;
+		subpass.pResolveAttachments = multisampled ? attachmentResolveRefs.data() : nullptr;
+		subpass.pNext = multisampled ? &depthResolveExt : nullptr;
 
 		VkSubpassDependency2 dependency = {}; // TODO: Changes need to be made
 		dependency.sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2;
@@ -371,6 +374,7 @@ namespace VulkanCore {
 
 			const FramebufferSpecification fbSpec = Framebuffer->GetSpecification();
 			const VkExtent2D framebufferExtent = { fbSpec.Width, fbSpec.Height };
+			bool multisampled = Utils::IsMultisampled(m_Specification);
 
 			VkCommandBuffer vulkanCommandBuffer = beginCmd->RT_GetActiveCommandBuffer();
 
@@ -384,7 +388,7 @@ namespace VulkanCore {
 			for (uint32_t i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
 				m_ClearValues[i].color = { fbSpec.ClearColor.x, fbSpec.ClearColor.y, fbSpec.ClearColor.z, fbSpec.ClearColor.w };
 
-			if (m_Specification.TargetFramebuffer->GetSpecification().ReadDepthTexture)
+			if (m_Specification.TargetFramebuffer->GetSpecification().ReadDepthTexture && multisampled)
 			{
 				m_ClearValues[m_ClearValues.size() - 2].depthStencil = { 1.0f, 0 };
 				m_ClearValues[m_ClearValues.size() - 1].depthStencil = { 1.0f, 0 };
@@ -406,8 +410,8 @@ namespace VulkanCore {
 			viewport.maxDepth = 1.0f;
 
 			VkRect2D scissor{ { 0, 0 }, framebufferExtent };
-			vkCmdSetViewport(vulkanCommandBuffer, 0, 1, &viewport);
-			vkCmdSetScissor(vulkanCommandBuffer, 0, 1, &scissor);
+			vkCmdSetViewportWithCount(vulkanCommandBuffer, 1, &viewport);
+			vkCmdSetScissorWithCount(vulkanCommandBuffer, 1, &scissor);
 		});
 	}
 

@@ -10,14 +10,14 @@ namespace VulkanCore {
 	{
 	public:
 		VulkanShader() = default;
-		VulkanShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath = "");
-		VulkanShader(const std::string& cmpfilepath);
+		VulkanShader(const std::string& vertexPath, const std::string& fragmentPath, const std::string& geometryPath = "");
+		VulkanShader(const std::string& computePath);
 		~VulkanShader();
 
 		std::shared_ptr<VulkanDescriptorSetLayout> CreateDescriptorSetLayout(int index = 0);
 		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> CreateAllDescriptorSetsLayout();
-		std::vector<VkDescriptorSet> AllocateDescriptorSets(uint32_t index = 0);
-		std::vector<VkDescriptorSet> AllocateAllDescriptorSets();
+		[[maybe_unused]] std::vector<VkDescriptorSet> AllocateDescriptorSets(uint32_t index = 0);
+		[[maybe_unused]] std::vector<VkDescriptorSet> AllocateAllDescriptorSets();
 
 		inline std::unordered_map<uint32_t, std::vector<uint32_t>>& GetShaderModules() { return m_VulkanSPIRV; }
 		inline uint32_t GetPushConstantSize() const { return (uint32_t)m_PushConstantSize; }
@@ -26,9 +26,8 @@ namespace VulkanCore {
 		void Reload() override;
 		inline bool HasGeometryShader() const override { return !m_GeometryFilePath.empty(); }
 	private:
-		std::tuple<std::string, std::string> ParseShader(const std::string& vsfilepath, const std::string& fsfilepath);
-		std::tuple<std::string, std::string, std::string> ParseShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath);
-		std::string ParseShader(const std::string& cmpfilepath);
+		std::tuple<std::string, std::string> ParseShader(const std::string& vertexPath, const std::string& fragmentPath);
+		std::string ParseShader(const std::string& shaderPath);
 		void ParseShader();
 		void CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources);
 		void ReflectShaderData();

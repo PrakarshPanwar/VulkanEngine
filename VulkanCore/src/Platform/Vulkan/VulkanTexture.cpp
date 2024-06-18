@@ -16,6 +16,8 @@ namespace VulkanCore {
 		{
 			switch (format)
 			{
+			case ImageFormat::R32I:			   return VK_FORMAT_R32_SINT;
+			case ImageFormat::R32F:			   return VK_FORMAT_R32_SFLOAT;
 			case ImageFormat::RGBA8_SRGB:	   return VK_FORMAT_R8G8B8A8_SRGB;
 			case ImageFormat::RGBA8_NORM:	   return VK_FORMAT_R8G8B8A8_SNORM;
 			case ImageFormat::RGBA8_UNORM:	   return VK_FORMAT_R8G8B8A8_UNORM;
@@ -52,11 +54,12 @@ namespace VulkanCore {
 		{
 			switch (format)
 			{
-			case ImageFormat::RGBA8_SRGB: return width * height * 4;
-			case ImageFormat::RGBA8_NORM: return width * height * 4;
+			case ImageFormat::R32I:		   return width * height * sizeof(uint32_t);
+			case ImageFormat::RGBA8_SRGB:  return width * height * 4;
+			case ImageFormat::RGBA8_NORM:  return width * height * 4;
 			case ImageFormat::RGBA8_UNORM: return width * height * 4;
-			case ImageFormat::RGBA16F: return width * height * 4 * sizeof(uint16_t);
-			case ImageFormat::RGBA32F: return width * height * 4 * sizeof(float);
+			case ImageFormat::RGBA16F:	   return width * height * 4 * sizeof(uint16_t);
+			case ImageFormat::RGBA32F:	   return width * height * 4 * sizeof(float);
 			default:
 				VK_CORE_ASSERT(false, "Format not supported!");
 				return 0;
@@ -180,6 +183,7 @@ namespace VulkanCore {
 			}
 
 			allocator.DestroyBuffer(stagingBuffer, stagingBufferAlloc);
+			free(m_LocalStorage);
 		}
 
 		m_IsLoaded = true;
@@ -187,8 +191,6 @@ namespace VulkanCore {
 
 	void VulkanTexture::Release()
 	{
-		if (m_LocalStorage)
-			free(m_LocalStorage);
 	}
 
 	void VulkanTexture::GenerateMipMaps()
@@ -267,11 +269,6 @@ namespace VulkanCore {
 	VulkanTextureCube::VulkanTextureCube(uint32_t width, uint32_t height, ImageFormat format)
 		: m_Specification({ width, height, format, TextureWrap::Clamp, true })
 	{
-		m_Specification.Width = width;
-		m_Specification.Height = height;
-		m_Specification.Format = format;
-		m_Specification.SamplerWrap = TextureWrap::Clamp;
-		m_Specification.GenerateMips = true;
 	}
 
 	VulkanTextureCube::VulkanTextureCube(void* data, TextureSpecification spec)

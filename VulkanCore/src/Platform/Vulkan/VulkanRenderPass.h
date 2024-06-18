@@ -6,7 +6,6 @@
 
 namespace VulkanCore {
 
-	// TODO: To read Depth Image we have to also create its resolve form
 	class VulkanRenderPass : public RenderPass
 	{
 	public:

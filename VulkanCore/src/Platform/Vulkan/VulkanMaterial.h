@@ -31,7 +31,9 @@ namespace VulkanCore {
 		void SetTexture(uint32_t binding, std::shared_ptr<TextureCube> textureCube) override;
 		void SetTextures(uint32_t binding, const std::vector<std::shared_ptr<Texture2D>>& textures) override;
 		void SetBuffer(uint32_t binding, std::shared_ptr<UniformBuffer> uniformBuffer) override;
+		void SetBuffer(uint32_t binding, std::shared_ptr<StorageBuffer> storageBuffer) override;
 		void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<UniformBuffer>>& uniformBuffers) override;
+		void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<StorageBuffer>>& storageBuffers) override;
 
 		void RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, uint32_t setIndex = 0) override;
 		void RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<ComputePipeline>& pipeline, uint32_t setIndex = 0) override;

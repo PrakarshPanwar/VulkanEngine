@@ -31,7 +31,8 @@ namespace VulkanCore {
 		static void SetAtomicFlag(bool dispatchFlag) { m_RenderThreadAtomic.store(dispatchFlag); }
 
 		static int GetThreadFrameIndex() { return m_ThreadFrameIndex; }
-		bool CommandQueueEmpty() { return m_RenderCommandQueue.empty(); }
+		static bool IsCommandQueueEmpty() { return m_RenderCommandQueue.empty(); }
+		static bool IsDeletionQueueEmpty() { return m_DeletionCommandQueue.empty(); }
 	private:
 		static void ThreadEntryPoint();
 		static void ExecuteCommandQueue();
