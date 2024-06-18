@@ -18,13 +18,11 @@ namespace VulkanCore {
 		glm::vec3 Normal;
 		glm::vec3 Tangent;
 		glm::vec3 Binormal;
-		glm::vec3 Color;
 		glm::vec2 TexCoord;
 
 		bool operator==(const Vertex& other) const
 		{
 			return Position == other.Position &&
-				Color == other.Color && 
 				Normal == other.Normal &&
 				TexCoord == other.TexCoord;
 		}
@@ -71,7 +69,6 @@ namespace VulkanCore {
 		static AssetType GetStaticType() { return AssetType::MeshAsset; }
 	private:
 		aiScene* m_Scene;
-		std::unique_ptr<Assimp::Importer> m_Importer;
 
 		std::vector<Submesh> m_Submeshes{};
 		std::vector<MeshNode> m_Nodes{};
@@ -84,6 +81,8 @@ namespace VulkanCore {
 
 		std::shared_ptr<VertexBuffer> m_VertexBuffer;
 		std::shared_ptr<IndexBuffer> m_IndexBuffer;
+
+		static std::unique_ptr<Assimp::Importer> s_Importer;
 
 		friend class Mesh;
 		friend class MeshImporter;

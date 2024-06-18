@@ -72,19 +72,33 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
-		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
+		if ((m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing()) || m_EditorCamera.IsInFly())
 			m_EditorCamera.OnUpdate();
 
-		m_SceneRenderer->RenderScene(m_EditorCamera);
+		// Mouse Position relative to Viewport
+		auto [mx, my] = Input::GetMousePosition();
+		mx -= m_ViewportBounds[0].x;
+		my -= m_ViewportBounds[0].y;
+		int mouseX = (int)mx;
+		int mouseY = (int)my;
+
+		SceneEditorData sceneEditorData{};
+		sceneEditorData.CameraData = m_EditorCamera;
+		sceneEditorData.ViewportMousePos = glm::max(glm::ivec2{ mouseX, mouseY }, 0);
+		sceneEditorData.ViewportHovered = m_ViewportHovered;
+		m_SceneRenderer->SetSceneEditorData(sceneEditorData);
+
+		m_SceneRenderer->RenderScene();
 	}
 
 	void EditorLayer::OnEvent(Event& e)
 	{
-		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents())
+		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents() || m_EditorCamera.IsInFly())
 			m_EditorCamera.OnEvent(e);
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnKeyEvent));
+		dispatcher.Dispatch<MouseButtonPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnMouseButtonEvent));
 		dispatcher.Dispatch<WindowResizeEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnWindowResize));
 	}
 
@@ -137,6 +151,11 @@ namespace VulkanCore {
 			ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
 			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 		}
+
+		if (m_EditorCamera.IsInFly())
+			io.ConfigFlags |= ImGuiConfigFlags_NoMouse;
+		else if (io.ConfigFlags & ImGuiConfigFlags_NoMouse)
+			io.ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
 
 		if (ImGui::BeginMenuBar())
 		{
@@ -198,8 +217,8 @@ namespace VulkanCore {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
+		ImGui::SetNextItemAllowOverlap();
 		ImGui::Image(m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
-		ImGui::SetItemAllowOverlap();
 
 		if (ImGui::BeginDragDropTarget())
 		{
@@ -216,7 +235,7 @@ namespace VulkanCore {
 		// Button Position just at the top
 		ImGui::SetCursorPos({ ImGui::GetWindowContentRegionMin().x + 5.0f, ImGui::GetWindowContentRegionMin().y + 5.0f });
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 20.0f);
-		if (ImGui::ImageButton((ImTextureID)m_MenuIconID, { 20.0f, 20.0f }, { 0, 1 }, { 1, 0 }))
+		if (ImGui::ImageButton("##MenuIcon", (ImTextureID)m_MenuIconID, { 20.0f, 20.0f }, { 0, 1 }, { 1, 0 }))
 			ImGui::OpenPopup("EditorSettings");
 		ImGui::PopStyleVar();
 
@@ -249,6 +268,15 @@ namespace VulkanCore {
 			ImGui::EndPopup();
 		}
 
+		if (m_ViewportHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)
+			&& !ImGui::IsKeyDown(ImGuiKey_LeftAlt) && !ImGuizmo::IsOver())
+		{
+			int entityHandle = m_SceneRenderer->GetHoveredEntity();
+			Entity hoveredEntity = entityHandle == -1 ? Entity{} : Entity{ (entt::entity)entityHandle, m_Scene.get() };
+
+			m_SceneHierarchyPanel.SetSelectedEntity(hoveredEntity);
+		}
+
 		RenderGizmo();
 		ImGui::End(); // End of Viewport
 
@@ -259,10 +287,14 @@ namespace VulkanCore {
 		ImGui::End(); // End of DockSpace
 	}
 
-	bool EditorLayer::OnKeyEvent(KeyPressedEvent& keyevent)
+	bool EditorLayer::OnKeyEvent(KeyPressedEvent& e)
 	{
+		bool shiftKey = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+
+		bool isFlying = m_EditorCamera.IsInFly();
+
 		// Gizmos: Unreal Engine Controls
-		switch (keyevent.GetKeyCode())
+		switch (e.GetKeyCode())
 		{
 		case Key::Q:
 		{
@@ -272,7 +304,7 @@ namespace VulkanCore {
 		}
 		case Key::W:
 		{
-			if (!ImGuizmo::IsUsing())
+			if (!ImGuizmo::IsUsing() && !isFlying)
 				m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
 			break;
 		}
@@ -288,16 +320,48 @@ namespace VulkanCore {
 				m_GizmoType = ImGuizmo::OPERATION::SCALE;
 			break;
 		}
+		case Key::Period:
+		{
+			Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+			if (selectedEntity)
+			{
+				auto transform = selectedEntity.GetComponent<TransformComponent>();
+				m_EditorCamera.SetFocalPoint(transform.Translation);
+			}
+
+			break;
 		}
+		case Key::GraveAccent:
+		{
+			if (shiftKey)
+				m_EditorCamera.SetFly(true);
+			break;
+		}
+		}
+
 		return false;
 	}
 
-	bool EditorLayer::OnMouseScroll(MouseScrolledEvent& mouseScroll)
+	bool EditorLayer::OnMouseButtonEvent(MouseButtonPressedEvent& e)
+	{
+		switch (e.GetMouseButton())
+		{
+		case Mouse::ButtonLeft:
+		{
+			if (m_EditorCamera.IsInFly())
+				m_EditorCamera.SetFly(false);
+		}
+		}
+
+		return false;
+	}
+
+	bool EditorLayer::OnMouseScroll(MouseScrolledEvent& e)
 	{
 		return false;
 	}
 
-	bool EditorLayer::OnWindowResize(WindowResizeEvent& windowEvent)
+	bool EditorLayer::OnWindowResize(WindowResizeEvent& e)
 	{
 		m_WindowResized = true;
 		return false;
@@ -318,46 +382,54 @@ namespace VulkanCore {
 			const glm::mat4& cameraProjection = m_EditorCamera.GetProjectionMatrix();
 			glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
 
-			// Entity transform
-			auto& tc = selectedEntity.GetComponent<TransformComponent>();
-			glm::mat4 transform = tc.GetTransform();
-
-			// Snapping
-			float snapValue = 0.0f; // Snap to 0.5m for translation/scale
-			switch (m_GizmoType)
+			if (selectedEntity.HasComponent<TransformComponent>())
 			{
-			case ImGuizmo::TRANSLATE:
-				snapValue = m_TranslationSnapValue;
-				break;
-			case ImGuizmo::ROTATE:
-				snapValue = m_RotationSnapValue;
-				break;
-			case ImGuizmo::SCALE:
-				snapValue = m_ScaleSnapValue;
-				break;
-			default:
-				break;
+				// Entity transform
+				auto& tc = selectedEntity.GetComponent<TransformComponent>();
+				glm::mat4 transform = tc.GetTransform();
+
+				// Snapping
+				float snapValue = 0.0f; // Snap to 0.5m for translation/scale
+				switch (m_GizmoType)
+				{
+				case ImGuizmo::TRANSLATE:
+					snapValue = m_TranslationSnapValue;
+					break;
+				case ImGuizmo::ROTATE:
+					snapValue = m_RotationSnapValue;
+					break;
+				case ImGuizmo::SCALE:
+					snapValue = m_ScaleSnapValue;
+					break;
+				default:
+					break;
+				}
+
+				bool snap = Input::IsKeyPressed(Key::LeftControl) || m_EnableSnap;
+				float snapValues[3] = { snapValue, snapValue, snapValue };
+
+				ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
+					(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::WORLD, glm::value_ptr(transform),
+					nullptr, snap ? snapValues : nullptr);
+
+				if (ImGuizmo::IsUsing())
+				{
+					glm::vec3 translation, scale, skew;
+					glm::vec4 perspective;
+					glm::quat rotation;
+
+					glm::decompose(transform, scale, rotation, translation, skew, perspective);
+
+					tc.Translation = translation;
+					tc.Rotation = glm::eulerAngles(rotation);
+					tc.Scale = scale;
+				}
 			}
-
-			bool snap = Input::IsKeyPressed(Key::LeftControl) || m_EnableSnap;
-			float snapValues[3] = { snapValue, snapValue, snapValue };
-
-			ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
-				(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::WORLD, glm::value_ptr(transform),
-				nullptr, snap ? snapValues : nullptr);
-
-			if (ImGuizmo::IsUsing())
+			/*else if (selectedEntity.HasComponent<DirectionalLightComponent>())
 			{
-				glm::vec3 translation, scale, skew;
-				glm::vec4 perspective;
-				glm::quat rotation;
-
-				glm::decompose(transform, scale, rotation, translation, skew, perspective);
-
-				tc.Translation = translation;
-				tc.Rotation = glm::eulerAngles(rotation);
-				tc.Scale = scale;
-			}
+				auto drlc = selectedEntity.GetComponent<DirectionalLightComponent>();
+				glm::mat4 rotation = glm::toMat4(glm::quat(drlc.Direction));
+			}*/
 		}
 	}
 
@@ -387,9 +459,8 @@ namespace VulkanCore {
 			return;
 		}
 
-		std::shared_ptr<Scene> newScene = std::make_shared<Scene>();
-		SceneSerializer serializer(newScene);
-		if (serializer.Deserialize(filepath.string()))
+		auto newScene = AssetManager::GetAsset<Scene>(path);
+		if (newScene)
 		{
 			m_Scene = newScene;
 			m_SceneRenderer->SetActiveScene(m_Scene);

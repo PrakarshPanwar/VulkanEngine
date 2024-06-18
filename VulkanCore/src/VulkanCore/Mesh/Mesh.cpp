@@ -23,7 +23,7 @@ namespace std {
 		size_t operator()(const VulkanCore::Vertex& vertex) const
 		{
 			size_t seed = 0;
-			VulkanCore::HashCombine(seed, vertex.Position, vertex.Color, vertex.Normal, vertex.TexCoord);
+			VulkanCore::HashCombine(seed, vertex.Position, vertex.Normal, vertex.TexCoord);
 			return seed;
 		}
 	};
@@ -72,6 +72,8 @@ namespace VulkanCore {
 	{
 	}
 
+	std::unique_ptr<Assimp::Importer> MeshSource::s_Importer;
+
 	static const uint32_t s_MeshImportFlags = {
 		aiProcess_Triangulate |	          // Use triangles
 		aiProcess_CalcTangentSpace |
@@ -91,9 +93,10 @@ namespace VulkanCore {
 
 		VK_CORE_INFO("Loading Mesh: {0}", filepath);
 
-		m_Importer = std::make_unique<Assimp::Importer>();
+		if (!s_Importer)
+			s_Importer = std::make_unique<Assimp::Importer>();
 
-		const aiScene* scene = m_Importer->ReadFile(filepath.data(), s_MeshImportFlags);
+		const aiScene* scene = s_Importer->ReadFile(filepath.data(), s_MeshImportFlags);
 		if (!scene || !scene->HasMeshes())
 		{
 			VK_CORE_ERROR("Failed to load Mesh file: {0}", filepath);

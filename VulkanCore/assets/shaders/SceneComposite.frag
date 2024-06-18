@@ -10,6 +10,9 @@ layout(push_constant) uniform SceneData
 {
 	float Exposure;
 	float DirtIntensity;
+	uint Fog;
+	float FogStartDistance;
+	float FogFallOffDistance;
 } u_SceneParams;
 
 vec3 ReinhardTonemap(vec3 hdrColor)

@@ -5,6 +5,21 @@
 
 namespace VulkanCore {
 
+	enum class CompareOp
+	{
+		None,
+		Less,
+		LessOrEqual
+	};
+
+	enum class CullMode
+	{
+		None,
+		Front,
+		Back,
+		FrontAndBack
+	};
+
 	struct PipelineSpecification
 	{
 		PipelineSpecification() = default;
@@ -12,10 +27,13 @@ namespace VulkanCore {
 		std::string DebugName;
 		std::shared_ptr<Shader> pShader;
 		std::shared_ptr<RenderPass> pRenderPass;
-		bool BackfaceCulling = false;
+		CullMode CullingMode = CullMode::None;
 		bool DepthTest = true;
 		bool DepthWrite = true;
+		bool DepthClamp = false;
 		bool Blend = false;
+		CompareOp DepthCompareOp = CompareOp::Less;
+
 		VertexBufferLayout Layout{};
 		VertexBufferLayout InstanceLayout{};
 	};

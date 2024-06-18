@@ -72,7 +72,7 @@ float G_Smith(float NoV, float NoL, float roughness) {
     return G_Schlick_GGX(NoV, roughness) * G_Schlick_GGX(NoL, roughness);
 }
 
-layout(local_size_x = 16, local_size_y = 16) in;
+layout(local_size_x = 32, local_size_y = 32) in;
 void main()
 {
     ivec2 invocID = ivec2(gl_GlobalInvocationID.xy);

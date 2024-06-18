@@ -81,7 +81,7 @@ namespace VulkanCore {
 		VkQueue m_ComputeQueue;
 		VkQueue m_PresentQueue;
 
-		bool m_EnableDebugMarkers = false;
+		bool m_DebugMarkers = false;
 	};
 
 }

@@ -1,5 +1,6 @@
 #include "vulkanpch.h"
 #include "AssetImporter.h"
+#include "SceneImporter.h"
 #include "TextureImporter.h"
 #include "MeshImporter.h"
 #include "MaterialAssetImporter.h"
@@ -10,6 +11,7 @@ namespace VulkanCore {
 
 	using AssetImportFunction = std::function<std::shared_ptr<Asset>(AssetHandle, const AssetMetadata&)>;
 	static std::map<AssetType, AssetImportFunction> s_AssetImportFunctions = {
+		{ AssetType::Scene, SceneImporter::ImportScene },
 		{ AssetType::Texture2D, TextureImporter::ImportTexture2D },
 		{ AssetType::TextureCube, TextureImporter::ImportTextureCube },
 		{ AssetType::Mesh, MeshImporter::ImportMesh },

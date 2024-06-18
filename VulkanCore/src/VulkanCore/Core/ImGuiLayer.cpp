@@ -36,7 +36,8 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
+		DescriptorPoolBuilder descriptorPoolBuilder = {};
+		descriptorPoolBuilder.SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, 1000);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000);
@@ -50,7 +51,6 @@ namespace VulkanCore {
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000);
 
 		m_ImGuiGlobalPool = descriptorPoolBuilder.Build();
-		//m_ImGuiCmdBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary);
 
 		ImGui::CreateContext();
 
@@ -101,10 +101,10 @@ namespace VulkanCore {
 
 		SetDarkThemeColor();
 
-		VkCommandBuffer commandBuffer = device->GetCommandBuffer();
-		ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-		device->FlushCommandBuffer(commandBuffer);
-		ImGui_ImplVulkan_DestroyFontUploadObjects();
+		bool createFont = ImGui_ImplVulkan_CreateFontsTexture();
+		VK_CORE_ASSERT(createFont, "Failed to Create Font Textures");
+
+		ImGui_ImplVulkan_DestroyFontsTexture();
 	}
 
 	void ImGuiLayer::OnDetach()
@@ -183,6 +183,16 @@ namespace VulkanCore {
 			imageDescriptor.imageLayout);
 	}
 
+	VkDescriptorSet ImGuiLayer::AddTexture(VulkanImage& image, uint32_t layer)
+	{
+		image.CreateImageViewPerLayer(layer);
+		auto imageDescriptor = image.GetDescriptorArrayImageInfo(layer);
+		
+		return ImGui_ImplVulkan_AddTexture(imageDescriptor.sampler,
+			imageDescriptor.imageView,
+			imageDescriptor.imageLayout);
+	}
+
 	void ImGuiLayer::UpdateDescriptor(VkDescriptorSet descriptorSet, const VulkanImage& image)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
@@ -235,12 +245,31 @@ namespace VulkanCore {
 		vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
 	}
 
+	void ImGuiLayer::UpdateDescriptor(VkDescriptorSet descriptorSet, VulkanImage& image, uint32_t layer)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		image.CreateImageViewPerLayer(layer);
+		VkDescriptorImageInfo descriptorInfo = image.GetDescriptorArrayImageInfo(layer);
+
+		VkWriteDescriptorSet writeDescriptor{};
+		writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptor.dstSet = descriptorSet;
+		writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptor.dstBinding = 0;
+		writeDescriptor.pImageInfo = &descriptorInfo;
+		writeDescriptor.descriptorCount = 1;
+		writeDescriptor.dstArrayElement = 0;
+
+		vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
+	}
+
 	void ImGuiLayer::CheckVkResult(VkResult error)
 	{
 		if (error == 0)
 			return;
 
-		VK_CORE_ERROR("[ImGui] Error: VkResult = {0}", error);
+		VK_CORE_ERROR("[ImGui] Error: VkResult = {0}", (int)error);
 	}
 
 	void ImGuiLayer::SetDarkThemeColor()
