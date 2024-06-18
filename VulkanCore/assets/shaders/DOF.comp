@@ -67,7 +67,7 @@ vec3 DepthOfField(vec2 texCoord, float focusPoint, float focusScale, vec2 texelS
 	return color /= tot;
 }
 
-layout(local_size_x = 16, local_size_y = 16) in;
+layout(local_size_x = 32, local_size_y = 32) in;
 void main()
 {
 	vec4 color = vec4(1, 0, 1, 1);

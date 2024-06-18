@@ -1533,7 +1533,7 @@ namespace VulkanCore {
 				vulkanDOFPipeline->GetVulkanPipelineLayout(), 0, 1,
 				&vulkanDOFMaterial->RT_GetVulkanMaterialDescriptorSet(), 0, nullptr);
 
-			vulkanDOFPipeline->Dispatch(dispatchCmd, dofImageSize.x / 16, dofImageSize.y / 16, 1);
+			vulkanDOFPipeline->Dispatch(dispatchCmd, dofImageSize.x / 32, dofImageSize.y / 32, 1);
 		});
 
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
