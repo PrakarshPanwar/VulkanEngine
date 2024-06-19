@@ -1,4 +1,5 @@
 #version 460 core
+#include "Utils/Buffers.glslh"
 
 // Vertex Bindings
 layout(location = 0) in vec3 a_Position;
@@ -14,14 +15,6 @@ layout(location = 7) in vec4 a_MRow2;
 layout(location = 8) in int a_EntityID;
 
 layout(location = 0) out flat int v_InstanceID;
-
-layout(set = 0, binding = 0) uniform Camera
-{
-	mat4 Projection;
-	mat4 View;
-	mat4 InverseView;
-	vec2 DepthUnpackConsts;
-} u_Camera;
 
 void main()
 {

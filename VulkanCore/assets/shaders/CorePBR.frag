@@ -1,4 +1,5 @@
 #version 460 core
+#include "Utils/Buffers.glslh"
 
 layout(location = 0) out vec4 o_Color;
 
@@ -49,14 +50,6 @@ layout(push_constant) uniform Material
 } u_Material;
 
 // Buffer Data
-layout(set = 0, binding = 0) uniform Camera
-{
-	mat4 Projection;
-	mat4 View;
-	mat4 InverseView;
-    vec2 DepthUnpackConsts;
-} u_Camera;
-
 layout(set = 0, binding = 1) uniform PointLightData
 {
 	int Count;
