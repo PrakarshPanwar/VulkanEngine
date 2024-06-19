@@ -162,6 +162,11 @@ namespace VulkanCore {
 		s_Renderer->RenderLight(cmdBuffer, pipeline, lightData);
 	}
 
+	void Renderer::RenderLight(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const glm::vec4& position)
+	{
+		s_Renderer->RenderLight(cmdBuffer, pipeline, position);
+	}
+
 	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial)
 	{
 		s_Renderer->SubmitFullscreenQuad(cmdBuffer, pipeline, shaderMaterial);

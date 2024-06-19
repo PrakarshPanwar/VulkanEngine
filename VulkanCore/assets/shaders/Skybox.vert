@@ -1,4 +1,5 @@
 #version 460 core
+#include "Utils/Buffers.glslh"
 
 const vec3 verticesData[36] = vec3[](       
   vec3(-1.0,  1.0, -1.0),
@@ -43,14 +44,6 @@ const vec3 verticesData[36] = vec3[](
   vec3(-1.0, -1.0,  1.0),
   vec3( 1.0, -1.0,  1.0)
 );
-
-layout(set = 0, binding = 0) uniform Camera
-{
-	mat4 Projection;
-	mat4 View;
-	mat4 InverseView;
-	vec2 DepthUnpackConsts;
-} u_Camera;
 
 layout(location = 0) out vec3 v_TexCoord;
 

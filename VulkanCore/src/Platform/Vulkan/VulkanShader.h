@@ -28,13 +28,13 @@ namespace VulkanCore {
 	private:
 		std::tuple<std::string, std::string> ParseShader(const std::string& vertexPath, const std::string& fragmentPath);
 		std::string ParseShader(const std::string& shaderPath);
-		void ParseShader();
-		void CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources);
+		std::unordered_map<uint32_t, std::string> ParseShaders();
+		std::string ParsePreprocessIncludes(std::stringstream& sourceCode);
+		void CompileOrGetVulkanBinaries(std::unordered_map<uint32_t, std::string>& shaderSources);
 		void ReflectShaderData();
 		void InvalidateDescriptors();
 	private:
 		std::string m_VertexFilePath, m_FragmentFilePath, m_GeometryFilePath, m_ComputeFilePath;
-		std::unordered_map<uint32_t, std::string> m_ShaderSources;
 		std::unordered_map<uint32_t, std::vector<uint32_t>> m_VulkanSPIRV;
 		std::vector<std::future<void>> m_Futures;
 		size_t m_PushConstantSize = 0;

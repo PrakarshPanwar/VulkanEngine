@@ -20,7 +20,8 @@ project "VulkanCore"
 		"assets/shaders/*.vert",
 		"assets/shaders/*.frag",
 		"assets/shaders/*.geom",
-		"assets/shaders/*.comp"
+		"assets/shaders/*.comp",
+		"assets/shaders/**.glslh"
 	}
 
 	includedirs {

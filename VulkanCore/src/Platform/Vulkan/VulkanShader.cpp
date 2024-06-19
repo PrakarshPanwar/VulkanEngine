@@ -8,6 +8,7 @@
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 
+#include <regex>
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
 #include <spirv_cross/spirv_glsl.hpp>
@@ -16,6 +17,13 @@
 namespace VulkanCore {
 
 	namespace Utils {
+
+		static std::map<std::filesystem::path, ShaderType> s_ShaderExtensionMap = {
+			{ ".vert", ShaderType::Vertex },
+			{ ".frag", ShaderType::Fragment },
+			{ ".geom", ShaderType::Geometry },
+			{ ".comp", ShaderType::Compute }
+		};
 
 		static shaderc_shader_kind GLShaderStageToShaderC(ShaderType stage)
 		{
@@ -71,12 +79,6 @@ namespace VulkanCore {
 			return "";
 		}
 
-		static std::map<std::filesystem::path, ShaderType> s_ShaderTypeMap = {
-			{ ".vert", ShaderType::Vertex },
-			{ ".frag", ShaderType::Fragment },
-			{ ".geom", ShaderType::Geometry },
-			{ ".comp", ShaderType::Compute }
-		};
 	}
 
 	VulkanShader::VulkanShader(const std::string& vertexPath, const std::string& fragmentPath, const std::string& geometryPath)
@@ -96,9 +98,7 @@ namespace VulkanCore {
 			Sources[(uint32_t)ShaderType::Geometry] = GeometrySrc;
 		}
 
-		m_ShaderSources = Sources;
 		CompileOrGetVulkanBinaries(Sources);
-
 		ReflectShaderData();
 		InvalidateDescriptors();
 	}
@@ -113,9 +113,7 @@ namespace VulkanCore {
 		std::unordered_map<uint32_t, std::string> Sources;
 		Sources[(uint32_t)ShaderType::Compute] = ComputeSrc;
 
-		m_ShaderSources = Sources;
 		CompileOrGetVulkanBinaries(Sources);
-
 		ReflectShaderData();
 		InvalidateDescriptors();
 	}
@@ -287,7 +285,7 @@ namespace VulkanCore {
 		VertexStream << VertexSource.rdbuf();
 		FragmentStream << FragmentSource.rdbuf();
 
-		return { VertexStream.str(), FragmentStream.str() };
+		return { ParsePreprocessIncludes(VertexStream), ParsePreprocessIncludes(FragmentStream) };
 	}
 
 #if 0
@@ -316,19 +314,18 @@ namespace VulkanCore {
 		std::ifstream ShaderSource(shaderPath, std::ios::binary);
 
 		std::filesystem::path filePath = shaderPath;
-		VK_CORE_ASSERT(ShaderSource.is_open(), "Failed to Open {0} Shader File!", Utils::GLShaderTypeToString(Utils::s_ShaderTypeMap[filePath.extension()]));
+		VK_CORE_ASSERT(ShaderSource.is_open(), "Failed to Open {0} Shader File!", Utils::GLShaderTypeToString(Utils::s_ShaderExtensionMap[filePath.extension()]));
 
 		std::stringstream ShaderStream;
 		ShaderStream << ShaderSource.rdbuf();
 
-		return ShaderStream.str();
+		return ParsePreprocessIncludes(ShaderStream);
 	}
 
-	void VulkanShader::ParseShader()
+	std::unordered_map<uint32_t, std::string> VulkanShader::ParseShaders()
 	{
 		std::unordered_map<uint32_t, std::string> Sources;
 
-		// TODO: Accomodate for Geometry Shader
 		if (!(m_VertexFilePath.empty() || m_FragmentFilePath.empty()))
 		{
 			std::ifstream VertexSource(m_VertexFilePath, std::ios::binary);
@@ -341,8 +338,8 @@ namespace VulkanCore {
 			VertexStream << VertexSource.rdbuf();
 			FragmentStream << FragmentSource.rdbuf();
 
-			Sources[(uint32_t)ShaderType::Vertex] = VertexStream.str();
-			Sources[(uint32_t)ShaderType::Fragment] = FragmentStream.str();
+			Sources[(uint32_t)ShaderType::Vertex] = ParsePreprocessIncludes(VertexStream);
+			Sources[(uint32_t)ShaderType::Fragment] = ParsePreprocessIncludes(FragmentStream);
 
 			if (std::filesystem::exists(m_GeometryFilePath))
 			{
@@ -351,7 +348,7 @@ namespace VulkanCore {
 				std::stringstream GeometryStream;
 				GeometryStream << GeometrySource.rdbuf();
 
-				Sources[(uint32_t)ShaderType::Geometry] = GeometryStream.str();
+				Sources[(uint32_t)ShaderType::Geometry] = ParsePreprocessIncludes(GeometryStream);
 			}
 		}
 		else
@@ -364,13 +361,50 @@ namespace VulkanCore {
 
 			ComputeStream << ComputeSource.rdbuf();
 
-			Sources[(uint32_t)ShaderType::Compute] = ComputeStream.str();
+			Sources[(uint32_t)ShaderType::Compute] = ParsePreprocessIncludes(ComputeStream);
 		}
 
-		m_ShaderSources = Sources;
+		return Sources;
 	}
 
-	void VulkanShader::CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources)
+	// NOTE: It currently supports single depth headers(i.e. no header within header)
+	std::string VulkanShader::ParsePreprocessIncludes(std::stringstream& sourceCode)
+	{
+		const std::filesystem::path shaderPath = "assets/shaders";
+
+		std::string sourceStr = sourceCode.str();
+		std::regex includeRegex("^[ ]*#[ ]*include[ ]+[\"<](.*)[\">].*");
+
+		std::smatch matches{};
+		std::string line{};
+		while (std::getline(sourceCode, line))
+		{
+			if (std::regex_search(line, matches, includeRegex))
+			{
+				std::filesystem::path includeFilePath = matches[1].str();
+				includeFilePath = shaderPath / includeFilePath;
+
+				if (std::filesystem::exists(includeFilePath))
+				{
+					std::ifstream includeFileSource(includeFilePath, std::ios::binary);
+
+					std::stringstream includeFileStream;
+					includeFileStream << includeFileSource.rdbuf();
+
+					sourceStr = std::regex_replace(sourceStr, includeRegex, includeFileStream.str());
+				}
+				else
+				{
+					VK_CORE_CRITICAL("{} header doesn't exist!", includeFilePath.generic_string());
+					__debugbreak();
+				}
+			}
+		}
+
+		return sourceStr;
+	}
+
+	void VulkanShader::CompileOrGetVulkanBinaries(std::unordered_map<uint32_t, std::string>& shaderSources)
 	{
 		shaderc::Compiler compiler;
 		shaderc::CompileOptions options;
@@ -470,7 +504,7 @@ namespace VulkanCore {
 
 	void VulkanShader::Reload()
 	{
-		ParseShader();
+		auto shaderSources = ParseShaders();
 
 		shaderc::Compiler compiler;
 		shaderc::CompileOptions options;
@@ -485,7 +519,6 @@ namespace VulkanCore {
 
 		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
 
-		auto& shaderSources = m_ShaderSources;
 		auto& shaderData = m_VulkanSPIRV;
 		shaderData.clear();
 		m_Futures.clear();

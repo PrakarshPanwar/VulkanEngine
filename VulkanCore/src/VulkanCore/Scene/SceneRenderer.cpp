@@ -1003,35 +1003,13 @@ namespace VulkanCore {
 
 		// Point Lights
 		for (auto pointLightPosition : m_PointLightPositions)
-		{
-			Renderer::Submit([this, pointLightPosition]
-			{
-				VK_CORE_PROFILE_FN("Render-PointLights");
-
-				VkCommandBuffer drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer)->RT_GetActiveCommandBuffer();
-
-				auto vulkanLightPipeline = std::static_pointer_cast<VulkanPipeline>(m_LightPipeline);
-				vulkanLightPipeline->SetPushConstants(drawCmd, (void*)&pointLightPosition, sizeof(glm::vec4));
-				vkCmdDraw(drawCmd, 6, 1, 0, 0);
-			});
-		}
+			Renderer::RenderLight(m_SceneCommandBuffer, m_LightPipeline, pointLightPosition);
 
 		Renderer::Submit([this] { m_SpotLightShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_LightPipeline); });
 
 		// Spot Lights
 		for (auto spotLightPosition : m_SpotLightPositions)
-		{
-			Renderer::Submit([this, spotLightPosition]
-			{
-				VK_CORE_PROFILE_FN("Render-SpotLights");
-
-				VkCommandBuffer drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer)->RT_GetActiveCommandBuffer();
-
-				auto vulkanLightPipeline = std::static_pointer_cast<VulkanPipeline>(m_LightPipeline);
-				vulkanLightPipeline->SetPushConstants(drawCmd, (void*)&spotLightPosition, sizeof(glm::vec4));
-				vkCmdDraw(drawCmd, 6, 1, 0, 0);
-			});
-		}
+			Renderer::RenderLight(m_SceneCommandBuffer, m_LightPipeline, spotLightPosition);
 	}
 
 	void SceneRenderer::SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform)

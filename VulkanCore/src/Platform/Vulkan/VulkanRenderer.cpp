@@ -694,6 +694,18 @@ namespace VulkanCore {
 		});
 	}
 
+	void VulkanRenderer::RenderLight(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const glm::vec4& position)
+	{
+		Renderer::Submit([cmdBuffer, pipeline, position]
+		{
+			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+
+			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
+			vulkanPipeline->SetPushConstants(drawCmd, (void*)&position, sizeof(glm::vec4));
+			vkCmdDraw(drawCmd, 6, 1, 0, 0);
+		});
+	}
+
 	void VulkanRenderer::SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial)
 	{
 		Renderer::Submit([cmdBuffer, pipeline, shaderMaterial]

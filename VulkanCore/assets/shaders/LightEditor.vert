@@ -1,4 +1,5 @@
 #version 460 core
+#include "Utils/Buffers.glslh"
 
 const vec4 Offsets[6] = vec4[](
   vec4(-1.0, -1.0, 0.0, 0.0),
@@ -10,14 +11,6 @@ const vec4 Offsets[6] = vec4[](
 );
 
 layout(location = 0) out flat int v_InstanceID;
-
-layout(binding = 0) uniform Camera
-{
-	mat4 Projection;
-	mat4 View;
-	mat4 InverseView;
-	vec2 DepthUnpackConsts;
-} u_Camera;
 
 layout(push_constant) uniform LightSelectData
 {
