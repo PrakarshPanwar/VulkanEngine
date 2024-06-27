@@ -41,6 +41,12 @@ vec3 ACESTonemap(vec3 hdrColor)
 	return clamp((hdrColor * (A * hdrColor + B)) / (hdrColor * (C * hdrColor + D) + E), 0.0, 1.0);
 }
 
+vec3 RTTonemap(vec3 hdrColor)
+{
+	float luminance = 0.299 * hdrColor.x + 0.587 * hdrColor.y + 0.114 * hdrColor.z;
+	return hdrColor / (1.0 + luminance / 1.5);
+}
+
 float LinearizeDepth(const float screenDepth)
 {
 	float depthLinearizeMul = u_Camera.DepthUnpackConsts.x;
@@ -104,7 +110,7 @@ void main()
 	color += bloom * bloomDirt;
 
 	color *= u_SceneParams.Exposure;
-    color = ACESTonemap(color);
+    color = RTTonemap(color);
 
 	o_Color = vec4(color, 1.0);
 }

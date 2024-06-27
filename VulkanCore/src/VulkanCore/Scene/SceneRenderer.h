@@ -149,6 +149,20 @@ namespace VulkanCore {
 			uint32_t RandomSeed = 0;
 			uint32_t AccumulateFrameIndex = 1;
 		} m_RTSettings;
+
+		struct RTMaterialData
+		{
+			float Transmission = 0.25f;
+			float SpecularTint = 0.1f;
+			float IOR = 0.5f;
+			float Sheen = 0.75f;
+			float SheenTint = 0.5f;
+			float Clearcoat = 0.25f;
+			float ClearcoatGloss = 0.8f;
+			float Subsurface = 0.8f;
+			float Extinction = 0.75f;
+			float AtDistance = 0.1f;
+		} m_RTMaterialData;
 	private:
 		std::shared_ptr<Scene> m_Scene;
 
@@ -198,6 +212,7 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBPointLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSpotLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSkyboxSettings;
+		std::vector<std::shared_ptr<UniformBuffer>> m_UBRTMaterialData;
 		std::vector<std::shared_ptr<IndexBuffer>> m_ImageBuffer;
 
 		std::vector<std::shared_ptr<StorageBuffer>> m_SBMeshBuffersData;
@@ -220,7 +235,7 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<Texture2D>> m_ARMTextureArray;
 
 		// Skybox Resources
-		std::shared_ptr<TextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;
+		std::shared_ptr<TextureCube> m_PrefilteredTexture, m_IrradianceTexture;
 		std::shared_ptr<Image2D> m_BRDFTexture;
 		VkDescriptorSet m_SkyboxTextureID;
 

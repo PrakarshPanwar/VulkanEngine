@@ -1,0 +1,77 @@
+#pragma once
+
+void SampleSphereLight(in PointLight light, out LightSample lightSample)
+{
+	vec3 position = light.Position.xyz + UniformSampleSphere(o_RayPayload.Seed) * light.Radius;
+
+	lightSample.Normal = normalize(position - light.Position.xyz);
+	lightSample.Emission = light.Color.xyz * light.Color.w * float(u_PointLight.Count);
+	lightSample.Position.xyz = position;
+}
+
+LightSample SampleLight(in PointLight light)
+{
+	LightSample lightSample;
+	SampleSphereLight(light, lightSample);
+
+	return lightSample;
+}
+
+float SphereIntersect(in PointLight light)
+{
+	vec3 dir = light.Position.xyz - gl_WorldRayOriginEXT;
+	float b = dot(dir, gl_WorldRayDirectionEXT);
+	float det = b * b - dot(dir, dir) + light.Radius * light.Radius;
+
+	if (det < 0.0)
+		return INFINITY;
+
+	det = sqrt(det);
+
+	float t1 = b - det;
+	if (t1 > EPS)
+		return t1;
+
+	float t2 = b + det;
+	if (t2 > EPS)
+		return t2;
+
+	return INFINITY;
+}
+
+void CheckSphereLightIntersection(inout float closest, float hit, in PointLight light, inout LightSample lightSample)
+{
+	float dist = SphereIntersect(light);
+	if (dist < 0.0) 
+		dist = INFINITY;
+
+	if (dist < closest && dist < hit)
+	{
+		closest = dist;
+		vec3 surfacePosition = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * hit;
+		vec3 normal = normalize(surfacePosition - light.Position.xyz);
+		float pdf = (dist * dist) / (2 * TWO_PI * light.Radius * light.Radius); // Denominator: Light Area
+
+		lightSample.Emission = light.Color.xyz * light.Color.w;
+		lightSample.PDF = pdf;
+		lightSample.Normal = normal;
+	}
+}
+
+bool IntersectsEmitter(inout LightSample lightSample, float hit)
+{
+	float closest = INFINITY;
+	for (uint i = 0; i < u_PointLight.Count; ++i)
+	{
+		PointLight pointLight = u_PointLight.PointLights[i];
+		CheckSphereLightIntersection(closest, hit, pointLight, lightSample);
+	}
+
+	return closest < INFINITY;
+}
+
+vec3 SampleEmitter(in LightSample lightSample, in BSDFSample bsdfSample)
+{
+	vec3 Le = lightSample.Emission;
+	return (o_RayPayload.Depth == 0) ? Le : PowerHeuristic(bsdfSample.PDF, lightSample.PDF) * Le;
+}

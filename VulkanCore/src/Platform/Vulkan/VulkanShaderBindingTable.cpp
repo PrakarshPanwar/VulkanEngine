@@ -2,6 +2,7 @@
 #include "VulkanShaderBindingTable.h"
 #include "VulkanRayTraceShader.h"
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanAllocator.h"
 
 #include <algorithm>
@@ -30,7 +31,7 @@ namespace VulkanCore {
 
 			VkStridedDeviceAddressRegionKHR stridedDeviceAddressRegionKHR{};
 			stridedDeviceAddressRegionKHR.deviceAddress = vkGetBufferDeviceAddressKHR(device->GetVulkanDevice(), &bufferDeviceAddressInfo) + (VkDeviceAddress)offset;
-			stridedDeviceAddressRegionKHR.stride = shaderHandleSizeAligned;
+			stridedDeviceAddressRegionKHR.stride = shaderGroupHandleSize;
 			stridedDeviceAddressRegionKHR.size = shaderHandleSizeAligned;
 			return stridedDeviceAddressRegionKHR;
 		}
@@ -60,13 +61,15 @@ namespace VulkanCore {
 
 	VulkanShaderBindingTable::~VulkanShaderBindingTable()
 	{
-		// Destroy SBT
-		VulkanAllocator allocator("ShaderBindingTable");
-		allocator.DestroyBuffer(m_SBTBuffer, m_SBTMemAlloc);
+		if (m_SBTBuffer)
+			Release();
 	}
 
 	void VulkanShaderBindingTable::Invalidate(VkPipeline pipeline)
 	{
+		if (m_SBTBuffer)
+			Release();
+
 		auto device = VulkanContext::GetCurrentDevice();
 		VulkanAllocator allocator("ShaderBindingTable");
 
@@ -104,18 +107,31 @@ namespace VulkanCore {
 		memcpy(sbtBufferDst, shaderHandleStorage.data(), shaderGroupBaseAlignment);
 		sbtBufferDst += m_RayGenSBTInfo.size;
 		offset += m_RayGenSBTInfo.size;
+		m_RayGenSBTInfo.stride = m_RayGenSBTInfo.size;
 
 		// Hit
-		m_RayClosestHitSBTInfo = Utils::GetSBTStridedDeviceAddressRegion(m_SBTBuffer, offset, (uint32_t)m_HitShaderInfos.size());
+		m_RayHitSBTInfo = Utils::GetSBTStridedDeviceAddressRegion(m_SBTBuffer, offset, (uint32_t)m_HitShaderInfos.size());
 		memcpy(sbtBufferDst, shaderHandleStorage.data() + shaderHandleSizeAligned, shaderGroupHandleSize * m_HitShaderInfos.size());
-		sbtBufferDst += m_RayClosestHitSBTInfo.size;
-		offset += m_RayClosestHitSBTInfo.size;
+		sbtBufferDst += m_RayHitSBTInfo.size;
+		offset += m_RayHitSBTInfo.size;
 
 		// Miss
 		m_RayMissSBTInfo = Utils::GetSBTStridedDeviceAddressRegion(m_SBTBuffer, offset, (uint32_t)m_RayMissPaths.size());
 		memcpy(sbtBufferDst, shaderHandleStorage.data() + shaderHandleSizeAligned * (m_HitShaderInfos.size() + 1), shaderGroupHandleSize * m_RayMissPaths.size());
 
 		allocator.UnmapMemory(m_SBTMemAlloc);
+	}
+
+	void VulkanShaderBindingTable::Release()
+	{
+		Renderer::SubmitResourceFree([sbtBuffer = m_SBTBuffer, sbtMemAlloc = m_SBTMemAlloc]() mutable
+		{
+			VulkanAllocator allocator("ShaderBindingTable");
+			allocator.DestroyBuffer(sbtBuffer, sbtMemAlloc);
+		});
+
+		m_SBTBuffer = nullptr;
+		m_SBTMemAlloc = nullptr;
 	}
 
 	void VulkanShaderBindingTable::InvalidateShader()

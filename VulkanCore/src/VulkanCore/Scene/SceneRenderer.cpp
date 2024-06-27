@@ -149,7 +149,7 @@ namespace VulkanCore {
 			m_RayTracingBaseMaterial->SetImages(2, m_SceneRTAccumulationImages);
 			m_RayTracingBaseMaterial->SetBuffers(3, m_UBCamera);
 			m_RayTracingBaseMaterial->SetBuffers(4, m_UBPointLight);
-			m_RayTracingBaseMaterial->SetBuffers(5, m_UBSpotLight);
+			//m_RayTracingBaseMaterial->SetBuffers(5, m_UBSpotLight);
 			m_RayTracingBaseMaterial->SetBuffers(6, m_SBMeshBuffersData);
 			m_RayTracingBaseMaterial->PrepareShaderMaterial();
 		}
@@ -162,6 +162,7 @@ namespace VulkanCore {
 			m_RayTracingPBRMaterial->SetTextureArray(1, m_NormalTextureArray);
 			m_RayTracingPBRMaterial->SetTextureArray(2, m_ARMTextureArray);
 			m_RayTracingPBRMaterial->SetBuffers(3, m_SBMaterialDataBuffer);
+			m_RayTracingPBRMaterial->SetBuffers(4, m_UBRTMaterialData);
 			m_RayTracingPBRMaterial->PrepareShaderMaterial();
 		}
 
@@ -169,11 +170,10 @@ namespace VulkanCore {
 		{
 			m_RayTracingSkyboxMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Skybox Material", 2);
 
-			//m_RayTracingSkyboxMaterial->SetTexture(0, m_PrefilteredTexture);
+			m_RayTracingSkyboxMaterial->SetTexture(0, m_PrefilteredTexture);
 			//m_RayTracingSkyboxMaterial->SetTexture(1, m_IrradianceTexture);
 			//m_RayTracingSkyboxMaterial->SetImage(2, m_BRDFTexture);
-			m_RayTracingSkyboxMaterial->SetTexture(3, m_CubemapTexture);
-			m_RayTracingSkyboxMaterial->SetBuffers(4, m_UBSkyboxSettings);
+			m_RayTracingSkyboxMaterial->SetBuffers(3, m_UBSkyboxSettings);
 			m_RayTracingSkyboxMaterial->PrepareShaderMaterial();
 		}
 	}
@@ -306,7 +306,7 @@ namespace VulkanCore {
 			};
 
 			std::vector<std::string> missPaths = {
-				"CoreRT.rmiss"
+				"CoreRT.rmiss", "Shadow.rmiss"
 			};
 
 			m_RayTracingSBT = std::make_shared<VulkanShaderBindingTable>("CoreRT.rgen", hitShaderInfos, missPaths);
@@ -456,7 +456,7 @@ namespace VulkanCore {
 			m_SkyboxMaterial = std::make_shared<VulkanMaterial>(m_SkyboxPipeline->GetSpecification().pShader, "Skybox Shader Material");
 
 			m_SkyboxMaterial->SetBuffers(0, m_UBCamera);
-			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
+			m_SkyboxMaterial->SetTexture(1, m_PrefilteredTexture);
 			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
 	}
@@ -560,7 +560,7 @@ namespace VulkanCore {
 		// Skybox Material
 		{
 			m_SkyboxMaterial->SetBuffers(0, m_UBCamera);
-			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
+			m_SkyboxMaterial->SetTexture(1, m_PrefilteredTexture);
 			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
 
@@ -596,6 +596,7 @@ namespace VulkanCore {
 		m_UBPointLight.reserve(framesInFlight);
 		m_UBSpotLight.reserve(framesInFlight);
 		m_UBSkyboxSettings.reserve(framesInFlight);
+		m_UBRTMaterialData.reserve(framesInFlight);
 		m_ImageBuffer.reserve(framesInFlight);
 		m_SBMeshBuffersData.reserve(framesInFlight);
 		m_SBMaterialDataBuffer.reserve(framesInFlight);
@@ -607,6 +608,7 @@ namespace VulkanCore {
 			m_UBPointLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBPointLights)));
 			m_UBSpotLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBSpotLights)));
 			m_UBSkyboxSettings.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(SkyboxSettings)));
+			m_UBRTMaterialData.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(RTMaterialData)));
 			m_ImageBuffer.emplace_back(std::make_shared<VulkanIndexBuffer>(m_ViewportSize.x * m_ViewportSize.y * sizeof(int)));
 		}
 
@@ -712,7 +714,6 @@ namespace VulkanCore {
 		m_BloomDirtTexture = AssetManager::GetAsset<Texture2D>("assets/textures/LensDirt.png");
 
 		auto blackTextureCube = Renderer::GetBlackTextureCube(ImageFormat::RGBA8_UNORM);
-		m_CubemapTexture = blackTextureCube;
 		m_PrefilteredTexture = blackTextureCube;
 		m_IrradianceTexture = blackTextureCube;
 
@@ -876,23 +877,21 @@ namespace VulkanCore {
 			}
 
 			// TODO: Ray Trace Shader Reload
-#if 0
-			ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal, 2.0f);
+			ImGui::Separator();
 			{
 				ImGui::SetNextItemAllowOverlap();
-				ImGui::Selectable("Ray Trace Shader", false, ImGuiSelectableFlags_AllowOverlap, ImVec2{0.0f, 24.5f});
+				ImGui::Selectable("RayTrace", false, ImGuiSelectableFlags_AllowOverlap, ImVec2{0.0f, 24.5f});
 
 				ImGui::SameLine(ImGui::GetContentRegionAvail().x - 20.0f);
 				ImGui::PushID(buttonID);
 				if (ImGui::Button("Reload", ImVec2{ 0.0f, 24.5f }))
 				{
 					m_RayTracingSBT->GetShader()->Reload();
-					RecreatePipelines();
+					m_RayTracingPipeline->ReloadPipeline();
 				}
 
 				ImGui::PopID();
 			}
-#endif
 
 			ImGui::TreePop();
 		}
@@ -905,6 +904,17 @@ namespace VulkanCore {
 				uint32_t DragMax = 16;
 				ImGui::SliderScalar("Sample Count", ImGuiDataType_U32, &m_RTSettings.SampleCount, &DragMin, &DragMax);
 				ImGui::SliderScalar("Bounces", ImGuiDataType_U32, &m_RTSettings.Bounces, &DragMin, &DragMax);
+
+				ImGui::DragFloat("Transmission", &m_RTMaterialData.Transmission, 0.01f, 0.01f, 1.0f);
+				ImGui::DragFloat("Specular Tint", &m_RTMaterialData.SpecularTint, 0.01f, 0.01f, 1.0f);
+				ImGui::DragFloat("IOR", &m_RTMaterialData.IOR, 0.01f, 0.01f, 1.0f);
+				ImGui::DragFloat("Sheen", &m_RTMaterialData.Sheen, 0.01f, 0.01f, 1.0f);
+				ImGui::DragFloat("Sheen Tint", &m_RTMaterialData.SheenTint, 0.01f, 0.01f, 1.0f);
+				ImGui::DragFloat("Clearcoat", &m_RTMaterialData.Clearcoat, 0.01f, 0.01f, 1.0f);
+				ImGui::DragFloat("Clearcoat Gloss", &m_RTMaterialData.ClearcoatGloss, 0.01f, 0.01f, 1.0f);
+				ImGui::DragFloat("Subsurface", &m_RTMaterialData.Subsurface, 0.01f, 0.01f, 1.0f);
+				ImGui::DragFloat("Extinction", &m_RTMaterialData.Extinction, 0.01f, 0.01f, 1.0f);
+				ImGui::DragFloat("At Distance", &m_RTMaterialData.AtDistance, 0.01f, 0.01f, 1.0f);
 
 				ImGui::Checkbox("Accumulate", &m_Accumulate);
 				ImGui::Text("Accumulate Frame Count: %u", m_RTSettings.AccumulateFrameIndex);
@@ -1018,6 +1028,9 @@ namespace VulkanCore {
 
 		// Skybox Data
 		m_UBSkyboxSettings[frameIndex]->WriteAndFlushBuffer(&m_SkyboxSettings);
+
+		// Ray Tracing Material Data
+		m_UBRTMaterialData[frameIndex]->WriteAndFlushBuffer(&m_RTMaterialData);
 
 		m_SceneCommandBuffer->Begin();
 
@@ -1204,7 +1217,6 @@ namespace VulkanCore {
 	{
 		// Obtain Cubemaps
 		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap(filepath);
-		m_CubemapTexture = filteredMap;
 		m_PrefilteredTexture = filteredMap;
 		m_IrradianceTexture = irradianceMap;
 
@@ -1213,7 +1225,7 @@ namespace VulkanCore {
 		m_GeometryMaterial->SetTexture(8, m_PrefilteredTexture);
 		m_GeometryMaterial->PrepareShaderMaterial();
 
-		m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
+		m_SkyboxMaterial->SetTexture(1, m_PrefilteredTexture);
 		m_SkyboxMaterial->PrepareShaderMaterial();
 
 		ImGuiLayer::UpdateDescriptor(m_SkyboxTextureID, *std::dynamic_pointer_cast<VulkanTextureCube>(m_PrefilteredTexture));
@@ -1232,7 +1244,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::ResetAccumulationFrameIndex()
 	{
-		Renderer::SubmitResourceFree([this]
+		Renderer::Submit([this]
 		{
 			m_RTSettings.AccumulateFrameIndex = 1;
 		});
