@@ -1,9 +1,37 @@
 #pragma once
 
+struct LightSample
+{
+	vec3 Position;
+	vec3 Normal;
+	vec3 Emission;
+	float PDF;
+};
+
+struct BSDFSample
+{
+	vec3 Direction;
+	float PDF;
+};
+
+struct Ray
+{
+	vec3 Origin;
+	vec3 Direction;
+};
+
 struct RayPayload
 {
-	vec3 Color;
-	vec4 ScatterDirection;
+	Ray RayData;
+	BSDFSample BSDF;
+	vec3 Radiance;
+	vec3 Absorption;
+	vec3 Beta;
+	vec3 WorldPosition;
+	vec3 Normal;
+	vec3 FFNormal;
+	float ETA;
 	float Distance;
+	uint Depth;
 	uint Seed;
 };

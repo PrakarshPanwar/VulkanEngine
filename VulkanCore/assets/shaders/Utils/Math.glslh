@@ -1,0 +1,19 @@
+#pragma once
+
+#define PI 3.14159265358979323846
+#define TWO_PI 6.28318530717958647692
+#define INV_PI 0.31830988618379067154
+#define INV_2PI 0.15915494309189533577
+#define EPS 0.001
+#define INFINITY 1000.0
+
+float Max3(const vec3 v)
+{
+	return max(max(v.x, v.y), v.z);
+}
+
+float PowerHeuristic(float a, float b)
+{
+	float t = a * a;
+	return t / (b * b + t);
+}

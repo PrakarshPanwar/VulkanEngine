@@ -19,12 +19,13 @@ namespace VulkanCore {
 
 		// NOTE: Should run inside RayTracingPipeline
 		void Invalidate(VkPipeline pipeline);
+		void Release();
 
 		inline std::shared_ptr<Shader> GetShader() const override { return m_Shader; }
 
 		inline const std::vector<VkRayTracingShaderGroupCreateInfoKHR>& GetShaderGroups() const { return m_ShaderGroups; }
 		inline const VkStridedDeviceAddressRegionKHR& GetRayGenStridedDeviceAddressRegion() const { return m_RayGenSBTInfo; }
-		inline const VkStridedDeviceAddressRegionKHR& GetRayHitStridedDeviceAddressRegion() const { return m_RayClosestHitSBTInfo; }
+		inline const VkStridedDeviceAddressRegionKHR& GetRayHitStridedDeviceAddressRegion() const { return m_RayHitSBTInfo; }
 		inline const VkStridedDeviceAddressRegionKHR& GetRayMissStridedDeviceAddressRegion() const { return m_RayMissSBTInfo; }
 	private:
 		void InvalidateShader();
@@ -38,7 +39,7 @@ namespace VulkanCore {
 		VkBuffer m_SBTBuffer = nullptr;
 		VmaAllocation m_SBTMemAlloc = nullptr;
 		std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_ShaderGroups;
-		VkStridedDeviceAddressRegionKHR m_RayGenSBTInfo{}, m_RayClosestHitSBTInfo{}, m_RayMissSBTInfo{}, m_RayIntersectionSBTInfo{};
+		VkStridedDeviceAddressRegionKHR m_RayGenSBTInfo{}, m_RayHitSBTInfo{}, m_RayMissSBTInfo{};
 	};
 
 }

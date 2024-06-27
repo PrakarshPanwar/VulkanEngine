@@ -103,6 +103,12 @@ namespace VulkanCore {
 		});
 
 		m_RayTracingPipeline = nullptr;
+
+		m_RayGenShaderModule = nullptr;
+		m_RayClosestHitShaderModules.clear();
+		m_RayIntersectionShaderModules.clear();
+		m_RayAnyHitShaderModules.clear();
+		m_RayMissShaderModules.clear();
 	}
 
 	void VulkanRayTracingPipeline::Bind(VkCommandBuffer commandBuffer)
@@ -257,7 +263,7 @@ namespace VulkanCore {
 		rayTracingPipelineInfo.pStages = shaderStages.data();
 		rayTracingPipelineInfo.groupCount = (uint32_t)vulkanSBT->GetShaderGroups().size();
 		rayTracingPipelineInfo.pGroups = vulkanSBT->GetShaderGroups().data();
-		rayTracingPipelineInfo.maxPipelineRayRecursionDepth = 1;
+		rayTracingPipelineInfo.maxPipelineRayRecursionDepth = 2;
 		rayTracingPipelineInfo.layout = m_PipelineLayout;
 		rayTracingPipelineInfo.basePipelineIndex = -1;
 		rayTracingPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -294,8 +300,10 @@ namespace VulkanCore {
 				switch (stage)
 				{
 				case ShaderType::RayGeneration:
+				{
 					m_RayGenShaderModule = Utils::CreateShaderModule(source);
 					break;
+				}
 				case ShaderType::RayClosestHit:
 				{
 					VkShaderModule closestHitModule = Utils::CreateShaderModule(source);
@@ -404,7 +412,7 @@ namespace VulkanCore {
 			rayTracingPipelineInfo.pStages = shaderStages.data();
 			rayTracingPipelineInfo.groupCount = (uint32_t)vulkanSBT->GetShaderGroups().size();
 			rayTracingPipelineInfo.pGroups = vulkanSBT->GetShaderGroups().data();
-			rayTracingPipelineInfo.maxPipelineRayRecursionDepth = 1;
+			rayTracingPipelineInfo.maxPipelineRayRecursionDepth = 2;
 			rayTracingPipelineInfo.layout = m_PipelineLayout;
 			rayTracingPipelineInfo.basePipelineIndex = -1;
 			rayTracingPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
