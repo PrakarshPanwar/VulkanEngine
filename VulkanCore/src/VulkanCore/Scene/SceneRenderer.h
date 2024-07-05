@@ -152,6 +152,7 @@ namespace VulkanCore {
 
 		struct RTMaterialData
 		{
+			glm::vec4 Extinction_AtDistance = glm::vec4{ 0.75f, 0.75f, 0.75f, 0.1f }; // Extinction => XYZ, At Distance => W
 			float Transmission = 0.25f;
 			float SpecularTint = 0.1f;
 			float IOR = 0.5f;
@@ -159,9 +160,8 @@ namespace VulkanCore {
 			float SheenTint = 0.5f;
 			float Clearcoat = 0.25f;
 			float ClearcoatGloss = 0.8f;
+			float Anisotropy = 0.5f;
 			float Subsurface = 0.8f;
-			float Extinction = 0.75f;
-			float AtDistance = 0.1f;
 		} m_RTMaterialData;
 	private:
 		std::shared_ptr<Scene> m_Scene;
@@ -236,6 +236,7 @@ namespace VulkanCore {
 
 		// Skybox Resources
 		std::shared_ptr<TextureCube> m_PrefilteredTexture, m_IrradianceTexture;
+		std::shared_ptr<Texture2D> m_HDRTexture, m_PDFTexture, m_CDFTexture;
 		std::shared_ptr<Image2D> m_BRDFTexture;
 		VkDescriptorSet m_SkyboxTextureID;
 

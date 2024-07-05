@@ -19,8 +19,6 @@ namespace VulkanCore {
 
 		// NOTE: Should run inside RayTracingPipeline
 		void Invalidate(VkPipeline pipeline);
-		void Release();
-
 		inline std::shared_ptr<Shader> GetShader() const override { return m_Shader; }
 
 		inline const std::vector<VkRayTracingShaderGroupCreateInfoKHR>& GetShaderGroups() const { return m_ShaderGroups; }
@@ -29,6 +27,7 @@ namespace VulkanCore {
 		inline const VkStridedDeviceAddressRegionKHR& GetRayMissStridedDeviceAddressRegion() const { return m_RayMissSBTInfo; }
 	private:
 		void InvalidateShader();
+		void Release();
 	private:
 		std::shared_ptr<Shader> m_Shader;
 

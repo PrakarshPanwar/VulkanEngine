@@ -1,5 +1,30 @@
 #pragma once
 
+vec4 EnvironmentSample(inout vec3 color)
+{
+	float r1 = RandomFloat(o_RayPayload.Seed);
+	float r2 = RandomFloat(o_RayPayload.Seed);
+
+	float v = texture(u_PDFTexture, vec2(0.0, r1)).x; // Marginal
+	float u = texture(u_CDFTexture, vec2(r2, v)).x;  // Conditional
+
+	color = texture(u_HDRTexture, vec2(u, v)).xyz * u_Skybox.Intensity;
+	float pdf = texture(u_CDFTexture, vec2(u, v)).y * texture(u_PDFTexture, vec2(0.0, v)).y;
+
+	float phi = u * TWO_PI;
+	float theta = v * PI;
+
+	if (sin(theta) == 0.0)
+		pdf = 0.0;
+
+	return vec4(
+		-sin(theta) * cos(phi), 
+		cos(theta),
+		-sin(theta) * sin(phi),
+		(pdf * HDR_RESOLUTION) / (TWO_PI * PI * sin(theta))
+	);
+}
+
 vec3 DirectLight(in Material material)
 {
 	vec3 L = vec3(0);
@@ -10,10 +35,9 @@ vec3 DirectLight(in Material material)
 
 	vec3 surfacePosition = o_RayPayload.WorldPosition;
 
-#if 0
 	// Environment Light
 	vec3 color = vec3(0.0);
-	vec4 dirPdf = envSample(color);
+	vec4 dirPdf = EnvironmentSample(color);
 	vec3 lightDir = dirPdf.xyz;
 	float lightPdf = dirPdf.w;
 
@@ -42,7 +66,6 @@ vec3 DirectLight(in Material material)
 		if (misWeight > 0.0)
 			L += misWeight * F * cosTheta * color / (lightPdf + EPS);
 	}
-#endif
 
 	if (u_PointLight.Count > 0)
 	{
@@ -61,7 +84,7 @@ vec3 DirectLight(in Material material)
 		if (dot(o_RayPayload.FFNormal, lightDir) <= 0.0 || dot(lightDir, sampled.Normal) >= 0.0)
 			return L;
 
-		// Shadow ray (payload 1 is Shadow.miss)
+		// Shadow ray (payload 1 is Shadow.rmiss)
 		traceRayEXT(u_TopLevelAS,
 			gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT,
 			0xFF,

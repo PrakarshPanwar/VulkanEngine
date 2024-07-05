@@ -29,6 +29,7 @@ namespace VulkanCore {
 
 		inline float GetAspectRatio() { return m_AspectRatio; }
 		inline void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; UpdateProjection(); }
+		void SetFocalPoint(const glm::vec3& focalPoint);
 
 		inline void SetFieldOfView(float fov)
 		{
@@ -78,7 +79,7 @@ namespace VulkanCore {
 
 		glm::vec2 m_InitialMousePosition = { 0.0f, 0.0f };
 
-		float m_Distance = 10.0f;
+		float m_Distance = 10.0f, m_FlySpeed = 0.1f;
 		float m_Pitch = 0.0f, m_Yaw = 0.0f;
 
 		float m_ViewportWidth = 1280.0f, m_ViewportHeight = 720.0f;

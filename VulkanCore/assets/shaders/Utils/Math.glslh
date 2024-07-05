@@ -6,6 +6,7 @@
 #define INV_2PI 0.15915494309189533577
 #define EPS 0.001
 #define INFINITY 1000.0
+#define HDR_RESOLUTION 8388608.0
 
 float Max3(const vec3 v)
 {

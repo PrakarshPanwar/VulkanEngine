@@ -114,6 +114,11 @@ namespace VulkanCore {
 		Input::SetCursorMode(flyMode ? CursorMode::Locked : CursorMode::Normal);
 	}
 
+	void EditorCamera::SetFocalPoint(const glm::vec3& focalPoint)
+	{
+		m_FocalPoint = focalPoint;
+	}
+
 	bool EditorCamera::OnKeyEvent(KeyPressedEvent& e)
 	{
 		if (m_FlyMode)
@@ -122,22 +127,22 @@ namespace VulkanCore {
 			{
 			case Key::W:
 			{
-				m_FocalPoint += GetForwardDirection() * 0.1f;
+				m_FocalPoint += GetForwardDirection() * m_FlySpeed;
 				break;
 			}
 			case Key::A:
 			{
-				m_FocalPoint -= GetRightDirection() * 0.1f;
+				m_FocalPoint -= GetRightDirection() * m_FlySpeed;
 				break;
 			}
 			case Key::S:
 			{
-				m_FocalPoint -= GetForwardDirection() * 0.1f;
+				m_FocalPoint -= GetForwardDirection() * m_FlySpeed;
 				break;
 			}
 			case Key::D:
 			{
-				m_FocalPoint += GetRightDirection() * 0.1f;
+				m_FocalPoint += GetRightDirection() * m_FlySpeed;
 				break;
 			}
 			}
@@ -148,8 +153,17 @@ namespace VulkanCore {
 
 	bool EditorCamera::OnMouseScroll(MouseScrolledEvent& e)
 	{
-		float delta = e.GetYOffset() * 0.1f;
-		MouseZoom(delta);
+		if (m_FlyMode)
+		{
+			m_FlySpeed += e.GetYOffset() * 0.01f;
+			m_FlySpeed = glm::max(m_FlySpeed, 0.01f);
+		}
+		else
+		{
+			float delta = e.GetYOffset() * 0.1f;
+			MouseZoom(delta);
+		}
+
 		UpdateView();
 		return true;
 	}
@@ -173,7 +187,6 @@ namespace VulkanCore {
 		glm::vec2 abs_delta = glm::abs(delta);
 		if (abs_delta.x < abs_delta.y)
 			m_FocalPoint += -GetForwardDirection() * delta.y * DragSpeed();
-
 		else
 		{
 			float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
