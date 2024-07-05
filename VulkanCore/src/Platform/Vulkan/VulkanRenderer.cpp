@@ -42,6 +42,41 @@ namespace VulkanCore {
 			}
 		}
 
+		static VkDeviceSize GetMemorySize(ImageFormat format, uint32_t width, uint32_t height)
+		{
+			switch (format)
+			{
+			case ImageFormat::R32I:		   return width * height * sizeof(uint32_t);
+			case ImageFormat::RGBA8_SRGB:  return width * height * 4;
+			case ImageFormat::RGBA8_NORM:  return width * height * 4;
+			case ImageFormat::RGBA8_UNORM: return width * height * 4;
+			case ImageFormat::RGBA16F:	   return width * height * 4 * sizeof(uint16_t);
+			case ImageFormat::RGBA32F:	   return width * height * 4 * sizeof(float);
+			default:
+				VK_CORE_ASSERT(false, "Format not supported!");
+				return 0;
+			}
+		}
+
+		static float Luminance(const glm::vec3& color)
+		{
+			return color.x * 0.212671f + color.y * 0.715160f + color.z * 0.072169f;
+		}
+
+		static int LowerBound(const std::vector<float>& arr, int lower, int upper, const float value)
+		{
+			while (lower < upper)
+			{
+				int mid = lower + (upper - lower) / 2;
+				if (arr[mid] < value)
+					lower = mid + 1;
+				else
+					upper = mid;
+			}
+
+			return lower;
+		}
+
 	}
 
 	VulkanRenderer* VulkanRenderer::s_Instance;
@@ -453,6 +488,143 @@ namespace VulkanCore {
 		});
 
 		return brdfTexture;
+	}
+
+	std::tuple<std::shared_ptr<Texture2D>, std::shared_ptr<Texture2D>> VulkanRenderer::CreatePDFCDFTextures(const std::shared_ptr<Texture2D>& hdrTexture)
+	{
+		auto spec = hdrTexture->GetSpecification();
+		if (spec.Format != ImageFormat::RGBA32F)
+			return {};
+
+		auto device = VulkanContext::GetCurrentDevice();
+
+		std::shared_ptr<VulkanIndexBuffer> imageBuffer = std::make_shared<VulkanIndexBuffer>(Utils::GetMemorySize(spec.Format, spec.Width, spec.Height));
+
+		VkImage srcImage = std::dynamic_pointer_cast<VulkanTexture>(hdrTexture)->GetVulkanImageInfo().Image;
+		VkBuffer dstBuffer = imageBuffer->GetVulkanBuffer();
+
+		VkImageSubresourceLayers subresourceLayers{};
+		subresourceLayers.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceLayers.baseArrayLayer = 0;
+		subresourceLayers.layerCount = 1;
+		subresourceLayers.mipLevel = 0;
+
+		VkBufferImageCopy bufferImageCopy{};
+		bufferImageCopy.bufferOffset = 0;
+		bufferImageCopy.bufferRowLength = spec.Width;
+		bufferImageCopy.bufferImageHeight = spec.Height;
+		bufferImageCopy.imageSubresource = subresourceLayers;
+		bufferImageCopy.imageOffset = { 0, 0, 0 };
+		bufferImageCopy.imageExtent = { spec.Width, spec.Height, 1 };
+
+		VkCommandBuffer copyCmd = device->GetCommandBuffer();
+
+		// Changing Source Image Layout
+		Utils::InsertImageMemoryBarrier(copyCmd, srcImage,
+			VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+		vkCmdCopyImageToBuffer(copyCmd,
+			srcImage,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			dstBuffer,
+			1,
+			&bufferImageCopy);
+
+		// Changing Source Image back to its previous layout
+		Utils::InsertImageMemoryBarrier(copyCmd, srcImage,
+			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+		device->FlushCommandBuffer(copyCmd);
+
+		float* imagePtr = reinterpret_cast<float*>(imageBuffer->GetMapPointer());
+
+		std::vector<float> pdf2D = std::vector<float>(spec.Width * spec.Height);
+		std::vector<float> cdf2D = std::vector<float>(spec.Width * spec.Height);
+
+		std::vector<float> pdf1D = std::vector<float>(spec.Height);
+		std::vector<float> cdf1D = std::vector<float>(spec.Height);
+
+		glm::vec2* marginalDistribution = new glm::vec2[spec.Width * spec.Height];
+		glm::vec2* conditionalDistribution = new glm::vec2[spec.Width * spec.Height];
+
+		memset(marginalDistribution, 0, spec.Width * spec.Height * sizeof(glm::vec2));
+		memset(conditionalDistribution, 0, spec.Width * spec.Height * sizeof(glm::vec2));
+
+		float colWeightSum = 0.0f;
+		for (int i = 0; i < spec.Height; ++i)
+		{
+			float rowWeightSum = 0.0f;
+			for (int j = 0; j < spec.Width; ++j)
+			{
+				glm::vec3 color = glm::vec3{
+					imagePtr[i * spec.Width * 4 + j * 4 + 0],
+					imagePtr[i * spec.Width * 4 + j * 4 + 1],
+					imagePtr[i * spec.Width * 4 + j * 4 + 2] };
+
+				float weight = Utils::Luminance(color);
+				rowWeightSum += weight;
+
+				pdf2D[i * spec.Width + j] = weight;
+				cdf2D[i * spec.Width + j] = rowWeightSum;
+			}
+
+			// Convert to Range [0, 1]
+			for (int j = 0; j < spec.Width; ++j)
+			{
+				pdf2D[i * spec.Width + j] /= rowWeightSum;
+				cdf2D[i * spec.Width + j] /= rowWeightSum;
+			}
+
+			colWeightSum += rowWeightSum;
+
+			pdf1D[i] = rowWeightSum;
+			cdf1D[i] = colWeightSum;
+		}
+
+		// Convert to Range [0, 1]
+		for (int j = 0; j < spec.Height; ++j)
+		{
+			pdf1D[j] /= colWeightSum;
+			cdf1D[j] /= colWeightSum;
+		}
+
+		// Precalculate Row and Column to avoid Binary Search during Lookup in the Shader
+		for (int i = 0; i < spec.Height; ++i)
+		{
+			float invHeight = static_cast<float>(i + 1) / spec.Height;
+			float row = Utils::LowerBound(cdf1D, 0, spec.Height, invHeight);
+			marginalDistribution[i * spec.Width].x = row / static_cast<float>(spec.Height);
+			marginalDistribution[i * spec.Width].y = pdf1D[i];
+		}
+
+		for (int i = 0; i < spec.Height; ++i)
+		{
+			for (int j = 0; j < spec.Width; ++j)
+			{
+				float invWidth = static_cast<float>(j + 1) / spec.Width;
+				float col = Utils::LowerBound(cdf2D, i * spec.Width, (i + 1) * spec.Width, invWidth) - i * spec.Width;
+				conditionalDistribution[i * spec.Width + j].x = col / static_cast<float>(spec.Width);
+				conditionalDistribution[i * spec.Width + j].y = pdf2D[i * spec.Width + j];
+			}
+		}
+
+		TextureSpecification CDFPDFTextureSpec{};
+		CDFPDFTextureSpec.Width = spec.Width;
+		CDFPDFTextureSpec.Height = spec.Height;
+		CDFPDFTextureSpec.Format = ImageFormat::RG32F;
+		CDFPDFTextureSpec.SamplerWrap = spec.SamplerWrap;
+		CDFPDFTextureSpec.GenerateMips = false;
+
+		auto pdfTexture = std::make_shared<VulkanTexture>(marginalDistribution, CDFPDFTextureSpec);
+		auto cdfTexture = std::make_shared<VulkanTexture>(conditionalDistribution, CDFPDFTextureSpec);
+
+		return { pdfTexture, cdfTexture };
 	}
 
 	std::shared_ptr<Texture2D> VulkanRenderer::GetWhiteTexture(ImageFormat format)

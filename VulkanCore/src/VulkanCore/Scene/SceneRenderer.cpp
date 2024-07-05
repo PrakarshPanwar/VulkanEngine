@@ -25,6 +25,7 @@
 #include "Platform/Vulkan/VulkanIndexBuffer.h"
 
 #include <imgui.h>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace VulkanCore {
 
@@ -170,9 +171,9 @@ namespace VulkanCore {
 		{
 			m_RayTracingSkyboxMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Skybox Material", 2);
 
-			m_RayTracingSkyboxMaterial->SetTexture(0, m_PrefilteredTexture);
-			//m_RayTracingSkyboxMaterial->SetTexture(1, m_IrradianceTexture);
-			//m_RayTracingSkyboxMaterial->SetImage(2, m_BRDFTexture);
+			m_RayTracingSkyboxMaterial->SetTexture(0, m_HDRTexture);
+			m_RayTracingSkyboxMaterial->SetTexture(1, m_PDFTexture);
+			m_RayTracingSkyboxMaterial->SetTexture(2, m_CDFTexture);
 			m_RayTracingSkyboxMaterial->SetBuffers(3, m_UBSkyboxSettings);
 			m_RayTracingSkyboxMaterial->PrepareShaderMaterial();
 		}
@@ -717,6 +718,11 @@ namespace VulkanCore {
 		m_PrefilteredTexture = blackTextureCube;
 		m_IrradianceTexture = blackTextureCube;
 
+		auto whiteTexture = Renderer::GetWhiteTexture();
+		m_HDRTexture = whiteTexture;
+		m_PDFTexture = whiteTexture;
+		m_CDFTexture = whiteTexture;
+
 		m_SkyboxTextureID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTextureCube>(m_PrefilteredTexture));
 
 		m_BRDFTexture = Renderer::CreateBRDFTexture();
@@ -859,6 +865,25 @@ namespace VulkanCore {
 			auto& shaderMap = Renderer::GetShaderMap();
 
 			int buttonID = 0;
+			// Ray Tracing
+			{
+				ImGui::SetNextItemAllowOverlap();
+				ImGui::Selectable("RayTrace", false, ImGuiSelectableFlags_AllowOverlap, ImVec2{0.0f, 24.5f});
+
+				ImGui::SameLine(ImGui::GetContentRegionAvail().x - 20.0f);
+				ImGui::PushID(buttonID);
+				if (ImGui::Button("Reload", ImVec2{ 0.0f, 24.5f }))
+				{
+					m_RayTracingSBT->GetShader()->Reload();
+					m_RayTracingPipeline->ReloadPipeline();
+				}
+
+				ImGui::PopID();
+				buttonID++;
+			}
+
+			ImGui::Separator();
+
 			for (auto&& [name, shader] : shaderMap)
 			{
 				ImGui::SetNextItemAllowOverlap();
@@ -876,23 +901,6 @@ namespace VulkanCore {
 				buttonID++;
 			}
 
-			// TODO: Ray Trace Shader Reload
-			ImGui::Separator();
-			{
-				ImGui::SetNextItemAllowOverlap();
-				ImGui::Selectable("RayTrace", false, ImGuiSelectableFlags_AllowOverlap, ImVec2{0.0f, 24.5f});
-
-				ImGui::SameLine(ImGui::GetContentRegionAvail().x - 20.0f);
-				ImGui::PushID(buttonID);
-				if (ImGui::Button("Reload", ImVec2{ 0.0f, 24.5f }))
-				{
-					m_RayTracingSBT->GetShader()->Reload();
-					m_RayTracingPipeline->ReloadPipeline();
-				}
-
-				ImGui::PopID();
-			}
-
 			ImGui::TreePop();
 		}
 
@@ -905,16 +913,17 @@ namespace VulkanCore {
 				ImGui::SliderScalar("Sample Count", ImGuiDataType_U32, &m_RTSettings.SampleCount, &DragMin, &DragMax);
 				ImGui::SliderScalar("Bounces", ImGuiDataType_U32, &m_RTSettings.Bounces, &DragMin, &DragMax);
 
-				ImGui::DragFloat("Transmission", &m_RTMaterialData.Transmission, 0.01f, 0.01f, 1.0f);
-				ImGui::DragFloat("Specular Tint", &m_RTMaterialData.SpecularTint, 0.01f, 0.01f, 1.0f);
-				ImGui::DragFloat("IOR", &m_RTMaterialData.IOR, 0.01f, 0.01f, 1.0f);
-				ImGui::DragFloat("Sheen", &m_RTMaterialData.Sheen, 0.01f, 0.01f, 1.0f);
-				ImGui::DragFloat("Sheen Tint", &m_RTMaterialData.SheenTint, 0.01f, 0.01f, 1.0f);
-				ImGui::DragFloat("Clearcoat", &m_RTMaterialData.Clearcoat, 0.01f, 0.01f, 1.0f);
-				ImGui::DragFloat("Clearcoat Gloss", &m_RTMaterialData.ClearcoatGloss, 0.01f, 0.01f, 1.0f);
-				ImGui::DragFloat("Subsurface", &m_RTMaterialData.Subsurface, 0.01f, 0.01f, 1.0f);
-				ImGui::DragFloat("Extinction", &m_RTMaterialData.Extinction, 0.01f, 0.01f, 1.0f);
-				ImGui::DragFloat("At Distance", &m_RTMaterialData.AtDistance, 0.01f, 0.01f, 1.0f);
+				ImGui::ColorEdit3("Extinction", glm::value_ptr(m_RTMaterialData.Extinction_AtDistance));
+				ImGui::DragFloat("At Distance", &m_RTMaterialData.Extinction_AtDistance.w, 0.01f, 0.001f, 1.0f);
+				ImGui::DragFloat("Transmission", &m_RTMaterialData.Transmission, 0.01f, 0.001f, 1.0f);
+				ImGui::DragFloat("Specular Tint", &m_RTMaterialData.SpecularTint, 0.01f, 0.001f, 1.0f);
+				ImGui::DragFloat("IOR", &m_RTMaterialData.IOR, 0.01f, 0.001f, 0.999f);
+				ImGui::DragFloat("Sheen", &m_RTMaterialData.Sheen, 0.01f, 0.001f, 1.0f);
+				ImGui::DragFloat("Sheen Tint", &m_RTMaterialData.SheenTint, 0.01f, 0.001f, 1.0f);
+				ImGui::DragFloat("Clearcoat", &m_RTMaterialData.Clearcoat, 0.01f, 0.001f, 1.0f);
+				ImGui::DragFloat("Clearcoat Gloss", &m_RTMaterialData.ClearcoatGloss, 0.001f, 0.01f, 1.0f);
+				ImGui::DragFloat("Anisotropy", &m_RTMaterialData.Anisotropy, 0.01f, 0.001f, 1.0f);
+				ImGui::DragFloat("Subsurface", &m_RTMaterialData.Subsurface, 0.01f, 0.001f, 1.0f);
 
 				ImGui::Checkbox("Accumulate", &m_Accumulate);
 				ImGui::Text("Accumulate Frame Count: %u", m_RTSettings.AccumulateFrameIndex);
@@ -1216,7 +1225,7 @@ namespace VulkanCore {
 	void SceneRenderer::UpdateSkybox(const std::string& filepath)
 	{
 		// Obtain Cubemaps
-		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap(filepath);
+		auto [filteredMap, irradianceMap] = Renderer::CreateEnviromentMap(filepath);
 		m_PrefilteredTexture = filteredMap;
 		m_IrradianceTexture = irradianceMap;
 
@@ -1227,6 +1236,14 @@ namespace VulkanCore {
 
 		m_SkyboxMaterial->SetTexture(1, m_PrefilteredTexture);
 		m_SkyboxMaterial->PrepareShaderMaterial();
+
+		if (m_RayTraced)
+		{
+			m_HDRTexture = AssetManager::GetAsset<Texture2D>(filepath);
+			auto [PDFTexture, CDFTexture] = Renderer::CreatePDFCDFTextures(m_HDRTexture);
+			m_PDFTexture = PDFTexture;
+			m_CDFTexture = CDFTexture;
+		}
 
 		ImGuiLayer::UpdateDescriptor(m_SkyboxTextureID, *std::dynamic_pointer_cast<VulkanTextureCube>(m_PrefilteredTexture));
 	}

@@ -150,9 +150,19 @@ namespace VulkanCore {
 		s_Renderer->TraceRays(cmdBuffer, pipeline, shaderBindingTable, shaderMaterials, width, height, pcData, pcSize);
 	}
 
+	std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> Renderer::CreateEnviromentMap(const std::string& filepath)
+	{
+		return s_Renderer->CreateEnviromentMap(filepath);
+	}
+
 	std::shared_ptr<Image2D> Renderer::CreateBRDFTexture()
 	{
 		return s_Renderer->CreateBRDFTexture();
+	}
+
+	std::tuple<std::shared_ptr<Texture2D>, std::shared_ptr<Texture2D>> Renderer::CreatePDFCDFTextures(const std::shared_ptr<Texture2D>& hdrTexture)
+	{
+		return s_Renderer->CreatePDFCDFTextures(hdrTexture);
 	}
 
 	std::shared_ptr<Texture2D> Renderer::GetWhiteTexture(ImageFormat format)

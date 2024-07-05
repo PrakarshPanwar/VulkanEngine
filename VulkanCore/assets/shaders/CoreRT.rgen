@@ -82,7 +82,7 @@ void main()
 				0);
 
 			radiance = o_RayPayload.Radiance;
-			beta = o_RayPayload.Beta;		
+			beta = o_RayPayload.Beta;
 			rayData = o_RayPayload.RayData;
 			bsdf = o_RayPayload.BSDF;
 			absorption = o_RayPayload.Absorption;

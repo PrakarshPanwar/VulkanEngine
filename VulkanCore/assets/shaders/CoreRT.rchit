@@ -125,6 +125,7 @@ layout(set = 1, binding = 3) readonly buffer MaterialData
 
 layout(set = 1, binding = 4) uniform RTMaterialData
 {
+	vec4 Extinction_AtDistance;
     float Transmission;
 	float SpecularTint;
 	float IOR;
@@ -132,17 +133,22 @@ layout(set = 1, binding = 4) uniform RTMaterialData
 	float SheenTint;
 	float Clearcoat;
 	float ClearcoatGloss;
+    float Anisotropy;
 	float Subsurface;
-	float Extinction;
-	float AtDistance;
 } u_RTMaterialData;
 
 #include "Utils/Lighting.glslh"
 
-// IBL
-layout(set = 2, binding = 0) uniform samplerCube u_PrefilteredMap;
-layout(set = 2, binding = 1) uniform samplerCube u_IrradianceMap;
-layout(set = 2, binding = 2) uniform sampler2D u_BRDFTexture;
+// Skybox
+layout(set = 2, binding = 0) uniform sampler2D u_HDRTexture;
+layout(set = 2, binding = 1) uniform sampler2D u_PDFTexture;
+layout(set = 2, binding = 2) uniform sampler2D u_CDFTexture;
+
+layout(set = 2, binding = 3) uniform SkyboxData
+{
+	float Intensity;
+	float LOD;
+} u_Skybox;
 
 // Fresnel factor for all incidence
 const vec3 Fdielectric = vec3(0.04);
@@ -154,6 +160,7 @@ struct PBRParams
     float NdotV;
 
     vec3 Albedo;
+    vec2 Anisotropy;
     float Occlusion;
     float Metallic;
     float Roughness;
@@ -161,117 +168,11 @@ struct PBRParams
 
 vec3 GetNormalsFromMap()
 {
-    vec3 tangentNormal = normalize(texture(u_NormalTextureArray[nonuniformEXT(gl_InstanceCustomIndexEXT)], Input.TexCoord).xyz * 2.0 - 1.0);
+    vec3 normal = texture(u_NormalTextureArray[nonuniformEXT(gl_InstanceCustomIndexEXT)], Input.TexCoord).xyz;
+    //normal.y = 1.0 - normal.y;
+
+    vec3 tangentNormal = normalize(normal * 2.0 - 1.0);
     return normalize(Input.WorldNormals * tangentNormal);
-}
-
-vec3 Lighting(vec3 F0)
-{
-    // Reflectance Equation
-    vec3 Lo = vec3(0.0);
-	for (int i = 0; i < u_PointLight.Count; ++i)
-	{
-		PointLight pointLight = u_PointLight.PointLights[i];
-		// Calculate Per-Light Radiance
-        vec3 L = normalize(pointLight.Position.xyz - Input.WorldPosition);
-        vec3 H = normalize(m_Params.View + L);
-        float dist = length(pointLight.Position.xyz - Input.WorldPosition);
-
-        // Calculating Attentuation
-        float attenuation = (1.0) / (dist * (pointLight.Falloff + dist));
-
-        vec3 radiance = pointLight.Color.xyz * pointLight.Color.w * attenuation;
-
-        // Cook-Torrance BRDF
-        float NDF = DistributionGGX(m_Params.Normal, H, m_Params.Roughness);
-        float G = GeometrySmith(m_Params.Normal, m_Params.View, L, m_Params.Roughness);
-        vec3 F = FresnelSchlick(max(dot(H, m_Params.View), 0.0), F0);
-        
-        float NdotL = max(dot(m_Params.Normal, L), 0.0);
-        vec3 numerator = NDF * G * F;
-        float denominator = 4.0 * m_Params.NdotV * NdotL + 0.0001; // + 0.0001 to prevent divide by zero
-        vec3 specular = numerator / denominator;
-        
-         // kS is equal to Fresnel
-        vec3 kS = F;
-        // For Energy Conservation, the Diffuse and Specular Light can't
-        // be above 1.0 (unless the Surface Emits Light); to preserve this
-        // relationship the Diffuse Component (kD) should equal 1.0 - kS.
-        vec3 kD = vec3(1.0) - kS;
-        // Multiply kD by the Inverse Metalness such that only non-metals 
-        // have Diffuse Lighting, or a linear blend if partly metal (pure metals
-        // have no diffuse light).
-        kD *= 1.0 - m_Params.Metallic;
-        // Add to Outgoing Radiance Lo
-        Lo += (kD * m_Params.Albedo / PI + specular) * radiance * NdotL;
-	}
-
-    for (int i = 0; i < u_SpotLight.Count; ++i)
-    {
-        SpotLight spotLight = u_SpotLight.SpotLights[i];
-		// Calculate Per-Light Radiance
-        vec3 L = normalize(spotLight.Position.xyz - Input.WorldPosition);
-        vec3 H = normalize(m_Params.View + L);
-        float dist = length(spotLight.Position.xyz - Input.WorldPosition);
-
-        float theta = dot(L, normalize(-spotLight.Direction)); 
-        float epsilon = (spotLight.InnerCutoff - spotLight.OuterCutoff);
-        float intensity = clamp((theta - spotLight.OuterCutoff) / epsilon, 0.0, 1.0);
-
-        // Calculating Attentuation
-        float attenuation = (1.0) / (dist * (spotLight.Falloff + dist));
-
-        vec3 radiance = spotLight.Color.xyz * spotLight.Color.w * intensity * attenuation;
-
-        // Cook-Torrance BRDF
-        float NDF = DistributionGGX(m_Params.Normal, H, m_Params.Roughness);
-        float G = GeometrySmith(m_Params.Normal, m_Params.View, L, m_Params.Roughness);
-        vec3 F = FresnelSchlick(max(dot(H, m_Params.View), 0.0), F0);
-        
-        float NdotL = max(dot(m_Params.Normal, L), 0.0);
-        vec3 numerator = NDF * G * F;
-        float denominator = 4.0 * m_Params.NdotV * NdotL + 0.0001; // + 0.0001 to prevent divide by zero
-        vec3 specular = numerator / denominator;
-        
-         // kS is equal to Fresnel
-        vec3 kS = F;
-        // For Energy Conservation, the Diffuse and Specular Light can't
-        // be above 1.0 (unless the Surface Emits Light); to preserve this
-        // relationship the Diffuse Component (kD) should equal 1.0 - kS.
-        vec3 kD = vec3(1.0) - kS;
-        // Multiply kD by the Inverse Metalness such that only non-metals 
-        // have Diffuse Lighting, or a linear blend if partly metal (pure metals
-        // have no diffuse light).
-        kD *= 1.0 - m_Params.Metallic;
-        // Add to Outgoing Radiance Lo
-        Lo += (kD * m_Params.Albedo / PI + specular) * radiance * NdotL;
-    }
-
-    return Lo;
-}
-
-vec3 IBL(vec3 F0, vec3 Lr)
-{
-    // Ambient Lighting (We now use IBL as the Ambient Term)
-    vec3 F = FresnelSchlickRoughness(m_Params.NdotV, F0, m_Params.Roughness);
-    
-    vec3 kS = F;
-    vec3 kD = 1.0 - kS;
-    kD *= 1.0 - m_Params.Metallic;
-
-    vec3 irradiance = texture(u_IrradianceMap, m_Params.Normal).rgb;
-    vec3 diffuse = irradiance * m_Params.Albedo;
-
-    // Sample both the Pre-Filter map and the BRDF LUT and combine them together as per the Split-Sum approximation to get the IBL Specular part
-    int MaxTextureLod = textureQueryLevels(u_PrefilteredMap);
-    vec3 prefilteredColor = textureLod(u_PrefilteredMap, Lr, m_Params.Roughness * MaxTextureLod).rgb;
-
-    vec2 brdf = texture(u_BRDFTexture, vec2(m_Params.NdotV, m_Params.Roughness)).rg;
-    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
-
-    vec3 ambient = (kD * diffuse + specular) * m_Params.Occlusion;
-
-    return ambient;
 }
 
 vec3 EvalDielectricReflection(vec3 V, vec3 N, vec3 L, vec3 H, inout float pdf)
@@ -320,6 +221,47 @@ vec3 EvalSpecular(in vec3 Cspec0, vec3 V, vec3 N, vec3 L, vec3 H, inout float pd
     float G = GeometrySmithGGX(abs(dot(N, L)), m_Params.Roughness) * GeometrySmithGGX(abs(dot(N, V)), m_Params.Roughness);
 
     return F * D * G;
+}
+
+vec3 EvalMicrofacetReflection(vec3 V, vec3 N, vec3 L, vec3 H, vec3 F, out float pdf)
+{
+    pdf = 0.0;
+    if (dot(N, L) <= 0.0)
+        return vec3(0.0);
+
+    V = V * Input.WorldNormals;
+    L = L * Input.WorldNormals;
+
+    float D = GTR2Aniso(H.z, H.x, H.y, m_Params.Anisotropy);
+    float G1 = SmithGAniso(abs(V.z), V.x, V.y, m_Params.Anisotropy);
+    float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, m_Params.Anisotropy);
+
+    pdf = G1 * D / (4.0 * V.z);
+    return F * D * G2 / (4.0 * L.z * V.z);
+}
+
+vec3 EvalMicrofacetRefraction(vec3 V, vec3 N, vec3 L, vec3 H, vec3 F, float eta, out float pdf)
+{
+    pdf = 0.0;
+    if (dot(N, L) >= 0.0)
+        return vec3(0.0);
+
+    V = V * Input.WorldNormals;
+    L = L * Input.WorldNormals;
+
+    float dotLH = dot(L, H);
+    float dotVH = dot(V, H);
+
+    float D = GTR2Aniso(H.z, H.x, H.y, m_Params.Anisotropy);
+    float G1 = SmithGAniso(abs(V.z), V.x, V.y, m_Params.Anisotropy);
+    float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, m_Params.Anisotropy);
+    float denom = dotLH + dotVH * eta;
+    denom *= denom;
+    float eta2 = eta * eta;
+    float jacobian = abs(dotLH) / denom;
+
+    pdf = G1 * max(0.0, dotVH) * D * jacobian / V.z;
+    return pow(m_Params.Albedo, vec3(0.5)) * (1.0 - F) * D * G2 * abs(dotVH) * jacobian * eta2 / abs(L.z * V.z);
 }
 
 vec3 EvalClearcoat(vec3 V, vec3 N, vec3 L, vec3 H, inout float pdf)
@@ -371,7 +313,7 @@ vec3 DisneySample(in Material material, inout vec3 L, inout float pdf)
     float transWeight = (1.0 - m_Params.Metallic) * u_RTMaterialData.Transmission;
 
     vec3 Cdlin = m_Params.Albedo;
-    float Cdlum = 0.3 * Cdlin.x + 0.6 * Cdlin.y + 0.1 * Cdlin.z; // Luminance approximation
+    float Cdlum = 0.212671 * Cdlin.x + 0.715160 * Cdlin.y + 0.072169 * Cdlin.z; // Luminance approximation
 
     vec3 Ctint = Cdlum > 0.0 ? Cdlin / Cdlum : vec3(1.0); // normalize Luminance to isolate Hue + Saturation
     vec3 Cspec0 = mix(material.Albedo.w * 0.08 * mix(vec3(1.0), Ctint, u_RTMaterialData.SpecularTint), Cdlin, m_Params.Metallic);
@@ -386,7 +328,7 @@ vec3 DisneySample(in Material material, inout vec3 L, inout float pdf)
 
     if (RandomFloat(o_RayPayload.Seed) < transWeight)
     {
-        vec3 H = ImportanceSampleGTR2(m_Params.Roughness, r1, r2);
+        vec3 H = SampleGGXVNDF(V, m_Params.Anisotropy, r1, r2);
         H = Input.WorldNormals * H;
 
         if (dot(V, H) < 0.0)
@@ -395,8 +337,7 @@ vec3 DisneySample(in Material material, inout vec3 L, inout float pdf)
         vec3 R = reflect(-V, H);
         float F = FresnelDielectric(abs(dot(R, H)), eta);
 
-        // Reflection/Total Internal Reflection
-        if (r2 < F)
+        if (r2 < F) // Reflection/Total Internal Reflection
         {
             L = normalize(R);
             Fr = EvalDielectricReflection(V, N, L, H, pdf);
@@ -429,8 +370,8 @@ vec3 DisneySample(in Material material, inout vec3 L, inout float pdf)
             // Sample Primary Specular Lobe
             if (RandomFloat(o_RayPayload.Seed) < primarySpecRatio)
             {
-                // TODO: Implement http://jcgt.org/published/0007/04/01/
-                vec3 H = ImportanceSampleGTR2(m_Params.Roughness, r1, r2);
+                // TODO: Implement http://jcgt.org/published/0007/04/01/ (Microfacet Anisotropy)
+                vec3 H = SampleGGXVNDF(V, m_Params.Anisotropy, r1, r2);
                 H = Input.WorldNormals * H;
 
                 if (dot(V, H) < 0.0)
@@ -491,8 +432,7 @@ vec3 DisneyEval(Material material, vec3 L, inout float pdf)
 
     if (transWeight > 0.0)
     {
-        // Reflection
-        if (reflection)
+        if (reflection) // Reflection
         {
             bsdf = EvalDielectricReflection(V, N, L, H, bsdfPdf);
         }
@@ -505,10 +445,10 @@ vec3 DisneyEval(Material material, vec3 L, inout float pdf)
     float tpdf = 0.0;
     if (transWeight < 1.0)
     {
-        vec3 Cdlin = m_Params.Albedo.xyz;
-        float Cdlum = 0.3 * Cdlin.x + 0.6 * Cdlin.y + 0.1 * Cdlin.z; // luminance approx.
+        vec3 Cdlin = m_Params.Albedo;
+        float Cdlum = 0.212671 * Cdlin.x + 0.715160 * Cdlin.y + 0.072169 * Cdlin.z; // Luminance approximation
 
-        vec3 Ctint = Cdlum > 0.0 ? Cdlin / Cdlum : vec3(1.0f); // normalize lum. to isolate hue+sat
+        vec3 Ctint = Cdlum > 0.0 ? Cdlin / Cdlum : vec3(1.0); // normalize Luminance to isolate Hue + Saturation
         vec3 Cspec0 = mix(material.Albedo.w * 0.08 * mix(vec3(1.0), Ctint, u_RTMaterialData.SpecularTint), Cdlin, m_Params.Metallic);
         vec3 Csheen = mix(vec3(1.0), Ctint, u_RTMaterialData.SheenTint);
 
@@ -586,13 +526,17 @@ void main()
     vec3 aorm = texture(u_ARMTextureArray[nonuniformEXT(gl_InstanceCustomIndexEXT)], Input.TexCoord).rgb;
 
     m_Params.Occlusion = aorm.r;
-    m_Params.Roughness = aorm.g * materialData.Roughness;
+    m_Params.Roughness = max(aorm.g * aorm.g, 0.001) * materialData.Roughness;
     m_Params.Metallic = aorm.b * materialData.Metallic;
 
 	vec3 cameraPosWorld = u_Camera.InverseView[3].xyz;
 	m_Params.View = normalize(cameraPosWorld - Input.WorldPosition);
     m_Params.Normal = materialData.UseNormalMap == 0 ? normalize(Input.Normal) : GetNormalsFromMap();
     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);
+
+    float aspect = sqrt(1.0 - u_RTMaterialData.Anisotropy * 0.9);
+    m_Params.Anisotropy.x = max(0.001, m_Params.Roughness / aspect);
+    m_Params.Anisotropy.y = max(0.001, m_Params.Roughness * aspect);
 
     // Face Forward Normal
     vec3 ffNormal = dot(m_Params.Normal, gl_WorldRayDirectionEXT) <= 0.0 ? m_Params.Normal : -m_Params.Normal;
@@ -606,7 +550,7 @@ void main()
 
     // Calculate Reflectance at Normal Incidence; if Di-Electric (like Plastic) use F0
     // of 0.04 and if it's a Metal, use the Albedo color as F0 (Metallic Workflow)
-    //vec3 F0 = mix(Fdielectric, m_Params.Albedo, m_Params.Metallic);
+    // vec3 F0 = mix(Fdielectric, m_Params.Albedo, m_Params.Metallic);
 
     BSDFSample bsdfSample;
 	LightSample lightSample;
@@ -639,7 +583,7 @@ void main()
 	o_RayPayload.Beta *= F * cosTheta / (bsdfSample.PDF + EPS);
 
 	if (dot(ffNormal, bsdfSample.Direction) < 0.0)
-		o_RayPayload.Absorption = -log(vec3(u_RTMaterialData.Extinction)) / (u_RTMaterialData.AtDistance + EPS);
+		o_RayPayload.Absorption = -log(u_RTMaterialData.Extinction_AtDistance.xyz) / (u_RTMaterialData.Extinction_AtDistance.w + EPS);
 
 	// Russian Roulette
 	if (Max3(o_RayPayload.Beta) < 0.01 && o_RayPayload.Depth > 2)

@@ -76,7 +76,7 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
-		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
+		if ((m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing()) || m_EditorCamera.IsInFly())
 		{
 			if (m_EditorCamera.OnUpdate())
 				m_SceneRenderer->ResetAccumulationFrameIndex();
@@ -334,6 +334,17 @@ namespace VulkanCore {
 		{
 			if (!ImGuizmo::IsUsing())
 				m_GizmoType = ImGuizmo::OPERATION::SCALE;
+			break;
+		}
+		case Key::Period:
+		{
+			Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+			if (selectedEntity)
+			{
+				auto transform = selectedEntity.GetComponent<TransformComponent>();
+				m_EditorCamera.SetFocalPoint(transform.Translation);
+			}
+
 			break;
 		}
 		case Key::GraveAccent:

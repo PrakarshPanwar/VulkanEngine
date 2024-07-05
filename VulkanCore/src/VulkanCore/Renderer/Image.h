@@ -9,6 +9,7 @@ namespace VulkanCore {
 		None,
 		R32I,
 		R32F,
+		RG32F,
 		RGBA8_SRGB,
 		RGBA8_NORM,
 		RGBA8_UNORM,
