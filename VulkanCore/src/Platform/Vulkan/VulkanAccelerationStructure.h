@@ -22,7 +22,8 @@ namespace VulkanCore {
 
 		void BuildTopLevelAccelerationStructure() override;
 		void BuildBottomLevelAccelerationStructures() override;
-		void UpdateTopLevelAccelerationStructure(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer) override;
+		void UpdateTopLevelAccelerationStructure() override;
+		void ResetAccelerationStructures() override;
 		void SubmitMeshDrawData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex, uint32_t instanceCount) override;
 		void UpdateInstancesData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex) override;
 

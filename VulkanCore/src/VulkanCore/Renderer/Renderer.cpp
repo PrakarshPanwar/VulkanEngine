@@ -115,6 +115,11 @@ namespace VulkanCore {
 		s_Renderer->EndGPUPerfMarker(cmdBuffer);
 	}
 
+	void Renderer::BindPipeline(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& material)
+	{
+		s_Renderer->BindPipeline(cmdBuffer, pipeline, material);
+	}
+
 	void Renderer::CopyVulkanImage(const std::shared_ptr<RenderCommandBuffer>& commandBuffer, const std::shared_ptr<Image2D>& sourceImage, const std::shared_ptr<Image2D>& destImage)
 	{
 		s_Renderer->CopyVulkanImage(commandBuffer, sourceImage, destImage);
@@ -138,6 +143,16 @@ namespace VulkanCore {
 	void Renderer::RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 		s_Renderer->RenderTransparentMesh(cmdBuffer, mesh, material, submeshIndex, pipeline, transformBuffer, transformData, instanceCount);
+	}
+
+	void Renderer::RenderLight(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const LightSelectData& lightData)
+	{
+		s_Renderer->RenderLight(cmdBuffer, pipeline, lightData);
+	}
+
+	void Renderer::RenderLight(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const glm::vec4& position)
+	{
+		s_Renderer->RenderLight(cmdBuffer, pipeline, position);
 	}
 
 	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial)

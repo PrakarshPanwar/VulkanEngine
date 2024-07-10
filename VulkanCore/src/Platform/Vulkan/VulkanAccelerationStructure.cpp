@@ -47,32 +47,32 @@ namespace VulkanCore {
 
 	VulkanAccelerationStructure::~VulkanAccelerationStructure()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-		VulkanAllocator allocator("AccelerationStructure");
+		if (m_BLASInputData.empty())
+			return;
 
-		// Bottom Level AS
-		for (auto& [mk, blasInput] : m_BLASInputData)
-		{
-			allocator.DestroyBuffer(blasInput.BLASInfo.Buffer, blasInput.BLASInfo.MemoryAlloc);
-			vkDestroyAccelerationStructureKHR(device->GetVulkanDevice(), blasInput.BLASInfo.Handle, nullptr);
-		}
-
-		// Destroy Scratch Buffers
-		allocator.UnmapMemory(m_InstanceBufferAlloc);
-		allocator.DestroyBuffer(m_InstanceBuffer, m_InstanceBufferAlloc);
-		allocator.DestroyBuffer(m_ScratchBuffer, m_ScratchBufferAlloc);
-
-		// Top Level AS
-		allocator.DestroyBuffer(m_TLASInfo.Buffer, m_TLASInfo.MemoryAlloc);
-		vkDestroyAccelerationStructureKHR(device->GetVulkanDevice(), m_TLASInfo.Handle, nullptr);
+		Release();
 	}
 
 	void VulkanAccelerationStructure::Release()
 	{
-		Renderer::Submit([tlasInfo = m_TLASInfo]() mutable
+		Renderer::SubmitResourceFree([blasInputData = m_BLASInputData, tlasInfo = m_TLASInfo,
+			instanceBuffer = m_InstanceBuffer, instanceBufferAlloc = m_InstanceBufferAlloc,
+			scratchBuffer = m_ScratchBuffer, scratchBufferAlloc = m_ScratchBufferAlloc]() mutable
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 			VulkanAllocator allocator("AccelerationStructure");
+
+			// Bottom Level AS
+			for (auto& [mk, blasInput] : blasInputData)
+			{
+				allocator.DestroyBuffer(blasInput.BLASInfo.Buffer, blasInput.BLASInfo.MemoryAlloc);
+				vkDestroyAccelerationStructureKHR(device->GetVulkanDevice(), blasInput.BLASInfo.Handle, nullptr);
+			}
+
+			// Destroy Scratch Buffers
+			allocator.UnmapMemory(instanceBufferAlloc);
+			allocator.DestroyBuffer(instanceBuffer, instanceBufferAlloc);
+			allocator.DestroyBuffer(scratchBuffer, scratchBufferAlloc);
 
 			// Top Level AS
 			allocator.DestroyBuffer(tlasInfo.Buffer, tlasInfo.MemoryAlloc);
@@ -80,6 +80,7 @@ namespace VulkanCore {
 		});
 
 		m_TLASInfo = {};
+		m_BLASInputData.clear();
 	}
 
 	void VulkanAccelerationStructure::BuildTopLevelAccelerationStructure()
@@ -219,7 +220,7 @@ namespace VulkanCore {
 		std::vector<VkAccelerationStructureBuildRangeInfoKHR*> pBuildRangeInfos = { &buildRangeInfo };
 
 		// Build TLAS
-		VkCommandBuffer buildCmd = device->GetCommandBuffer();
+		VkCommandBuffer buildCmd = device->GetCommandBuffer(true);
 
 		// Make sure the Copy of the Instance Buffer are copied before triggering the Acceleration Structure Build
  		VkMemoryBarrier instanceBufferBarrier{};
@@ -236,7 +237,7 @@ namespace VulkanCore {
 			&buildGeometryInfo,
 			pBuildRangeInfos.data());
 
-		device->FlushCommandBuffer(buildCmd);
+		device->FlushCommandBuffer(buildCmd, true);
 
 		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, "Top Level Acceleration Structure", m_TLASInfo.Handle);
 
@@ -348,7 +349,7 @@ namespace VulkanCore {
 			instanceBufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			instanceBufferBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
 
-			VkCommandBuffer buildCmd = device->GetCommandBuffer();
+			VkCommandBuffer buildCmd = device->GetCommandBuffer(true);
 
 			vkCmdPipelineBarrier(buildCmd,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
@@ -360,14 +361,14 @@ namespace VulkanCore {
 				&buildGeometryInfo,
 				pBuildRangeInfo.data());
 
-			device->FlushCommandBuffer(buildCmd);
+			device->FlushCommandBuffer(buildCmd, true);
 
 			allocator.DestroyBuffer(scratchBuffer, scratchBufferAlloc);
 			queryIndex++;
 		}
 
 		// BLAS Compaction
-		VkCommandBuffer compactCmd = device->GetCommandBuffer();
+		VkCommandBuffer compactCmd = device->GetCommandBuffer(true);
 
 		vkCmdResetQueryPool(compactCmd,
 			queryPool,
@@ -381,7 +382,7 @@ namespace VulkanCore {
 			queryPool,
 			0);
 
-		device->FlushCommandBuffer(compactCmd);
+		device->FlushCommandBuffer(compactCmd, true);
 
 		queryIndex = 0;
 		std::vector<VkDeviceSize> blasCompactedSizes(m_BLASInputData.size());
@@ -433,7 +434,7 @@ namespace VulkanCore {
 			for (auto& instance : blasInput.InstanceData)
 				instance.accelerationStructureReference = blasInfo.DeviceAddress;
 
-			VkCommandBuffer copyCmd = device->GetCommandBuffer();
+			VkCommandBuffer copyCmd = device->GetCommandBuffer(true);
 
 			// Copy the uncompacted(original) BLAS to compacted one
 			VkCopyAccelerationStructureInfoKHR copyAccelerationStructureInfo{};
@@ -443,7 +444,7 @@ namespace VulkanCore {
 			copyAccelerationStructureInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
 			vkCmdCopyAccelerationStructureKHR(copyCmd, &copyAccelerationStructureInfo);
 
-			device->FlushCommandBuffer(copyCmd);
+			device->FlushCommandBuffer(copyCmd, true);
 
 			// Destroy Old Acceleration Structure and its Buffers Data
 			allocator.DestroyBuffer(asBuildBuffers[queryIndex], asBuildMemAlloc[queryIndex]);
@@ -456,9 +457,10 @@ namespace VulkanCore {
 		vkDestroyQueryPool(device->GetVulkanDevice(), queryPool, nullptr);
 	}
 
-	void VulkanAccelerationStructure::UpdateTopLevelAccelerationStructure(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
+	// TODO: Try to update it using Render Command Buffer
+	void VulkanAccelerationStructure::UpdateTopLevelAccelerationStructure()
 	{
-		Renderer::Submit([this, vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)]
+		Renderer::Submit([this/*, vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)*/]
 		{
 			VK_CORE_PROFILE_FN("VulkanAccelerationStructure::UpdateTopLevelAccelerationStructure");
 
@@ -525,6 +527,14 @@ namespace VulkanCore {
 
 			device->FlushCommandBuffer(updateCmd);
 		});
+	}
+
+	void VulkanAccelerationStructure::ResetAccelerationStructures()
+	{
+		if (!m_BLASInputData.empty())
+			Release();
+
+		m_InstanceIndex = 0;
 	}
 
 	void VulkanAccelerationStructure::SubmitMeshDrawData(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const std::vector<TransformData>& transformData, uint32_t submeshIndex, uint32_t instanceCount)

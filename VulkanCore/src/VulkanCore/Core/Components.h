@@ -173,10 +173,10 @@ namespace VulkanCore {
 		SpotLightComponent SpotLights[10];
 	};
 
-	struct PCModelData
+	struct LightSelectData
 	{
-		glm::mat4 ModelMatrix{ 1.f };
-		glm::mat4 NormalMatrix{};
+		glm::vec4 Position{};
+		int EntityID = -1;
 	};
 
 }

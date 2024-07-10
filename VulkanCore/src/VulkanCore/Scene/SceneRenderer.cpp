@@ -1057,47 +1057,17 @@ namespace VulkanCore {
 
 	void SceneRenderer::RenderLights()
 	{ 
-		Renderer::Submit([this]
-		{
-			VkCommandBuffer bindCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer)->RT_GetActiveCommandBuffer();
-			auto vulkanLightPipeline = std::static_pointer_cast<VulkanPipeline>(m_LightPipeline);
-			vulkanLightPipeline->Bind(bindCmd);
-
-			// Binding Point Light Descriptor Set
-			m_PointLightShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_LightPipeline);
-		});
+		Renderer::BindPipeline(m_SceneCommandBuffer, m_LightPipeline, m_PointLightShaderMaterial);
 
 		// Point Lights
 		for (auto pointLightPosition : m_PointLightPositions)
-		{
-			Renderer::Submit([this, pointLightPosition]
-			{
-				VK_CORE_PROFILE_FN("Render-PointLights");
-
-				VkCommandBuffer drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer)->RT_GetActiveCommandBuffer();
-
-				auto vulkanLightPipeline = std::static_pointer_cast<VulkanPipeline>(m_LightPipeline);
-				vulkanLightPipeline->SetPushConstants(drawCmd, (void*)&pointLightPosition, sizeof(glm::vec4));
-				vkCmdDraw(drawCmd, 6, 1, 0, 0);
-			});
-		}
+			Renderer::RenderLight(m_SceneCommandBuffer, m_LightPipeline, pointLightPosition);
 
 		Renderer::Submit([this] { m_SpotLightShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_LightPipeline); });
 
 		// Spot Lights
 		for (auto spotLightPosition : m_SpotLightPositions)
-		{
-			Renderer::Submit([this, spotLightPosition]
-			{
-				VK_CORE_PROFILE_FN("Render-SpotLights");
-
-				VkCommandBuffer drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer)->RT_GetActiveCommandBuffer();
-
-				auto vulkanLightPipeline = std::static_pointer_cast<VulkanPipeline>(m_LightPipeline);
-				vulkanLightPipeline->SetPushConstants(drawCmd, (void*)&spotLightPosition, sizeof(glm::vec4));
-				vkCmdDraw(drawCmd, 6, 1, 0, 0);
-			});
-		}
+			Renderer::RenderLight(m_SceneCommandBuffer, m_LightPipeline, spotLightPosition);
 	}
 
 	void SceneRenderer::SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform)
@@ -1213,6 +1183,77 @@ namespace VulkanCore {
 			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
 			m_MeshTransformMap.erase(meshKey);
 			m_MeshDrawList.erase(meshKey);
+			m_MeshTraceList.erase(meshKey);
+		}
+
+		if (m_RayTraced)
+			m_RebuildAS = true;
+	}
+
+	void SceneRenderer::UpdateRayTraceResources()
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+
+		m_SceneAccelerationStructure->ResetAccelerationStructures();
+		m_DiffuseTextureArray.clear();
+		m_NormalTextureArray.clear();
+		m_ARMTextureArray.clear();
+
+		std::vector<MeshBuffersAddress> meshBuffersData;
+		std::vector<MaterialData> meshMaterialData;
+
+		for (auto& [mk, tc] : m_MeshTraceList)
+		{
+			// Submit Mesh Buffers Data
+			auto meshSource = tc.MeshInstance->GetMeshSource();
+
+			auto vulkanMeshVB = std::static_pointer_cast<VulkanVertexBuffer>(meshSource->GetVertexBuffer());
+			auto vulkanMeshIB = std::static_pointer_cast<VulkanIndexBuffer>(meshSource->GetIndexBuffer());
+
+			auto& submeshData = meshSource->GetSubmeshes();
+			auto& submesh = submeshData[tc.SubmeshIndex];
+
+			auto& bufferData = meshBuffersData.emplace_back();
+			bufferData.VertexBufferAddress = vulkanMeshVB->GetVulkanBufferDeviceAddress(submesh.BaseVertex * sizeof(Vertex));
+			bufferData.IndexBufferAddress = vulkanMeshIB->GetVulkanBufferDeviceAddress(submesh.BaseIndex * sizeof(uint32_t));
+
+			// Submit Mesh Material Data
+			meshMaterialData.push_back(tc.MaterialInstance->GetMaterial()->GetMaterialData());
+
+			m_DiffuseTextureArray.push_back(tc.MaterialInstance->GetMaterial()->GetDiffuseTexture());
+			m_NormalTextureArray.push_back(tc.MaterialInstance->GetMaterial()->GetNormalTexture());
+			m_ARMTextureArray.push_back(tc.MaterialInstance->GetMaterial()->GetARMTexture());
+
+			// Submit Mesh Data to AS
+			m_SceneAccelerationStructure->SubmitMeshDrawData(tc.MeshInstance, tc.MaterialInstance, m_MeshTransformMap[mk].Transforms, tc.SubmeshIndex, tc.InstanceCount);
+		}
+
+		// Write Data in Storage Buffers
+		for (uint32_t i = 0; i < framesInFlight; ++i)
+		{
+			m_SBMeshBuffersData[i]->WriteAndFlushBuffer(meshBuffersData.data(), 0);
+			m_SBMaterialDataBuffer[i]->WriteAndFlushBuffer(meshMaterialData.data(), 0);
+		}
+
+		m_SceneAccelerationStructure->BuildBottomLevelAccelerationStructures();
+		m_SceneAccelerationStructure->BuildTopLevelAccelerationStructure();
+
+		// Ray Tracing Material
+		{
+			m_RayTracingBaseMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
+			m_RayTracingBaseMaterial->SetBuffers(6, m_SBMeshBuffersData);
+			m_RayTracingBaseMaterial->PrepareShaderMaterial();
+		}
+
+		// Ray Tracing PBR Material
+		{
+			m_RayTracingPBRMaterial->SetTextureArray(0, m_DiffuseTextureArray);
+			m_RayTracingPBRMaterial->SetTextureArray(1, m_NormalTextureArray);
+			m_RayTracingPBRMaterial->SetTextureArray(2, m_ARMTextureArray);
+			m_RayTracingPBRMaterial->SetBuffers(3, m_SBMaterialDataBuffer);
+			m_RayTracingPBRMaterial->SetBuffers(4, m_UBRTMaterialData);
+			m_RayTracingPBRMaterial->PrepareShaderMaterial();
 		}
 	}
 
@@ -1363,47 +1404,16 @@ namespace VulkanCore {
 
 		// Lights
 		{
-			auto commandBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
-			auto lightPipeline = std::static_pointer_cast<VulkanPipeline>(m_LightSelectPipeline);
-
-			Renderer::Submit([this, commandBuffer, lightPipeline]
-			{
-				VkCommandBuffer bindCmd = commandBuffer->RT_GetActiveCommandBuffer();
-				lightPipeline->Bind(bindCmd);
-
-				// Binding Point Light Descriptor Set
-				m_LightSelectMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_LightSelectPipeline);
-			});
+			Renderer::BindPipeline(m_SceneCommandBuffer, m_LightSelectPipeline, m_LightSelectMaterial);
 
 			int index = 0;
-
 			// Point Lights
-			for (auto pointLightPosition : m_PointLightPositions)
-			{
-				uint32_t lightEntity = m_LightHandles[index++];
-
-				Renderer::Submit([this, commandBuffer, lightPipeline, pointLightPosition, lightEntity]
-				{
-					VkCommandBuffer drawCmd = commandBuffer->RT_GetActiveCommandBuffer();
-
-					lightPipeline->SetPushConstants(drawCmd, (void*)&pointLightPosition, sizeof(glm::vec4) + sizeof(int));
-					vkCmdDraw(drawCmd, 6, 1, 0, 0);
-				});
-			}
+			for (auto& pointLightPosition : m_PointLightPositions)
+				Renderer::RenderLight(m_SceneCommandBuffer, m_LightSelectPipeline, { pointLightPosition, (int)m_LightHandles[index++] });
 
 			// Spot Lights
-			for (auto spotLightPosition : m_SpotLightPositions)
-			{
-				uint32_t lightEntity = m_LightHandles[index++];
-
-				Renderer::Submit([this, commandBuffer, lightPipeline, spotLightPosition, lightEntity]
-				{
-					VkCommandBuffer drawCmd = commandBuffer->RT_GetActiveCommandBuffer();
-
-					lightPipeline->SetPushConstants(drawCmd, (void*)&spotLightPosition, sizeof(glm::vec4) + sizeof(int));
-					vkCmdDraw(drawCmd, 6, 1, 0, 0);
-				});
-			}
+			for (auto& spotLightPosition : m_SpotLightPositions)
+				Renderer::RenderLight(m_SceneCommandBuffer, m_LightSelectPipeline, { spotLightPosition, (int)m_LightHandles[index++] });
 		}
 
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometrySelectPipeline->GetSpecification().pRenderPass);
@@ -1507,8 +1517,14 @@ namespace VulkanCore {
 			for (auto&& [mk, tc] : m_MeshTraceList)
 				m_SceneAccelerationStructure->UpdateInstancesData(tc.MeshInstance, tc.MaterialInstance, m_MeshTransformMap[mk].Transforms, tc.SubmeshIndex);
 		
-			m_SceneAccelerationStructure->UpdateTopLevelAccelerationStructure(m_SceneCommandBuffer);
+			m_SceneAccelerationStructure->UpdateTopLevelAccelerationStructure();
 			m_UpdateTLAS = false;
+		}
+
+		if (m_RebuildAS)
+		{
+			UpdateRayTraceResources();
+			m_RebuildAS = false;
 		}
 
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "RayTrace", DebugLabelColor::Aqua);

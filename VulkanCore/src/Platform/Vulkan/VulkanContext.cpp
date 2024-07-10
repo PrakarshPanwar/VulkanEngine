@@ -138,6 +138,7 @@ namespace VulkanCore {
 			case VK_OBJECT_TYPE_PIPELINE_LAYOUT: return "Pipeline Layout";
 			case VK_OBJECT_TYPE_RENDER_PASS:	 return "Render Pass";
 			case VK_OBJECT_TYPE_SAMPLER:		 return "Image Sampler";
+			case VK_OBJECT_TYPE_SEMAPHORE:		 return "Semaphore";
 			case VK_OBJECT_TYPE_FRAMEBUFFER:     return "Framebuffer";
 			case VK_OBJECT_TYPE_SHADER_MODULE:   return "Shader Module";
 			case VK_OBJECT_TYPE_QUEUE:			 return "Queue";

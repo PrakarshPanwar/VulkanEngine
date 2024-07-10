@@ -57,6 +57,7 @@ namespace VulkanCore {
 		void CreateResources();
 		void CreateMaterials();
 		void CreateRayTraceMaterials();
+		void UpdateRayTraceResources();
 		void RecreateMaterials();
 		void RecreatePipelines();
 
@@ -249,7 +250,7 @@ namespace VulkanCore {
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
 		uint32_t m_MaxAccumulateFrameCount = 10000;
-		bool m_RayTraced = false, m_Accumulate = false, m_UpdateTLAS = false;
+		bool m_RayTraced = false, m_Accumulate = false, m_UpdateTLAS = false, m_RebuildAS = false;
 		int m_HoveredEntity;
 
 		SceneEditorData m_SceneEditorData;
