@@ -109,48 +109,74 @@ namespace VulkanCore {
 		}
 	}
 
-	void Scene::UpdatePointLightUB(UBPointLights& ubo)
+	void Scene::UpdateLightsBuffer(UBPointLights& pointLights, UBSpotLights& spotLights)
 	{
-		auto view = m_Registry.view<TransformComponent, PointLightComponent>();
-
-		int lightIndex = 0;
-		for (auto ent : view)
+		// Point Lights
 		{
-			auto [transform, lightComponent] = view.get<TransformComponent, PointLightComponent>(ent);
-			ubo.PointLights[lightIndex++] =
+			auto view = m_Registry.view<TransformComponent, PointLightComponent>();
+
+			int lightIndex = 0;
+			for (auto ent : view)
 			{
-				glm::vec4(transform.Translation, 1.0f),
-				lightComponent.Color,
-				lightComponent.Radius,
-				lightComponent.Falloff
-			};
+				auto [transform, lightComponent] = view.get<TransformComponent, PointLightComponent>(ent);
+				pointLights.PointLights[lightIndex++] =
+				{
+					glm::vec4(transform.Translation, 1.0f),
+					lightComponent.Color,
+					lightComponent.Radius,
+					lightComponent.Falloff
+				};
+			}
+
+			pointLights.LightCount = lightIndex;
 		}
 
-		ubo.LightCount = lightIndex;
-	}
-
-	void Scene::UpdateSpotLightUB(UBSpotLights& ubo)
-	{
-		auto view = m_Registry.view<TransformComponent, SpotLightComponent>();
-		int lightIndex = 0;
-
-		for (auto ent : view)
+		// Spot Lights
 		{
-			auto [transform, lightComponent] = view.get<TransformComponent, SpotLightComponent>(ent);
-			glm::vec3 direction = glm::normalize(transform.Rotation);
-			ubo.SpotLights[lightIndex++] =
+			auto view = m_Registry.view<TransformComponent, SpotLightComponent>();
+			int lightIndex = 0;
+
+			for (auto ent : view)
 			{
-				glm::vec4(transform.Translation, 1.0f),
-				lightComponent.Color,
-				direction,
-				lightComponent.InnerCutoff,
-				lightComponent.OuterCutoff,
-				lightComponent.Radius,
-				lightComponent.Falloff
-			};
+				auto [transform, lightComponent] = view.get<TransformComponent, SpotLightComponent>(ent);
+				glm::vec3 direction = glm::normalize(transform.Rotation);
+				spotLights.SpotLights[lightIndex++] =
+				{
+					glm::vec4(transform.Translation, 1.0f),
+					lightComponent.Color,
+					direction,
+					lightComponent.InnerCutoff,
+					lightComponent.OuterCutoff,
+					lightComponent.Radius,
+					lightComponent.Falloff
+				};
+			}
+
+			spotLights.LightCount = lightIndex;
 		}
 
-		ubo.LightCount = lightIndex;
+		// TODO: Support for Directional Lights
+#if 0
+		// Directional Lights
+		{
+			auto view = m_Registry.view<DirectionalLightComponent>();
+			int lightIndex = 0;
+
+			for (auto ent : view)
+			{
+				auto lightComponent = view.get<DirectionalLightComponent>(ent);
+
+				directionalLights.DirectionalLights[lightIndex++] =
+				{
+					lightComponent.Direction,
+					lightComponent.Color,
+					lightComponent.Falloff
+				};
+			}
+
+			directionalLights.LightCount = lightIndex;
+		}
+#endif
 	}
 
 	void Scene::DestroyEntity(Entity entity)

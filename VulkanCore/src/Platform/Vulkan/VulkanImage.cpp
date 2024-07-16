@@ -337,6 +337,7 @@ namespace VulkanCore {
 				vkDestroyImageView(device->GetVulkanDevice(), mipRef, nullptr);
 		});
 
+		m_Info = {};
 		m_MipReferences.clear();
 		m_DescriptorMipImagesInfo.clear();
 	}

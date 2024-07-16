@@ -43,12 +43,17 @@ namespace VulkanCore {
 			std::vector<VkAccelerationStructureInstanceKHR> InstanceData{};
 			uint32_t InstanceCount = 0;
 		};
+
+		struct VulkanBufferInfo
+		{
+			VkBuffer Buffer = nullptr;
+			VmaAllocation MemoryAlloc = nullptr;
+		};
 	private:
 		VulkanAccelerationStructureInfo m_TLASInfo{};
 		uint32_t m_InstanceIndex = 0;
-		VkBuffer m_InstanceBuffer, m_ScratchBuffer;
+		VulkanBufferInfo m_InstanceBuffer, m_ScratchBuffer;
 		VkDeviceAddress m_InstanceDeviceAddress, m_ScratchDeviceAddress;
-		VmaAllocation m_InstanceBufferAlloc, m_ScratchBufferAlloc;
 		uint8_t* m_InstanceBufferDstData = nullptr;
 
 		std::map<MeshKey, BLASInput> m_BLASInputData;

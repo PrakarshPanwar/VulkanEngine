@@ -137,6 +137,7 @@ namespace VulkanCore {
 		}
 
 		CreateRayTraceMaterials();
+		m_MeshTraceList.clear();
 	}
 
 	void SceneRenderer::CreateRayTraceMaterials()
@@ -176,6 +177,29 @@ namespace VulkanCore {
 			m_RayTracingSkyboxMaterial->SetTexture(2, m_CDFTexture);
 			m_RayTracingSkyboxMaterial->SetBuffers(3, m_UBSkyboxSettings);
 			m_RayTracingSkyboxMaterial->PrepareShaderMaterial();
+		}
+	}
+
+	void SceneRenderer::UpdateAccelerationStructures()
+	{
+		if (m_UpdateTLAS || m_RebuildAS)
+		{
+			m_Scene->OnUpdateRayTracedGeometry(this);
+			// Update TLAS Instance Data
+			if (m_UpdateTLAS)
+			{
+				for (auto&& [mk, tc] : m_MeshTraceList)
+					m_SceneAccelerationStructure->UpdateInstancesData(tc.MeshInstance, tc.MaterialInstance, m_MeshTransformMap[mk].Transforms, tc.SubmeshIndex);
+
+				m_SceneAccelerationStructure->UpdateTopLevelAccelerationStructure();
+			}
+			else if (m_RebuildAS)
+			{
+				UpdateRayTraceResources();
+			}
+
+			m_UpdateTLAS = false;
+			m_RebuildAS = false;
 		}
 	}
 
@@ -567,6 +591,9 @@ namespace VulkanCore {
 
 		if (m_RayTraced)
 		{
+			if (m_RebuildAS)
+				m_RayTracingBaseMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
+
 			// Ray Tracing Base Material
 			m_RayTracingBaseMaterial->SetImages(1, m_SceneRTOutputImages);
 			m_RayTracingBaseMaterial->SetImages(2, m_SceneRTAccumulationImages);
@@ -952,6 +979,10 @@ namespace VulkanCore {
 
 		m_MeshDrawList.clear();
 		m_MeshTransformMap.clear();
+		m_MeshTraceList.clear();
+
+		if (m_RayTraced)
+			m_RebuildAS = true;
 	}
 
 	void SceneRenderer::SetViewportSize(uint32_t width, uint32_t height)
@@ -983,11 +1014,10 @@ namespace VulkanCore {
 
 		// Lights
 		UBPointLights pointLightUB{};
-		m_Scene->UpdatePointLightUB(pointLightUB);
-		m_UBPointLight[frameIndex]->WriteAndFlushBuffer(&pointLightUB);
-
 		UBSpotLights spotLightUB{};
-		m_Scene->UpdateSpotLightUB(spotLightUB);
+		m_Scene->UpdateLightsBuffer(pointLightUB, spotLightUB);
+
+		m_UBPointLight[frameIndex]->WriteAndFlushBuffer(&pointLightUB);
 		m_UBSpotLight[frameIndex]->WriteAndFlushBuffer(&spotLightUB);
 
 		// Skybox Data
@@ -1028,11 +1058,10 @@ namespace VulkanCore {
 
 		// Lights
 		UBPointLights pointLightUB{};
-		m_Scene->UpdatePointLightUB(pointLightUB);
-		m_UBPointLight[frameIndex]->WriteAndFlushBuffer(&pointLightUB);
-
 		UBSpotLights spotLightUB{};
-		m_Scene->UpdateSpotLightUB(spotLightUB);
+		m_Scene->UpdateLightsBuffer(pointLightUB, spotLightUB);
+
+		m_UBPointLight[frameIndex]->WriteAndFlushBuffer(&pointLightUB);
 		m_UBSpotLight[frameIndex]->WriteAndFlushBuffer(&spotLightUB);
 
 		// Skybox Data
@@ -1040,6 +1069,9 @@ namespace VulkanCore {
 
 		// Ray Tracing Material Data
 		m_UBRTMaterialData[frameIndex]->WriteAndFlushBuffer(&m_RTMaterialData);
+
+		// Update AS if required
+		UpdateAccelerationStructures();
 
 		m_SceneCommandBuffer->Begin();
 
@@ -1236,25 +1268,37 @@ namespace VulkanCore {
 			m_SBMaterialDataBuffer[i]->WriteAndFlushBuffer(meshMaterialData.data(), 0);
 		}
 
-		m_SceneAccelerationStructure->BuildBottomLevelAccelerationStructures();
-		m_SceneAccelerationStructure->BuildTopLevelAccelerationStructure();
-
-		// Ray Tracing Material
+		Renderer::Submit([this]
 		{
-			m_RayTracingBaseMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
-			m_RayTracingBaseMaterial->SetBuffers(6, m_SBMeshBuffersData);
-			m_RayTracingBaseMaterial->PrepareShaderMaterial();
-		}
+			m_SceneAccelerationStructure->BuildBottomLevelAccelerationStructures();
+			m_SceneAccelerationStructure->BuildTopLevelAccelerationStructure();
 
-		// Ray Tracing PBR Material
-		{
-			m_RayTracingPBRMaterial->SetTextureArray(0, m_DiffuseTextureArray);
-			m_RayTracingPBRMaterial->SetTextureArray(1, m_NormalTextureArray);
-			m_RayTracingPBRMaterial->SetTextureArray(2, m_ARMTextureArray);
-			m_RayTracingPBRMaterial->SetBuffers(3, m_SBMaterialDataBuffer);
-			m_RayTracingPBRMaterial->SetBuffers(4, m_UBRTMaterialData);
-			m_RayTracingPBRMaterial->PrepareShaderMaterial();
-		}
+			// Ray Tracing Material
+			{
+				//m_RayTracingBaseMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Base Shader Material", 0);
+
+				m_RayTracingBaseMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
+				m_RayTracingBaseMaterial->SetImages(1, m_SceneRTOutputImages);
+				m_RayTracingBaseMaterial->SetImages(2, m_SceneRTAccumulationImages);
+				m_RayTracingBaseMaterial->SetBuffers(3, m_UBCamera);
+				m_RayTracingBaseMaterial->SetBuffers(4, m_UBPointLight);
+				//m_RayTracingBaseMaterial->SetBuffers(5, m_UBSpotLight);
+				m_RayTracingBaseMaterial->SetBuffers(6, m_SBMeshBuffersData);
+				m_RayTracingBaseMaterial->PrepareShaderMaterial();
+			}
+
+			// Ray Tracing PBR Material
+			{
+				//m_RayTracingPBRMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing PBR Material", 1);
+
+				m_RayTracingPBRMaterial->SetTextureArray(0, m_DiffuseTextureArray);
+				m_RayTracingPBRMaterial->SetTextureArray(1, m_NormalTextureArray);
+				m_RayTracingPBRMaterial->SetTextureArray(2, m_ARMTextureArray);
+				m_RayTracingPBRMaterial->SetBuffers(3, m_SBMaterialDataBuffer);
+				m_RayTracingPBRMaterial->SetBuffers(4, m_UBRTMaterialData);
+				m_RayTracingPBRMaterial->PrepareShaderMaterial();
+			}
+		});
 	}
 
 	std::shared_ptr<Image2D> SceneRenderer::GetFinalPassImage(uint32_t index) const
@@ -1265,31 +1309,44 @@ namespace VulkanCore {
 		
 	void SceneRenderer::UpdateSkybox(const std::string& filepath)
 	{
-		// Obtain Cubemaps
-		auto [filteredMap, irradianceMap] = Renderer::CreateEnviromentMap(filepath);
-		m_PrefilteredTexture = filteredMap;
-		m_IrradianceTexture = irradianceMap;
-
-		// Update Materials
-		m_GeometryMaterial->SetTexture(6, m_IrradianceTexture);
-		m_GeometryMaterial->SetTexture(8, m_PrefilteredTexture);
-		m_GeometryMaterial->PrepareShaderMaterial();
-
-		m_SkyboxMaterial->SetTexture(1, m_PrefilteredTexture);
-		m_SkyboxMaterial->PrepareShaderMaterial();
-
 		if (m_RayTraced)
 		{
 			m_HDRTexture = AssetManager::GetAsset<Texture2D>(filepath);
 			auto [PDFTexture, CDFTexture] = Renderer::CreatePDFCDFTextures(m_HDRTexture);
 			m_PDFTexture = PDFTexture;
 			m_CDFTexture = CDFTexture;
-		}
 
-		ImGuiLayer::UpdateDescriptor(m_SkyboxTextureID, *std::dynamic_pointer_cast<VulkanTextureCube>(m_PrefilteredTexture));
+			// Ray Tracing Skybox Material
+			{
+				m_RayTracingSkyboxMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Skybox Material", 2);
+
+				m_RayTracingSkyboxMaterial->SetTexture(0, m_HDRTexture);
+				m_RayTracingSkyboxMaterial->SetTexture(1, m_PDFTexture);
+				m_RayTracingSkyboxMaterial->SetTexture(2, m_CDFTexture);
+				m_RayTracingSkyboxMaterial->SetBuffers(3, m_UBSkyboxSettings);
+				m_RayTracingSkyboxMaterial->PrepareShaderMaterial();
+			}
+		}
+		else
+		{
+			// Obtain Cubemaps
+			auto [filteredMap, irradianceMap] = Renderer::CreateEnviromentMap(filepath);
+			m_PrefilteredTexture = filteredMap;
+			m_IrradianceTexture = irradianceMap;
+
+			// Update Materials
+			m_GeometryMaterial->SetTexture(6, m_IrradianceTexture);
+			m_GeometryMaterial->SetTexture(8, m_PrefilteredTexture);
+			m_GeometryMaterial->PrepareShaderMaterial();
+
+			m_SkyboxMaterial->SetTexture(1, m_PrefilteredTexture);
+			m_SkyboxMaterial->PrepareShaderMaterial();
+
+			ImGuiLayer::UpdateDescriptor(m_SkyboxTextureID, *std::dynamic_pointer_cast<VulkanTextureCube>(m_PrefilteredTexture));
+		}
 	}
 
-	void SceneRenderer::UpdateAccelerationStructure()
+	void SceneRenderer::SetUpdateTLAS()
 	{
 		m_UpdateTLAS = true;
 		m_RTSettings.AccumulateFrameIndex = 1;
@@ -1509,23 +1566,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::RayTracePass()
 	{
-		m_Scene->OnUpdateRayTracedGeometry(this);
-
-		if (m_UpdateTLAS)
-		{
-			// Update TLAS Instance Data
-			for (auto&& [mk, tc] : m_MeshTraceList)
-				m_SceneAccelerationStructure->UpdateInstancesData(tc.MeshInstance, tc.MaterialInstance, m_MeshTransformMap[mk].Transforms, tc.SubmeshIndex);
-		
-			m_SceneAccelerationStructure->UpdateTopLevelAccelerationStructure();
-			m_UpdateTLAS = false;
-		}
-
-		if (m_RebuildAS)
-		{
-			UpdateRayTraceResources();
-			m_RebuildAS = false;
-		}
+		m_Scene->OnUpdateLights(m_PointLightPositions, m_SpotLightPositions, m_LightHandles);
 
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "RayTrace", DebugLabelColor::Aqua);
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);

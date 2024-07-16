@@ -621,8 +621,8 @@ namespace VulkanCore {
 		CDFPDFTextureSpec.SamplerWrap = spec.SamplerWrap;
 		CDFPDFTextureSpec.GenerateMips = false;
 
-		auto pdfTexture = std::make_shared<VulkanTexture>(marginalDistribution, CDFPDFTextureSpec);
-		auto cdfTexture = std::make_shared<VulkanTexture>(conditionalDistribution, CDFPDFTextureSpec);
+		auto pdfTexture = AssetManager::CreateMemoryOnlyAsset<VulkanTexture>(marginalDistribution, CDFPDFTextureSpec);
+		auto cdfTexture = AssetManager::CreateMemoryOnlyAsset<VulkanTexture>(conditionalDistribution, CDFPDFTextureSpec);
 
 		return { pdfTexture, cdfTexture };
 	}

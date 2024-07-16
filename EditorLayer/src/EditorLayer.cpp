@@ -439,7 +439,7 @@ namespace VulkanCore {
 				tc.Scale = scale;
 
 				if (m_RayTraced && selectedEntity.HasComponent<MeshComponent>())
-					m_SceneRenderer->UpdateAccelerationStructure();
+					m_SceneRenderer->SetUpdateTLAS();
 			}
 		}
 	}
