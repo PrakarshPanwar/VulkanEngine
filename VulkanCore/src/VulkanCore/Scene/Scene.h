@@ -28,8 +28,7 @@ namespace VulkanCore {
 		void OnUpdateRayTracedGeometry(SceneRenderer* renderer);
 		void OnSelectGeometry(SceneRenderer* renderer);
 		void OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions, std::vector<uint32_t>& lightHandles);
-		void UpdatePointLightUB(UBPointLights& ubo);
-		void UpdateSpotLightUB(UBSpotLights& ubo);
+		void UpdateLightsBuffer(UBPointLights& pointLights, UBSpotLights& spotLights);
 		void DestroyEntity(Entity entity);
 	private:
 		entt::registry m_Registry;

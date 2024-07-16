@@ -37,7 +37,7 @@ namespace VulkanCore {
 		void SubmitRayTracedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
 		void UpdateSkybox(const std::string& filepath);
-		void UpdateAccelerationStructure();
+		void SetUpdateTLAS();
 		void ResetAccumulationFrameIndex();
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
@@ -57,6 +57,7 @@ namespace VulkanCore {
 		void CreateResources();
 		void CreateMaterials();
 		void CreateRayTraceMaterials();
+		void UpdateAccelerationStructures();
 		void UpdateRayTraceResources();
 		void RecreateMaterials();
 		void RecreatePipelines();

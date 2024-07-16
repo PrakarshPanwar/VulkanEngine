@@ -67,6 +67,7 @@ namespace VulkanCore {
 
 	void VulkanMaterial::Invalidate()
 	{
+		auto device = VulkanContext::GetCurrentDevice();
 		auto descriptorSetPool = VulkanRenderer::Get()->GetDescriptorPool();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
@@ -77,6 +78,8 @@ namespace VulkanCore {
 		{
 			auto& vulkanDescriptorSet = m_MaterialDescriptorSets.emplace_back();
 			descriptorSetPool->AllocateDescriptorSet(vulkanMaterialSetLayout, vulkanDescriptorSet);
+
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_DESCRIPTOR_SET, std::format("{0}: {1}", m_DebugName, i), vulkanDescriptorSet);
 		}
 	}
 

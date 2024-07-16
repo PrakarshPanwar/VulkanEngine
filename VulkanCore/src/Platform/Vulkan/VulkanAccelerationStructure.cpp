@@ -56,8 +56,7 @@ namespace VulkanCore {
 	void VulkanAccelerationStructure::Release()
 	{
 		Renderer::SubmitResourceFree([blasInputData = m_BLASInputData, tlasInfo = m_TLASInfo,
-			instanceBuffer = m_InstanceBuffer, instanceBufferAlloc = m_InstanceBufferAlloc,
-			scratchBuffer = m_ScratchBuffer, scratchBufferAlloc = m_ScratchBufferAlloc]() mutable
+			instanceBuffer = m_InstanceBuffer, scratchBuffer = m_ScratchBuffer]() mutable
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 			VulkanAllocator allocator("AccelerationStructure");
@@ -70,9 +69,9 @@ namespace VulkanCore {
 			}
 
 			// Destroy Scratch Buffers
-			allocator.UnmapMemory(instanceBufferAlloc);
-			allocator.DestroyBuffer(instanceBuffer, instanceBufferAlloc);
-			allocator.DestroyBuffer(scratchBuffer, scratchBufferAlloc);
+			allocator.UnmapMemory(instanceBuffer.MemoryAlloc);
+			allocator.DestroyBuffer(instanceBuffer.Buffer, instanceBuffer.MemoryAlloc);
+			allocator.DestroyBuffer(scratchBuffer.Buffer, scratchBuffer.MemoryAlloc);
 
 			// Top Level AS
 			allocator.DestroyBuffer(tlasInfo.Buffer, tlasInfo.MemoryAlloc);
@@ -115,8 +114,8 @@ namespace VulkanCore {
 
 		VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress = Utils::GetBufferDeviceAddress(instanceBuffer);
 
-		m_InstanceBuffer = instanceBuffer;
-		m_InstanceBufferAlloc = instanceBufferAlloc;
+		m_InstanceBuffer.Buffer = instanceBuffer;
+		m_InstanceBuffer.MemoryAlloc = instanceBufferAlloc;
 		m_InstanceDeviceAddress = instanceDataDeviceAddress.deviceAddress;
 		m_InstanceBufferDstData = dstData;
 
@@ -197,8 +196,8 @@ namespace VulkanCore {
 		bufferDeviceAddressInfo.buffer = scratchBuffer;
 		VkDeviceAddress scratchBufferDeviceAddress = vkGetBufferDeviceAddressKHR(device->GetVulkanDevice(), &bufferDeviceAddressInfo);
 
-		m_ScratchBuffer = scratchBuffer;
-		m_ScratchBufferAlloc = scratchBufferAlloc;
+		m_ScratchBuffer.Buffer = scratchBuffer;
+		m_ScratchBuffer.MemoryAlloc = scratchBufferAlloc;
 		m_ScratchDeviceAddress = scratchBufferDeviceAddress;
 
 		VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo{};
@@ -262,10 +261,12 @@ namespace VulkanCore {
 		queryPoolCreateInfo.queryType = VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR;
 		vkCreateQueryPool(device->GetVulkanDevice(), &queryPoolCreateInfo, nullptr, &queryPool);
 
-		uint32_t queryIndex = 0;
+		VkCommandBuffer buildCmd = device->GetCommandBuffer(true);
+
+		uint32_t queryIndex = 0, originalASSize = 0, compactASSize = 0;
 		std::vector<VkAccelerationStructureKHR> accelerationStructureHandles{};
-		std::vector<VkBuffer> asBuildBuffers{};
-		std::vector<VmaAllocation> asBuildMemAlloc{};
+		std::vector<VulkanBufferInfo> asBuildBuffers{};
+		std::vector<VulkanBufferInfo> scratchBuffers{};
 
 		for (auto&& [mk, blasInput] : m_BLASInputData)
 		{
@@ -310,8 +311,7 @@ namespace VulkanCore {
 				&accelerationStructureHandle);
 
 			accelerationStructureHandles.push_back(accelerationStructureHandle);
-			asBuildBuffers.push_back(buffer);
-			asBuildMemAlloc.push_back(memAlloc);
+			asBuildBuffers.emplace_back(buffer, memAlloc);
 
 			// Create a Small Scratch Buffer used during build of the Bottom Level Acceleration Structure
 			VkBuffer scratchBuffer;
@@ -349,8 +349,6 @@ namespace VulkanCore {
 			instanceBufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			instanceBufferBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
 
-			VkCommandBuffer buildCmd = device->GetCommandBuffer(true);
-
 			vkCmdPipelineBarrier(buildCmd,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
 				0, 1, &instanceBufferBarrier, 0, nullptr, 0, nullptr);
@@ -361,28 +359,25 @@ namespace VulkanCore {
 				&buildGeometryInfo,
 				pBuildRangeInfo.data());
 
-			device->FlushCommandBuffer(buildCmd, true);
-
-			allocator.DestroyBuffer(scratchBuffer, scratchBufferAlloc);
+			scratchBuffers.emplace_back(scratchBuffer, scratchBufferAlloc);
+			originalASSize += (uint32_t)buildSizesInfo.accelerationStructureSize;
 			queryIndex++;
 		}
 
 		// BLAS Compaction
-		VkCommandBuffer compactCmd = device->GetCommandBuffer(true);
-
-		vkCmdResetQueryPool(compactCmd,
+		vkCmdResetQueryPool(buildCmd,
 			queryPool,
 			0,
 			(uint32_t)m_BLASInputData.size());
 
-		vkCmdWriteAccelerationStructuresPropertiesKHR(compactCmd,
+		vkCmdWriteAccelerationStructuresPropertiesKHR(buildCmd,
 			(uint32_t)accelerationStructureHandles.size(),
 			accelerationStructureHandles.data(),
 			VK_QUERY_TYPE_ACCELERATION_STRUCTURE_COMPACTED_SIZE_KHR,
 			queryPool,
 			0);
 
-		device->FlushCommandBuffer(compactCmd, true);
+		device->FlushCommandBuffer(buildCmd, true);
 
 		queryIndex = 0;
 		std::vector<VkDeviceSize> blasCompactedSizes(m_BLASInputData.size());
@@ -394,6 +389,8 @@ namespace VulkanCore {
 			blasCompactedSizes.data(),
 			sizeof(VkDeviceSize),
 			VK_QUERY_RESULT_WAIT_BIT);
+
+		VkCommandBuffer copyCmd = device->GetCommandBuffer(true);
 
 		for (auto&& [mk, blasInput] : m_BLASInputData)
 		{
@@ -434,8 +431,6 @@ namespace VulkanCore {
 			for (auto& instance : blasInput.InstanceData)
 				instance.accelerationStructureReference = blasInfo.DeviceAddress;
 
-			VkCommandBuffer copyCmd = device->GetCommandBuffer(true);
-
 			// Copy the uncompacted(original) BLAS to compacted one
 			VkCopyAccelerationStructureInfoKHR copyAccelerationStructureInfo{};
 			copyAccelerationStructureInfo.sType = VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR;
@@ -444,17 +439,27 @@ namespace VulkanCore {
 			copyAccelerationStructureInfo.mode = VK_COPY_ACCELERATION_STRUCTURE_MODE_COMPACT_KHR;
 			vkCmdCopyAccelerationStructureKHR(copyCmd, &copyAccelerationStructureInfo);
 
-			device->FlushCommandBuffer(copyCmd, true);
-
-			// Destroy Old Acceleration Structure and its Buffers Data
-			allocator.DestroyBuffer(asBuildBuffers[queryIndex], asBuildMemAlloc[queryIndex]);
-			vkDestroyAccelerationStructureKHR(device->GetVulkanDevice(), accelerationStructureHandles[queryIndex], nullptr);
-
 			queryIndex++;
+			compactASSize += (uint32_t)accelerationStructureCreateInfo.size;
+		}
+
+		device->FlushCommandBuffer(copyCmd, true);
+
+		// Destroy Old Acceleration Structure and its Buffers Data
+		for (int i = 0; i < m_BLASInputData.size(); ++i)
+		{
+			auto& buildData = asBuildBuffers.at(i);
+			auto& scratchData = scratchBuffers.at(i);
+
+			allocator.DestroyBuffer(buildData.Buffer, buildData.MemoryAlloc);
+			allocator.DestroyBuffer(scratchData.Buffer, scratchData.MemoryAlloc);
+			vkDestroyAccelerationStructureKHR(device->GetVulkanDevice(), accelerationStructureHandles[i], nullptr);
 		}
 
 		// Destroy Query Pool
 		vkDestroyQueryPool(device->GetVulkanDevice(), queryPool, nullptr);
+
+		VK_CORE_INFO("Memory Saved from BLAS Compaction: {} bytes", originalASSize - compactASSize);
 	}
 
 	// TODO: Try to update it using Render Command Buffer
