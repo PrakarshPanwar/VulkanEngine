@@ -140,7 +140,7 @@ namespace VulkanCore {
 			m_LightSelectPipeline = std::make_shared<VulkanPipeline>(lightSelectPipelineSpec);
 		}
 
-		// Shadow Map Pipeline
+		// Shadow Map Pipeline(NOTE: Currently not working properly)
 		{
 			FramebufferSpecification shadowMapFramebufferSpec;
 			shadowMapFramebufferSpec.Width = m_ShadowMapSize;
@@ -161,6 +161,7 @@ namespace VulkanCore {
 			shadowMapPipelineSpec.DepthClamp = true;
 			shadowMapPipelineSpec.Layout = vertexLayout;
 			shadowMapPipelineSpec.InstanceLayout = instanceLayout;
+			shadowMapPipelineSpec.DepthCompareOp = CompareOp::LessOrEqual;
 
 			m_ShadowMapPipeline = std::make_shared<VulkanPipeline>(shadowMapPipelineSpec);
 		}
@@ -514,7 +515,7 @@ namespace VulkanCore {
 		std::array<float, SHADOW_MAP_CASCADE_COUNT> cascadeSplits{};
 
 		const auto& cameraData = m_SceneEditorData.CameraData;
-		auto nearFarClip = cameraData.GetNearFarClip();
+		glm::vec2 nearFarClip = cameraData.GetNearFarClip();
 		float clipRange = nearFarClip.y - nearFarClip.x;
 
 		float minZ = nearFarClip.x;
@@ -591,6 +592,7 @@ namespace VulkanCore {
 			glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
 			glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
 
+#if 1
 			float shadowMapSize = (float)m_ShadowMapSize;
 			glm::mat4 shadowMatrix = lightOrthoMatrix * lightViewMatrix;
 			glm::vec4 shadowOrigin = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -606,6 +608,7 @@ namespace VulkanCore {
 			glm::mat4 shadowProj = lightOrthoMatrix;
 			shadowProj[3] += roundOffset;
 			lightOrthoMatrix = shadowProj;
+#endif
 
 			// Store Split Distance and matrix in Cascade
 			m_CascadeData.CascadeSplitLevels[i] = (nearFarClip.x + splitDist * clipRange) * -1.0f;

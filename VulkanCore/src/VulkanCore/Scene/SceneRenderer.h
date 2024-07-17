@@ -217,7 +217,6 @@ namespace VulkanCore {
 
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 		std::vector<uint32_t> m_LightHandles;
-		//const glm::vec3 m_ShadowLightDirection = { 10.0f, 0.0f, 25.0f };
 		float m_CascadeSplitLambda = 0.95f;
 		uint32_t m_ShadowMapSize = 2048;
 

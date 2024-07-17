@@ -1,5 +1,6 @@
 #version 460 core
 #include "Utils/Buffers.glslh"
+#include "Utils/Structs.glslh"
 
 // Vertex Bindings
 layout(location = 0) in vec3 a_Position;
@@ -12,15 +13,6 @@ layout(location = 4) in vec2 a_TexCoord;
 layout(location = 5) in vec4 a_MRow0;
 layout(location = 6) in vec4 a_MRow1;
 layout(location = 7) in vec4 a_MRow2;
-
-struct VertexOutput
-{
-	vec3 WorldPosition;
-	vec3 ViewPosition;
-	vec3 Normal;
-	mat3 WorldNormals;
-	vec2 TexCoord;
-};
 
 layout(location = 0) out VertexOutput Output;
 

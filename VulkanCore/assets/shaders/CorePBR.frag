@@ -1,16 +1,8 @@
 #version 460 core
 #include "Utils/Buffers.glslh"
+#include "Utils/Structs.glslh"
 
 layout(location = 0) out vec4 o_Color;
-
-struct VertexOutput
-{
-	vec3 WorldPosition;
-    vec3 ViewPosition;
-	vec3 Normal;
-    mat3 WorldNormals;
-	vec2 TexCoord;
-};
 
 layout(location = 0) in VertexOutput Input;
 
