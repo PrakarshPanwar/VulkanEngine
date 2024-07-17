@@ -306,8 +306,7 @@ namespace VulkanCore {
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
 		createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-		// Might not really be Necessary anymore because device specific Validation Layers
-		// have been deprecated
+		// Might not really be Necessary anymore because device specific Validation Layers have been deprecated
 		if (VulkanContext::GetCurrentContext()->m_EnableValidation)
 		{
 			createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());

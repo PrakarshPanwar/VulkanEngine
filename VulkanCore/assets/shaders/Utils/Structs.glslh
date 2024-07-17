@@ -1,0 +1,10 @@
+#pragma once
+
+struct VertexOutput
+{
+	vec3 WorldPosition;
+	vec3 ViewPosition;
+	vec3 Normal;
+	mat3 WorldNormals;
+	vec2 TexCoord;
+};

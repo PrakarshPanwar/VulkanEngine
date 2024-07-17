@@ -391,7 +391,7 @@ namespace VulkanCore {
 					std::stringstream includeFileStream;
 					includeFileStream << includeFileSource.rdbuf();
 
-					sourceStr = std::regex_replace(sourceStr, includeRegex, includeFileStream.str());
+					sourceStr = std::regex_replace(sourceStr, includeRegex, includeFileStream.str(), std::regex_constants::format_first_only);
 				}
 				else
 				{
