@@ -38,6 +38,7 @@ namespace VulkanCore {
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
 		void UpdateSkybox(const std::string& filepath);
 		void SetUpdateTLAS();
+		void SetRebuildAS();
 		void ResetAccumulationFrameIndex();
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }

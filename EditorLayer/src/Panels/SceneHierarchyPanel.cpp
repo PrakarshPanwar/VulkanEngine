@@ -459,6 +459,8 @@ namespace VulkanCore {
 
 							auto meshSource = mesh->GetMeshSource();
 							meshSource->SetMaterial(newMaterialAsset->GetMaterial());
+
+							sceneRenderer->SetRebuildAS();
 						}
 
 						ImGui::EndDragDropTarget();

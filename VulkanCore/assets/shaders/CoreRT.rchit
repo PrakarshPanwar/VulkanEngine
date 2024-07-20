@@ -169,7 +169,7 @@ struct PBRParams
 vec3 GetNormalsFromMap()
 {
     vec3 normal = texture(u_NormalTextureArray[nonuniformEXT(gl_InstanceCustomIndexEXT)], Input.TexCoord).xyz;
-    //normal.y = 1.0 - normal.y;
+    normal.y = 1.0 - normal.y;
 
     vec3 tangentNormal = normalize(normal * 2.0 - 1.0);
     return normalize(Input.WorldNormals * tangentNormal);
@@ -328,7 +328,7 @@ vec3 DisneySample(in Material material, inout vec3 L, inout float pdf)
 
     if (RandomFloat(o_RayPayload.Seed) < transWeight)
     {
-        vec3 H = SampleGGXVNDF(V, m_Params.Anisotropy, r1, r2);
+        vec3 H = ImportanceSampleGTR2(m_Params.Roughness, r1, r2);
         H = Input.WorldNormals * H;
 
         if (dot(V, H) < 0.0)
@@ -521,7 +521,7 @@ void main()
     Material materialData = r_MaterialData.MatBuffer[gl_InstanceCustomIndexEXT];
 
 	vec4 diffuse = texture(u_DiffuseTextureArray[nonuniformEXT(gl_InstanceCustomIndexEXT)], Input.TexCoord);
-	m_Params.Albedo = diffuse.rgb * materialData.Albedo.rgb * materialData.Emission;
+	m_Params.Albedo = diffuse.rgb * materialData.Albedo.rgb;
     // R->Ambient Occlusion, G->Roughness, B->Metallic
     vec3 aorm = texture(u_ARMTextureArray[nonuniformEXT(gl_InstanceCustomIndexEXT)], Input.TexCoord).rgb;
 
@@ -555,7 +555,8 @@ void main()
     BSDFSample bsdfSample;
 	LightSample lightSample;
 
-	o_RayPayload.Radiance += m_Params.Albedo * o_RayPayload.Beta;
+    if (materialData.Emission > 1.0)
+	    o_RayPayload.Radiance += m_Params.Albedo * materialData.Emission * o_RayPayload.Beta;
 
 	if (IntersectsEmitter(lightSample, gl_HitTEXT))
 	{

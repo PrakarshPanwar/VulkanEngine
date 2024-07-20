@@ -981,8 +981,7 @@ namespace VulkanCore {
 		m_MeshTransformMap.clear();
 		m_MeshTraceList.clear();
 
-		if (m_RayTraced)
-			m_RebuildAS = true;
+		m_RebuildAS = true;
 	}
 
 	void SceneRenderer::SetViewportSize(uint32_t width, uint32_t height)
@@ -1218,8 +1217,7 @@ namespace VulkanCore {
 			m_MeshTraceList.erase(meshKey);
 		}
 
-		if (m_RayTraced)
-			m_RebuildAS = true;
+		m_RebuildAS = true;
 	}
 
 	void SceneRenderer::UpdateRayTraceResources()
@@ -1350,6 +1348,11 @@ namespace VulkanCore {
 	{
 		m_UpdateTLAS = true;
 		m_RTSettings.AccumulateFrameIndex = 1;
+	}
+
+	void SceneRenderer::SetRebuildAS()
+	{
+		m_RebuildAS = true;
 	}
 
 	void SceneRenderer::SetSkybox(const std::string& filepath)

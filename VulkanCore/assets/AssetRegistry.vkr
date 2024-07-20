@@ -419,3 +419,15 @@ Asset Registry:
     Metadata:
       Filepath: assets/materials/ChandelierMaterial.vkmat
       Type: Material
+  - Handle: 923874947522838273
+    Metadata:
+      Filepath: assets/scenes/FirstScene.vkscene
+      Type: Scene
+  - Handle: 339593974948457
+    Metadata:
+      Filepath: assets/scenes/ClosedSpace.vkscene
+      Type: Scene
+  - Handle: 718726387624872
+    Metadata:
+      Filepath: assets/scenes/LampDemo.vkscene
+      Type: Scene
