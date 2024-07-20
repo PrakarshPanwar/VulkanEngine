@@ -470,9 +470,8 @@ namespace VulkanCore {
 			return;
 		}
 
-		std::shared_ptr<Scene> newScene = std::make_shared<Scene>();
-		SceneSerializer serializer(newScene);
-		if (serializer.Deserialize(filepath.string()))
+		auto newScene = AssetManager::GetAsset<Scene>(path);
+		if (newScene)
 		{
 			m_Scene = newScene;
 			m_SceneRenderer->SetActiveScene(m_Scene);

@@ -343,16 +343,6 @@ namespace VulkanCore {
 
 			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> pBuildRangeInfo = { &blasInput.BuildRangeInfo };
 
-			// Make sure the Copy of the Instance Buffer are copied before triggering the Acceleration Structure Build
-			VkMemoryBarrier instanceBufferBarrier{};
-			instanceBufferBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-			instanceBufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			instanceBufferBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
-
-			vkCmdPipelineBarrier(buildCmd,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-				0, 1, &instanceBufferBarrier, 0, nullptr, 0, nullptr);
-
 			// Build BLAS
 			vkCmdBuildAccelerationStructuresKHR(buildCmd,
 				1,
