@@ -77,6 +77,7 @@ namespace VulkanCore {
 
 			if (ImGui::Button("Save"))
 				m_MaterialAsset->Serialize();
+
 			ImGui::Separator();
 
 			auto& materialData = vulkanMaterial->GetMaterialData();

@@ -6,7 +6,7 @@ vec4 EnvironmentSample(inout vec3 color)
 	float r2 = RandomFloat(o_RayPayload.Seed);
 
 	float v = texture(u_PDFTexture, vec2(0.0, r1)).x; // Marginal
-	float u = texture(u_CDFTexture, vec2(r2, v)).x;  // Conditional
+	float u = texture(u_CDFTexture, vec2(r2, v)).x;   // Conditional
 
 	color = texture(u_HDRTexture, vec2(u, v)).xyz * u_Skybox.Intensity;
 	float pdf = texture(u_CDFTexture, vec2(u, v)).y * texture(u_PDFTexture, vec2(0.0, v)).y;

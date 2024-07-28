@@ -1,8 +1,8 @@
 Material:
-  Albedo: [0.125490189, 0.210946992, 0.776470602, 0.25]
+  Albedo: [0.138996124, 0.138996124, 0.138996124, 1]
   Emission: 1
   Metallic: 1
-  Roughness: 1
+  Roughness: 0.00100000005
   UseNormalMap: 0
   AlbedoHandle: 0
   NormalHandle: 0

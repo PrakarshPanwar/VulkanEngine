@@ -1,4 +1,4 @@
-#version 460 core
+#version 460
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_control_flow_attributes : require
@@ -500,13 +500,14 @@ void main()
 	Vertex v2 = Unpack(index.z);
 
 	// Interpolate Vertex Data
+    vec3 position = MixBarycentric(v0.Position, v1.Position, v2.Position);
 	vec3 normal = MixBarycentric(v0.Normal, v1.Normal, v2.Normal);
     vec3 tangent = MixBarycentric(v0.Tangent, v1.Tangent, v2.Tangent);
     vec3 binormal = MixBarycentric(v0.Binormal, v1.Binormal, v2.Binormal);
 	vec2 texCoord = MixBarycentric(v0.TexCoord, v1.TexCoord, v2.TexCoord);
 
     // Set Input Data
-    Input.WorldPosition = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+    Input.WorldPosition = vec3(gl_ObjectToWorldEXT * vec4(position, 1.0));
     Input.Normal = normalize(vec3(normal * gl_WorldToObjectEXT));
     Input.TexCoord = vec2(texCoord.x, 1.0 - texCoord.y);
 

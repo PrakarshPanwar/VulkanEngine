@@ -950,7 +950,7 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		vkDeviceWaitIdle(device->GetVulkanDevice());
+		vkQueueWaitIdle(device->GetGraphicsQueue());
 		RenderThread::ExecuteDeletionQueue();
 	}
 
