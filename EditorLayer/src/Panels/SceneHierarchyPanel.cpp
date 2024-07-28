@@ -17,10 +17,11 @@ namespace VulkanCore {
 
 	static const std::filesystem::path g_AssetPath = "assets";
 
-	static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f)
+	static bool DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f)
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		auto boldFont = io.Fonts->Fonts[1];
+		bool buttonX = false, buttonY = false, buttonZ = false;
 
 		ImGui::PushID(label.c_str());
 
@@ -39,13 +40,13 @@ namespace VulkanCore {
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.787f, 0.0257f, 0.0257f, 1.0f });
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.6022f, 0.00533f, 0.0134f, 1.0f });
 		ImGui::PushFont(boldFont);
-		if (ImGui::Button("X", buttonSize))
+		if (buttonX = ImGui::Button("X", buttonSize))
 			values.x = resetValue;
 		ImGui::PopFont();
 		ImGui::PopStyleColor(3);
 
 		ImGui::SameLine();
-		ImGui::DragFloat("##X", &values.x, 0.1f, 0.0f, 0.0f, "%.2f");
+		bool dragX = ImGui::DragFloat("##X", &values.x, 0.1f, 0.0f, 0.0f, "%.2f");
 		ImGui::PopItemWidth();
 		ImGui::SameLine();
 
@@ -53,13 +54,13 @@ namespace VulkanCore {
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.0648f, 0.6022f, 0.0648f, 1.0f });
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.0257f, 0.4445f, 0.0257f, 1.0f });
 		ImGui::PushFont(boldFont);
-		if (ImGui::Button("Y", buttonSize))
+		if (buttonY = ImGui::Button("Y", buttonSize))
 			values.y = resetValue;
 		ImGui::PopFont();
 		ImGui::PopStyleColor(3);
 
 		ImGui::SameLine();
-		ImGui::DragFloat("##Y", &values.y, 0.1f, 0.0f, 0.0f, "%.2f");
+		bool dragY = ImGui::DragFloat("##Y", &values.y, 0.1f, 0.0f, 0.0f, "%.2f");
 		ImGui::PopItemWidth();
 		ImGui::SameLine();
 
@@ -67,13 +68,13 @@ namespace VulkanCore {
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.0257f, 0.092f, 0.787f, 1.0f });
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.00533f, 0.0428f, 0.6022f, 1.0f });
 		ImGui::PushFont(boldFont);
-		if (ImGui::Button("Z", buttonSize))
+		if (buttonZ = ImGui::Button("Z", buttonSize))
 			values.z = resetValue;
 		ImGui::PopFont();
 		ImGui::PopStyleColor(3);
 
 		ImGui::SameLine();
-		ImGui::DragFloat("##Z", &values.z, 0.1f, 0.0f, 0.0f, "%.2f");
+		bool dragZ = ImGui::DragFloat("##Z", &values.z, 0.1f, 0.0f, 0.0f, "%.2f");
 		ImGui::PopItemWidth();
 
 		ImGui::PopStyleVar();
@@ -81,6 +82,8 @@ namespace VulkanCore {
 		ImGui::Columns(1);
 
 		ImGui::PopID();
+
+		return dragX || dragY || dragZ || buttonX || buttonY || buttonZ;
 	}
 
 	SceneHierarchyPanel::SceneHierarchyPanel(std::shared_ptr<Scene> sceneContext)
@@ -266,12 +269,15 @@ namespace VulkanCore {
 
 		DrawComponent<TransformComponent>("Transform", entity, [](auto& component)
 		{
-			DrawVec3Control("Translation", component.Translation);
+			bool translate = DrawVec3Control("Translation", component.Translation);
 			glm::vec3 rotation = glm::degrees(component.Rotation);
-			DrawVec3Control("Rotation", rotation);
+			bool rotate = DrawVec3Control("Rotation", rotation);
 			component.Rotation = glm::radians(rotation);
-			DrawVec3Control("Scale", component.Scale, 1.0f);
+			bool scale = DrawVec3Control("Scale", component.Scale, 1.0f);
 			ImGui::Spacing();
+
+			if (translate || rotate || scale)
+				SceneRenderer::GetSceneRenderer()->SetUpdateTLAS();
 		});
 
 		DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)

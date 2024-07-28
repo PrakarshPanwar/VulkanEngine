@@ -508,7 +508,7 @@ namespace VulkanCore {
 			instanceBufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			instanceBufferBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
 
-			// TODO: Constant creation of creating and submitting Command Buffer is slow
+			// TODO: Constant creation of creating and submitting Command Buffer can be slow
 			VkCommandBuffer updateCmd = device->GetCommandBuffer();
 
 			vkCmdPipelineBarrier(updateCmd,
@@ -526,7 +526,7 @@ namespace VulkanCore {
 
 	void VulkanAccelerationStructure::ResetAccelerationStructures()
 	{
-		if (!m_BLASInputData.empty())
+		if (!m_BLASInputData.empty() && m_InstanceBuffer.Buffer && m_ScratchBuffer.Buffer)
 			Release();
 
 		m_InstanceIndex = 0;
@@ -570,11 +570,9 @@ namespace VulkanCore {
 		std::vector<VkAccelerationStructureInstanceKHR> instances{ instanceCount };
 		for (uint32_t i = 0; i < instanceCount; ++i)
 		{
-			VkTransformMatrixKHR vulkanTransform = Utils::VulkanTransformFromTransformData(transformData[i]);
-
 			// NOTE: BLAS Reference should be updated after BLAS Build(i.e. accelerationStructureReference)
 			VkAccelerationStructureInstanceKHR instanceData{};
-			instanceData.transform = vulkanTransform;
+			instanceData.transform = Utils::VulkanTransformFromTransformData(transformData[i]);
 			instanceData.instanceCustomIndex = m_InstanceIndex;
 			instanceData.mask = 0xFF;
 			instanceData.instanceShaderBindingTableRecordOffset = 0;

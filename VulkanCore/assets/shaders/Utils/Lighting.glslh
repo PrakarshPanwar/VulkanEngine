@@ -42,7 +42,7 @@ float SphereIntersect(in PointLight light)
 void CheckSphereLightIntersection(inout float closest, float hit, in PointLight light, inout LightSample lightSample)
 {
 	float dist = SphereIntersect(light);
-	if (dist < 0.0) 
+	if (dist < 0.0)
 		dist = INFINITY;
 
 	if (dist < closest && dist < hit)

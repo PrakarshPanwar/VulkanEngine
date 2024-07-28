@@ -72,7 +72,7 @@ namespace VulkanCore {
 		CreateMaterials();
 	}
 
-	// This one will be called after we have serialized our scene
+	// NOTE: This will be called after we have serialized our scene
 	void SceneRenderer::CreateRayTraceResources()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
@@ -109,14 +109,12 @@ namespace VulkanCore {
 			m_SceneAccelerationStructure->SubmitMeshDrawData(tc.MeshInstance, tc.MaterialInstance, m_MeshTransformMap[mk].Transforms, tc.SubmeshIndex, tc.InstanceCount);
 		}
 
-		m_SceneAccelerationStructure->BuildBottomLevelAccelerationStructures();
-		m_SceneAccelerationStructure->BuildTopLevelAccelerationStructure();
-
+		// TODO: Dynamic Allocation
 		// Write Data in Storage Buffers
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
-			auto vulkanSBMeshBuffersData = std::make_shared<VulkanStorageBuffer>(sizeof(MeshBuffersAddress) * m_MeshTraceList.size());
-			auto vulkanSBMeshMaterialData = std::make_shared<VulkanStorageBuffer>(sizeof(MaterialData) * m_MeshTraceList.size());
+			auto vulkanSBMeshBuffersData = std::make_shared<VulkanStorageBuffer>(sizeof(MeshBuffersAddress) * 50);
+			auto vulkanSBMeshMaterialData = std::make_shared<VulkanStorageBuffer>(sizeof(MaterialData) * 50);
 
 			m_SBMeshBuffersData.emplace_back(vulkanSBMeshBuffersData);
 			m_SBMaterialDataBuffer.emplace_back(vulkanSBMeshMaterialData);
@@ -136,47 +134,25 @@ namespace VulkanCore {
 			vulkanSBMeshMaterialData->WriteAndFlushBuffer(meshMaterialData.data(), 0);
 		}
 
-		CreateRayTraceMaterials();
+		SetRayTraceMaterialsData();
 		m_MeshTraceList.clear();
 	}
 
-	void SceneRenderer::CreateRayTraceMaterials()
+	void SceneRenderer::SetRayTraceMaterialsData()
 	{
 		// Ray Tracing Material
 		{
-			m_RayTracingBaseMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Base Shader Material", 0);
-
-			m_RayTracingBaseMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
-			m_RayTracingBaseMaterial->SetImages(1, m_SceneRTOutputImages);
-			m_RayTracingBaseMaterial->SetImages(2, m_SceneRTAccumulationImages);
-			m_RayTracingBaseMaterial->SetBuffers(3, m_UBCamera);
-			m_RayTracingBaseMaterial->SetBuffers(4, m_UBPointLight);
-			//m_RayTracingBaseMaterial->SetBuffers(5, m_UBSpotLight);
 			m_RayTracingBaseMaterial->SetBuffers(6, m_SBMeshBuffersData);
 			m_RayTracingBaseMaterial->PrepareShaderMaterial();
 		}
 
 		// Ray Tracing PBR Material
 		{
-			m_RayTracingPBRMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing PBR Material", 1);
-
 			m_RayTracingPBRMaterial->SetTextureArray(0, m_DiffuseTextureArray);
 			m_RayTracingPBRMaterial->SetTextureArray(1, m_NormalTextureArray);
 			m_RayTracingPBRMaterial->SetTextureArray(2, m_ARMTextureArray);
 			m_RayTracingPBRMaterial->SetBuffers(3, m_SBMaterialDataBuffer);
-			m_RayTracingPBRMaterial->SetBuffers(4, m_UBRTMaterialData);
 			m_RayTracingPBRMaterial->PrepareShaderMaterial();
-		}
-
-		// Ray Tracing Skybox Material
-		{
-			m_RayTracingSkyboxMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Skybox Material", 2);
-
-			m_RayTracingSkyboxMaterial->SetTexture(0, m_HDRTexture);
-			m_RayTracingSkyboxMaterial->SetTexture(1, m_PDFTexture);
-			m_RayTracingSkyboxMaterial->SetTexture(2, m_CDFTexture);
-			m_RayTracingSkyboxMaterial->SetBuffers(3, m_UBSkyboxSettings);
-			m_RayTracingSkyboxMaterial->PrepareShaderMaterial();
 		}
 	}
 
@@ -194,9 +170,7 @@ namespace VulkanCore {
 				m_SceneAccelerationStructure->UpdateTopLevelAccelerationStructure();
 			}
 			else if (m_RebuildAS)
-			{
 				UpdateRayTraceResources();
-			}
 
 			m_UpdateTLAS = false;
 			m_RebuildAS = false;
@@ -484,6 +458,34 @@ namespace VulkanCore {
 			m_SkyboxMaterial->SetTexture(1, m_PrefilteredTexture);
 			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
+
+		// Ray Tracing Material(NOTE: Some of the Data is set after Reading the Scene)
+		{
+			m_RayTracingBaseMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Base Shader Material", 0);
+
+			m_RayTracingBaseMaterial->SetImages(1, m_SceneRTOutputImages);
+			m_RayTracingBaseMaterial->SetImages(2, m_SceneRTAccumulationImages);
+			m_RayTracingBaseMaterial->SetBuffers(3, m_UBCamera);
+			m_RayTracingBaseMaterial->SetBuffers(4, m_UBPointLight);
+			//m_RayTracingBaseMaterial->SetBuffers(5, m_UBSpotLight);
+			m_RayTracingBaseMaterial->PrepareShaderMaterial();
+		}
+
+		// Ray Tracing PBR Material
+		{
+			m_RayTracingPBRMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing PBR Material", 1);
+
+			m_RayTracingPBRMaterial->SetBuffers(4, m_UBRTMaterialData);
+			m_RayTracingPBRMaterial->PrepareShaderMaterial();
+		}
+
+		// Ray Tracing Skybox Material
+		{
+			m_RayTracingSkyboxMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Skybox Material", 2);
+
+			m_RayTracingSkyboxMaterial->SetBuffers(3, m_UBSkyboxSettings);
+			m_RayTracingSkyboxMaterial->PrepareShaderMaterial();
+		}
 	}
 
 	void SceneRenderer::RecreateMaterials()
@@ -608,9 +610,6 @@ namespace VulkanCore {
 		m_CompositePipeline->ReloadPipeline();
 		m_SkyboxPipeline->ReloadPipeline();
 		m_BloomPipeline->ReloadPipeline();
-
-		if (m_RayTraced)
-			m_RayTracingPipeline->ReloadPipeline();
 	}
 
 	void SceneRenderer::CreateResources()
@@ -1222,7 +1221,6 @@ namespace VulkanCore {
 
 	void SceneRenderer::UpdateRayTraceResources()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
 		m_SceneAccelerationStructure->ResetAccelerationStructures();
@@ -1273,27 +1271,15 @@ namespace VulkanCore {
 
 			// Ray Tracing Material
 			{
-				//m_RayTracingBaseMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Base Shader Material", 0);
-
 				m_RayTracingBaseMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
-				m_RayTracingBaseMaterial->SetImages(1, m_SceneRTOutputImages);
-				m_RayTracingBaseMaterial->SetImages(2, m_SceneRTAccumulationImages);
-				m_RayTracingBaseMaterial->SetBuffers(3, m_UBCamera);
-				m_RayTracingBaseMaterial->SetBuffers(4, m_UBPointLight);
-				//m_RayTracingBaseMaterial->SetBuffers(5, m_UBSpotLight);
-				m_RayTracingBaseMaterial->SetBuffers(6, m_SBMeshBuffersData);
 				m_RayTracingBaseMaterial->PrepareShaderMaterial();
 			}
 
 			// Ray Tracing PBR Material
 			{
-				//m_RayTracingPBRMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing PBR Material", 1);
-
 				m_RayTracingPBRMaterial->SetTextureArray(0, m_DiffuseTextureArray);
 				m_RayTracingPBRMaterial->SetTextureArray(1, m_NormalTextureArray);
 				m_RayTracingPBRMaterial->SetTextureArray(2, m_ARMTextureArray);
-				m_RayTracingPBRMaterial->SetBuffers(3, m_SBMaterialDataBuffer);
-				m_RayTracingPBRMaterial->SetBuffers(4, m_UBRTMaterialData);
 				m_RayTracingPBRMaterial->PrepareShaderMaterial();
 			}
 		});
@@ -1307,6 +1293,19 @@ namespace VulkanCore {
 		
 	void SceneRenderer::UpdateSkybox(const std::string& filepath)
 	{
+		// Obtain Cubemaps
+		auto [filteredMap, irradianceMap] = Renderer::CreateEnviromentMap(filepath);
+		m_PrefilteredTexture = filteredMap;
+		m_IrradianceTexture = irradianceMap;
+
+		// Update Materials
+		m_GeometryMaterial->SetTexture(6, m_IrradianceTexture);
+		m_GeometryMaterial->SetTexture(8, m_PrefilteredTexture);
+		m_GeometryMaterial->PrepareShaderMaterial();
+
+		m_SkyboxMaterial->SetTexture(1, m_PrefilteredTexture);
+		m_SkyboxMaterial->PrepareShaderMaterial();
+
 		if (m_RayTraced)
 		{
 			m_HDRTexture = AssetManager::GetAsset<Texture2D>(filepath);
@@ -1314,34 +1313,13 @@ namespace VulkanCore {
 			m_PDFTexture = PDFTexture;
 			m_CDFTexture = CDFTexture;
 
-			// Ray Tracing Skybox Material
-			{
-				m_RayTracingSkyboxMaterial = std::make_shared<VulkanMaterial>(m_RayTracingPipeline->GetShader(), "Ray Tracing Skybox Material", 2);
-
-				m_RayTracingSkyboxMaterial->SetTexture(0, m_HDRTexture);
-				m_RayTracingSkyboxMaterial->SetTexture(1, m_PDFTexture);
-				m_RayTracingSkyboxMaterial->SetTexture(2, m_CDFTexture);
-				m_RayTracingSkyboxMaterial->SetBuffers(3, m_UBSkyboxSettings);
-				m_RayTracingSkyboxMaterial->PrepareShaderMaterial();
-			}
+			m_RayTracingSkyboxMaterial->SetTexture(0, m_HDRTexture);
+			m_RayTracingSkyboxMaterial->SetTexture(1, m_PDFTexture);
+			m_RayTracingSkyboxMaterial->SetTexture(2, m_CDFTexture);
+			m_RayTracingSkyboxMaterial->PrepareShaderMaterial();
 		}
-		else
-		{
-			// Obtain Cubemaps
-			auto [filteredMap, irradianceMap] = Renderer::CreateEnviromentMap(filepath);
-			m_PrefilteredTexture = filteredMap;
-			m_IrradianceTexture = irradianceMap;
 
-			// Update Materials
-			m_GeometryMaterial->SetTexture(6, m_IrradianceTexture);
-			m_GeometryMaterial->SetTexture(8, m_PrefilteredTexture);
-			m_GeometryMaterial->PrepareShaderMaterial();
-
-			m_SkyboxMaterial->SetTexture(1, m_PrefilteredTexture);
-			m_SkyboxMaterial->PrepareShaderMaterial();
-
-			ImGuiLayer::UpdateDescriptor(m_SkyboxTextureID, *std::dynamic_pointer_cast<VulkanTextureCube>(m_PrefilteredTexture));
-		}
+		ImGuiLayer::UpdateDescriptor(m_SkyboxTextureID, *std::dynamic_pointer_cast<VulkanTextureCube>(m_PrefilteredTexture));
 	}
 
 	void SceneRenderer::SetUpdateTLAS()

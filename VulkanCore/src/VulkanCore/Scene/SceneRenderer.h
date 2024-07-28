@@ -57,7 +57,7 @@ namespace VulkanCore {
 		void CreatePipelines();
 		void CreateResources();
 		void CreateMaterials();
-		void CreateRayTraceMaterials();
+		void SetRayTraceMaterialsData();
 		void UpdateAccelerationStructures();
 		void UpdateRayTraceResources();
 		void RecreateMaterials();

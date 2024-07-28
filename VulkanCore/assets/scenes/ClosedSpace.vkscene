@@ -1,44 +1,25 @@
 Scene: ClosedSpace
 Entities:
-  - Entity: 1916941786780627311
+  - Entity: 7953759883752993869
     TagComponent:
-      Tag: Wall3
+      Tag: Metal Sphere
     TransformComponent:
-      Translation: [0, 4, -10.25]
+      Translation: [0, 12.5, 0]
       Rotation: [0, -0, 0]
-      Scale: [10, 4, 0.25]
+      Scale: [6, 6, 6]
+    MeshComponent:
+      MeshHandle: 5887157471203535698
+      MaterialHandle: 14156349377867506071
+  - Entity: 12905070812060394482
+    TagComponent:
+      Tag: Wall1
+    TransformComponent:
+      Translation: [10.25, 4, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 4, 10.5]
     MeshComponent:
       MeshHandle: 9816593081404201911
       MaterialHandle: 3893884925322395954
-  - Entity: 1153411140672436239
-    TagComponent:
-      Tag: Wall2
-    TransformComponent:
-      Translation: [-10.25, 4, 0]
-      Rotation: [0, -0, 0]
-      Scale: [0.25, 4, 10]
-    MeshComponent:
-      MeshHandle: 9816593081404201911
-      MaterialHandle: 3893884925322395954
-  - Entity: 4461713910826235506
-    TagComponent:
-      Tag: Skybox
-    TransformComponent:
-      Translation: [0, -1, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 0.5, 1]
-    SkyLightComponent:
-      TextureHandle: 9942358174109122911
-  - Entity: 6393257465138400864
-    TagComponent:
-      Tag: Base Plane
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [10, 0.25, 10]
-    MeshComponent:
-      MeshHandle: 9816593081404201911
-      MaterialHandle: 11134850192642027083
   - Entity: 18388049089659310855
     TagComponent:
       Tag: Wall0
@@ -49,13 +30,42 @@ Entities:
     MeshComponent:
       MeshHandle: 9816593081404201911
       MaterialHandle: 3893884925322395954
-  - Entity: 12905070812060394482
+  - Entity: 6393257465138400864
     TagComponent:
-      Tag: Wall1
+      Tag: Base Plane
     TransformComponent:
-      Translation: [10.25, 4, 0]
+      Translation: [0, 0, 0]
       Rotation: [0, -0, 0]
-      Scale: [0.25, 4, 10.5]
+      Scale: [10, 0.25, 10]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialHandle: 11134850192642027083
+  - Entity: 4461713910826235506
+    TagComponent:
+      Tag: Skybox
+    TransformComponent:
+      Translation: [0, -1, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 0.5, 1]
+    SkyLightComponent:
+      TextureHandle: 9942358174109122911
+  - Entity: 1153411140672436239
+    TagComponent:
+      Tag: Wall2
+    TransformComponent:
+      Translation: [-10.25, 4, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 4, 10]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialHandle: 3893884925322395954
+  - Entity: 1916941786780627311
+    TagComponent:
+      Tag: Wall3
+    TransformComponent:
+      Translation: [0, 4, -10.25]
+      Rotation: [0, -0, 0]
+      Scale: [10, 4, 0.25]
     MeshComponent:
       MeshHandle: 9816593081404201911
       MaterialHandle: 3893884925322395954

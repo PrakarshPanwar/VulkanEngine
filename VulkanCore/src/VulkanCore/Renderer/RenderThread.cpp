@@ -114,6 +114,7 @@ namespace VulkanCore {
 			executeCommand();
 	}
 
+	// NOTE: Don't know if I should execute this in a separate Thread
 	void RenderThread::ExecuteDeletionQueue()
 	{
 		// Swap Deletion Queues
