@@ -18,7 +18,7 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanDescriptorSetLayout> CreateDescriptorSetLayout(int index = 0);
 		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> CreateAllDescriptorSetsLayout();
 
-		inline std::unordered_map<std::filesystem::path, std::vector<uint32_t>>& GetShaderModules() { return m_VulkanSPIRV; }
+		inline std::map<std::filesystem::path, std::vector<uint32_t>>& GetShaderModules() { return m_VulkanSPIRV; }
 
 		void Reload() override;
 		inline bool HasAnyHitShader() const { return !m_RayAnyHitFilePaths.empty(); }
@@ -29,7 +29,7 @@ namespace VulkanCore {
 		void CompileOrGetVulkanBinaries(std::unordered_map<std::filesystem::path, std::string>& shaderSources);
 		void ReflectShaderData();
 	private:
-		std::unordered_map<std::filesystem::path, std::vector<uint32_t>> m_VulkanSPIRV;
+		std::map<std::filesystem::path, std::vector<uint32_t>> m_VulkanSPIRV;
 
 		std::string m_RayGenFilePath;
 		std::vector<std::string> m_RayClosestHitFilePaths, m_RayAnyHitFilePaths, m_RayIntersectionFilePaths, m_RayMissFilePaths;

@@ -149,7 +149,7 @@ namespace VulkanCore {
 		{
 			uint32_t SampleCount = 8;
 			uint32_t Bounces = 4;
-			uint32_t RandomSeed = 0;
+			uint32_t RandomSeed = 1;
 			uint32_t AccumulateFrameIndex = 1;
 		} m_RTSettings;
 
@@ -158,7 +158,7 @@ namespace VulkanCore {
 			glm::vec4 Extinction_AtDistance = glm::vec4{ 0.75f, 0.75f, 0.75f, 0.1f }; // Extinction => XYZ, At Distance => W
 			float Transmission = 0.25f;
 			float SpecularTint = 0.1f;
-			float IOR = 0.5f;
+			float IOR = 1.5f;
 			float Sheen = 0.75f;
 			float SheenTint = 0.5f;
 			float Clearcoat = 0.25f;

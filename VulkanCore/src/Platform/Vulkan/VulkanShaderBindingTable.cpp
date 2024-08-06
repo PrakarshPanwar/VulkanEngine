@@ -104,7 +104,7 @@ namespace VulkanCore {
 
 		// Ray Gen
 		m_RayGenSBTInfo = Utils::GetSBTStridedDeviceAddressRegion(m_SBTBuffer);
-		memcpy(sbtBufferDst, shaderHandleStorage.data(), shaderGroupBaseAlignment);
+		memcpy(sbtBufferDst, shaderHandleStorage.data(), shaderHandleSizeAligned);
 		sbtBufferDst += m_RayGenSBTInfo.size;
 		offset += m_RayGenSBTInfo.size;
 		m_RayGenSBTInfo.stride = m_RayGenSBTInfo.size;
