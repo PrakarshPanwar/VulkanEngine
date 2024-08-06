@@ -304,6 +304,8 @@ namespace VulkanCore {
 				{ "CoreRT.rchit", "CoreRT.rahit" }
 			};
 
+			// NOTE: Miss Shaders will have index according to their Alphabetical Order
+			// Write their index in accordingly in shaders
 			std::vector<std::string> missPaths = {
 				"CoreRT.rmiss", "Shadow.rmiss"
 			};
@@ -938,12 +940,13 @@ namespace VulkanCore {
 				uint32_t DragMax = 16;
 				ImGui::SliderScalar("Sample Count", ImGuiDataType_U32, &m_RTSettings.SampleCount, &DragMin, &DragMax);
 				ImGui::SliderScalar("Bounces", ImGuiDataType_U32, &m_RTSettings.Bounces, &DragMin, &DragMax);
+				ImGui::DragScalar("Seed", ImGuiDataType_U32, &m_RTSettings.RandomSeed, 1.0f, &DragMin);
 
 				ImGui::ColorEdit3("Extinction", glm::value_ptr(m_RTMaterialData.Extinction_AtDistance));
-				ImGui::DragFloat("At Distance", &m_RTMaterialData.Extinction_AtDistance.w, 0.01f, 0.001f, 1.0f);
+				ImGui::DragFloat("At Distance", &m_RTMaterialData.Extinction_AtDistance.w, 0.01f, 0.01f, 1000.0f);
 				ImGui::DragFloat("Transmission", &m_RTMaterialData.Transmission, 0.01f, 0.001f, 1.0f);
 				ImGui::DragFloat("Specular Tint", &m_RTMaterialData.SpecularTint, 0.01f, 0.001f, 1.0f);
-				ImGui::DragFloat("IOR", &m_RTMaterialData.IOR, 0.01f, 0.001f, 0.999f);
+				ImGui::DragFloat("IOR", &m_RTMaterialData.IOR, 0.01f, 1.0f, 5.0f);
 				ImGui::DragFloat("Sheen", &m_RTMaterialData.Sheen, 0.01f, 0.001f, 1.0f);
 				ImGui::DragFloat("Sheen Tint", &m_RTMaterialData.SheenTint, 0.01f, 0.001f, 1.0f);
 				ImGui::DragFloat("Clearcoat", &m_RTMaterialData.Clearcoat, 0.01f, 0.001f, 1.0f);
@@ -1560,7 +1563,6 @@ namespace VulkanCore {
 		Renderer::Submit([this]
 		{
 			// Ray Tracing Data
-			m_RTSettings.RandomSeed = 1;
 			if (m_Accumulate)
 			{
 				m_RTSettings.AccumulateFrameIndex++;
