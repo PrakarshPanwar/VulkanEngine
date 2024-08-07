@@ -406,16 +406,22 @@ namespace VulkanCore {
 
 	void VulkanShader::CompileOrGetVulkanBinaries(std::unordered_map<uint32_t, std::string>& shaderSources)
 	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		shaderc::Compiler compiler;
 		shaderc::CompileOptions options;
 
-		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
-		const bool optimize = true;
+		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+		options.SetTargetSpirv(shaderc_spirv_version_1_4);
 
+		const bool optimize = !device->IsInDebugMode();
 		if (optimize)
 			options.SetOptimizationLevel(shaderc_optimization_level_performance);
 		else
+		{
+			options.SetGenerateDebugInfo();
 			options.SetOptimizationLevel(shaderc_optimization_level_zero);
+		}
 
 		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
 
@@ -504,18 +510,23 @@ namespace VulkanCore {
 
 	void VulkanShader::Reload()
 	{
+		auto device = VulkanContext::GetCurrentDevice();
 		auto shaderSources = ParseShaders();
 
 		shaderc::Compiler compiler;
 		shaderc::CompileOptions options;
 
-		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
-		const bool optimize = true;
+		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+		options.SetTargetSpirv(shaderc_spirv_version_1_4);
 
+		const bool optimize = !device->IsInDebugMode();
 		if (optimize)
 			options.SetOptimizationLevel(shaderc_optimization_level_performance);
 		else
+		{
+			options.SetGenerateDebugInfo();
 			options.SetOptimizationLevel(shaderc_optimization_level_zero);
+		}
 
 		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
 
