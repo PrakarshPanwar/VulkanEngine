@@ -175,9 +175,9 @@ namespace VulkanCore {
 		return s_Renderer->CreateBRDFTexture();
 	}
 
-	std::tuple<std::shared_ptr<Texture2D>, std::shared_ptr<Texture2D>> Renderer::CreatePDFCDFTextures(const std::shared_ptr<Texture2D>& hdrTexture)
+	std::tuple<std::shared_ptr<Texture2D>, std::shared_ptr<Texture2D>> Renderer::CreateCDFPDFTextures(const std::shared_ptr<Texture2D>& hdrTexture)
 	{
-		return s_Renderer->CreatePDFCDFTextures(hdrTexture);
+		return s_Renderer->CreateCDFPDFTextures(hdrTexture);
 	}
 
 	std::shared_ptr<Texture2D> Renderer::GetWhiteTexture(ImageFormat format)

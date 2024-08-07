@@ -305,7 +305,7 @@ namespace VulkanCore {
 			};
 
 			// NOTE: Miss Shaders will have index according to their Alphabetical Order
-			// Write their index in accordingly in shaders
+			// Write their index accordingly in Shaders
 			std::vector<std::string> missPaths = {
 				"CoreRT.rmiss", "Shadow.rmiss"
 			};
@@ -1312,7 +1312,7 @@ namespace VulkanCore {
 		if (m_RayTraced)
 		{
 			m_HDRTexture = AssetManager::GetAsset<Texture2D>(filepath);
-			auto [PDFTexture, CDFTexture] = Renderer::CreatePDFCDFTextures(m_HDRTexture);
+			auto [PDFTexture, CDFTexture] = Renderer::CreateCDFPDFTextures(m_HDRTexture);
 			m_PDFTexture = PDFTexture;
 			m_CDFTexture = CDFTexture;
 

@@ -51,7 +51,7 @@ namespace VulkanCore {
 		static void TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::shared_ptr<ShaderBindingTable>& shaderBindingTable, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height, void* pcData, uint32_t pcSize);
 
 		static std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> CreateEnviromentMap(const std::string& filepath);
-		static std::tuple<std::shared_ptr<Texture2D>, std::shared_ptr<Texture2D>> CreatePDFCDFTextures(const std::shared_ptr<Texture2D>& hdrTexture);
+		static std::tuple<std::shared_ptr<Texture2D>, std::shared_ptr<Texture2D>> CreateCDFPDFTextures(const std::shared_ptr<Texture2D>& hdrTexture);
 		static std::shared_ptr<Image2D> CreateBRDFTexture();
 		static std::shared_ptr<Texture2D> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
 		static std::shared_ptr<TextureCube> GetBlackTextureCube(ImageFormat format);

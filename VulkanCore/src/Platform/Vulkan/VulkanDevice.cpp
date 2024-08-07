@@ -61,7 +61,7 @@ namespace VulkanCore {
 		VkInstance instance,
 		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
 		const VkAllocationCallbacks* pAllocator,
-		VkDebugUtilsMessengerEXT* pDebugMessenger) 
+		VkDebugUtilsMessengerEXT* pDebugMessenger)
 	{
 		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 		if (func != nullptr)
@@ -298,7 +298,7 @@ namespace VulkanCore {
 		if (IsExtensionSupported(VK_EXT_DEBUG_MARKER_EXTENSION_NAME))
 		{
 			deviceExtensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
-			m_EnableDebugMarkers = true;
+			m_DebugMarkers = true;
 		}
 
 		createInfo.pEnabledFeatures = &deviceFeatures;
@@ -389,7 +389,7 @@ namespace VulkanCore {
 
 	void VulkanDevice::SetupDebugMarkers()
 	{
-		if (m_EnableDebugMarkers)
+		if (m_DebugMarkers)
 			VK_CHECK_RESULT(CreateDebugMarkerEXT(m_LogicalDevice), "Failed to Set Debug Markers");
 	}
 
