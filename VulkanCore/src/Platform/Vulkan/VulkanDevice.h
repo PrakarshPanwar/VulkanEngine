@@ -58,6 +58,7 @@ namespace VulkanCore {
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 		bool IsExtensionSupported(const char* extensionName);
+		bool IsInDebugMode() const { return m_DebugMarkers; }
 		VkCommandBuffer GetCommandBuffer(bool compute = false);
 		void FlushCommandBuffer(VkCommandBuffer commandBuffer, bool compute = false);
 
