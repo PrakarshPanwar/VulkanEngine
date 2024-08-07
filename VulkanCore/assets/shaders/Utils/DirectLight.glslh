@@ -41,7 +41,7 @@ vec3 DirectLight(in Material material)
 	vec3 lightDir = dirPdf.xyz;
 	float lightPdf = dirPdf.w;
 
-	o_CastShadow = true;
+	o_CastShadow = false;
 
 	// Shadow Ray (payload 1 is Shadow.rmiss)
 	traceRayEXT(u_TopLevelAS,
@@ -56,7 +56,7 @@ vec3 DirectLight(in Material material)
 		tMax,
 		1);
 
-	if (!o_CastShadow)
+	if (o_CastShadow)
 	{
 		vec3 F = DisneyEval(material, lightDir, bsdfSample.PDF);
 
@@ -78,7 +78,7 @@ vec3 DirectLight(in Material material)
 		float lightDistSq   = lightDist * lightDist;
 		lightDir = normalize(lightDir);
 
-		o_CastShadow = true;
+		o_CastShadow = false;
 
 		// Light has to be visible from the Surface. Less than 90° between vectors.
 		if (dot(o_RayPayload.FFNormal, lightDir) <= 0.0 || dot(lightDir, sampled.Normal) >= 0.0)
@@ -97,7 +97,7 @@ vec3 DirectLight(in Material material)
 			lightDist,
 			1);
 		
-		if (!o_CastShadow)
+		if (o_CastShadow)
 		{
 			vec3 F = DisneyEval(material, lightDir, bsdfSample.PDF);
 

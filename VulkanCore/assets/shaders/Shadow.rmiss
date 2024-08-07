@@ -8,5 +8,5 @@ layout(location = 1) rayPayloadInEXT bool o_CastShadow;
 
 void main()
 {
-	o_CastShadow = false;
+	o_CastShadow = true;
 }

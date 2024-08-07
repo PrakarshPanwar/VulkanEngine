@@ -490,7 +490,7 @@ namespace VulkanCore {
 		return brdfTexture;
 	}
 
-	std::tuple<std::shared_ptr<Texture2D>, std::shared_ptr<Texture2D>> VulkanRenderer::CreatePDFCDFTextures(const std::shared_ptr<Texture2D>& hdrTexture)
+	std::tuple<std::shared_ptr<Texture2D>, std::shared_ptr<Texture2D>> VulkanRenderer::CreateCDFPDFTextures(const std::shared_ptr<Texture2D>& hdrTexture)
 	{
 		auto spec = hdrTexture->GetSpecification();
 		if (spec.Format != ImageFormat::RGBA32F)
@@ -544,11 +544,11 @@ namespace VulkanCore {
 
 		float* imagePtr = reinterpret_cast<float*>(imageBuffer->GetMapPointer());
 
-		std::vector<float> pdf2D = std::vector<float>(spec.Width * spec.Height);
-		std::vector<float> cdf2D = std::vector<float>(spec.Width * spec.Height);
+		std::vector<float> pdf2D(spec.Width * spec.Height);
+		std::vector<float> cdf2D(spec.Width * spec.Height);
 
-		std::vector<float> pdf1D = std::vector<float>(spec.Height);
-		std::vector<float> cdf1D = std::vector<float>(spec.Height);
+		std::vector<float> pdf1D(spec.Height);
+		std::vector<float> cdf1D(spec.Height);
 
 		glm::vec2* marginalDistribution = new glm::vec2[spec.Width * spec.Height];
 		glm::vec2* conditionalDistribution = new glm::vec2[spec.Width * spec.Height];
