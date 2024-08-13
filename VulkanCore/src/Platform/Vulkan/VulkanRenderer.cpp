@@ -588,10 +588,10 @@ namespace VulkanCore {
 		}
 
 		// Convert to Range [0, 1]
-		for (int j = 0; j < spec.Height; ++j)
+		for (int i = 0; i < spec.Height; ++i)
 		{
-			pdf1D[j] /= colWeightSum;
-			cdf1D[j] /= colWeightSum;
+			pdf1D[i] /= colWeightSum;
+			cdf1D[i] /= colWeightSum;
 		}
 
 		// Precalculate Row and Column to avoid Binary Search during Lookup in the Shader

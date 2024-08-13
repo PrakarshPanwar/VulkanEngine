@@ -130,8 +130,8 @@ namespace VulkanCore {
 				std::format("Mesh Material Storage Buffer: {}", i),
 				vulkanSBMeshMaterialData->GetDescriptorBufferInfo().buffer);
 
-			vulkanSBMeshBuffersData->WriteAndFlushBuffer(meshBuffersData.data(), 0);
-			vulkanSBMeshMaterialData->WriteAndFlushBuffer(meshMaterialData.data(), 0);
+			vulkanSBMeshBuffersData->WriteData(meshBuffersData.data(), 0);
+			vulkanSBMeshMaterialData->WriteData(meshMaterialData.data(), 0);
 		}
 
 		SetRayTraceMaterialsData();
@@ -1011,18 +1011,18 @@ namespace VulkanCore {
 		cameraUB.DepthUnpackConsts.x = (nearFarClip.y * nearFarClip.x) / (nearFarClip.y - nearFarClip.x);
 		cameraUB.DepthUnpackConsts.y = (nearFarClip.y + nearFarClip.x) / (nearFarClip.y - nearFarClip.x);
 
-		m_UBCamera[frameIndex]->WriteAndFlushBuffer(&cameraUB);
+		m_UBCamera[frameIndex]->WriteData(&cameraUB);
 
 		// Lights
 		UBPointLights pointLightUB{};
 		UBSpotLights spotLightUB{};
 		m_Scene->UpdateLightsBuffer(pointLightUB, spotLightUB);
 
-		m_UBPointLight[frameIndex]->WriteAndFlushBuffer(&pointLightUB);
-		m_UBSpotLight[frameIndex]->WriteAndFlushBuffer(&spotLightUB);
+		m_UBPointLight[frameIndex]->WriteData(&pointLightUB);
+		m_UBSpotLight[frameIndex]->WriteData(&spotLightUB);
 
 		// Skybox Data
-		m_UBSkyboxSettings[frameIndex]->WriteAndFlushBuffer(&m_SkyboxSettings);
+		m_UBSkyboxSettings[frameIndex]->WriteData(&m_SkyboxSettings);
 
 		m_SceneCommandBuffer->Begin();
 
@@ -1055,21 +1055,21 @@ namespace VulkanCore {
 		cameraUB.DepthUnpackConsts.x = (nearFarClip.y * nearFarClip.x) / (nearFarClip.y - nearFarClip.x);
 		cameraUB.DepthUnpackConsts.y = (nearFarClip.y + nearFarClip.x) / (nearFarClip.y - nearFarClip.x);
 
-		m_UBCamera[frameIndex]->WriteAndFlushBuffer(&cameraUB);
+		m_UBCamera[frameIndex]->WriteData(&cameraUB);
 
 		// Lights
 		UBPointLights pointLightUB{};
 		UBSpotLights spotLightUB{};
 		m_Scene->UpdateLightsBuffer(pointLightUB, spotLightUB);
 
-		m_UBPointLight[frameIndex]->WriteAndFlushBuffer(&pointLightUB);
-		m_UBSpotLight[frameIndex]->WriteAndFlushBuffer(&spotLightUB);
+		m_UBPointLight[frameIndex]->WriteData(&pointLightUB);
+		m_UBSpotLight[frameIndex]->WriteData(&spotLightUB);
 
 		// Skybox Data
-		m_UBSkyboxSettings[frameIndex]->WriteAndFlushBuffer(&m_SkyboxSettings);
+		m_UBSkyboxSettings[frameIndex]->WriteData(&m_SkyboxSettings);
 
 		// Ray Tracing Material Data
-		m_UBRTMaterialData[frameIndex]->WriteAndFlushBuffer(&m_RTMaterialData);
+		m_UBRTMaterialData[frameIndex]->WriteData(&m_RTMaterialData);
 
 		// Update AS if required
 		UpdateAccelerationStructures();
@@ -1263,8 +1263,8 @@ namespace VulkanCore {
 		// Write Data in Storage Buffers
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
-			m_SBMeshBuffersData[i]->WriteAndFlushBuffer(meshBuffersData.data(), 0);
-			m_SBMaterialDataBuffer[i]->WriteAndFlushBuffer(meshMaterialData.data(), 0);
+			m_SBMeshBuffersData[i]->WriteData(meshBuffersData.data(), 0);
+			m_SBMaterialDataBuffer[i]->WriteData(meshMaterialData.data(), 0);
 		}
 
 		Renderer::Submit([this]
