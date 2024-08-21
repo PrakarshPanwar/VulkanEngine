@@ -2,14 +2,14 @@ Scene: ClosedSpace
 Entities:
   - Entity: 13841765569656559826
     TagComponent:
-      Tag: Ceiling
+      Tag: Sphere
     TransformComponent:
-      Translation: [0, 3.07868433, -0.359927595]
-      Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
+      Translation: [0, 12.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [6, 6, 6]
     MeshComponent:
-      MeshHandle: 9816593081404201911
-      MaterialHandle: 3893884925322395954
+      MeshHandle: 5887157471203535698
+      MaterialHandle: 17021666477382963620
   - Entity: 15851074549022986198
     TagComponent:
       Tag: Sun Light
