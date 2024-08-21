@@ -49,9 +49,11 @@ namespace VulkanCore {
 	{
 		m_DirectoryIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/DirectoryIcon.png");
 		m_FileIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/FileIcon.png");
+		m_RefreshIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/RefreshIcon.png");
 
 		m_DirectoryIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_DirectoryIcon));
 		m_FileIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_FileIcon));
+		m_RefreshIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_RefreshIcon));
 
 		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Asset Tree Creation");
 
@@ -90,6 +92,19 @@ namespace VulkanCore {
 				ImGui::SameLine();
 			}
 		}
+
+		if (ImGui::ImageButton("##RefreshButton", m_RefreshIconID, { 18.5f, 18.5f }, { 0, 0 }, { 1, 1 }))
+		{
+			auto oldNode = m_RootNode;
+			m_RootNode = new TreeNode;
+			m_RootNode->FilePath = g_AssetPath;
+			UpdateAssetTree(m_RootNode);
+
+			tempNode = m_RootNode;
+			delete oldNode;
+		}
+
+		ImGui::SameLine();
 
 		ImVec4 buttonColor = m_AssetMode ? ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f } : ImVec4{ 0.2f, 0.3f, 0.8f, 1.0f };
 		ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
