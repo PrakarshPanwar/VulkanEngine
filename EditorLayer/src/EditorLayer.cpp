@@ -176,10 +176,65 @@ namespace VulkanCore {
 				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
 					SaveSceneAs();
 
-// 				if (ImGui::MenuItem("Exit"))
-// 					Application::Get()->Close();
+ 				//if (ImGui::MenuItem("Exit"))
+ 				//	Application::Get()->Close();
 
 				ImGui::EndMenu();
+			}
+
+			if (std::popcount(m_TransformInputMask))
+			{
+				auto selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+				if (selectedEntity)
+				{
+					ImGui::PushItemWidth(45.0f);
+					ImGui::SetKeyboardFocusHere();
+					bool edited = ImGui::InputFloat("##TransformInput", &m_TransformScalarInput);
+					ImGui::PopItemWidth();
+
+					ImGui::TextColored(m_TransformInputMask & 0x1 ? ImVec4{ 0.8f, 0.0f, 0.0f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "X = %.3f", m_TransformInput.x);
+					ImGui::SameLine();
+					ImGui::TextColored(m_TransformInputMask & 0x2 ? ImVec4{ 0.0f, 0.8f, 0.0f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "\tY = %.3f", m_TransformInput.y);
+					ImGui::SameLine();
+					ImGui::TextColored(m_TransformInputMask & 0x4 ? ImVec4{ 0.0f, 0.0f, 0.8f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "\tZ = %.3f", m_TransformInput.z);
+
+					if (edited || ImGui::IsKeyPressed(ImGuiKey_X) || ImGui::IsKeyPressed(ImGuiKey_Y) || ImGui::IsKeyPressed(ImGuiKey_Z))
+					{
+						// Transfer Input Data using bit flag
+						__m128 value = _mm_mask_mov_ps(_mm_setzero_ps(), m_TransformInputMask, _mm_set1_ps(m_TransformScalarInput));
+						_mm_store_ps(glm::value_ptr(m_TransformInput), value);
+
+						auto& transform = selectedEntity.GetComponent<TransformComponent>();
+						transform = m_EntityTransform;
+
+						switch (m_GizmoType)
+						{
+						case ImGuizmo::OPERATION::TRANSLATE:
+						{
+							transform.Translation += glm::vec3(m_TransformInput);
+							break;
+						}
+						case ImGuizmo::OPERATION::ROTATE:
+						{
+							transform.Rotation += glm::vec3(glm::radians(m_TransformInput));
+							break;
+						}
+						case ImGuizmo::OPERATION::SCALE:
+						{
+							__m128 scale = _mm_mask_mov_ps(_mm_set1_ps(1.0f), m_TransformInputMask, value);
+							_mm_store_ps(glm::value_ptr(m_TransformInput), scale);
+
+							transform.Scale *= glm::vec3(m_TransformInput);
+							break;
+						}
+						default:
+							break;
+						}
+					}
+
+					if (ImGui::IsKeyPressed(ImGuiKey_Enter))
+						m_TransformInputMask = 0;
+				}
 			}
 
 			ImGui::EndMenuBar();
@@ -290,6 +345,7 @@ namespace VulkanCore {
 	bool EditorLayer::OnKeyEvent(KeyPressedEvent& e)
 	{
 		bool shiftKey = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+		bool altKey = Input::IsKeyPressed(Key::LeftAlt) || Input::IsKeyPressed(Key::RightAlt);
 
 		bool isFlying = m_EditorCamera.IsInFly();
 
@@ -306,18 +362,66 @@ namespace VulkanCore {
 		{
 			if (!ImGuizmo::IsUsing() && !isFlying)
 				m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+
+			if (altKey)
+			{
+				Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+				m_TransformInputMask = !m_EditorCamera.IsInFly() && selectedEntity ? 0x7 : 0;
+				m_EntityTransform = m_TransformInputMask ? selectedEntity.GetComponent<TransformComponent>() : TransformComponent{};
+				m_TransformInput = {};
+			}
+
 			break;
 		}
 		case Key::E:
 		{
 			if (!ImGuizmo::IsUsing())
 				m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+
+			if (altKey)
+			{
+				Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+				m_TransformInputMask = !m_EditorCamera.IsInFly() && selectedEntity ? 0x7 : 0;
+				m_EntityTransform = m_TransformInputMask ? selectedEntity.GetComponent<TransformComponent>() : TransformComponent{};
+				m_TransformInput = {};
+			}
+
 			break;
 		}
 		case Key::R:
 		{
 			if (!ImGuizmo::IsUsing())
 				m_GizmoType = ImGuizmo::OPERATION::SCALE;
+
+			if (altKey)
+			{
+				Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+				m_TransformInputMask = !m_EditorCamera.IsInFly() && selectedEntity ? 0x7 : 0;
+				m_EntityTransform = m_TransformInputMask ? selectedEntity.GetComponent<TransformComponent>() : TransformComponent{};
+				m_TransformInput = glm::vec4{ 1.0f };
+			}
+
+			break;
+		}
+		case Key::X:
+		{
+			if (m_TransformInputMask)
+				m_TransformInputMask = 0x1;
+
+			break;
+		}
+		case Key::Y:
+		{
+			if (m_TransformInputMask)
+				m_TransformInputMask = 0x2;
+
+			break;
+		}
+		case Key::Z:
+		{
+			if (m_TransformInputMask)
+				m_TransformInputMask = 0x4;
+
 			break;
 		}
 		case Key::Period:
