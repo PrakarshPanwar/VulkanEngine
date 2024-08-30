@@ -3,59 +3,12 @@
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
+#include "Utils/ImageUtils.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include "VulkanContext.h"
 
 namespace VulkanCore {
-
-	namespace Utils {
-
-		static VkFormat VulkanImageFormat(ImageFormat format)
-		{
-			switch (format)
-			{
-			case ImageFormat::R32I:			   return VK_FORMAT_R32_SINT;
-			case ImageFormat::R32F:			   return VK_FORMAT_R32_SFLOAT;
-			case ImageFormat::RG32F:		   return VK_FORMAT_R32G32_SFLOAT;
-			case ImageFormat::RGBA8_SRGB:	   return VK_FORMAT_R8G8B8A8_SRGB;
-			case ImageFormat::RGBA8_NORM:	   return VK_FORMAT_R8G8B8A8_SNORM;
-			case ImageFormat::RGBA8_UNORM:	   return VK_FORMAT_R8G8B8A8_UNORM;
-			case ImageFormat::RGBA16_NORM:	   return VK_FORMAT_R16G16B16A16_SNORM;
-			case ImageFormat::RGBA16_UNORM:	   return VK_FORMAT_R16G16B16A16_UNORM;
-			case ImageFormat::RGBA16F:		   return VK_FORMAT_R16G16B16A16_SFLOAT;
-			case ImageFormat::RGBA32F:		   return VK_FORMAT_R32G32B32A32_SFLOAT;
-			case ImageFormat::DEPTH24STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
-			case ImageFormat::DEPTH16F:		   return VK_FORMAT_D16_UNORM;
-			case ImageFormat::DEPTH32F:		   return VK_FORMAT_D32_SFLOAT;
-			default:
-				VK_CORE_ASSERT(false, "Format not Supported!");
-				return (VkFormat)0;
-			}
-		}
-
-		static bool IsMultisampled(RenderPassSpecification spec)
-		{
-			return spec.TargetFramebuffer->GetSpecification().Samples > 1;
-		}
-
-		static VkSampleCountFlagBits VulkanSampleCount(uint32_t sampleCount)
-		{
-			switch (sampleCount)
-			{
-			case 1:  return VK_SAMPLE_COUNT_1_BIT;
-			case 2:  return VK_SAMPLE_COUNT_2_BIT;
-			case 4:  return VK_SAMPLE_COUNT_4_BIT;
-			case 8:  return VK_SAMPLE_COUNT_8_BIT;
-			case 16: return VK_SAMPLE_COUNT_16_BIT;
-			case 32: return VK_SAMPLE_COUNT_32_BIT;
-			case 64: return VK_SAMPLE_COUNT_64_BIT;
-			default:
-				VK_CORE_ASSERT(false, "Sample Bit not Supported! Choose Power of 2");
-				return VK_SAMPLE_COUNT_1_BIT;
-			}
-		}
-	}
 
 	VulkanRenderPass::VulkanRenderPass(const RenderPassSpecification& spec)
 		: m_Specification(spec)

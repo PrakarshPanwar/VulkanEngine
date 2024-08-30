@@ -1,42 +1,11 @@
 #include "vulkanpch.h"
 #include "VulkanFramebuffer.h"
 
-#include "VulkanSwapChain.h"
+#include "Utils/ImageUtils.h"
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
 namespace VulkanCore {
-
-	namespace Utils {
-
-		static bool IsDepthFormat(ImageFormat format)
-		{
-			switch (format)
-			{
-			case ImageFormat::DEPTH24STENCIL8: return true;
-			case ImageFormat::DEPTH16F:		   return true;
-			case ImageFormat::DEPTH32F:		   return true;
-			default:
-				return false;
-			}
-		}
-
-		static uint32_t CalculateMipCount(uint32_t width, uint32_t height)
-		{
-			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
-		}
-
-		static bool IsMultisampled(FramebufferSpecification spec)
-		{
-			return spec.Samples > 1;
-		}
-
-		static bool IsMultisampled(ImageSpecification spec)
-		{
-			return spec.Samples > 1;
-		}
-
-	}
 
 	uint32_t VulkanFramebuffer::s_InstanceCount = 0;
 
