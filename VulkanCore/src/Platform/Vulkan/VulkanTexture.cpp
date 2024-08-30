@@ -7,48 +7,11 @@
 
 #include "VulkanDescriptor.h"
 #include "VulkanAllocator.h"
+#include "Utils/ImageUtils.h"
 
 namespace VulkanCore {
 
 	namespace Utils {
-
-		static VkFormat VulkanImageFormat(ImageFormat format)
-		{
-			switch (format)
-			{
-			case ImageFormat::R32I:			   return VK_FORMAT_R32_SINT;
-			case ImageFormat::R32F:			   return VK_FORMAT_R32_SFLOAT;
-			case ImageFormat::RGBA8_SRGB:	   return VK_FORMAT_R8G8B8A8_SRGB;
-			case ImageFormat::RGBA8_NORM:	   return VK_FORMAT_R8G8B8A8_SNORM;
-			case ImageFormat::RGBA8_UNORM:	   return VK_FORMAT_R8G8B8A8_UNORM;
-			case ImageFormat::RGBA16_NORM:	   return VK_FORMAT_R16G16B16A16_SNORM;
-			case ImageFormat::RGBA16_UNORM:	   return VK_FORMAT_R16G16B16A16_UNORM;
-			case ImageFormat::RGBA16F:		   return VK_FORMAT_R16G16B16A16_SFLOAT;
-			case ImageFormat::RGBA32F:		   return VK_FORMAT_R32G32B32A32_SFLOAT;
-			case ImageFormat::DEPTH24STENCIL8: return VK_FORMAT_D24_UNORM_S8_UINT;
-			case ImageFormat::DEPTH16F:		   return VK_FORMAT_D16_UNORM;
-			case ImageFormat::DEPTH32F:		   return VK_FORMAT_D32_SFLOAT;
-			default:
-				VK_CORE_ASSERT(false, "Format not Supported!");
-				return (VkFormat)0;
-			}
-		}
-
-		static VkSamplerAddressMode VulkanSamplerWrap(TextureWrap wrap)
-		{
-			switch (wrap)
-			{
-			case TextureWrap::Repeat: return VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			case TextureWrap::Clamp:  return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-			default:
-				return (VkSamplerAddressMode)0;
-			}
-		}
-
-		static uint32_t CalculateMipCount(uint32_t width, uint32_t height)
-		{
-			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
-		}
 
 		static VkDeviceSize GetMemorySize(ImageFormat format, uint32_t width, uint32_t height)
 		{
