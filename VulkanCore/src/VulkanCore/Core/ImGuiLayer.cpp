@@ -34,6 +34,7 @@ namespace VulkanCore {
 
 	void ImGuiLayer::OnAttach()
 	{
+		auto context = VulkanContext::GetCurrentContext();
 		auto device = VulkanContext::GetCurrentDevice();
 
 		DescriptorPoolBuilder descriptorPoolBuilder = {};
@@ -63,10 +64,8 @@ namespace VulkanCore {
 		GLFWwindow* window = (GLFWwindow*)Application::Get()->GetWindow()->GetNativeWindow();
 		ImGui_ImplGlfw_InitForVulkan(window, true);
 
-		const auto vulkanInstance = VulkanContext::GetCurrentContext()->m_VkInstance;
-
 		ImGui_ImplVulkan_InitInfo init_info = {};
-		init_info.Instance = vulkanInstance;
+		init_info.Instance = context->m_VulkanInstance;
 		init_info.PhysicalDevice = device->GetPhysicalDevice();
 		init_info.Device = device->GetVulkanDevice();
 		init_info.Queue = device->GetGraphicsQueue();

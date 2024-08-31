@@ -52,7 +52,10 @@ namespace VulkanCore {
 	VulkanComputePipeline::VulkanComputePipeline(std::shared_ptr<Shader> shader, const std::string& debugName)
 		: m_DebugName(debugName), m_Shader(shader)
 	{
-		RT_InvalidateComputePipeline();
+		Renderer::Submit([this]
+		{
+			InvalidateComputePipeline();
+		});
 	}
 
 	VulkanComputePipeline::~VulkanComputePipeline()
@@ -155,49 +158,6 @@ namespace VulkanCore {
 			"Failed to Create Compute Pipeline!");
 
 		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_DebugName, m_ComputePipeline);
-	}
-
-	void VulkanComputePipeline::RT_InvalidateComputePipeline()
-	{
-		Renderer::Submit([this]()
-		{
-			auto device = VulkanContext::GetCurrentDevice();
-			auto shader = std::static_pointer_cast<VulkanShader>(m_Shader);
-
-			auto& shaderSources = shader->GetShaderModules();
-
-			m_ComputeShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Compute]);
-
-			m_DescriptorSetLayout = shader->CreateDescriptorSetLayout();
-			m_PipelineLayout = Utils::CreatePipelineLayout(*m_DescriptorSetLayout, shader->GetPushConstantSize());
-
-			VkPipelineShaderStageCreateInfo shaderStage;
-			shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-			shaderStage.module = m_ComputeShaderModule;
-			shaderStage.pName = "main";
-			shaderStage.flags = 0;
-			shaderStage.pNext = nullptr;
-			shaderStage.pSpecializationInfo = nullptr;
-
-			VkComputePipelineCreateInfo computePipelineInfo{};
-			computePipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-			computePipelineInfo.stage = shaderStage;
-			computePipelineInfo.layout = m_PipelineLayout;
-			computePipelineInfo.basePipelineIndex = -1;
-			computePipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-
-			VK_CHECK_RESULT(vkCreateComputePipelines(
-				device->GetVulkanDevice(),
-				VK_NULL_HANDLE,
-				1,
-				&computePipelineInfo,
-				nullptr,
-				&m_ComputePipeline),
-				"Failed to Create Compute Pipeline!");
-
-			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_DebugName, m_ComputePipeline);
-		});
 	}
 
 }

@@ -232,7 +232,7 @@ namespace VulkanCore {
 	{
 		uint32_t deviceCount = 0;
 
-		const auto vulkanInstance = VulkanContext::GetCurrentContext()->m_VkInstance;
+		const auto vulkanInstance = VulkanContext::GetCurrentContext()->m_VulkanInstance;
 
 		vkEnumeratePhysicalDevices(vulkanInstance, &deviceCount, nullptr);
 		VK_CORE_ASSERT(deviceCount != 0, "Failed to find GPUs with Vulkan Support!");
@@ -264,6 +264,7 @@ namespace VulkanCore {
 
 	void VulkanDevice::CreateLogicalDevice()
 	{
+		auto context = VulkanContext::GetCurrentContext();
 		QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -293,8 +294,8 @@ namespace VulkanCore {
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-		auto& deviceExtensions = VulkanContext::GetCurrentContext()->m_DeviceExtensions;
-		const auto& validationLayers = VulkanContext::GetCurrentContext()->m_ValidationLayers;
+		auto& deviceExtensions = context->m_DeviceExtensions;
+		const auto& validationLayers = context->m_ValidationLayers;
 
 		if (IsExtensionSupported(VK_EXT_DEBUG_MARKER_EXTENSION_NAME))
 		{
@@ -307,7 +308,7 @@ namespace VulkanCore {
 		createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
 		// Might not really be Necessary anymore because device specific Validation Layers have been deprecated
-		if (VulkanContext::GetCurrentContext()->m_EnableValidation)
+		if (context->m_EnableValidation)
 		{
 			createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 			createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -350,7 +351,7 @@ namespace VulkanCore {
 
 	QueueFamilyIndices VulkanDevice::FindQueueFamilies(VkPhysicalDevice device)
 	{
-		QueueFamilyIndices indices;
+		QueueFamilyIndices indices{};
 
 		uint32_t queueFamilyCount = 0;
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -358,7 +359,7 @@ namespace VulkanCore {
 		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
-		const auto vulkanSurface = VulkanContext::GetCurrentContext()->m_VkSurface;
+		const auto vulkanSurface = VulkanContext::GetCurrentContext()->m_VulkanSurface;
 
 		int i = 0;
 		for (const auto& queueFamily : queueFamilies)
