@@ -237,7 +237,7 @@ namespace VulkanCore {
 			createInfo.pNext = nullptr;
 		}
 
-		VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &m_VkInstance), "Failed to Create Vulkan Instance!");
+		VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &m_VulkanInstance), "Failed to Create Vulkan Instance!");
 
 		HasGLFWRequiredInstanceExtensions();
 	}
@@ -249,13 +249,13 @@ namespace VulkanCore {
 
 		VkDebugUtilsMessengerCreateInfoEXT createInfo;
 		PopulateDebugMessengerCreateInfo(createInfo);
-		VK_CHECK_RESULT(CreateDebugUtilsMessengerEXT(m_VkInstance, &createInfo, nullptr, &m_DebugMessenger), "Failed to Setup Debug Messenger!");
-		VK_CHECK_RESULT(CreateDebugUtilsEXT(m_VkInstance), "Failed to Set Debug Utils!");
+		VK_CHECK_RESULT(CreateDebugUtilsMessengerEXT(m_VulkanInstance, &createInfo, nullptr, &m_DebugMessenger), "Failed to Setup Debug Messenger!");
+		VK_CHECK_RESULT(CreateDebugUtilsEXT(m_VulkanInstance), "Failed to Set Debug Utils!");
 	}
 
 	void VulkanContext::CreateSurface()
 	{
-		VK_CHECK_RESULT(glfwCreateWindowSurface(m_VkInstance, (GLFWwindow*)m_Window->GetNativeWindow(), nullptr, &m_VkSurface),
+		VK_CHECK_RESULT(glfwCreateWindowSurface(m_VulkanInstance, (GLFWwindow*)m_Window->GetNativeWindow(), nullptr, &m_VulkanSurface),
 			"Failed to Create Window Surface!");
 	}
 
@@ -272,7 +272,7 @@ namespace VulkanCore {
 
 		VmaAllocatorCreateInfo allocatorInfo;
 		allocatorInfo.device = m_Device->GetVulkanDevice();
-		allocatorInfo.instance = m_VkInstance;
+		allocatorInfo.instance = m_VulkanInstance;
 		allocatorInfo.physicalDevice = physicalDevice;
 		allocatorInfo.pVulkanFunctions = &vulkanFunctions;
 		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
@@ -281,7 +281,7 @@ namespace VulkanCore {
 		allocatorInfo.pHeapSizeLimit = nullptr;
 		allocatorInfo.pTypeExternalMemoryHandleTypes = nullptr;
 
-		vmaCreateAllocator(&allocatorInfo, &m_VkMemoryAllocator);
+		vmaCreateAllocator(&allocatorInfo, &m_VulkanMemoryAllocator);
 	}
 
 	bool VulkanContext::IsDeviceSuitable(VkPhysicalDevice device)
@@ -406,24 +406,24 @@ namespace VulkanCore {
 	SwapChainSupportDetails VulkanContext::QuerySwapChainSupport(VkPhysicalDevice device)
 	{
 		SwapChainSupportDetails details;
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_VkSurface, &details.Capabilities);
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_VulkanSurface, &details.Capabilities);
 
 		uint32_t formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_VkSurface, &formatCount, nullptr);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_VulkanSurface, &formatCount, nullptr);
 
 		if (formatCount != 0)
 		{
 			details.Formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_VkSurface, &formatCount, details.Formats.data());
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_VulkanSurface, &formatCount, details.Formats.data());
 		}
 
 		uint32_t presentModeCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_VkSurface, &presentModeCount, nullptr);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_VulkanSurface, &presentModeCount, nullptr);
 
 		if (presentModeCount != 0)
 		{
 			details.PresentModes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_VkSurface, &presentModeCount, details.PresentModes.data());
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_VulkanSurface, &presentModeCount, details.PresentModes.data());
 		}
 
 		return details;
@@ -431,14 +431,14 @@ namespace VulkanCore {
 
 	void VulkanContext::Destroy()
 	{
-		vmaDestroyAllocator(m_VkMemoryAllocator);
+		vmaDestroyAllocator(m_VulkanMemoryAllocator);
 		m_Device->Destroy();
 
 		if (m_EnableValidation)
-			DestroyDebugUtilsMessengerEXT(m_VkInstance, m_DebugMessenger, nullptr);
+			DestroyDebugUtilsMessengerEXT(m_VulkanInstance, m_DebugMessenger, nullptr);
 
-		vkDestroySurfaceKHR(m_VkInstance, m_VkSurface, nullptr);
-		vkDestroyInstance(m_VkInstance, nullptr);
+		vkDestroySurfaceKHR(m_VulkanInstance, m_VulkanSurface, nullptr);
+		vkDestroyInstance(m_VulkanInstance, nullptr);
 	}
 
 }

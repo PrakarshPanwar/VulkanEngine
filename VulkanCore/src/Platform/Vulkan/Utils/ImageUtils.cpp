@@ -33,17 +33,6 @@ namespace VulkanCore {
 			}
 		}
 
-		bool IsDepthFormat(ImageFormat format)
-		{
-			switch (format)
-			{
-			case ImageFormat::DEPTH24STENCIL8: return true;
-			case ImageFormat::DEPTH16F:		   return true;
-			case ImageFormat::DEPTH32F:		   return true;
-			default:						   return false;
-			}
-		}
-
 		VkSamplerAddressMode VulkanSamplerWrap(TextureWrap wrap)
 		{
 			switch (wrap)
@@ -75,6 +64,17 @@ namespace VulkanCore {
 		uint32_t CalculateMipCount(uint32_t width, uint32_t height)
 		{
 			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
+		}
+
+		bool IsDepthFormat(ImageFormat format)
+		{
+			switch (format)
+			{
+			case ImageFormat::DEPTH24STENCIL8: return true;
+			case ImageFormat::DEPTH16F:		   return true;
+			case ImageFormat::DEPTH32F:		   return true;
+			default:						   return false;
+			}
 		}
 
 		bool IsMultisampled(ImageSpecification spec)
