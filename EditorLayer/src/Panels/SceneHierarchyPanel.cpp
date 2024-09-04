@@ -1,3 +1,5 @@
+#include <filesystem>
+
 #include "SceneHierarchyPanel.h"
 
 #include "VulkanCore/Asset/AssetManager.h"
@@ -5,8 +7,6 @@
 #include "VulkanCore/Mesh/Mesh.h"
 #include "VulkanCore/Scene/SceneRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
-
-#include <filesystem>
 
 #include <imgui.h>
 #include <imgui_internal.h>

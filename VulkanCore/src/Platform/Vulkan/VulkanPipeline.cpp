@@ -280,7 +280,10 @@ namespace VulkanCore {
 	VulkanPipeline::VulkanPipeline(const PipelineSpecification& spec)
 		: m_Specification(spec)
 	{
-		RT_InvalidateGraphicsPipeline();
+		Renderer::Submit([this]
+		{
+			InvalidateGraphicsPipeline();
+		});
 	}
 
 	VulkanPipeline::~VulkanPipeline()
@@ -373,122 +376,6 @@ namespace VulkanCore {
 			"Failed to Create Graphics Pipeline!");
 
 		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_Specification.DebugName, m_GraphicsPipeline);
-	}
-
-	void VulkanPipeline::RT_InvalidateGraphicsPipeline()
-	{
-		Renderer::Submit([this]()
-		{
-			auto device = VulkanContext::GetCurrentDevice();
-
-			auto shader = std::static_pointer_cast<VulkanShader>(m_Specification.pShader);
-			auto& shaderSources = shader->GetShaderModules();
-
-			m_VertexShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Vertex]);
-			m_FragmentShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Fragment]);
-
-			const uint32_t shaderStageCount = shader->HasGeometryShader() ? 3 : 2;
-			std::vector<VkPipelineShaderStageCreateInfo> shaderStages(shaderStageCount);
-
-			shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-			shaderStages[0].module = m_VertexShaderModule;
-			shaderStages[0].pName = "main";
-			shaderStages[0].flags = 0;
-			shaderStages[0].pNext = nullptr;
-			shaderStages[0].pSpecializationInfo = nullptr;
-
-			shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-			shaderStages[1].module = m_FragmentShaderModule;
-			shaderStages[1].pName = "main";
-			shaderStages[1].flags = 0;
-			shaderStages[1].pNext = nullptr;
-			shaderStages[1].pSpecializationInfo = nullptr;
-
-			if (shader->HasGeometryShader())
-			{
-				m_GeometryShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Geometry]);
-
-				shaderStages[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-				shaderStages[2].stage = VK_SHADER_STAGE_GEOMETRY_BIT;
-				shaderStages[2].module = m_GeometryShaderModule;
-				shaderStages[2].pName = "main";
-				shaderStages[2].flags = 0;
-				shaderStages[2].pNext = nullptr;
-				shaderStages[2].pSpecializationInfo = nullptr;
-			}
-
-			auto bindingDescriptions = Utils::GetVulkanBindingDescription(m_Specification);
-			auto attributeDescriptions = Utils::GetVulkanAttributeDescription(m_Specification);
-
-			VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-			vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-			vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-			vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
-			vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-			vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
-
-			m_DescriptorSetLayout = shader->CreateAllDescriptorSetsLayout();
-			m_PipelineLayout = Utils::CreatePipelineLayout(m_DescriptorSetLayout, shader->GetPushConstantSize());
-
-			auto pipelineInfo = Utils::GetPipelineConfiguration(m_Specification);
-
-			VkGraphicsPipelineCreateInfo graphicsPipelineInfo{};
-			graphicsPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-			graphicsPipelineInfo.stageCount = shaderStageCount;
-			graphicsPipelineInfo.pStages = shaderStages.data();
-			graphicsPipelineInfo.pVertexInputState = &vertexInputInfo;
-			graphicsPipelineInfo.pInputAssemblyState = &pipelineInfo.InputAssemblyInfo;
-			graphicsPipelineInfo.pViewportState = &pipelineInfo.ViewportInfo;
-			graphicsPipelineInfo.pRasterizationState = &pipelineInfo.RasterizationInfo;
-			graphicsPipelineInfo.pColorBlendState = &pipelineInfo.ColorBlendInfo;
-			graphicsPipelineInfo.pDepthStencilState = &pipelineInfo.DepthStencilInfo;
-			graphicsPipelineInfo.pMultisampleState = &pipelineInfo.MultisampleInfo;
-			graphicsPipelineInfo.pDynamicState = &pipelineInfo.DynamicStateInfo;
-
-			graphicsPipelineInfo.layout = m_PipelineLayout;
-			graphicsPipelineInfo.renderPass = std::dynamic_pointer_cast<VulkanRenderPass>(m_Specification.pRenderPass)->GetVulkanRenderPass();
-			graphicsPipelineInfo.subpass = pipelineInfo.Subpass;
-
-			graphicsPipelineInfo.basePipelineIndex = -1;
-			graphicsPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-
-			VK_CHECK_RESULT(vkCreateGraphicsPipelines(
-				device->GetVulkanDevice(),
-				VK_NULL_HANDLE,
-				1,
-				&graphicsPipelineInfo,
-				nullptr,
-				&m_GraphicsPipeline),
-				"Failed to Create Graphics Pipeline!");
-
-			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_PIPELINE, m_Specification.DebugName, m_GraphicsPipeline);
-		});
-	}
-
-	void VulkanPipeline::CreateShaderModule(const std::string& shaderSource, VkShaderModule* shaderModule)
-	{
-		auto device = VulkanContext::GetCurrentDevice();
-
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = shaderSource.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderSource.data());
-
-		VK_CHECK_RESULT(vkCreateShaderModule(device->GetVulkanDevice(), &createInfo, nullptr, shaderModule), "Failed to Create Shader Module!");
-	}
-
-	void VulkanPipeline::CreateShaderModule(const std::vector<uint32_t>& shaderSource, VkShaderModule* shaderModule)
-	{
-		auto device = VulkanContext::GetCurrentDevice();
-
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = shaderSource.size() * sizeof(uint32_t);
-		createInfo.pCode = shaderSource.data();
-
-		VK_CHECK_RESULT(vkCreateShaderModule(device->GetVulkanDevice(), &createInfo, nullptr, shaderModule), "Failed to Create Shader Module!");
 	}
 
 	// TODO: Caching could benefit greatly in performance

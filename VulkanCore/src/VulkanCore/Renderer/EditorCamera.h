@@ -58,7 +58,6 @@ namespace VulkanCore {
 		bool OnMouseScroll(MouseScrolledEvent& e);
 		//bool OnWindowResize(WindowResizeEvent& e);
 
-		void KeyWalk();
 		void MousePan(const glm::vec2& delta);
 		void MouseRotate(const glm::vec2& delta);
 		void MouseDrag(const glm::vec2& delta);
