@@ -229,9 +229,4 @@ namespace VulkanCore {
 		return glm::quat(glm::vec3(-m_Pitch, -m_Yaw, 0.0f));
 	}
 
-	void EditorCamera::KeyWalk()
-	{
-		throw std::logic_error("The method or operation is not implemented.");
-	}
-
 }

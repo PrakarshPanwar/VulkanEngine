@@ -1,30 +1,5 @@
 #pragma once
 
-vec4 EnvironmentSample(inout vec3 color)
-{
-	float r1 = RandomFloat(o_RayPayload.Seed);
-	float r2 = RandomFloat(o_RayPayload.Seed);
-
-	float v = texture(u_PDFTexture, vec2(0.0, r1)).x; // Marginal
-	float u = texture(u_CDFTexture, vec2(r2, v)).x;   // Conditional
-
-	color = texture(u_HDRTexture, vec2(u, v)).xyz * u_Skybox.Intensity;
-	float pdf = texture(u_CDFTexture, vec2(u, v)).y * texture(u_PDFTexture, vec2(0.0, v)).y;
-
-	float phi = u * TWO_PI;
-	float theta = v * PI;
-
-	if (sin(theta) == 0.0)
-		pdf = 0.0;
-
-	return vec4(
-		-sin(theta) * cos(phi), 
-		cos(theta),
-		-sin(theta) * sin(phi),
-		(pdf * HDR_RESOLUTION) / (TWO_PI * PI * sin(theta))
-	);
-}
-
 vec3 EvalDielectricReflection(vec3 V, vec3 N, vec3 L, vec3 H, inout float pdf)
 {
     pdf = 0.0;
@@ -254,6 +229,31 @@ vec3 DisneySample(in Material material, inout vec3 L, inout float pdf)
     return Fr;
 }
 
+vec4 EnvironmentSample(inout vec3 color)
+{
+	float r1 = RandomFloat(o_RayPayload.Seed);
+	float r2 = RandomFloat(o_RayPayload.Seed);
+
+	float v = texture(u_PDFTexture, vec2(0.0, r1)).x; // Marginal
+	float u = texture(u_CDFTexture, vec2(r2, v)).x;   // Conditional
+
+	color = texture(u_HDRTexture, vec2(u, v)).xyz * u_Skybox.Intensity;
+	float pdf = texture(u_CDFTexture, vec2(u, v)).y * texture(u_PDFTexture, vec2(0.0, v)).y;
+
+	float phi = u * TWO_PI;
+	float theta = v * PI;
+
+	if (sin(theta) == 0.0)
+		pdf = 0.0;
+
+	return vec4(
+		-sin(theta) * cos(phi), 
+		cos(theta),
+		-sin(theta) * sin(phi),
+		(pdf * HDR_RESOLUTION) / (TWO_PI * PI * sin(theta))
+	);
+}
+
 vec3 DisneyEval(Material material, vec3 L, inout float pdf)
 {
     vec3 N = o_RayPayload.FFNormal;
@@ -367,7 +367,7 @@ vec3 DirectLight(in Material material)
 		int lightIndex = min(u_PointLight.Count - 1, int(RandomFloat(o_RayPayload.Seed) * float(u_PointLight.Count)));
 		PointLight pointLight = u_PointLight.PointLights[lightIndex];
 
-		LightSample sampled = SampleLight(pointLight);	
+		LightSample sampled = SampleLight(pointLight);
 		vec3 lightDir       = sampled.Position - surfacePosition;
 		float lightDist     = length(lightDir);
 		float lightDistSq   = lightDist * lightDist;

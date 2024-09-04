@@ -24,7 +24,6 @@ namespace VulkanCore {
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
 	private:
 		void InvalidateRayTracingPipeline();
-		void RT_InvalidateRayTracingPipeline();
 	private:
 		std::string m_DebugName;
 
