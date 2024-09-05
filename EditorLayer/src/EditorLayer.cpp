@@ -60,8 +60,7 @@ namespace VulkanCore {
 			OpenScene(sceneFilePath);
 		}
 
-		m_RayTraced = Application::Get()->GetSpecification().RayTracing;
-		if (m_RayTraced)
+		if (m_SceneRenderer->IsRayTraced())
 			m_SceneRenderer->CreateRayTraceResources();
 
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
@@ -95,7 +94,7 @@ namespace VulkanCore {
 		sceneEditorData.ViewportHovered = m_ViewportHovered;
 		m_SceneRenderer->SetSceneEditorData(sceneEditorData);
 
-		if (m_RayTraced)
+		if (m_SceneRenderer->IsRayTraced())
 			m_SceneRenderer->TraceScene();
 		else
 			m_SceneRenderer->RasterizeScene();
@@ -231,8 +230,8 @@ namespace VulkanCore {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
-		ImVec2 uv0 = m_RayTraced ? ImVec2{ 0, 0 } : ImVec2{ 0, 1 };
-		ImVec2 uv1 = m_RayTraced ? ImVec2{ 1, 1 } : ImVec2{ 1, 0 };
+		ImVec2 uv0 = m_SceneRenderer->IsRayTraced() ? ImVec2{ 0, 0 } : ImVec2{ 0, 1 };
+		ImVec2 uv1 = m_SceneRenderer->IsRayTraced() ? ImVec2{ 1, 1 } : ImVec2{ 1, 0 };
 		ImGui::SetNextItemAllowOverlap();
 		ImGui::Image(m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, uv0, uv1);
 
@@ -438,7 +437,7 @@ namespace VulkanCore {
 				tc.Rotation = glm::eulerAngles(rotation);
 				tc.Scale = scale;
 
-				if (m_RayTraced && selectedEntity.HasComponent<MeshComponent>())
+				if (m_SceneRenderer->IsRayTraced() && selectedEntity.HasComponent<MeshComponent>())
 					m_SceneRenderer->SetUpdateTLAS();
 			}
 		}

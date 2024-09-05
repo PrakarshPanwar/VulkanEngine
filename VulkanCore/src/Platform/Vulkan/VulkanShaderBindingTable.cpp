@@ -102,7 +102,7 @@ namespace VulkanCore {
 		uint8_t* sbtBufferDst = allocator.MapMemory<uint8_t>(m_SBTMemAlloc);
 		uint32_t offset = 0;
 
-		// Ray Gen
+		// Ray Generation
 		m_RayGenSBTInfo = Utils::GetSBTStridedDeviceAddressRegion(m_SBTBuffer);
 		memcpy(sbtBufferDst, shaderHandleStorage.data(), shaderHandleSizeAligned);
 		sbtBufferDst += m_RayGenSBTInfo.size;
@@ -138,7 +138,7 @@ namespace VulkanCore {
 	{
 		// Create Shader
 		{
-			// Ray Gen
+			// Ray Generation
 			std::filesystem::path rayGenAbsPath = g_ShaderPath / m_RayGenPath;
 
 			// Hit Groups
@@ -203,7 +203,7 @@ namespace VulkanCore {
 			anyHitPaths.erase(RemoveIt2.begin(), RemoveIt2.end());
 			intersectionPaths.erase(RemoveIt3.begin(), RemoveIt3.end());
 
-			// Ray Gen
+			// Ray Generation
  			VkRayTracingShaderGroupCreateInfoKHR shaderGroupInfo{};
 			shaderGroupInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
 			shaderGroupInfo.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;

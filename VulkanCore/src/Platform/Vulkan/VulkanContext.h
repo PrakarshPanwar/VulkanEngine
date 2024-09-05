@@ -14,7 +14,7 @@ namespace VulkanCore {
 	VkResult CreateDebugUtilsEXT(VkInstance instance);
 	void InitRayTracingVulkanFunctions(VkDevice device);
 
-	// Ray Tracing
+	// Ray Tracing Function Pointers
 	extern PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR;
 	extern PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR;
 	extern PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR;
@@ -46,7 +46,7 @@ namespace VulkanCore {
 
 		static inline VulkanContext* GetCurrentContext() { return s_Instance; }
 		static inline VulkanDevice* GetCurrentDevice() { return s_Instance->m_Device.get(); }
-		static inline VmaAllocator GetVulkanMemoryAllocator() { return s_Instance->m_VkMemoryAllocator; }
+		static inline VmaAllocator GetVulkanMemoryAllocator() { return s_Instance->m_VulkanMemoryAllocator; }
 	private:
 		void CreateInstance();
 		void SetupDebugMessenger();
@@ -61,11 +61,11 @@ namespace VulkanCore {
 		void HasGLFWRequiredInstanceExtensions();
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
 	private:
-		VkInstance m_VkInstance;
+		VkInstance m_VulkanInstance;
 		VkDebugUtilsMessengerEXT m_DebugMessenger;
-		VkSurfaceKHR m_VkSurface;
+		VkSurfaceKHR m_VulkanSurface;
 
-		VmaAllocator m_VkMemoryAllocator;
+		VmaAllocator m_VulkanMemoryAllocator;
 
 		const std::vector<const char*> m_ValidationLayers = { "VK_LAYER_KHRONOS_validation" };
 		std::vector<const char*> m_DeviceExtensions = {
