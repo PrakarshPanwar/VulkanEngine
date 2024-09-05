@@ -235,8 +235,8 @@ void main()
     m_Params.Roughness = max(aorm.g * aorm.g, 0.001) * materialData.Roughness;
     m_Params.Metallic = aorm.b * materialData.Metallic;
 
-	vec3 cameraPosWorld = u_Camera.InverseView[3].xyz;
-	m_Params.View = normalize(cameraPosWorld - Input.WorldPosition);
+	vec3 cameraPosition = u_Camera.InverseView[3].xyz;
+	m_Params.View = normalize(cameraPosition - Input.WorldPosition);
     m_Params.Normal = materialData.UseNormalMap == 0 ? normalize(Input.Normal) : GetNormalsFromMap();
     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);
 

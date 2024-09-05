@@ -53,7 +53,7 @@ namespace VulkanCore {
 	SceneRenderer* SceneRenderer::s_Instance = nullptr;
 
 	SceneRenderer::SceneRenderer(std::shared_ptr<Scene> scene)
-		: m_Scene(scene), m_RayTraced(Application::Get()->GetSpecification().RayTracing)
+		: m_Scene(scene)
 	{
 		s_Instance = this;
 		Init();
@@ -317,6 +317,8 @@ namespace VulkanCore {
 
 	void SceneRenderer::CreateMaterials()
 	{
+		auto rayTraced = IsRayTraced();
+
 		// Geometry Material
 		{
 			m_GeometryMaterial = std::make_shared<VulkanMaterial>(m_GeometryPipeline->GetSpecification().pShader, "Geometry Shader Material");
@@ -445,7 +447,7 @@ namespace VulkanCore {
 
 			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
 			m_CompositeShaderMaterial->SetBuffers(0, m_UBCamera);
-			m_CompositeShaderMaterial->SetImages(1, m_RayTraced ? m_SceneRTOutputImages : geomFB->GetAttachment(true));
+			m_CompositeShaderMaterial->SetImages(1, rayTraced ? m_SceneRTOutputImages : geomFB->GetAttachment(true));
 			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment(true));
 			m_CompositeShaderMaterial->SetImage(3, m_BloomTextures[2]);
 			m_CompositeShaderMaterial->SetTexture(4, m_BloomDirtTexture);
@@ -492,6 +494,8 @@ namespace VulkanCore {
 
 	void SceneRenderer::RecreateMaterials()
 	{
+		bool rayTraced = IsRayTraced();
+
 		// Bloom Materials
 		{
 			const uint32_t mipCount = m_BloomTextures[0]->GetSpecification().MipLevels;
@@ -579,7 +583,7 @@ namespace VulkanCore {
 			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
 
 			m_CompositeShaderMaterial->SetBuffers(0, m_UBCamera);
-			m_CompositeShaderMaterial->SetImages(1, m_RayTraced ? m_SceneRTOutputImages : geomFB->GetAttachment(true));
+			m_CompositeShaderMaterial->SetImages(1, rayTraced ? m_SceneRTOutputImages : geomFB->GetAttachment(true));
 			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment(true));
 			m_CompositeShaderMaterial->SetImage(3, m_BloomTextures[2]);
 			m_CompositeShaderMaterial->SetTexture(4, m_BloomDirtTexture);
@@ -593,7 +597,7 @@ namespace VulkanCore {
 			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
 
-		if (m_RayTraced)
+		if (rayTraced)
 		{
 			if (m_RebuildAS)
 				m_RayTracingBaseMaterial->SetAccelerationStructure(0, m_SceneAccelerationStructure);
@@ -845,6 +849,8 @@ namespace VulkanCore {
 
 	void SceneRenderer::OnImGuiRender()
 	{
+		const bool rayTraced = IsRayTraced();
+
 		ImGui::Begin("Scene Renderer");
 
 		const ImGuiTreeNodeFlags treeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
@@ -863,7 +869,7 @@ namespace VulkanCore {
 		{
 			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
 
-			if (m_RayTraced)
+			if (rayTraced)
 			{
 				ImGui::Text("RayTrace Pass: %lluns", vulkanCmdBuffer->GetQueryTime(0));
 				ImGui::Text("Composite Pass: %lluns", vulkanCmdBuffer->GetQueryTime(3));
@@ -932,7 +938,7 @@ namespace VulkanCore {
 			ImGui::TreePop();
 		}
 
-		if (m_RayTraced)
+		if (rayTraced)
 		{
 			if (ImGui::TreeNodeEx("Scene Ray Tracer Settings", treeFlags))
 			{
@@ -1309,7 +1315,7 @@ namespace VulkanCore {
 		m_SkyboxMaterial->SetTexture(1, m_PrefilteredTexture);
 		m_SkyboxMaterial->PrepareShaderMaterial();
 
-		if (m_RayTraced)
+		if (IsRayTraced())
 		{
 			m_HDRTexture = AssetManager::GetAsset<Texture2D>(filepath);
 			auto [PDFTexture, CDFTexture] = Renderer::CreateCDFPDFTextures(m_HDRTexture);
@@ -1339,6 +1345,11 @@ namespace VulkanCore {
 	void SceneRenderer::SetSkybox(const std::string& filepath)
 	{
 		s_Instance->UpdateSkybox(filepath);
+	}
+
+	bool SceneRenderer::IsRayTraced() const
+	{
+		return Renderer::GetConfig().RayTracing;
 	}
 
 	void SceneRenderer::ResetAccumulationFrameIndex()

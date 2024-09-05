@@ -192,7 +192,7 @@ namespace VulkanCore {
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages{ shaderStageCount };
 
-		// Ray Gen
+		// Ray Generation
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[0].stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
 		shaderStages[0].module = m_RayGenShaderModule;
@@ -201,7 +201,7 @@ namespace VulkanCore {
 		shaderStages[0].pNext = nullptr;
 		shaderStages[0].pSpecializationInfo = nullptr;
 
-		uint32_t stageIndex = 1;
+		uint32_t stageIndex = 1; // Hit Shaders
 		for (auto& rayClosestHitModule : m_RayClosestHitShaderModules)
 		{
 			shaderStages[stageIndex].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

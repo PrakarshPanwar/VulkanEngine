@@ -621,6 +621,7 @@ namespace VulkanCore {
 		CDFPDFTextureSpec.SamplerWrap = spec.SamplerWrap;
 		CDFPDFTextureSpec.GenerateMips = false;
 
+		// TODO: Fix this as we will be storing unused copies whenever new Cubemap is loaded
 		auto pdfTexture = AssetManager::CreateMemoryOnlyAsset<VulkanTexture>(marginalDistribution, CDFPDFTextureSpec);
 		auto cdfTexture = AssetManager::CreateMemoryOnlyAsset<VulkanTexture>(conditionalDistribution, CDFPDFTextureSpec);
 

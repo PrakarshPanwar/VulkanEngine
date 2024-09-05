@@ -27,6 +27,7 @@ namespace VulkanCore {
 	struct RendererConfig
 	{
 		static constexpr uint32_t FramesInFlight = 3;
+		static bool RayTracing;
 	};
 
 	class Renderer
@@ -55,6 +56,7 @@ namespace VulkanCore {
 		static std::shared_ptr<Image2D> CreateBRDFTexture();
 		static std::shared_ptr<Texture2D> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
 		static std::shared_ptr<TextureCube> GetBlackTextureCube(ImageFormat format);
+		static void SetRayTracing(bool rayTracing) { s_RendererConfig.RayTracing = rayTracing; }
 
 		static int GetCurrentFrameIndex();
 		static int RT_GetCurrentFrameIndex();

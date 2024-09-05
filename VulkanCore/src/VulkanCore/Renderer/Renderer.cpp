@@ -11,6 +11,7 @@ namespace VulkanCore {
 	std::unordered_map<std::string, std::shared_ptr<Shader>> Renderer::m_Shaders;
 	VulkanRenderer* Renderer::s_Renderer = nullptr;
 	RendererConfig Renderer::s_RendererConfig = {};
+	bool RendererConfig::RayTracing = false;
 
 	namespace Utils {
 

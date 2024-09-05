@@ -47,7 +47,7 @@ namespace VulkanCore {
 		static void SetSkybox(const std::string& filepath);
 		void SetSceneEditorData(const SceneEditorData& sceneEditorData) { m_SceneEditorData = sceneEditorData; }
 
-		inline bool IsRayTraced() const { return m_RayTraced; }
+		bool IsRayTraced() const;
 		inline int GetHoveredEntity() const { return m_HoveredEntity; }
 		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		std::shared_ptr<Image2D> GetFinalPassImage(uint32_t index) const;
@@ -252,7 +252,7 @@ namespace VulkanCore {
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
 		uint32_t m_MaxAccumulateFrameCount = 10000;
-		bool m_RayTraced = false, m_Accumulate = false, m_UpdateTLAS = false, m_RebuildAS = false;
+		bool m_Accumulate = false, m_UpdateTLAS = false, m_RebuildAS = false;
 		int m_HoveredEntity;
 
 		SceneEditorData m_SceneEditorData;

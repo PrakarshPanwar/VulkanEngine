@@ -42,6 +42,7 @@ namespace VulkanCore {
 		Renderer::Init();
 		Renderer::BuildShaders();
 		Renderer::SetRendererAPI(m_Renderer.get());
+		Renderer::SetRayTracing(m_Specification.RayTracing);
 	}
 
 	void Application::Run()

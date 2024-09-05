@@ -197,9 +197,10 @@ namespace VulkanCore {
 
 	void VulkanSwapChain::CreateSwapChain()
 	{
+		auto context = VulkanContext::GetCurrentContext();
 		auto device = VulkanContext::GetCurrentDevice();
-		SwapChainSupportDetails swapChainSupport = VulkanContext::GetCurrentContext()->QuerySwapChainSupport(device->GetPhysicalDevice());
 
+		SwapChainSupportDetails swapChainSupport = context->QuerySwapChainSupport(device->GetPhysicalDevice());
 		VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
 		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.PresentModes);
 		VkExtent2D extent = ChooseSwapExtent(swapChainSupport.Capabilities);
@@ -208,11 +209,9 @@ namespace VulkanCore {
 		if (swapChainSupport.Capabilities.maxImageCount > 0 && imageCount > swapChainSupport.Capabilities.maxImageCount)
 			imageCount = swapChainSupport.Capabilities.maxImageCount;
 
-		const auto vulkanSurface = VulkanContext::GetCurrentContext()->m_VkSurface;
-
 		VkSwapchainCreateInfoKHR createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = vulkanSurface;
+		createInfo.surface = context->m_VulkanSurface;
 		createInfo.minImageCount = imageCount;
 		createInfo.imageFormat = surfaceFormat.format;
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;
