@@ -37,7 +37,7 @@ void main()
 	o_RayPayload.Seed = InitRandomSeed(InitRandomSeed(gl_LaunchIDEXT.x, gl_LaunchIDEXT.y), u_Settings.FrameIndex);
 
 	uint randomSeed = u_Settings.RandomSeed;
-	vec3 finalRadiance = vec3(0.0);
+	vec3 finalRadiance = vec3(0);
 
 	const float tMin = 0.1;
 	const float tMax = 1000.0;
@@ -58,10 +58,10 @@ void main()
 		rayData.Origin = origin.xyz;
 		rayData.Direction = direction.xyz;
 
-		BSDFSample bsdf;
-		vec3 radiance = vec3(0.0);
+		vec3 radiance = vec3(0);
 		vec3 absorption = vec3(0.0);
-		vec3 beta = vec3(1.0);
+		vec3 beta = vec3(1);
+		BSDFSample bsdf;
 
 		for (uint j = 0; j < u_Settings.Bounces; ++j)
 		{
