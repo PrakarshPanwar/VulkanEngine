@@ -14,7 +14,7 @@ hitAttributeEXT vec2 g_HitAttribs;
 #include "Utils/Sampling.glslh"
 
 layout(location = 0) rayPayloadInEXT RayPayload o_RayPayload;
-layout(location = 1) rayPayloadInEXT bool o_CastShadow;
+layout(location = 1) rayPayloadEXT bool o_CastShadow;
 
 struct VertexLayout
 {
@@ -304,7 +304,7 @@ void main()
 
 	o_RayPayload.BSDF = bsdfSample;
 
-	// Update a new Ray path Bounce Direction
+	// Update a new Ray Path Bounce Direction
 	o_RayPayload.RayData.Direction = bsdfSample.Direction;
 	o_RayPayload.RayData.Origin = Input.WorldPosition;
 }
