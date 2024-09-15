@@ -6,14 +6,6 @@
 
 namespace VulkanCore {
 
-	namespace Utils {
-		void InsertImageMemoryBarrier(VkCommandBuffer cmdBuf, VkImage image,
-			VkAccessFlags srcFlags, VkAccessFlags dstFlags,
-			VkImageLayout oldLayout, VkImageLayout newLayout,
-			VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
-			VkImageSubresourceRange subresourceRange);
-	}
-
 	struct VulkanImageInfo
 	{
 		VkImage Image = nullptr;
