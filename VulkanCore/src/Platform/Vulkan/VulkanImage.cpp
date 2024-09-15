@@ -129,7 +129,7 @@ namespace VulkanCore {
 			subresourceRange.layerCount = 1;
 
 			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
-				0, 0,
+				VK_ACCESS_2_NONE, VK_ACCESS_2_NONE,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 				subresourceRange);

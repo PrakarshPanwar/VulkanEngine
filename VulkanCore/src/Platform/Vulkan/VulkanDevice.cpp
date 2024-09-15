@@ -315,6 +315,7 @@ namespace VulkanCore {
 		else
 			createInfo.enabledLayerCount = 0;
 
+		// Examples: https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples
 		VkPhysicalDeviceSynchronization2Features physicalDeviceSynchronization2Features{};
 		physicalDeviceSynchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
 		physicalDeviceSynchronization2Features.synchronization2 = VK_TRUE;

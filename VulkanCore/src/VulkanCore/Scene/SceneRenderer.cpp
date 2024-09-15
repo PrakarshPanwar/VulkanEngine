@@ -667,12 +667,6 @@ namespace VulkanCore {
 
 			auto BloomTexture = std::static_pointer_cast<VulkanImage>(m_BloomTextures.emplace_back(std::make_shared<VulkanImage>(bloomRTSpec)));
 			BloomTexture->Invalidate();
-
-			Utils::InsertImageMemoryBarrier(barrierCmd, BloomTexture->GetVulkanImageInfo().Image,
-				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, BloomTexture->GetSpecification().MipLevels, 0, 1 });
 		}
 
 		// Scene Render Textures
@@ -708,12 +702,6 @@ namespace VulkanCore {
 		{
 			auto SceneRTOutputTexture = std::static_pointer_cast<VulkanImage>(m_SceneRTOutputImages.emplace_back(std::make_shared<VulkanImage>(sceneRTOutputSpec)));
 			SceneRTOutputTexture->Invalidate();
-
-			Utils::InsertImageMemoryBarrier(barrierCmd, SceneRTOutputTexture->GetVulkanImageInfo().Image,
-				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
-				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-				VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRTOutputTexture->GetSpecification().MipLevels, 0, 1 });
 		}
 
 		ImageSpecification sceneRTAccumulateSpec = {};
@@ -727,12 +715,6 @@ namespace VulkanCore {
 		{
 			auto SceneRTAccumulateTexture = std::static_pointer_cast<VulkanImage>(m_SceneRTAccumulationImages.emplace_back(std::make_shared<VulkanImage>(sceneRTAccumulateSpec)));
 			SceneRTAccumulateTexture->Invalidate();
-
-			Utils::InsertImageMemoryBarrier(barrierCmd, SceneRTAccumulateTexture->GetVulkanImageInfo().Image,
-				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
-				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-				VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRTAccumulateTexture->GetSpecification().MipLevels, 0, 1 });
 		}
 
 		device->FlushCommandBuffer(barrierCmd);
@@ -790,12 +772,6 @@ namespace VulkanCore {
 			{
 				auto vulkanBloomTexture = std::dynamic_pointer_cast<VulkanImage>(BloomTexture);
 				vulkanBloomTexture->Resize(m_BloomMipSize.x, m_BloomMipSize.y, Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2);
-
-				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanBloomTexture->GetVulkanImageInfo().Image,
-					VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-					VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, BloomTexture->GetSpecification().MipLevels, 0, 1 });
 			}
 
 			for (auto& SceneRenderTexture : m_SceneRenderTextures)
@@ -814,24 +790,12 @@ namespace VulkanCore {
 			{
 				auto vulkanRTOutputImage = std::static_pointer_cast<VulkanImage>(SceneRTOutputTexture);
 				vulkanRTOutputImage->Resize(m_ViewportSize.x, m_ViewportSize.y);
-
-				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanRTOutputImage->GetVulkanImageInfo().Image,
-					VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
-					VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-					VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRTOutputTexture->GetSpecification().MipLevels, 0, 1 });
 			}
 
 			for (auto& SceneRTAccumulateTexture : m_SceneRTAccumulationImages)
 			{
 				auto vulkanRTAccumulateImage = std::static_pointer_cast<VulkanImage>(SceneRTAccumulateTexture);
 				vulkanRTAccumulateImage->Resize(m_ViewportSize.x, m_ViewportSize.y);
-
-				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanRTAccumulateImage->GetVulkanImageInfo().Image,
-					VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
-					VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
-					VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRTAccumulateTexture->GetSpecification().MipLevels, 0, 1 });
 			}
 
 			device->FlushCommandBuffer(barrierCmd);
