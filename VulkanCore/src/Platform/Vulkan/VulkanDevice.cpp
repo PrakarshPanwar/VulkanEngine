@@ -315,9 +315,14 @@ namespace VulkanCore {
 		else
 			createInfo.enabledLayerCount = 0;
 
+		VkPhysicalDeviceSynchronization2Features physicalDeviceSynchronization2Features{};
+		physicalDeviceSynchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
+		physicalDeviceSynchronization2Features.synchronization2 = VK_TRUE;
+
 		VkPhysicalDeviceBufferDeviceAddressFeatures physicalDeviceBufferDeviceAddressFeatures{};
 		physicalDeviceBufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
 		physicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
+		physicalDeviceBufferDeviceAddressFeatures.pNext = &physicalDeviceSynchronization2Features;
 
 		VkPhysicalDeviceRayTracingPipelineFeaturesKHR physicalDeviceRayTracingPipelineFeatures{};
 		physicalDeviceRayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
@@ -332,16 +337,10 @@ namespace VulkanCore {
 		physicalDeviceDescriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
 		physicalDeviceDescriptorIndexingFeatures.pNext = &physicalDeviceRayTracingPipelineFeatures;
 
-		VkPhysicalDeviceShaderClockFeaturesKHR physicalDeviceShaderClockFeatures{};
-		physicalDeviceShaderClockFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
-		physicalDeviceShaderClockFeatures.shaderSubgroupClock = VK_TRUE;
-		physicalDeviceShaderClockFeatures.shaderDeviceClock = VK_TRUE;
-		physicalDeviceShaderClockFeatures.pNext = &physicalDeviceDescriptorIndexingFeatures;
-
 		VkPhysicalDeviceAccelerationStructureFeaturesKHR physicalDeviceAccelerationStructureFeatures{};
 		physicalDeviceAccelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 		physicalDeviceAccelerationStructureFeatures.accelerationStructure = VK_TRUE;
-		physicalDeviceAccelerationStructureFeatures.pNext = &physicalDeviceShaderClockFeatures;
+		physicalDeviceAccelerationStructureFeatures.pNext = &physicalDeviceDescriptorIndexingFeatures;
 
 		VkPhysicalDeviceFeatures2 physicalDeviceFeatures{};
 		physicalDeviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;

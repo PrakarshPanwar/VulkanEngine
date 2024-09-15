@@ -54,7 +54,7 @@ namespace VulkanCore {
 			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			colorAttachment.finalLayout = multisampled ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			colorAttachment.finalLayout = multisampled ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 
 			attachmentDescriptions.push_back(colorAttachment);
 		}
@@ -72,7 +72,7 @@ namespace VulkanCore {
 				colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-				colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 				colorAttachmentResolve.flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
 				attachmentDescriptions.push_back(colorAttachmentResolve);
 			}
@@ -89,7 +89,7 @@ namespace VulkanCore {
 			depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			depthAttachment.finalLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 			attachmentDescriptions.push_back(depthAttachment);
 		}
 
@@ -98,7 +98,7 @@ namespace VulkanCore {
 		{
 			VkAttachmentReference colorAttachmentRef = {};
 			colorAttachmentRef.attachment = i;
-			colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			colorAttachmentRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 			attachmentRefs.push_back(colorAttachmentRef);
 		}
 
@@ -109,7 +109,7 @@ namespace VulkanCore {
 			{
 				VkAttachmentReference colorAttachmentResolveRef = {};
 				colorAttachmentResolveRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
-				colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+				colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 				attachmentRefs.push_back(colorAttachmentResolveRef);
 			}
 		}
@@ -117,7 +117,7 @@ namespace VulkanCore {
 		// Depth Attachment Reference
 		VkAttachmentReference depthAttachmentRef = {};
 		depthAttachmentRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 		attachmentRefs.push_back(depthAttachmentRef);
 
 		VkSubpassDescription subpass = {}; // TODO: Changes need to be made
@@ -176,8 +176,8 @@ namespace VulkanCore {
 			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			colorAttachment.finalLayout = multisampled ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			colorAttachment.finalLayout = multisampled ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL :
+				VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 
 			attachmentDescriptions.push_back(colorAttachment);
 		}
@@ -196,7 +196,7 @@ namespace VulkanCore {
 				colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-				colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 				colorAttachmentResolve.flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
 				attachmentDescriptions.push_back(colorAttachmentResolve);
 			}
@@ -214,7 +214,7 @@ namespace VulkanCore {
 			depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			depthAttachment.finalLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 			attachmentDescriptions.push_back(depthAttachment);
 
 			if (Framebuffer->GetSpecification().ReadDepthTexture)
@@ -228,7 +228,7 @@ namespace VulkanCore {
 				depthAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				depthAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				depthAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-				depthAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+				depthAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 				depthAttachmentResolve.flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
 				attachmentDescriptions.push_back(depthAttachmentResolve);
 			}
@@ -240,7 +240,7 @@ namespace VulkanCore {
 			VkAttachmentReference2 colorAttachmentRef = {};
 			colorAttachmentRef.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2;
 			colorAttachmentRef.attachment = i;
-			colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			colorAttachmentRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 			attachmentRefs.push_back(colorAttachmentRef);
 		}
 
@@ -252,7 +252,7 @@ namespace VulkanCore {
 				VkAttachmentReference2 colorAttachmentResolveRef = {};
 				colorAttachmentResolveRef.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2;
 				colorAttachmentResolveRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
-				colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+				colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 				attachmentRefs.push_back(colorAttachmentResolveRef);
 				attachmentResolveRefs.push_back(colorAttachmentResolveRef);
 			}
@@ -262,13 +262,13 @@ namespace VulkanCore {
 		VkAttachmentReference2 depthAttachmentRef = {};
 		depthAttachmentRef.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2;
 		depthAttachmentRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 		attachmentRefs.push_back(depthAttachmentRef);
 
 		VkAttachmentReference2 depthAttachmentResolveRef = {};
 		depthAttachmentResolveRef.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2;
 		depthAttachmentResolveRef.attachment = static_cast<uint32_t>(attachmentRefs.size());
-		depthAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 		attachmentRefs.push_back(depthAttachmentResolveRef);
 
 		// Depth Resolve Extension
@@ -287,14 +287,18 @@ namespace VulkanCore {
 		subpass.pResolveAttachments = multisampled ? attachmentResolveRefs.data() : nullptr;
 		subpass.pNext = &depthResolveExt;
 
+		VkMemoryBarrier2 subpassBarrier = {};
+		subpassBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+		subpassBarrier.srcAccessMask = 0;
+		subpassBarrier.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		subpassBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		subpassBarrier.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+
 		VkSubpassDependency2 dependency = {}; // TODO: Changes need to be made
 		dependency.sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2;
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.srcAccessMask = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dependency.dstSubpass = 0;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.pNext = &subpassBarrier;
 
 		// TODO: There could be multiple subpasses/framebuffers, needs to be changed in future
 		VkRenderPassCreateInfo2 renderPassInfo = {};

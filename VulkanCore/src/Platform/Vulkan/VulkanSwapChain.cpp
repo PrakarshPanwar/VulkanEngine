@@ -83,55 +83,6 @@ namespace VulkanCore {
 		return result;
 	}
 
-	VkResult VulkanSwapChain::SubmitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex)
-	{
-		const auto device = VulkanContext::GetCurrentDevice();
-
-		if (m_ImagesInFlight[*imageIndex] != VK_NULL_HANDLE)
-			vkWaitForFences(device->GetVulkanDevice(), 1, &m_ImagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
-
-		m_ImagesInFlight[*imageIndex] = m_InFlightFences[m_CurrentFrame];
-
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-		VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame] };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = waitSemaphores;
-		submitInfo.pWaitDstStageMask = waitStages;
-
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = buffers;
-
-		VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[m_CurrentFrame] };
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signalSemaphores;
-
-		vkResetFences(device->GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame]);
-
-		VK_CHECK_RESULT(vkQueueSubmit(device->GetGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFrame]), "Failed to Submit Draw Command Buffer!");
-
-		VkPresentInfoKHR presentInfo = {};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
-
-		VkSwapchainKHR swapChains[] = { m_SwapChain };
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = swapChains;
-
-		presentInfo.pImageIndices = imageIndex;
-
-		auto result = vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
-
-		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
-		m_CurrentFrame = (m_CurrentFrame + 1) % framesInFlight;
-
-		return result;
-	}
-
 	VkResult VulkanSwapChain::SubmitCommandBuffers(const std::vector<VkCommandBuffer>& buffers, uint32_t* imageIndex)
 	{
 		const auto device = VulkanContext::GetCurrentDevice();
@@ -391,7 +342,7 @@ namespace VulkanCore {
 
 		VkAttachmentReference colorAttachmentRef{};
 		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription depthAttachment{};
 		depthAttachment.format = FindDepthFormat();
@@ -401,11 +352,11 @@ namespace VulkanCore {
 		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentReference depthAttachmentRef{};
 		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription colorAttachmentResolve{};
 		colorAttachmentResolve.format = GetSwapChainImageFormat();
@@ -420,7 +371,7 @@ namespace VulkanCore {
 
 		VkAttachmentReference colorAttachmentResolveRef{};
 		colorAttachmentResolveRef.attachment = 2;
-		colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 
 		VkSubpassDescription subpass = {};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;

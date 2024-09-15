@@ -222,14 +222,19 @@ namespace VulkanCore {
 		VkCommandBuffer buildCmd = device->GetCommandBuffer(true);
 
 		// Make sure the Copy of the Instance Buffer are copied before triggering the Acceleration Structure Build
- 		VkMemoryBarrier instanceBufferBarrier{};
- 		instanceBufferBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
- 		instanceBufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
- 		instanceBufferBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+ 		VkMemoryBarrier2 instanceBufferBarrier{};
+ 		instanceBufferBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+ 		instanceBufferBarrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+ 		instanceBufferBarrier.dstAccessMask = VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+		instanceBufferBarrier.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+		instanceBufferBarrier.dstStageMask = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+
+		VkDependencyInfo dependencyInfo{};
+		dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+		dependencyInfo.pMemoryBarriers = &instanceBufferBarrier;
+		dependencyInfo.memoryBarrierCount = 1;
  
- 		vkCmdPipelineBarrier(buildCmd,
- 			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
- 			0, 1, &instanceBufferBarrier, 0, nullptr, 0, nullptr);
+ 		vkCmdPipelineBarrier2(buildCmd, &dependencyInfo);
 
 		vkCmdBuildAccelerationStructuresKHR(buildCmd,
 			1,
@@ -503,17 +508,22 @@ namespace VulkanCore {
 			std::vector<VkAccelerationStructureBuildRangeInfoKHR*> pBuildRangeInfos = { &buildRangeInfo };
 
 			// Make sure the Copy of the Instance Buffer are copied before triggering the Acceleration Structure Build
-			VkMemoryBarrier instanceBufferBarrier{};
-			instanceBufferBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-			instanceBufferBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			instanceBufferBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+			VkMemoryBarrier2 instanceBufferBarrier{};
+			instanceBufferBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
+			instanceBufferBarrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+			instanceBufferBarrier.dstAccessMask = VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+			instanceBufferBarrier.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+			instanceBufferBarrier.dstStageMask = VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+
+			VkDependencyInfo dependencyInfo{};
+			dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+			dependencyInfo.pMemoryBarriers = &instanceBufferBarrier;
+			dependencyInfo.memoryBarrierCount = 1;
 
 			// TODO: Constant creation of creating and submitting Command Buffer can be slow
 			VkCommandBuffer updateCmd = device->GetCommandBuffer();
 
-			vkCmdPipelineBarrier(updateCmd,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-				0, 1, &instanceBufferBarrier, 0, nullptr, 0, nullptr);
+			vkCmdPipelineBarrier2(updateCmd, &dependencyInfo);
 
 			vkCmdBuildAccelerationStructuresKHR(updateCmd,
 				1,

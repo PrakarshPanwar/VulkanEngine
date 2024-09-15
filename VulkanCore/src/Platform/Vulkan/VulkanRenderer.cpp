@@ -14,6 +14,7 @@
 #include "VulkanPipeline.h"
 #include "VulkanComputePipeline.h"
 #include "VulkanShaderBindingTable.h"
+#include "Utils/ImageUtils.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/integer.hpp>
@@ -319,7 +320,7 @@ namespace VulkanCore {
 
 			auto& srcSpec = sourceImage->GetSpecification();
 
-			VkImageLayout srcImageLayout = srcSpec.Usage == ImageUsage::Attachment ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+			VkImageLayout srcImageLayout = srcSpec.Usage == ImageUsage::Attachment ? VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL
 				: VK_IMAGE_LAYOUT_GENERAL;
 
 			// Changing Source Image Layout
@@ -332,7 +333,7 @@ namespace VulkanCore {
 			// Changing Destination Image Layout
 			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, dstImage,
 				VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
@@ -418,7 +419,7 @@ namespace VulkanCore {
 
 				Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, vulkanImage,
 					VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 					mipSubRange);
 
@@ -442,7 +443,7 @@ namespace VulkanCore {
 
 			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, vulkanImage,
 				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				subresourceRange);
 		});
@@ -522,7 +523,7 @@ namespace VulkanCore {
 		// Changing Source Image Layout
 		Utils::InsertImageMemoryBarrier(copyCmd, srcImage,
 			VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
@@ -536,7 +537,7 @@ namespace VulkanCore {
 		// Changing Source Image back to its previous layout
 		Utils::InsertImageMemoryBarrier(copyCmd, srcImage,
 			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
 
