@@ -146,12 +146,9 @@ namespace VulkanCore {
 			subresourceRange.baseArrayLayer = 0;
 			subresourceRange.layerCount = m_Specification.Layers;
 
-			VkImageLayout finalImageLayout = Utils::IsDepthFormat(m_Specification.Format) ?
-				VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
 			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
 				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, finalImageLayout,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				subresourceRange);
 
@@ -170,9 +167,9 @@ namespace VulkanCore {
 			subresourceRange.layerCount = m_Specification.Layers;
 
 			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
-				0, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_ACCESS_2_NONE, VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VK_PIPELINE_STAGE_2_NONE, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				subresourceRange);
 
 			device->FlushCommandBuffer(barrierCmd);
@@ -265,12 +262,10 @@ namespace VulkanCore {
 
 	void VulkanImage::UpdateImageDescriptor()
 	{
-		if (Utils::IsDepthFormat(m_Specification.Format))
-			m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-		else if (m_Specification.Usage == ImageUsage::Storage)
+		if (m_Specification.Usage == ImageUsage::Storage)
 			m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		else
-			m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 
 		m_DescriptorImageInfo.imageView = m_Info.ImageView;
 		m_DescriptorImageInfo.sampler = m_Info.Sampler;

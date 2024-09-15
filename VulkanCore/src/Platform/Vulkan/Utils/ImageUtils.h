@@ -15,9 +15,9 @@ namespace VulkanCore {
 		bool IsMultisampled(RenderPassSpecification spec);
 
 		void InsertImageMemoryBarrier(VkCommandBuffer cmdBuf, VkImage image,
-			VkAccessFlags srcFlags, VkAccessFlags dstFlags,
+			VkAccessFlags2 srcFlags, VkAccessFlags2 dstFlags,
 			VkImageLayout oldLayout, VkImageLayout newLayout,
-			VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
+			VkPipelineStageFlags2 srcStage, VkPipelineStageFlags2 dstStage,
 			VkImageSubresourceRange subresourceRange);
 
 	}

@@ -316,6 +316,18 @@ namespace VulkanCore {
 		else
 			createInfo.enabledLayerCount = 0;
 
+		VkPhysicalDeviceSynchronization2Features physicalDeviceSynchronization2Features{};
+		physicalDeviceSynchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
+		physicalDeviceSynchronization2Features.synchronization2 = VK_TRUE;
+
+		VkPhysicalDeviceFeatures2 physicalDeviceFeatures{};
+		physicalDeviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		physicalDeviceFeatures.features = deviceFeatures;
+		physicalDeviceFeatures.pNext = &physicalDeviceSynchronization2Features;
+
+		createInfo.pEnabledFeatures = nullptr;
+		createInfo.pNext = &physicalDeviceFeatures;
+
 		VK_CHECK_RESULT(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_LogicalDevice), "Failed to Create Logical Device!");
 
 		vkGetDeviceQueue(m_LogicalDevice, indices.GraphicsFamily, 0, &m_GraphicsQueue);

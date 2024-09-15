@@ -93,13 +93,13 @@ namespace VulkanCore {
 		}
 
 		void InsertImageMemoryBarrier(VkCommandBuffer cmdBuf, VkImage image,
-			VkAccessFlags srcFlags, VkAccessFlags dstFlags,
+			VkAccessFlags2 srcFlags, VkAccessFlags2 dstFlags,
 			VkImageLayout oldLayout, VkImageLayout newLayout,
-			VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
+			VkPipelineStageFlags2 srcStage, VkPipelineStageFlags2 dstStage,
 			VkImageSubresourceRange subresourceRange)
 		{
-			VkImageMemoryBarrier barrier{};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			VkImageMemoryBarrier2 barrier{};
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
 			barrier.oldLayout = oldLayout;
 			barrier.newLayout = newLayout;
 			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -108,8 +108,15 @@ namespace VulkanCore {
 			barrier.subresourceRange = subresourceRange;
 			barrier.srcAccessMask = srcFlags;
 			barrier.dstAccessMask = dstFlags;
+			barrier.srcStageMask = srcStage;
+			barrier.dstStageMask = dstStage;
 
-			vkCmdPipelineBarrier(cmdBuf, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+			VkDependencyInfo dependencyInfo{};
+			dependencyInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+			dependencyInfo.pImageMemoryBarriers = &barrier;
+			dependencyInfo.imageMemoryBarrierCount = 1;
+
+			vkCmdPipelineBarrier2(cmdBuf, &dependencyInfo);
 		}
 
 	}
