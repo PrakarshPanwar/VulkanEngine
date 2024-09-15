@@ -520,7 +520,7 @@ namespace VulkanCore {
 			dependencyInfo.pMemoryBarriers = &instanceBufferBarrier;
 			dependencyInfo.memoryBarrierCount = 1;
 
-			// TODO: Constant creation of creating and submitting Command Buffer can be slow
+			// TODO: Constantly creating and submitting Command Buffer can be slow
 			VkCommandBuffer updateCmd = device->GetCommandBuffer();
 
 			vkCmdPipelineBarrier2(updateCmd, &dependencyInfo);
