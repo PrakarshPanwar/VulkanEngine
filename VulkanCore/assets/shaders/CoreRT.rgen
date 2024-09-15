@@ -1,6 +1,5 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
-#extension GL_ARB_shader_clock : require
 #extension GL_EXT_control_flow_attributes : require
 
 #include "Utils/Payload.glslh"
