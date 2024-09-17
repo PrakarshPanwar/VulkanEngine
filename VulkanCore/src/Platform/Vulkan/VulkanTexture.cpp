@@ -309,10 +309,11 @@ namespace VulkanCore {
 			subresourceRange.levelCount = 1;
 			subresourceRange.layerCount = 6;
 
-			Utils::SetImageLayout(
+			Utils::InsertImageMemoryBarrier(
 				copyCmd, m_Info.Image,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_ACCESS_2_NONE, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_PIPELINE_STAGE_2_NONE, VK_PIPELINE_STAGE_2_COPY_BIT,
 				subresourceRange);
 
 			for (uint32_t i = 0; i < byteOffsets.size(); ++i)
@@ -437,9 +438,9 @@ namespace VulkanCore {
 			mipSubRange.layerCount = 1;
 
 			Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
-				0, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT,
 				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VK_PIPELINE_STAGE_NONE, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				mipSubRange);
 		}
 
