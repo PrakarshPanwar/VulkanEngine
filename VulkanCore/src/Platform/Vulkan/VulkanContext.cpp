@@ -230,7 +230,6 @@ namespace VulkanCore {
 			PopulateDebugMessengerCreateInfo(debugCreateInfo);
 			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 		}
-
 		else
 		{
 			createInfo.enabledLayerCount = 0;
