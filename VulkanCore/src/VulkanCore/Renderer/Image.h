@@ -37,6 +37,13 @@ namespace VulkanCore {
 		Texture
 	};
 
+	enum class DependencyType
+	{
+		None = 0,
+		GraphicsToShaderRead,
+		GraphicsToComputeRead
+	};
+
 	struct ImageSpecification
 	{
 		std::string DebugName;
