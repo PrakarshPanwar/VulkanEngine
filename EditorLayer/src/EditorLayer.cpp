@@ -189,8 +189,20 @@ namespace VulkanCore {
 				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
 					SaveSceneAs();
 
-// 				if (ImGui::MenuItem("Exit"))
-// 					Application::Get()->Close();
+ 				//if (ImGui::MenuItem("Exit"))
+ 					//Application::Get()->Close();
+
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Settings"))
+			{
+				ImGui::Checkbox("Show Application Stats", &m_ShowApplicationStats);
+				if (ImGui::BeginMenu("Camera"))
+				{
+					ImGui::Text("Camera Aspect Ratio: %.6f", m_EditorCamera.GetAspectRatio());
+					ImGui::EndMenu();
+				}
 
 				ImGui::EndMenu();
 			}
@@ -201,22 +213,28 @@ namespace VulkanCore {
 		style.WindowMinSize.x = minWinSizeX;
 
 		//ImGui::ShowDemoWindow(&m_ImGuiShowWindow);
-		ImGui::Begin("Application Stats");
-		SHOW_FRAMERATES;
-		ImGui::Checkbox("Show ImGui Demo Window", &m_ImGuiShowWindow);
-		ImGui::Text("Camera Aspect Ratio: %.6f", m_EditorCamera.GetAspectRatio());
-		ImGui::End();
 
-		ImGui::Begin("Viewport");
+		// Remove Padding from viewport
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0.0f, 0.0f));
+
+		ImGuiWindowFlags viewportFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar
+			| ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove;
+
+		ImGui::Begin("Viewport", nullptr, viewportFlags);
+		ImGui::PopStyleVar(2);
+
 		auto region = ImGui::GetContentRegionAvail();
 		m_ViewportSize = { region.x, region.y };
 
-		auto windowSize = ImGui::GetWindowSize();
-		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-		auto viewportOffset = ImGui::GetWindowPos();
-		m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
-		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
+		ImGuiWindow* window = ImGui::GetCurrentWindow();
+		ImRect viewportRegion = window->WorkRect;
+
+		auto viewportOffset = ImGui::GetCursorScreenPos();
+		auto viewportMinRegion = ImVec2{ viewportRegion.Min.x - viewportOffset.x, viewportRegion.Min.y - viewportOffset.y };
+		auto viewportMaxRegion = ImVec2{ viewportRegion.Max.x - viewportOffset.x, viewportRegion.Max.y - viewportOffset.y };
+		m_ViewportBounds[0] = { viewportRegion.Min.x, viewportRegion.Min.y };
+		m_ViewportBounds[1] = { viewportRegion.Max.x, viewportRegion.Max.y };
 
 		if (glm::ivec2 sceneViewportSize = m_SceneRenderer->GetViewportSize();
 			m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
@@ -248,7 +266,7 @@ namespace VulkanCore {
 		}
 
 		// Button Position just at the top
-		ImGui::SetCursorPos({ ImGui::GetWindowContentRegionMin().x + 5.0f, ImGui::GetWindowContentRegionMin().y + 5.0f });
+		ImGui::SetCursorPos({ viewportMinRegion.x + 5.0f, viewportMinRegion.y + 5.0f });
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 20.0f);
 		if (ImGui::ImageButton("##MenuIcon", (ImTextureID)m_MenuIconID, { 20.0f, 20.0f }, { 0, 1 }, { 1, 0 }))
 			ImGui::OpenPopup("EditorSettings");
@@ -290,6 +308,12 @@ namespace VulkanCore {
 			Entity hoveredEntity = entityHandle == -1 ? Entity{} : Entity{ (entt::entity)entityHandle, m_Scene.get() };
 
 			m_SceneHierarchyPanel.SetSelectedEntity(hoveredEntity);
+		}
+
+		if (m_ShowApplicationStats)
+		{
+			ImGui::SetCursorPos({ viewportMinRegion.x + 50.0f, viewportMinRegion.y + 10.0f });
+			SHOW_FRAMERATES;
 		}
 
 		RenderGizmo();
