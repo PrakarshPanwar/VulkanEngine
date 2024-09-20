@@ -69,6 +69,7 @@ namespace VulkanCore {
 		init_info.PhysicalDevice = device->GetPhysicalDevice();
 		init_info.Device = device->GetVulkanDevice();
 		init_info.Queue = device->GetGraphicsQueue();
+		init_info.RenderPass = VulkanSwapChain::GetSwapChain()->GetRenderPass();
 		init_info.DescriptorPool = m_ImGuiGlobalPool->GetVulkanDescriptorPool();
 		init_info.MinImageCount = 2;
 		init_info.ImageCount = 3;
@@ -82,7 +83,7 @@ namespace VulkanCore {
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
 
-		bool initSuccess = ImGui_ImplVulkan_Init(&init_info, VulkanSwapChain::GetSwapChain()->GetRenderPass());
+		bool initSuccess = ImGui_ImplVulkan_Init(&init_info);
 		VK_CORE_ASSERT(initSuccess, "Failed to Initialize ImGui");
 
 #define OPENSANS 0
