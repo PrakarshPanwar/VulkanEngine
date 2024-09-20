@@ -53,7 +53,7 @@ namespace VulkanCore {
 
 		bool m_ImGuiShowWindow = true, m_ViewportHovered = false,
 			m_ViewportFocused = false, m_WindowResized = false,
-			m_EnableSnap = false;
+			m_ShowApplicationStats = false, m_EnableSnap = false;
 
 		ImVec2 m_ViewportSize;
 		glm::vec2 m_ViewportBounds[2];
