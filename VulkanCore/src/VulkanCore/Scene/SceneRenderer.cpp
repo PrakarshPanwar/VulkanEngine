@@ -1413,7 +1413,7 @@ namespace VulkanCore {
 	{
 		m_Scene->OnSelectGeometry(this);
 
-		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Selection-Pass", DebugLabelColor::Green);
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Selection-Pass", DebugLabelColor::Orange);
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometrySelectPipeline->GetSpecification().pRenderPass);
 
 		for (auto& [mk, dc] : m_SelectedMeshDrawList)
