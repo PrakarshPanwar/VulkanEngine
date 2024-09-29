@@ -82,20 +82,6 @@ namespace VulkanCore {
 				attachmentColorImage->Invalidate();
 
 				AttachmentImages.push_back(attachmentColorImage);
-
-				if (!multisampled)
-				{
-					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
-
-					Utils::InsertImageMemoryBarrier(barrierCmd, 
-						attachmentColorImage->GetVulkanImageInfo().Image,
-						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
-						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-						VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-					device->FlushCommandBuffer(barrierCmd);
-				}
 			}
 
 			m_ColorAttachments.emplace_back(std::move(AttachmentImages));
@@ -124,17 +110,6 @@ namespace VulkanCore {
 					resolveColorImage->Invalidate();
 
 					ResolveImages.push_back(resolveColorImage);
-
-					// Resolve Transition
-					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
-
-					Utils::InsertImageMemoryBarrier(barrierCmd, resolveColorImage->GetVulkanImageInfo().Image,
-						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
-						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-						VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-
-					device->FlushCommandBuffer(barrierCmd);
 				}
 
 				m_ColorAttachments.emplace_back(std::move(ResolveImages));
@@ -180,17 +155,6 @@ namespace VulkanCore {
 					depthResolveImage->Invalidate();
 
 					m_DepthAttachmentResolve.push_back(depthResolveImage);
-
-					// Depth Resolve Transition
-					VkCommandBuffer barrierCmd = device->GetCommandBuffer();
-
-					Utils::InsertImageMemoryBarrier(barrierCmd, depthResolveImage->GetVulkanImageInfo().Image,
-						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
-						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-						VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
-
-					device->FlushCommandBuffer(barrierCmd);
 				}
 			}
 		}
@@ -261,43 +225,17 @@ namespace VulkanCore {
 		m_Specification.Width = width;
 		m_Specification.Height = height;
 
-		VkCommandBuffer barrierCmd = device->GetCommandBuffer();
-
 		for (auto& fbImages : m_ColorAttachments)
 		{
 			for (auto& fbImage : fbImages)
-			{
-				bool multisampled = Utils::IsMultisampled(fbImage->GetSpecification());
-				auto vulkanFBImage = std::static_pointer_cast<VulkanImage>(fbImage);
-				vulkanFBImage->Resize(width, height);
-
-				if (!multisampled)
-				{
-					Utils::InsertImageMemoryBarrier(barrierCmd, vulkanFBImage->GetVulkanImageInfo().Image,
-						VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
-						VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-						VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
-				}
-			}
+				fbImage->Resize(width, height);
 		}
 
 		for (auto& depthImage : m_DepthAttachment)
 			depthImage->Resize(width, height);
 
 		for (auto& depthResolveImage : m_DepthAttachmentResolve)
-		{
-			auto vulkanDepthResolveImage = std::static_pointer_cast<VulkanImage>(depthResolveImage);
 			depthResolveImage->Resize(width, height);
-
-			Utils::InsertImageMemoryBarrier(barrierCmd, vulkanDepthResolveImage->GetVulkanImageInfo().Image,
-				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
-		}
-
-		device->FlushCommandBuffer(barrierCmd);
 	}
 
 	void* VulkanFramebuffer::ReadPixel(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<IndexBuffer> imageBuffer, uint32_t index, uint32_t x, uint32_t y)
