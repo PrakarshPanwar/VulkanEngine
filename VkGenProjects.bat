@@ -1,11 +1,11 @@
 @echo off
 call VulkanCore\vendor\premake\premake5.exe vs2022
 
-IF NOT EXIST VulkanCore\vendor\assimp\Assimp.sln (
-    goto buildAssimp
-) ELSE (
+IF EXIST VulkanCore\vendor\assimp\Assimp.sln (
     pause
     EXIT
+) ELSE (
+    goto buildAssimp
 )
 
 :buildAssimp

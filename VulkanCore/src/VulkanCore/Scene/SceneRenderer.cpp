@@ -196,6 +196,7 @@ namespace VulkanCore {
 		};
 
 		// Geometry and Point Light Pipeline
+		if (!IsRayTraced())
 		{
 			FramebufferSpecification geomFramebufferSpec;
 			geomFramebufferSpec.Width = 1920;
@@ -284,6 +285,7 @@ namespace VulkanCore {
 		}
 
 		// Skybox Pipeline
+		if (!IsRayTraced())
 		{
 			PipelineSpecification skyboxPipelineSpec;
 			skyboxPipelineSpec.DebugName = "Skybox Pipeline";
@@ -321,6 +323,7 @@ namespace VulkanCore {
 		auto rayTraced = IsRayTraced();
 
 		// Geometry Material
+		if (!rayTraced)
 		{
 			m_GeometryMaterial = std::make_shared<VulkanMaterial>(m_GeometryPipeline->GetSpecification().pShader, "Geometry Shader Material");
 
@@ -342,6 +345,7 @@ namespace VulkanCore {
 		}
 
 		// Light Materials
+		if (!rayTraced)
 		{
 			m_PointLightShaderMaterial = std::make_shared<VulkanMaterial>(m_LightPipeline->GetSpecification().pShader, "Point Light Shader Material");
 			m_SpotLightShaderMaterial = std::make_shared<VulkanMaterial>(m_LightPipeline->GetSpecification().pShader, "Spot Light Shader Material");
@@ -353,7 +357,10 @@ namespace VulkanCore {
 			m_SpotLightShaderMaterial->SetBuffers(0, m_UBCamera);
 			m_SpotLightShaderMaterial->SetTexture(1, std::dynamic_pointer_cast<VulkanTexture>(m_SpotLightTextureIcon));
 			m_SpotLightShaderMaterial->PrepareShaderMaterial();
+		}
 
+		// Light Select Material
+		{
 			m_LightSelectMaterial = std::make_shared<VulkanMaterial>(m_LightSelectPipeline->GetSpecification().pShader, "Light Select Shader Material");
 
 			m_LightSelectMaterial->SetBuffers(0, m_UBCamera);
@@ -446,16 +453,26 @@ namespace VulkanCore {
 		{
 			m_CompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_CompositePipeline->GetSpecification().pShader, "Composite Shader Material");
 
-			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
+			if (rayTraced)
+			{
+				m_CompositeShaderMaterial->SetImages(1, m_SceneRTOutputImages);
+				m_CompositeShaderMaterial->SetTexture(2, Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM));
+			}
+			else
+			{
+				auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
+				m_CompositeShaderMaterial->SetImages(1, geomFB->GetAttachment(true));
+				m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment(true));
+			}
+
 			m_CompositeShaderMaterial->SetBuffers(0, m_UBCamera);
-			m_CompositeShaderMaterial->SetImages(1, rayTraced ? m_SceneRTOutputImages : geomFB->GetAttachment(true));
-			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment(true));
 			m_CompositeShaderMaterial->SetImage(3, m_BloomTextures[2]);
 			m_CompositeShaderMaterial->SetTexture(4, m_BloomDirtTexture);
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
 		// Skybox Material
+		if (!rayTraced)
 		{
 			m_SkyboxMaterial = std::make_shared<VulkanMaterial>(m_SkyboxPipeline->GetSpecification().pShader, "Skybox Shader Material");
 
@@ -581,17 +598,26 @@ namespace VulkanCore {
 
 		// Composite Material
 		{
-			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
+			if (rayTraced)
+			{
+				m_CompositeShaderMaterial->SetImages(1, m_SceneRTOutputImages);
+				m_CompositeShaderMaterial->SetTexture(2, Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM));
+			}
+			else
+			{
+				auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
+				m_CompositeShaderMaterial->SetImages(1, geomFB->GetAttachment(true));
+				m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment(true));
+			}
 
 			m_CompositeShaderMaterial->SetBuffers(0, m_UBCamera);
-			m_CompositeShaderMaterial->SetImages(1, rayTraced ? m_SceneRTOutputImages : geomFB->GetAttachment(true));
-			m_CompositeShaderMaterial->SetImages(2, geomFB->GetDepthAttachment(true));
 			m_CompositeShaderMaterial->SetImage(3, m_BloomTextures[2]);
 			m_CompositeShaderMaterial->SetTexture(4, m_BloomDirtTexture);
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
 		// Skybox Material
+		if (!rayTraced)
 		{
 			m_SkyboxMaterial->SetBuffers(0, m_UBCamera);
 			m_SkyboxMaterial->SetTexture(1, m_PrefilteredTexture);
@@ -754,10 +780,13 @@ namespace VulkanCore {
 	void SceneRenderer::RecreateScene()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
+		auto rayTraced = IsRayTraced();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
 		VK_CORE_INFO("Scene Resized!");
-		m_GeometryPipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
+		if (!rayTraced)
+			m_GeometryPipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
+
 		m_GeometrySelectPipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 		m_CompositePipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 
@@ -1272,14 +1301,6 @@ namespace VulkanCore {
 		m_PrefilteredTexture = filteredMap;
 		m_IrradianceTexture = irradianceMap;
 
-		// Update Materials
-		m_GeometryMaterial->SetTexture(6, m_IrradianceTexture);
-		m_GeometryMaterial->SetTexture(8, m_PrefilteredTexture);
-		m_GeometryMaterial->PrepareShaderMaterial();
-
-		m_SkyboxMaterial->SetTexture(1, m_PrefilteredTexture);
-		m_SkyboxMaterial->PrepareShaderMaterial();
-
 		if (IsRayTraced())
 		{
 			m_HDRTexture = AssetManager::GetAsset<Texture2D>(filepath);
@@ -1291,6 +1312,16 @@ namespace VulkanCore {
 			m_RayTracingSkyboxMaterial->SetTexture(1, m_PDFTexture);
 			m_RayTracingSkyboxMaterial->SetTexture(2, m_CDFTexture);
 			m_RayTracingSkyboxMaterial->PrepareShaderMaterial();
+		}
+		else
+		{
+			// Update Materials
+			m_GeometryMaterial->SetTexture(6, m_IrradianceTexture);
+			m_GeometryMaterial->SetTexture(8, m_PrefilteredTexture);
+			m_GeometryMaterial->PrepareShaderMaterial();
+
+			m_SkyboxMaterial->SetTexture(1, m_PrefilteredTexture);
+			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
 
 		ImGuiLayer::UpdateDescriptor(m_SkyboxTextureID, *std::dynamic_pointer_cast<VulkanTextureCube>(m_PrefilteredTexture));

@@ -8,6 +8,14 @@
 #define INFINITY 1000.0
 #define HDR_RESOLUTION 8388608.0
 
+mat3 LocalFrame(in vec3 normal)
+{
+	vec3 up       = abs(normal.z) < 0.999 ? vec3(0, 0, 1) : vec3(1, 0, 0);
+	vec3 tangentX = normalize(cross(up, normal));
+	vec3 tangentY = cross(normal, tangentX);
+	return mat3(tangentX, tangentY, normal);
+}
+
 float Max3(const vec3 v)
 {
 	return max(max(v.x, v.y), v.z);

@@ -237,7 +237,7 @@ void main()
 
 	vec3 cameraPosition = u_Camera.InverseView[3].xyz;
 	m_Params.View = normalize(cameraPosition - Input.WorldPosition);
-    m_Params.Normal = materialData.UseNormalMap == 0 ? normalize(Input.Normal) : GetNormalsFromMap();
+    m_Params.Normal = materialData.UseNormalMap == 0 ? Input.Normal : GetNormalsFromMap();
     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);
 
     float aspect = sqrt(1.0 - u_RTMaterialData.Anisotropy * 0.9);
