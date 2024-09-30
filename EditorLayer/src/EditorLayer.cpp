@@ -248,10 +248,8 @@ namespace VulkanCore {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
-		ImVec2 uv0 = m_SceneRenderer->IsRayTraced() ? ImVec2{ 0, 0 } : ImVec2{ 0, 1 };
-		ImVec2 uv1 = m_SceneRenderer->IsRayTraced() ? ImVec2{ 1, 1 } : ImVec2{ 1, 0 };
 		ImGui::SetNextItemAllowOverlap();
-		ImGui::Image(m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, uv0, uv1);
+		ImGui::Image(m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, { 0, 1 }, { 1, 0 });
 
 		if (ImGui::BeginDragDropTarget())
 		{

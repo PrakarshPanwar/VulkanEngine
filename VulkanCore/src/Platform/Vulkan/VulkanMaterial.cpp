@@ -12,11 +12,16 @@
 
 namespace VulkanCore {
 
-	VulkanMaterial::VulkanMaterial(const std::string& debugName)
+	VulkanMaterial::VulkanMaterial(const std::string& debugName, bool rayTraced)
 		: m_DebugName(debugName), m_Shader(Renderer::GetShader("CorePBR"))
 	{
-		InvalidateMaterial();
-		InvalidateMaterialDescriptorSets();
+		if (rayTraced)
+			InitializeMaterialTextures();
+		else
+		{
+			InvalidateMaterial();
+			InvalidateMaterialDescriptorSets();
+		}
 	}
 
 	VulkanMaterial::VulkanMaterial(std::shared_ptr<Shader> shader, const std::string& debugName, uint32_t setIndex)
@@ -30,10 +35,13 @@ namespace VulkanCore {
 		// TODO: Another solution to this could be to reset and reallocate whole new pool but it is currently unfeasible
 		Renderer::SubmitResourceFree([descriptorSets = m_MaterialDescriptorSets]
 		{
-			auto device = VulkanContext::GetCurrentDevice();
-			auto descriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
+			if (!descriptorSets.empty())
+			{
+				auto device = VulkanContext::GetCurrentDevice();
+				auto descriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
 
-			vkFreeDescriptorSets(device->GetVulkanDevice(), descriptorPool->GetVulkanDescriptorPool(), (uint32_t)descriptorSets.size(), descriptorSets.data());
+				vkFreeDescriptorSets(device->GetVulkanDevice(), descriptorPool->GetVulkanDescriptorPool(), (uint32_t)descriptorSets.size(), descriptorSets.data());
+			}
 		});
 
 		m_MaterialDescriptorSets.clear();
@@ -588,7 +596,7 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 
 		std::vector<VkWriteDescriptorSet> writeDescriptors{};
-		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
+		for (uint32_t i = 0; i < (Renderer::GetConfig().FramesInFlight & (uint32_t)m_MaterialDescriptorSets.size()); ++i)
 		{
 			VkWriteDescriptorSet writeDescriptor{};
 			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -624,7 +632,7 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 
 		std::vector<VkWriteDescriptorSet> writeDescriptors{};
-		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
+		for (uint32_t i = 0; i < (Renderer::GetConfig().FramesInFlight & (uint32_t)m_MaterialDescriptorSets.size()); ++i)
 		{
 			VkWriteDescriptorSet writeDescriptor{};
 			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -660,7 +668,7 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 
 		std::vector<VkWriteDescriptorSet> writeDescriptors{};
-		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
+		for (uint32_t i = 0; i < (Renderer::GetConfig().FramesInFlight & (uint32_t)m_MaterialDescriptorSets.size()); ++i)
 		{
 			VkWriteDescriptorSet writeDescriptor{};
 			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

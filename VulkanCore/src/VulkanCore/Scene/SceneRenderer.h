@@ -147,7 +147,7 @@ namespace VulkanCore {
 
 		struct RTSettings
 		{
-			uint32_t SampleCount = 8;
+			uint32_t SampleCount = 4;
 			uint32_t Bounces = 4;
 			uint32_t RandomSeed = 1;
 			uint32_t AccumulateFrameIndex = 1;
