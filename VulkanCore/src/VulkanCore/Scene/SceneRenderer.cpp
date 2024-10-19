@@ -96,6 +96,14 @@ namespace VulkanCore {
 			geomPipelineSpec.Layout = vertexLayout;
 			geomPipelineSpec.InstanceLayout = instanceLayout;
 
+			PipelineSpecification geomTessellatedPipelineSpec;
+			geomTessellatedPipelineSpec.DebugName = "Geometry Tessellated Pipeline";
+			geomTessellatedPipelineSpec.pShader = Renderer::GetShader("CorePBR_Tess");
+			geomTessellatedPipelineSpec.PatchControlPoints = 3; // Triangles
+			geomTessellatedPipelineSpec.pRenderPass = geomPipelineSpec.pRenderPass;
+			geomTessellatedPipelineSpec.Layout = vertexLayout;
+			geomTessellatedPipelineSpec.InstanceLayout = instanceLayout;
+
 			PipelineSpecification lightPipelineSpec;
 			lightPipelineSpec.DebugName = "Light Pipeline";
 			lightPipelineSpec.pShader = Renderer::GetShader("LightShader");
@@ -103,6 +111,7 @@ namespace VulkanCore {
 			lightPipelineSpec.pRenderPass = geomPipelineSpec.pRenderPass;
 
 			m_GeometryPipeline = std::make_shared<VulkanPipeline>(geomPipelineSpec);
+			m_GeometryTessellatedPipeline = std::make_shared<VulkanPipeline>(geomTessellatedPipelineSpec);
 			m_LightPipeline = std::make_shared<VulkanPipeline>(lightPipelineSpec);
 		}
 
@@ -1015,6 +1024,7 @@ namespace VulkanCore {
 		auto& submeshData = meshSource->GetSubmeshes();
 		uint64_t meshHandle = mesh->Handle;
 		uint64_t materialHandle = materialAsset->Handle;
+		bool isTessellated = materialAsset->HasDisplacementTexture();
 
 		if (meshSource->GetVertexCount() == 0)
 			return;
@@ -1022,18 +1032,19 @@ namespace VulkanCore {
 		for (uint32_t submeshIndex : mesh->GetSubmeshes())
 		{
 			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
-			auto& transformBuffer = m_MeshTransformMap[meshKey].Transforms.emplace_back();
+			auto& transformBuffer = isTessellated ? m_MeshTessellatedTransformMap[meshKey].Transforms.emplace_back()
+				: m_MeshTransformMap[meshKey].Transforms.emplace_back();
 
 			glm::mat4 submeshTransform = transform * submeshData[submeshIndex].LocalTransform;
 			transformBuffer.MRow[0] = { submeshTransform[0][0], submeshTransform[1][0], submeshTransform[2][0], submeshTransform[3][0] };
 			transformBuffer.MRow[1] = { submeshTransform[0][1], submeshTransform[1][1], submeshTransform[2][1], submeshTransform[3][1] };
 			transformBuffer.MRow[2] = { submeshTransform[0][2], submeshTransform[1][2], submeshTransform[2][2], submeshTransform[3][2] };
 
-			auto& dc = m_MeshDrawList[meshKey];
+			auto& dc = isTessellated ? m_MeshTessellatedDrawList[meshKey] : m_MeshDrawList[meshKey];
 			dc.MeshInstance = mesh;
 			dc.MaterialInstance = materialAsset->GetMaterial();
 			dc.SubmeshIndex = submeshIndex;
-			dc.TransformBuffer = m_MeshTransformMap[meshKey].TransformBuffer;
+			dc.TransformBuffer = isTessellated ? m_MeshTessellatedTransformMap[meshKey].TransformBuffer : m_MeshTransformMap[meshKey].TransformBuffer;
 			dc.InstanceCount++;
 		}
 	}
@@ -1174,10 +1185,17 @@ namespace VulkanCore {
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Geometry-Pass", DebugLabelColor::Gold);
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
+		// Standard Geometry
 		Renderer::BindPipeline(m_SceneCommandBuffer, m_GeometryPipeline, m_GeometryMaterial);
 
 		for (auto& [mk, dc] : m_MeshDrawList)
 			Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk].Transforms, dc.InstanceCount);
+
+		// Tessellated Geometry(i.e. Displacement Maps, Dynamic LOD)
+		Renderer::BindPipeline(m_SceneCommandBuffer, m_GeometryTessellatedPipeline, m_GeometryMaterial);
+
+		for (auto& [mk, dc] : m_MeshTessellatedDrawList)
+			Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryTessellatedPipeline, dc.TransformBuffer, m_MeshTessellatedTransformMap[mk].Transforms, dc.InstanceCount);
 
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
@@ -1335,6 +1353,12 @@ namespace VulkanCore {
 		for (auto& [mk, dc] : m_MeshDrawList)
 		{
 			m_MeshTransformMap[mk].Transforms.clear();
+			dc.InstanceCount = 0;
+		}
+
+		for (auto& [mk, dc] : m_MeshTessellatedDrawList)
+		{
+			m_MeshTessellatedTransformMap[mk].Transforms.clear();
 			dc.InstanceCount = 0;
 		}
 

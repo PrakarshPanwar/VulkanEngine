@@ -27,16 +27,10 @@ namespace VulkanCore {
 
 	VulkanMaterial::~VulkanMaterial()
 	{
-		// TODO: Another solution to this could be to reset and reallocate whole new pool but it is currently unfeasible
-		Renderer::SubmitResourceFree([descriptorSets = m_MaterialDescriptorSets]
-		{
-			auto device = VulkanContext::GetCurrentDevice();
-			auto descriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
+		if (m_MaterialDescriptorSets.empty())
+			return;
 
-			vkFreeDescriptorSets(device->GetVulkanDevice(), descriptorPool->GetVulkanDescriptorPool(), (uint32_t)descriptorSets.size(), descriptorSets.data());
-		});
-
-		m_MaterialDescriptorSets.clear();
+		Release();
 	}
 
 	void VulkanMaterial::InvalidateMaterial()
@@ -96,11 +90,52 @@ namespace VulkanCore {
 		m_DiffuseTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_SRGB);
 		m_NormalTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
 		m_ARMTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
+		m_DisplacementTexture = Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
 
 		// For Materials Panel
 		m_DiffuseDstID = ImGuiLayer::AddTexture(*std::static_pointer_cast<VulkanTexture>(m_DiffuseTexture));
 		m_NormalDstID = ImGuiLayer::AddTexture(*std::static_pointer_cast<VulkanTexture>(m_NormalTexture));
 		m_ARMDstID = ImGuiLayer::AddTexture(*std::static_pointer_cast<VulkanTexture>(m_ARMTexture));
+		m_DisplacementDstID = ImGuiLayer::AddTexture(*std::static_pointer_cast<VulkanTexture>(m_DisplacementTexture));
+	}
+
+	void VulkanMaterial::ReallocateDescriptors()
+	{
+		if (m_MaterialDescriptorSets.empty())
+			return;
+
+		Release();
+
+		// Reallocate Descriptor Set
+		auto device = VulkanContext::GetCurrentDevice();
+		auto descriptorSetPool = VulkanRenderer::Get()->GetDescriptorPool();
+		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
+
+		auto shader = std::dynamic_pointer_cast<VulkanShader>(m_Shader);
+		auto materialSetLayout = shader->GetDescriptorSetLayout(1);
+		VkDescriptorSetLayout vulkanMaterialSetLayout = materialSetLayout->GetVulkanDescriptorSetLayout();
+		for (uint32_t i = 0; i < framesInFlight; ++i)
+		{
+			auto& vulkanDescriptorSet = m_MaterialDescriptorSets.emplace_back();
+			descriptorSetPool->AllocateDescriptorSet(vulkanMaterialSetLayout, vulkanDescriptorSet);
+
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_DESCRIPTOR_SET, std::format("{0}: {1}", m_DebugName, i), vulkanDescriptorSet);
+		}
+	}
+
+	void VulkanMaterial::Release()
+	{
+		// TODO: Another solution to this could be to reset and reallocate whole new pool but it is currently unfeasible
+		Renderer::SubmitResourceFree([descriptorSets = m_MaterialDescriptorSets]
+		{
+			auto device = VulkanContext::GetCurrentDevice();
+			auto descriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
+
+			vkFreeDescriptorSets(device->GetVulkanDevice(), descriptorPool->GetVulkanDescriptorPool(), (uint32_t)descriptorSets.size(), descriptorSets.data());
+		});
+
+		m_MaterialDescriptorSets.clear();
+		m_MaterialDescriptorWriter.clear();
 	}
 
 	void VulkanMaterial::SetDiffuseTexture(std::shared_ptr<Texture2D> texture)
@@ -119,6 +154,20 @@ namespace VulkanCore {
 	{
 		m_ARMTexture = texture;
 		UpdateARMMap(std::static_pointer_cast<VulkanTexture>(m_ARMTexture));
+	}
+
+	void VulkanMaterial::SetDisplacementTexture(std::shared_ptr<Texture2D> texture)
+	{
+		m_DisplacementTexture = texture;
+
+		// Recreate Material
+		if (m_Shader == Renderer::GetShader("CorePBR"))
+		{
+			m_Shader = Renderer::GetShader("CorePBR_Tess");
+
+			ReallocateDescriptors();
+			UpdateMaterials();
+		}
 	}
 
 	void VulkanMaterial::SetImage(uint32_t binding, std::shared_ptr<Image2D> image)
@@ -388,6 +437,7 @@ namespace VulkanCore {
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
 		std::vector<VkWriteDescriptorSet> writeDescriptors{};
+		writeDescriptors.reserve(16);
 
 		// Diffuse Texture
 		{
@@ -405,7 +455,7 @@ namespace VulkanCore {
 				writeDescriptor.descriptorCount = 1;
 				writeDescriptor.dstArrayElement = 0;
 
-				writeDescriptors.push_back(writeDescriptor);
+				writeDescriptors.emplace_back(writeDescriptor);
 			}
 
 			// Update ImGui Image Panel
@@ -419,7 +469,7 @@ namespace VulkanCore {
 				writeDescriptor.descriptorCount = 1;
 				writeDescriptor.dstArrayElement = 0;
 
-				writeDescriptors.push_back(writeDescriptor);
+				writeDescriptors.emplace_back(writeDescriptor);
 			}
 		}
 
@@ -439,7 +489,7 @@ namespace VulkanCore {
 				writeDescriptor.descriptorCount = 1;
 				writeDescriptor.dstArrayElement = 0;
 
-				writeDescriptors.push_back(writeDescriptor);
+				writeDescriptors.emplace_back(writeDescriptor);
 			}
 
 			// Update ImGui Image Panel
@@ -453,7 +503,7 @@ namespace VulkanCore {
 				writeDescriptor.descriptorCount = 1;
 				writeDescriptor.dstArrayElement = 0;
 
-				writeDescriptors.push_back(writeDescriptor);
+				writeDescriptors.emplace_back(writeDescriptor);
 			}
 		}
 
@@ -473,7 +523,7 @@ namespace VulkanCore {
 				writeDescriptor.descriptorCount = 1;
 				writeDescriptor.dstArrayElement = 0;
 
-				writeDescriptors.push_back(writeDescriptor);
+				writeDescriptors.emplace_back(writeDescriptor);
 			}
 
 			// Update ImGui Image Panel
@@ -487,7 +537,41 @@ namespace VulkanCore {
 				writeDescriptor.descriptorCount = 1;
 				writeDescriptor.dstArrayElement = 0;
 
-				writeDescriptors.push_back(writeDescriptor);
+				writeDescriptors.emplace_back(writeDescriptor);
+			}
+		}
+
+		// Displacement Texture
+		{
+			std::shared_ptr<VulkanTexture> displacementTexture = std::dynamic_pointer_cast<VulkanTexture>(m_DisplacementTexture);
+
+			// Update Material Texture
+			for (uint32_t i = 0; i < framesInFlight; ++i)
+			{
+				VkWriteDescriptorSet writeDescriptor{};
+				writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
+				writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				writeDescriptor.dstBinding = 3;
+				writeDescriptor.pImageInfo = &displacementTexture->GetDescriptorImageInfo();
+				writeDescriptor.descriptorCount = 1;
+				writeDescriptor.dstArrayElement = 0;
+
+				writeDescriptors.emplace_back(writeDescriptor);
+			}
+
+			// Update ImGui Image Panel
+			{
+				VkWriteDescriptorSet writeDescriptor{};
+				writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				writeDescriptor.dstSet = m_DisplacementDstID;
+				writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				writeDescriptor.dstBinding = 0;
+				writeDescriptor.pImageInfo = &displacementTexture->GetDescriptorImageInfo();
+				writeDescriptor.descriptorCount = 1;
+				writeDescriptor.dstArrayElement = 0;
+
+				writeDescriptors.emplace_back(writeDescriptor);
 			}
 		}
 
@@ -598,6 +682,42 @@ namespace VulkanCore {
 			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			writeDescriptor.dstBinding = 0;
 			writeDescriptor.pImageInfo = &arm->GetDescriptorImageInfo();
+			writeDescriptor.descriptorCount = 1;
+			writeDescriptor.dstArrayElement = 0;
+
+			writeDescriptors.push_back(writeDescriptor);
+		}
+
+		vkUpdateDescriptorSets(device->GetVulkanDevice(), (uint32_t)writeDescriptors.size(), writeDescriptors.data(), 0, nullptr);
+	}
+
+	void VulkanMaterial::UpdateDisplacementMap(std::shared_ptr<VulkanTexture> displacement)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		std::vector<VkWriteDescriptorSet> writeDescriptors{};
+		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
+		{
+			VkWriteDescriptorSet writeDescriptor{};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.dstSet = m_MaterialDescriptorSets[i];
+			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptor.dstBinding = 3;
+			writeDescriptor.pImageInfo = &displacement->GetDescriptorImageInfo();
+			writeDescriptor.descriptorCount = 1;
+			writeDescriptor.dstArrayElement = 0;
+
+			writeDescriptors.push_back(writeDescriptor);
+		}
+
+		// Update ImGui Image Panel
+		{
+			VkWriteDescriptorSet writeDescriptor{};
+			writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptor.dstSet = m_DisplacementDstID;
+			writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptor.dstBinding = 0;
+			writeDescriptor.pImageInfo = &displacement->GetDescriptorImageInfo();
 			writeDescriptor.descriptorCount = 1;
 			writeDescriptor.dstArrayElement = 0;
 

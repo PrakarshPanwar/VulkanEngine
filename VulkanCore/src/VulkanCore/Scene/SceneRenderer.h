@@ -179,6 +179,7 @@ namespace VulkanCore {
 
 		// Pipelines
 		std::shared_ptr<Pipeline> m_GeometryPipeline;
+		std::shared_ptr<Pipeline> m_GeometryTessellatedPipeline;
 		std::shared_ptr<Pipeline> m_GeometrySelectPipeline;
 		std::shared_ptr<Pipeline> m_ShadowMapPipeline;
 		std::shared_ptr<Pipeline> m_LightPipeline;
@@ -233,6 +234,8 @@ namespace VulkanCore {
 
 		std::map<MeshKey, DrawCommand> m_MeshDrawList;
 		std::map<MeshKey, MeshTransform> m_MeshTransformMap;
+		std::map<MeshKey, DrawCommand> m_MeshTessellatedDrawList;
+		std::map<MeshKey, MeshTransform> m_MeshTessellatedTransformMap;
 		std::map<MeshKey, DrawCommand> m_ShadowMeshDrawList;
 		std::map<MeshKey, MeshTransform> m_ShadowMeshTransformMap;
 		std::map<MeshKey, DrawSelectCommand> m_SelectedMeshDrawList;

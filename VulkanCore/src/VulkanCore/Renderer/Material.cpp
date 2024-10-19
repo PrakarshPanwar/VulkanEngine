@@ -36,13 +36,14 @@ namespace VulkanCore {
 		m_MaterialData = materialData;
 	}
 
-	std::tuple<AssetHandle, AssetHandle, AssetHandle> Material::GetMaterialHandles() const
+	std::tuple<AssetHandle, AssetHandle, AssetHandle, AssetHandle> Material::GetMaterialHandles() const
 	{
 		auto diffuseHandle = AssetManager::GetAssetManager()->IsAssetHandleValid(m_DiffuseTexture->Handle) ? m_DiffuseTexture->Handle : (AssetHandle)0;
 		auto normalHandle = AssetManager::GetAssetManager()->IsAssetHandleValid(m_NormalTexture->Handle) ? m_NormalTexture->Handle : (AssetHandle)0;
 		auto armHandle = AssetManager::GetAssetManager()->IsAssetHandleValid(m_ARMTexture->Handle) ? m_ARMTexture->Handle : (AssetHandle)0;
+		auto displacementHandle = AssetManager::GetAssetManager()->IsAssetHandleValid(m_DisplacementTexture->Handle) ? m_DisplacementTexture->Handle : (AssetHandle)0;
 
-		return { diffuseHandle, normalHandle, armHandle };
+		return { diffuseHandle, normalHandle, armHandle, displacementHandle };
 	}
 
 	void Material::SetDiffuseTexture(std::shared_ptr<Texture2D> texture)
@@ -58,6 +59,11 @@ namespace VulkanCore {
 	void Material::SetARMTexture(std::shared_ptr<Texture2D> texture)
 	{
 		m_ARMTexture = texture;
+	}
+
+	void Material::SetDisplacementTexture(std::shared_ptr<Texture2D> texture)
+	{
+		m_DisplacementTexture = texture;
 	}
 
 	std::shared_ptr<Material> Material::Create(const std::string& debugName)

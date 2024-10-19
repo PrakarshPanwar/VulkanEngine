@@ -25,4 +25,9 @@ namespace VulkanCore {
 		m_Transparent = transparent;
 	}
 
+	void MaterialAsset::SetDisplacement(bool displacement)
+	{
+		m_Displacement = displacement;
+	}
+
 }

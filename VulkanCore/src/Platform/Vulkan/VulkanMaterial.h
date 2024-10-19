@@ -15,14 +15,15 @@ namespace VulkanCore {
 
 		inline const VkDescriptorSet& GetVulkanMaterialDescriptorSet() const { return m_MaterialDescriptorSets[Renderer::GetCurrentFrameIndex()]; }
 		inline const VkDescriptorSet& RT_GetVulkanMaterialDescriptorSet() const { return m_MaterialDescriptorSets[Renderer::RT_GetCurrentFrameIndex()]; }
-		inline std::tuple<VkDescriptorSet, VkDescriptorSet, VkDescriptorSet> GetMaterialTextureIDs() const
+		inline std::tuple<VkDescriptorSet, VkDescriptorSet, VkDescriptorSet, VkDescriptorSet> GetMaterialTextureIDs() const
 		{
-			return { m_DiffuseDstID, m_NormalDstID, m_ARMDstID };
+			return { m_DiffuseDstID, m_NormalDstID, m_ARMDstID, m_DisplacementDstID };
 		}
 
 		void SetDiffuseTexture(std::shared_ptr<Texture2D> texture) override;
 		void SetNormalTexture(std::shared_ptr<Texture2D> texture) override;
 		void SetARMTexture(std::shared_ptr<Texture2D> texture) override;
+		void SetDisplacementTexture(std::shared_ptr<Texture2D> texture) override;
 
 		void SetImage(uint32_t binding, std::shared_ptr<Image2D> image) override;
 		void SetImage(uint32_t binding, std::shared_ptr<Image2D> image, uint32_t mipLevel) override;
@@ -46,10 +47,13 @@ namespace VulkanCore {
 		void Invalidate();
 		void InvalidateDescriptorSets();
 		void InitializeMaterialTextures();
+		void ReallocateDescriptors();
+		void Release();
 
 		void UpdateDiffuseMap(std::shared_ptr<VulkanTexture> diffuse);
 		void UpdateNormalMap(std::shared_ptr<VulkanTexture> normal);
 		void UpdateARMMap(std::shared_ptr<VulkanTexture> arm);
+		void UpdateDisplacementMap(std::shared_ptr<VulkanTexture> displacement);
 	private:
 		std::string m_DebugName;
 
@@ -60,7 +64,7 @@ namespace VulkanCore {
 		std::unordered_map<uint32_t, std::vector<VkWriteDescriptorSet>> m_MaterialDescriptorWriter;
 
 		// NOTE: These are for ImGui Materials Panel
-		VkDescriptorSet m_DiffuseDstID, m_NormalDstID, m_ARMDstID;
+		VkDescriptorSet m_DiffuseDstID, m_NormalDstID, m_ARMDstID, m_DisplacementDstID;
 	};
 
 }

@@ -1,6 +1,10 @@
-#version 460 core
+#version 460
+
+const float PI = 3.14159265359;
+
 #include "Utils/Buffers.glslh"
 #include "Utils/Structs.glslh"
+#include "Utils/PBR.glslh"
 
 layout(location = 0) out vec4 o_Color;
 
@@ -77,8 +81,6 @@ layout(set = 0, binding = 7) uniform sampler2D u_BRDFTexture;
 layout(set = 0, binding = 8) uniform samplerCube u_PrefilteredMap;
 layout(set = 0, binding = 9) uniform sampler2DArray u_ShadowMap;
 
-const float PI = 3.14159265359;
-
 // Fresnel factor for all incidence
 const vec3 Fdielectric = vec3(0.04);
 
@@ -105,60 +107,6 @@ vec3 GetNormalsFromMap()
 {
     vec3 tangentNormal = normalize(texture(u_NormalTexture, Input.TexCoord).xyz * 2.0 - 1.0);
     return normalize(Input.WorldNormals * tangentNormal);
-}
-
-float DistributionGGX(vec3 N, vec3 H, float roughness)
-{
-    float a = roughness * roughness;
-    float a2 = a * a;
-    float dotNH = max(dot(N, H), 0.0);
-    float dotNH2 = dotNH * dotNH;
-
-    float nom   = a2;
-    float denom = (dotNH2 * (a2 - 1.0) + 1.0);
-    denom = PI * denom * denom;
-
-    return nom / max(denom, 1e-5);
-}
-
-float GeometrySchlickGGX(float dotNV, float roughness)
-{
-    float r = (roughness + 1.0);
-    float k = (r * r) / 8.0;
-
-    float nom   = dotNV;
-    float denom = dotNV * (1.0 - k) + k;
-
-    return nom / max(denom, 1e-5);
-}
-
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
-{
-    float dotNV = max(dot(N, V), 0.0);
-    float dotNL = max(dot(N, L), 0.0);
-    float ggx2 = GeometrySchlickGGX(dotNV, roughness);
-    float ggx1 = GeometrySchlickGGX(dotNL, roughness);
-
-    return ggx1 * ggx2;
-}
-
-float GeometrySchlickSmithGGX(float dotNL, float dotNV, float roughness)
-{
-	float r = (roughness + 1.0);
-	float k = (r * r) / 8.0;
-	float GL = dotNL / (dotNL * (1.0 - k) + k);
-	float GV = dotNV / (dotNV * (1.0 - k) + k);
-	return GL * GV;
-}
-
-vec3 FresnelSchlick(float cosTheta, vec3 F0)
-{
-    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
-}
-
-vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
-{
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 vec3 Lighting(vec3 F0)

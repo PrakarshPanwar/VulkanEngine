@@ -16,26 +16,27 @@ namespace VulkanCore {
 
 		std::shared_ptr<Shader> MakeShader(const std::string& path)
 		{
-			const std::filesystem::path shaderPath = "assets\\shaders";
-			std::filesystem::path vertexShaderPath = shaderPath / path, fragmentShaderPath = shaderPath / path, geometryShaderPath = shaderPath / path, computeShaderPath = shaderPath / path;
-			vertexShaderPath.replace_extension(".vert");
-			fragmentShaderPath.replace_extension(".frag");
-			geometryShaderPath.replace_extension(".geom");
-			computeShaderPath.replace_extension(".comp");
+			const std::filesystem::path shaderDirectory = "assets\\shaders";
+			std::filesystem::path shaderPath = shaderDirectory / path;
 
-			if (std::filesystem::exists(vertexShaderPath) && std::filesystem::exists(fragmentShaderPath))
-			{
-				if (std::filesystem::exists(geometryShaderPath))
-					return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string(), geometryShaderPath.string());
-
-				return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string());
-			}
+			auto vertexShaderPath = shaderPath.replace_extension(".vert");
+			auto fragmentShaderPath = shaderPath.replace_extension(".frag");
+			auto tessellationControlShaderPath = shaderPath.replace_extension(".tesc");
+			auto tessellationEvaluationShaderPath = shaderPath.replace_extension(".tese");
+			auto geometryShaderPath = shaderPath.replace_extension(".geom");
+			auto computeShaderPath = shaderPath.replace_extension(".comp");
 
 			if (std::filesystem::exists(computeShaderPath))
 				return std::make_shared<VulkanShader>(computeShaderPath.string());
 
-			VK_CORE_ASSERT(false, "Shader: {} does not exist!", path);
-			return std::make_shared<VulkanShader>();
+			if (std::filesystem::exists(tessellationControlShaderPath) && std::filesystem::exists(tessellationEvaluationShaderPath))
+				return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string(), "",
+					tessellationControlShaderPath.string(), tessellationEvaluationShaderPath.string());
+
+			if (std::filesystem::exists(geometryShaderPath))
+				return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string(), geometryShaderPath.string());
+
+			return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string());
 		}
 
 	}
@@ -78,6 +79,7 @@ namespace VulkanCore {
 	void Renderer::BuildShaders()
 	{
 		m_Shaders["CorePBR"] = Utils::MakeShader("CorePBR");
+		m_Shaders["CorePBR_Tess"] = Utils::MakeShader("CorePBR_Tess");
 		m_Shaders["ShadowDepth"] = Utils::MakeShader("ShadowDepth");
 		m_Shaders["CoreEditor"] = Utils::MakeShader("CoreEditor");
 		m_Shaders["LightShader"] = Utils::MakeShader("LightShader");

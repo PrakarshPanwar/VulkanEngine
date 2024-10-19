@@ -93,25 +93,26 @@ namespace VulkanCore {
 		{
 			switch (objectType)
 			{
-			case VK_OBJECT_TYPE_UNKNOWN:	     return "Unknown";
-			case VK_OBJECT_TYPE_BUFFER:		     return "Buffer";
-			case VK_OBJECT_TYPE_COMMAND_BUFFER:  return "Command Buffer";
-			case VK_OBJECT_TYPE_COMMAND_POOL:    return "Command Pool";
-			case VK_OBJECT_TYPE_INSTANCE:		 return "Instance";
-			case VK_OBJECT_TYPE_DEVICE:		     return "Device";
-			case VK_OBJECT_TYPE_DESCRIPTOR_POOL: return "Descriptor Pool";
-			case VK_OBJECT_TYPE_DESCRIPTOR_SET:	 return "Descriptor Set";
-			case VK_OBJECT_TYPE_IMAGE:		     return "Image";
-			case VK_OBJECT_TYPE_IMAGE_VIEW:		 return "Image View";
-			case VK_OBJECT_TYPE_PIPELINE:		 return "Pipeline";
-			case VK_OBJECT_TYPE_PIPELINE_LAYOUT: return "Pipeline Layout";
-			case VK_OBJECT_TYPE_RENDER_PASS:	 return "Render Pass";
-			case VK_OBJECT_TYPE_SAMPLER:		 return "Image Sampler";
-			case VK_OBJECT_TYPE_FRAMEBUFFER:     return "Framebuffer";
-			case VK_OBJECT_TYPE_SHADER_MODULE:   return "Shader Module";
-			case VK_OBJECT_TYPE_QUEUE:			 return "Queue";
-			case VK_OBJECT_TYPE_QUERY_POOL:		 return "Query Pool";
-			case VK_OBJECT_TYPE_SWAPCHAIN_KHR:	 return "Swapchain";
+			case VK_OBJECT_TYPE_UNKNOWN:			   return "Unknown";
+			case VK_OBJECT_TYPE_BUFFER:				   return "Buffer";
+			case VK_OBJECT_TYPE_COMMAND_BUFFER:		   return "Command Buffer";
+			case VK_OBJECT_TYPE_COMMAND_POOL:		   return "Command Pool";
+			case VK_OBJECT_TYPE_INSTANCE:			   return "Instance";
+			case VK_OBJECT_TYPE_DEVICE:				   return "Device";
+			case VK_OBJECT_TYPE_DESCRIPTOR_POOL:	   return "Descriptor Pool";
+			case VK_OBJECT_TYPE_DESCRIPTOR_SET:		   return "Descriptor Set";
+			case VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT: return "Descriptor Set Layout";
+			case VK_OBJECT_TYPE_IMAGE:				   return "Image";
+			case VK_OBJECT_TYPE_IMAGE_VIEW:			   return "Image View";
+			case VK_OBJECT_TYPE_PIPELINE:			   return "Pipeline";
+			case VK_OBJECT_TYPE_PIPELINE_LAYOUT:	   return "Pipeline Layout";
+			case VK_OBJECT_TYPE_RENDER_PASS:		   return "Render Pass";
+			case VK_OBJECT_TYPE_SAMPLER:			   return "Image Sampler";
+			case VK_OBJECT_TYPE_FRAMEBUFFER:		   return "Framebuffer";
+			case VK_OBJECT_TYPE_SHADER_MODULE:		   return "Shader Module";
+			case VK_OBJECT_TYPE_QUEUE:				   return "Queue";
+			case VK_OBJECT_TYPE_QUERY_POOL:			   return "Query Pool";
+			case VK_OBJECT_TYPE_SWAPCHAIN_KHR:		   return "Swapchain";
 			default:
 				VK_CORE_ASSERT(false, "Object Type not present in this scope");
 				return "Unsupported";
