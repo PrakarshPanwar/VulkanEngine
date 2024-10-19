@@ -21,7 +21,8 @@ namespace VulkanCore {
 		None = 0,
 		Diffuse,
 		Normal,
-		ARM
+		ARM,
+		Displacement
 	};
 
 	namespace Utils {
@@ -45,6 +46,9 @@ namespace VulkanCore {
 						break;
 					case TextureType::ARM:
 						material->SetARMTexture(Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM));
+						break;
+					case TextureType::Displacement:
+						material->SetDisplacementTexture(Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM));
 						break;
 					default:
 						break;
@@ -79,7 +83,7 @@ namespace VulkanCore {
 			ImGui::Separator();
 
 			auto& materialData = vulkanMaterial->GetMaterialData();
-			auto [diffuse, normal, arm] = vulkanMaterial->GetMaterialTextureIDs();
+			auto [diffuse, normal, arm, displacement] = vulkanMaterial->GetMaterialTextureIDs();
 
 			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_FramePadding;
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
@@ -168,6 +172,34 @@ namespace VulkanCore {
 
 				ImGui::DragFloat("Roughness", &materialData.Roughness, 0.01f, 0.0f, 1.0f);
 				ImGui::DragFloat("Metallic", &materialData.Metallic, 0.01f, 0.0f, 1.0f);
+
+				ImGui::TreePop();
+			}
+
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
+			bool displacementNode = ImGui::TreeNodeEx("DISPLACEMENT", treeNodeFlags);
+			ImGui::PopStyleVar();
+
+			if (displacementNode)
+			{
+				ImGui::Image((ImTextureID)displacement, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
+				Utils::ResetTexturePopup(TextureType::Displacement, vulkanMaterial);
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					{
+						const wchar_t* path = (const wchar_t*)payload->Data;
+						std::filesystem::path assetPath = g_AssetPath / path;
+
+						std::shared_ptr<Texture2D> displacementTex = AssetManager::GetAsset<Texture2D>(assetPath.string());
+						vulkanMaterial->SetDisplacementTexture(displacementTex);
+
+						m_MaterialAsset->SetDisplacement(true);
+					}
+
+					ImGui::EndDragDropTarget();
+				}
 
 				ImGui::TreePop();
 			}

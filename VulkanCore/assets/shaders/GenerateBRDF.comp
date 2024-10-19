@@ -1,4 +1,4 @@
-#version 460 core
+#version 460
 
 layout(binding = 0, rgba32f) writeonly uniform image2D o_BRDFTexture;
 

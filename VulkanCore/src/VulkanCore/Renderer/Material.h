@@ -33,11 +33,12 @@ namespace VulkanCore {
 		void SetRoughness(float roughness);
 		void SetMaterialData(MaterialData materialData);
 
-		std::tuple<AssetHandle, AssetHandle, AssetHandle> GetMaterialHandles() const;
+		std::tuple<AssetHandle, AssetHandle, AssetHandle, AssetHandle> GetMaterialHandles() const;
 
 		virtual void SetDiffuseTexture(std::shared_ptr<Texture2D> texture);
 		virtual void SetNormalTexture(std::shared_ptr<Texture2D> texture);
 		virtual void SetARMTexture(std::shared_ptr<Texture2D> texture);
+		virtual void SetDisplacementTexture(std::shared_ptr<Texture2D> texture);
 
 		virtual void SetImage(uint32_t binding, std::shared_ptr<Image2D> image) = 0;
 		virtual void SetImage(uint32_t binding, std::shared_ptr<Image2D> image, uint32_t mipLevel) = 0;
@@ -65,6 +66,7 @@ namespace VulkanCore {
 		std::shared_ptr<Texture2D> m_DiffuseTexture;
 		std::shared_ptr<Texture2D> m_NormalTexture;
 		std::shared_ptr<Texture2D> m_ARMTexture;
+		std::shared_ptr<Texture2D> m_DisplacementTexture;
 	};
 
 }

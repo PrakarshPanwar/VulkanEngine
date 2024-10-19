@@ -21,6 +21,8 @@ namespace VulkanCore {
 		static std::map<std::filesystem::path, ShaderType> s_ShaderExtensionMap = {
 			{ ".vert", ShaderType::Vertex },
 			{ ".frag", ShaderType::Fragment },
+			{ ".tesc", ShaderType::TessellationControl },
+			{ ".tese", ShaderType::TessellationEvaluation },
 			{ ".geom", ShaderType::Geometry },
 			{ ".comp", ShaderType::Compute }
 		};
@@ -29,10 +31,12 @@ namespace VulkanCore {
 		{
 			switch (stage)
 			{
-			case ShaderType::Vertex:   return shaderc_glsl_vertex_shader;
-			case ShaderType::Fragment: return shaderc_glsl_fragment_shader;
-			case ShaderType::Geometry: return shaderc_glsl_geometry_shader;
-			case ShaderType::Compute:  return shaderc_glsl_compute_shader;
+			case ShaderType::Vertex:				 return shaderc_glsl_vertex_shader;
+			case ShaderType::Fragment:				 return shaderc_glsl_fragment_shader;
+			case ShaderType::TessellationControl:	 return shaderc_glsl_tess_control_shader;
+			case ShaderType::TessellationEvaluation: return shaderc_glsl_tess_evaluation_shader;
+			case ShaderType::Geometry:				 return shaderc_glsl_geometry_shader;
+			case ShaderType::Compute:				 return shaderc_glsl_compute_shader;
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
@@ -43,10 +47,12 @@ namespace VulkanCore {
 		{
 			switch (stage)
 			{
-			case ShaderType::Vertex:   return "Vertex";
-			case ShaderType::Fragment: return "Fragment";
-			case ShaderType::Geometry: return "Geometry";
-			case ShaderType::Compute:  return "Compute";
+			case ShaderType::Vertex:				 return "Vertex";
+			case ShaderType::Fragment:				 return "Fragment";
+			case ShaderType::TessellationControl:	 return "TessellationControl";
+			case ShaderType::TessellationEvaluation: return "TessellationEvaluation";
+			case ShaderType::Geometry:				 return "Geometry";
+			case ShaderType::Compute:				 return "Compute";
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
@@ -69,10 +75,12 @@ namespace VulkanCore {
 		{
 			switch (stage)
 			{
-			case ShaderType::Vertex:   return ".vert.spv";
-			case ShaderType::Fragment: return ".frag.spv";
-			case ShaderType::Geometry: return ".geom.spv";
-			case ShaderType::Compute:  return ".comp.spv";
+			case ShaderType::Vertex:				 return ".vert.spv";
+			case ShaderType::Fragment:				 return ".frag.spv";
+			case ShaderType::TessellationControl:	 return ".tesc.spv";
+			case ShaderType::TessellationEvaluation: return ".tese.spv";
+			case ShaderType::Geometry:				 return ".geom.spv";
+			case ShaderType::Compute:				 return ".comp.spv";
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
@@ -81,8 +89,9 @@ namespace VulkanCore {
 
 	}
 
-	VulkanShader::VulkanShader(const std::string& vertexPath, const std::string& fragmentPath, const std::string& geometryPath)
-		: m_VertexFilePath(vertexPath), m_FragmentFilePath(fragmentPath), m_GeometryFilePath(geometryPath)
+	VulkanShader::VulkanShader(const std::string& vertexPath, const std::string& fragmentPath, const std::string& geometryPath, const std::string& tessellationControlPath, const std::string& tessellationEvaluationPath)
+		: m_VertexFilePath(vertexPath), m_FragmentFilePath(fragmentPath), m_GeometryFilePath(geometryPath),
+		m_TessellationControlFilePath(tessellationControlPath), m_TessellationEvaluationFilePath(tessellationEvaluationPath)
 	{
 		auto [VertexSrc, FragmentSrc] = ParseShader(vertexPath, fragmentPath);
 
@@ -96,6 +105,18 @@ namespace VulkanCore {
 		{
 			auto GeometrySrc = ParseShader(geometryPath);
 			Sources[(uint32_t)ShaderType::Geometry] = GeometrySrc;
+		}
+
+		if (!m_TessellationControlFilePath.empty())
+		{
+			auto TessellationControlSrc = ParseShader(tessellationControlPath);
+			Sources[(uint32_t)ShaderType::TessellationControl] = TessellationControlSrc;
+		}
+
+		if (!m_TessellationEvaluationFilePath.empty())
+		{
+			auto TessellationEvaluationSrc = ParseShader(m_TessellationEvaluationFilePath);
+			Sources[(uint32_t)ShaderType::TessellationEvaluation] = TessellationEvaluationSrc;
 		}
 
 		CompileOrGetVulkanBinaries(Sources);
@@ -163,7 +184,7 @@ namespace VulkanCore {
 							shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
 						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-							shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+							shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
 						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
@@ -227,10 +248,10 @@ namespace VulkanCore {
 					VkShaderStageFlags shaderStageFlags = 0;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-						shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+						shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
@@ -349,6 +370,20 @@ namespace VulkanCore {
 				GeometryStream << GeometrySource.rdbuf();
 
 				Sources[(uint32_t)ShaderType::Geometry] = ParsePreprocessIncludes(GeometryStream);
+			}
+
+			if (std::filesystem::exists(m_TessellationControlFilePath) && std::filesystem::exists(m_TessellationEvaluationFilePath))
+			{
+				std::ifstream TessellationControlSource(m_TessellationControlFilePath, std::ios::binary);
+				std::ifstream TessellationEvaluationSource(m_TessellationEvaluationFilePath, std::ios::binary);
+
+				std::stringstream TessellationControlStream, TessellationEvaluationStream;
+
+				TessellationControlStream << TessellationControlSource.rdbuf();
+				TessellationEvaluationStream << TessellationEvaluationSource.rdbuf();
+
+				Sources[(uint32_t)ShaderType::TessellationControl] = ParsePreprocessIncludes(TessellationControlStream);
+				Sources[(uint32_t)ShaderType::TessellationEvaluation] = ParsePreprocessIncludes(TessellationEvaluationStream);
 			}
 		}
 		else
@@ -472,6 +507,12 @@ namespace VulkanCore {
 			case ShaderType::Fragment:
 				shaderFilePath = m_FragmentFilePath;
 				break;
+			case ShaderType::TessellationControl:
+				shaderFilePath = m_TessellationControlFilePath;
+				break;
+			case ShaderType::TessellationEvaluation:
+				shaderFilePath = m_TessellationEvaluationFilePath;
+				break;
 			case ShaderType::Geometry:
 				shaderFilePath = m_GeometryFilePath;
 				break;
@@ -577,6 +618,12 @@ namespace VulkanCore {
 				break;
 			case ShaderType::Fragment:
 				shaderFilePath = m_FragmentFilePath;
+				break;
+			case ShaderType::TessellationControl:
+				shaderFilePath = m_TessellationControlFilePath;
+				break;
+			case ShaderType::TessellationEvaluation:
+				shaderFilePath = m_TessellationEvaluationFilePath;
 				break;
 			case ShaderType::Geometry:
 				shaderFilePath = m_GeometryFilePath;

@@ -8,3 +8,12 @@ struct VertexOutput
 	mat3 WorldNormals;
 	vec2 TexCoord;
 };
+
+struct TessellationOutput
+{
+	vec3 WorldPosition;
+	vec3 ViewPosition;
+	mat4 Transform;
+	mat3 WorldNormals;
+	vec2 TexCoord;
+};

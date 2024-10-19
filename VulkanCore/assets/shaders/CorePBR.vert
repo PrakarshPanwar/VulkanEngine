@@ -1,4 +1,4 @@
-#version 460 core
+#version 460
 #include "Utils/Buffers.glslh"
 #include "Utils/Structs.glslh"
 

@@ -8,7 +8,7 @@ const float PI = 3.14159265359;
 
 layout(location = 0) out vec4 o_Color;
 
-layout(location = 0) in VertexOutput Input;
+layout(location = 0) in TessellationOutput Input;
 
 struct PointLight
 {
@@ -325,7 +325,7 @@ void main()
 
 	vec3 cameraPosWorld = u_Camera.InverseView[3].xyz;
 	m_Params.View = normalize(cameraPosWorld - Input.WorldPosition);
-    m_Params.Normal = u_Material.UseNormalMap == 0 ? normalize(Input.Normal) : GetNormalsFromMap();
+    m_Params.Normal = u_Material.UseNormalMap == 0 ? normalize(Input.WorldNormals[1]) : GetNormalsFromMap();
     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);
     vec3 Lr = 2.0 * m_Params.NdotV * m_Params.Normal - m_Params.View;
 

@@ -1,4 +1,4 @@
-#version 460 core
+#version 460
 #include "Utils/Buffers.glslh"
 
 layout(location = 0) out vec4 o_Color;

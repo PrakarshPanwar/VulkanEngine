@@ -10,7 +10,9 @@ namespace VulkanCore {
 	{
 	public:
 		VulkanShader() = default;
-		VulkanShader(const std::string& vertexPath, const std::string& fragmentPath, const std::string& geometryPath = "");
+		VulkanShader(const std::string& vertexPath, const std::string& fragmentPath, const std::string& geometryPath = "",
+			const std::string& tessellationControlPath = "", const std::string& tessellationEvaluationPath = "");
+
 		VulkanShader(const std::string& computePath);
 		~VulkanShader();
 
@@ -25,6 +27,7 @@ namespace VulkanCore {
 
 		void Reload() override;
 		inline bool HasGeometryShader() const override { return !m_GeometryFilePath.empty(); }
+		inline bool HasTessellationShaders() const override { return !(m_TessellationControlFilePath.empty() || m_TessellationEvaluationFilePath.empty()); }
 	private:
 		std::tuple<std::string, std::string> ParseShader(const std::string& vertexPath, const std::string& fragmentPath);
 		std::string ParseShader(const std::string& shaderPath);
@@ -34,7 +37,9 @@ namespace VulkanCore {
 		void ReflectShaderData();
 		void InvalidateDescriptors();
 	private:
-		std::string m_VertexFilePath, m_FragmentFilePath, m_GeometryFilePath, m_ComputeFilePath;
+		std::string m_VertexFilePath, m_FragmentFilePath, m_GeometryFilePath,
+			m_TessellationControlFilePath, m_TessellationEvaluationFilePath, m_ComputeFilePath;
+
 		std::unordered_map<uint32_t, std::vector<uint32_t>> m_VulkanSPIRV;
 		std::vector<std::future<void>> m_Futures;
 		size_t m_PushConstantSize = 0;

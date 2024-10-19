@@ -12,15 +12,17 @@ namespace VulkanCore {
 
 		void Serialize();
 		void SetTransparent(bool transparent);
+		void SetDisplacement(bool displacement);
 
 		inline std::shared_ptr<Material> GetMaterial() const { return m_Material; }
 		inline bool IsTransparent() const { return m_Transparent; }
+		inline bool HasDisplacementTexture() const { return m_Displacement; }
 
 		inline AssetType GetType() const override { return AssetType::Material; }
 		static AssetType GetStaticType() { return AssetType::Material; }
 	private:
 		std::shared_ptr<Material> m_Material;
-		bool m_Transparent = false;
+		bool m_Transparent = false, m_Displacement = false;
 	};
 
 }

@@ -33,6 +33,7 @@ namespace VulkanCore {
 		bool DepthClamp = false;
 		bool Blend = false;
 		CompareOp DepthCompareOp = CompareOp::Less;
+		uint32_t PatchControlPoints = 0;
 
 		VertexBufferLayout Layout{};
 		VertexBufferLayout InstanceLayout{};

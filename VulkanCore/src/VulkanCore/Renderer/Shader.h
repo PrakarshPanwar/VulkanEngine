@@ -9,6 +9,8 @@ namespace VulkanCore {
 		Vertex = 0x8B31,
 		Fragment = 0x8B30,
 		Geometry = 0x8DD9,
+		TessellationControl = 0x8E88,
+		TessellationEvaluation = 0x8E87,
 		Compute = 0x91B9
 	};
 
@@ -17,6 +19,7 @@ namespace VulkanCore {
 	public:
 		virtual void Reload() = 0;
 		virtual bool HasGeometryShader() const = 0;
+		virtual bool HasTessellationShaders() const = 0;
 	public:
 		virtual void SetReloadFlag() { m_ReloadFlag = true; }
 		virtual void ResetReloadFlag() { m_ReloadFlag = false; }
