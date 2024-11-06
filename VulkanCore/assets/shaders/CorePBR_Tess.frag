@@ -274,10 +274,10 @@ float ShadowTextureProjection(vec4 coords, vec2 offset, uint index)
 
 float FilterPCF(vec4 coords, uint index)
 {
-	ivec2 texSize = ivec2(textureSize(u_ShadowMap, 0));
+	vec2 texSize = vec2(textureSize(u_ShadowMap, 0));
 	float scale = 0.75;
-	float dx = scale * 1.0 / float(texSize.x);
-	float dy = scale * 1.0 / float(texSize.y);
+	float dx = scale / texSize.x;
+	float dy = scale / texSize.y;
 
 	int count = 0;
 	int range = 1;
@@ -325,7 +325,7 @@ void main()
 
 	vec3 cameraPosWorld = u_Camera.InverseView[3].xyz;
 	m_Params.View = normalize(cameraPosWorld - Input.WorldPosition);
-    m_Params.Normal = u_Material.UseNormalMap == 0 ? normalize(Input.WorldNormals[1]) : GetNormalsFromMap();
+    m_Params.Normal = u_Material.UseNormalMap == 0 ? Input.WorldNormals[2] : GetNormalsFromMap();
     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);
     vec3 Lr = 2.0 * m_Params.NdotV * m_Params.Normal - m_Params.View;
 

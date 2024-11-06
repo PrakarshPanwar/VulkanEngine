@@ -91,6 +91,9 @@ const mat4 BIAS_MATRIX = mat4(
 	0.5, 0.5, 0.0, 1.0
 );
 
+// CSM functions
+#include "Utils/Shadow.glslh"
+
 struct PBRParams
 {
     vec3 View;
@@ -254,64 +257,6 @@ vec3 IBL(vec3 F0, vec3 Lr)
     return ambient;
 }
 
-float ShadowTextureProjection(vec4 coords, vec2 offset, uint index)
-{
-    float shadow = 1.0;
-	float bias = 0.005;
-
-    vec2 texCoord = coords.st;
-    texCoord = vec2(texCoord.x, 1.0 - texCoord.y) + offset;
-
-	if (coords.z > -1.0 && coords.z < 1.0)
-    {
-		float dist = texture(u_ShadowMap, vec3(texCoord, index)).r;
-		if (coords.w > 0 && dist < coords.z - bias)
-			shadow = 0.5; // Ambient Value
-	}
-
-	return shadow;
-}
-
-float FilterPCF(vec4 coords, uint index)
-{
-	ivec2 texSize = ivec2(textureSize(u_ShadowMap, 0));
-	float scale = 0.75;
-	float dx = scale * 1.0 / float(texSize.x);
-	float dy = scale * 1.0 / float(texSize.y);
-
-	int count = 0;
-	int range = 1;
-
-	float shadowFactor = 0.0;
-	for (int x = -range; x <= range; x++)
-    {
-		for (int y = -range; y <= range; y++)
-        {
-			shadowFactor += ShadowTextureProjection(coords, vec2(dx * x, dy * y), index);
-			count++;
-		}
-	}
-
-	return shadowFactor / count;
-}
-
-float CalculateShadow()
-{
-	uint cascadeIndex = 0;
-	for(uint i = 0; i < 3; ++i)
-    {
-		if (Input.ViewPosition.z < u_CascadeData.CascadeSplitLevels[i])
-			cascadeIndex = i + 1;
-	}
-
-	// Depth Compare for Shadowing
-	vec4 shadowCoord = (BIAS_MATRIX * u_CascadeData.LightSpaceMatrices[cascadeIndex]) * vec4(Input.WorldPosition, 1.0);
-	float shadow = FilterPCF(shadowCoord / shadowCoord.w, cascadeIndex);
-    //float shadow = ShadowTextureProjection(shadowCoord / shadowCoord.w, vec2(0.0), cascadeIndex);
-
-    return shadow;
-}
-
 void main()
 {
     vec4 diffuse = texture(u_DiffuseTexture, Input.TexCoord);
@@ -336,11 +281,9 @@ void main()
     vec3 lightContribution = Lighting(F0);
     vec3 iblContribution = IBL(F0, Lr);
 
-    vec3 color = iblContribution + lightContribution;
-
     // Shadow
     float shadow = CalculateShadow();
-    color *= shadow;
+    vec3 color = iblContribution + lightContribution * shadow;
 
     // TODO: Transparent Materials(OIT)
 	o_Color = vec4(color, u_Material.Albedo.a * diffuse.a);

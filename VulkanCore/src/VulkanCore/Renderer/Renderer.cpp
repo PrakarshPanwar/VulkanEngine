@@ -16,7 +16,7 @@ namespace VulkanCore {
 
 		std::shared_ptr<Shader> MakeShader(const std::string& path)
 		{
-			const std::filesystem::path shaderDirectory = "assets\\shaders";
+			const std::filesystem::path shaderDirectory = "shaders";
 			std::filesystem::path shaderPath = shaderDirectory / path;
 
 			auto vertexShaderPath = shaderPath.replace_extension(".vert");

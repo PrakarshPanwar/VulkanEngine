@@ -285,6 +285,7 @@ namespace VulkanCore {
 		deviceFeatures.samplerAnisotropy = VK_TRUE;
 		deviceFeatures.geometryShader = VK_TRUE;
 		deviceFeatures.tessellationShader = VK_TRUE;
+		deviceFeatures.fillModeNonSolid = VK_TRUE;
 		deviceFeatures.shaderInt64 = VK_TRUE;
 		deviceFeatures.multiViewport = VK_TRUE;
 		deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;

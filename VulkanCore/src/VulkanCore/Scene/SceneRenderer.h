@@ -30,12 +30,12 @@ namespace VulkanCore {
 		void SubmitSelectedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform, uint32_t entityID);
 		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
-		void UpdateSkybox(const std::string& filepath);
+		void UpdateSkybox(AssetHandle skyTextureHandle);
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 		static inline VkDescriptorSet GetTextureCubeID() { return s_Instance->m_SkyboxTextureID; }
 		static std::shared_ptr<RenderCommandBuffer> GetRenderCommandBuffer() { return s_Instance->m_SceneCommandBuffer; }
-		static void SetSkybox(const std::string& filepath);
+		static void SetSkybox(AssetHandle skyTextureHandle);
 		void SetSceneEditorData(const SceneEditorData& sceneEditorData) { m_SceneEditorData = sceneEditorData; }
 
 		inline int GetHoveredEntity() const { return m_HoveredEntity; }
@@ -117,10 +117,7 @@ namespace VulkanCore {
 
 		struct MeshTransform
 		{
-			MeshTransform()
-			{
-				Transforms.reserve(10);
-			}
+			MeshTransform() { Transforms.reserve(10); }
 
 			std::vector<TransformData> Transforms;
 			std::shared_ptr<VertexBuffer> TransformBuffer = VertexBuffer::Create(10 * sizeof(TransformData));
@@ -128,10 +125,7 @@ namespace VulkanCore {
 
 		struct MeshSelectTransform
 		{
-			MeshSelectTransform()
-			{
-				Transforms.reserve(10);
-			}
+			MeshSelectTransform() { Transforms.reserve(10); }
 
 			std::vector<SelectTransformData> Transforms;
 			std::shared_ptr<VertexBuffer> TransformBuffer = VertexBuffer::Create(10 * sizeof(SelectTransformData));
@@ -214,7 +208,7 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBSpotLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBDirectionalLight;
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBCascadeLightMatrices;
-		std::vector<std::shared_ptr<IndexBuffer>> m_ImageBuffer;
+		std::vector<std::shared_ptr<IndexBuffer>> m_ImageBuffer; // For Selecting Entities
 
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 		std::vector<uint32_t> m_LightHandles;

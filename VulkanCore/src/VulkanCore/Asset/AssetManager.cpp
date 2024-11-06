@@ -34,7 +34,7 @@ namespace VulkanCore {
 		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Loading Asset Registry");
 		auto editorAssetManager = GetEditorAssetManager();
 
-		std::ifstream stream("assets/AssetRegistry.vkr");
+		std::ifstream stream("AssetRegistry.vkr");
 		std::stringstream strStream;
 		strStream << stream.rdbuf();
 
@@ -87,7 +87,7 @@ namespace VulkanCore {
 		out << YAML::EndSeq;
 		out << YAML::EndMap;
 
-		std::ofstream fout("assets/AssetRegistry.vkr");
+		std::ofstream fout("AssetRegistry.vkr");
 		fout << out.c_str();
 	}
 

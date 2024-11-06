@@ -33,7 +33,7 @@ namespace VulkanCore {
 			auto& assetRegistry = AssetManager::GetEditorAssetManager()->GetAssetRegistry();
 			for (auto&& [handle, metadata] : assetRegistry)
 			{
-				if (filePath == metadata.FilePath)
+				if (filePath == std::filesystem::absolute(metadata.FilePath))
 					return true;
 			}
 
@@ -42,14 +42,12 @@ namespace VulkanCore {
 
 	}
 
-	static const std::filesystem::path g_AssetPath = "assets";
-
 	ContentBrowserPanel::ContentBrowserPanel()
-		: m_CurrentDirectory(g_AssetPath)
+		: m_CurrentDirectory(std::filesystem::current_path())
 	{
-		m_DirectoryIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/DirectoryIcon.png");
-		m_FileIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/FileIcon.png");
-		m_RefreshIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/RefreshIcon.png");
+		m_DirectoryIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/DirectoryIcon.png");
+		m_FileIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/FileIcon.png");
+		m_RefreshIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/RefreshIcon.png");
 
 		m_DirectoryIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_DirectoryIcon));
 		m_FileIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_FileIcon));
@@ -58,7 +56,7 @@ namespace VulkanCore {
 		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Asset Tree Creation");
 
 		m_RootNode = new TreeNode;
-		m_RootNode->FilePath = g_AssetPath;
+		m_RootNode->FilePath = std::filesystem::current_path();
 		UpdateAssetTree(m_RootNode);
 	}
 
@@ -84,7 +82,7 @@ namespace VulkanCore {
 		}
 		else
 		{
-			if (m_CurrentDirectory != g_AssetPath)
+			if (m_CurrentDirectory != std::filesystem::current_path())
 			{
 				if (ImGui::Button("Back"))
 					m_CurrentDirectory = m_CurrentDirectory.parent_path();
@@ -97,7 +95,7 @@ namespace VulkanCore {
 		{
 			auto oldNode = m_RootNode;
 			m_RootNode = new TreeNode;
-			m_RootNode->FilePath = g_AssetPath;
+			m_RootNode->FilePath = std::filesystem::current_path();
 			UpdateAssetTree(m_RootNode);
 
 			tempNode = m_RootNode;
@@ -137,7 +135,7 @@ namespace VulkanCore {
 
 				if (ImGui::BeginDragDropSource())
 				{
-					auto relativePath = std::filesystem::relative(path, g_AssetPath);
+					auto relativePath = std::filesystem::relative(path);
 					const wchar_t* itemPath = relativePath.c_str();
 					ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
 					ImGui::EndDragDropSource();
@@ -152,7 +150,9 @@ namespace VulkanCore {
 					AssetType assetType = Utils::s_AssetExtensionMap[path.extension()];
 					if (assetType == AssetType::Material)
 					{
-						std::string pathStr = path.string();
+						auto relativePath = std::filesystem::relative(path);
+						std::string pathStr = relativePath.generic_string();
+
 						std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(pathStr);
 						m_MaterialEditor = std::make_shared<MaterialEditor>(materialAsset);
 					}
@@ -179,7 +179,7 @@ namespace VulkanCore {
 
 				if (ImGui::BeginDragDropSource())
 				{
-					auto relativePath = std::filesystem::relative(path, g_AssetPath);
+					auto relativePath = std::filesystem::relative(path);
 					const wchar_t* itemPath = relativePath.c_str();
 					ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
 					ImGui::EndDragDropSource();
@@ -194,7 +194,9 @@ namespace VulkanCore {
 					AssetType assetType = Utils::s_AssetExtensionMap[path.extension()];
 					if (assetType == AssetType::Material)
 					{
-						std::string pathStr = path.string();
+						auto relativePath = std::filesystem::relative(path);
+						std::string pathStr = relativePath.generic_string();
+
 						std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(pathStr);
 						m_MaterialEditor = std::make_shared<MaterialEditor>(materialAsset);
 					}
@@ -203,14 +205,15 @@ namespace VulkanCore {
 				if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
 					ImGui::OpenPopup("AssetImport");
 
-				bool openMeshImportDialog = false;
-				bool openRemoveAssetDialog = false;
+				bool openMeshImportDialog = false, openRemoveAssetDialog = false;
 				if (ImGui::BeginPopup("AssetImport"))
 				{
 					if (ImGui::MenuItem("Import"))
 					{
 						AssetType assetType = Utils::s_AssetExtensionMap[path.extension()];
-						std::string filepath = path.generic_string();
+
+						auto relativePath = std::filesystem::relative(path);
+						std::string filepath = relativePath.generic_string();
 
 						if (assetType == AssetType::Texture2D)
 							AssetManager::ImportNewAsset<Texture2D>(filepath);
@@ -279,7 +282,7 @@ namespace VulkanCore {
 				std::filesystem::path filepath = pathStr;
 				filepath.replace_extension(".vkmesh");
 
-				filepath = g_AssetPath / "meshes" / filepath;
+				filepath = "meshes" / filepath;
 
 				meshSource = AssetManager::ImportNewAsset<MeshSource>(path.generic_string());
 				AssetManager::CreateNewAsset<Mesh>(filepath.generic_string(), meshSource);
@@ -381,7 +384,7 @@ namespace VulkanCore {
 				std::filesystem::path filepath = pathStr;
 				filepath.replace_extension(".vkmat");
 
-				filepath = g_AssetPath / "materials" / filepath;
+				filepath = "materials" / filepath;
 
 				std::shared_ptr<Material> material = Material::Create(filepath.stem().string());
 				materialAsset = AssetManager::CreateNewAsset<MaterialAsset>(filepath.generic_string(), material);

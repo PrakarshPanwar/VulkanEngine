@@ -494,6 +494,7 @@ namespace VulkanCore {
 	{
 		m_ShadowMapPipeline->ReloadPipeline();
 		m_GeometryPipeline->ReloadPipeline();
+		m_GeometryTessellatedPipeline->ReloadPipeline();
 		m_LightPipeline->ReloadPipeline();
 		m_CompositePipeline->ReloadPipeline();
 		m_SkyboxPipeline->ReloadPipeline();
@@ -769,7 +770,7 @@ namespace VulkanCore {
 
 		device->FlushCommandBuffer(barrierCmd);
 
-		m_BloomDirtTexture = AssetManager::GetAsset<Texture2D>("assets/textures/LensDirt.png");
+		m_BloomDirtTexture = AssetManager::GetAsset<Texture2D>("textures/LensDirt.png");
 
 		auto blackTextureCube = std::dynamic_pointer_cast<VulkanTextureCube>(Renderer::GetBlackTextureCube(ImageFormat::RGBA8_UNORM));
 		blackTextureCube->Invalidate();
@@ -781,8 +782,8 @@ namespace VulkanCore {
 		m_SkyboxTextureID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTextureCube>(m_PrefilteredTexture));
 
 		m_BRDFTexture = Renderer::CreateBRDFTexture();
-		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/PointLightIcon.png");
-		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/SpotLightIcon.png");
+		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/PointLightIcon.png");
+		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/SpotLightIcon.png");
 	}
 
 	void SceneRenderer::Release()
@@ -1046,6 +1047,11 @@ namespace VulkanCore {
 			dc.SubmeshIndex = submeshIndex;
 			dc.TransformBuffer = isTessellated ? m_MeshTessellatedTransformMap[meshKey].TransformBuffer : m_MeshTransformMap[meshKey].TransformBuffer;
 			dc.InstanceCount++;
+
+			if (isTessellated && m_MeshDrawList.contains(meshKey))
+				m_MeshDrawList.erase(meshKey);
+			else if (!isTessellated && m_MeshTessellatedDrawList.contains(meshKey))
+				m_MeshTessellatedDrawList.erase(meshKey);
 		}
 	}
 
@@ -1107,10 +1113,12 @@ namespace VulkanCore {
 		return framebuffer->GetAttachment()[index];
 	}
 		
-	void SceneRenderer::UpdateSkybox(const std::string& filepath)
+	void SceneRenderer::UpdateSkybox(AssetHandle skyTextureHandle)
 	{
+		auto equirectTexture = AssetManager::GetAsset<Texture2D>(skyTextureHandle);
+
 		// Obtain Cubemaps
-		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap(filepath);
+		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap(equirectTexture);
 		m_CubemapTexture = filteredMap;
 		m_PrefilteredTexture = filteredMap;
 		m_IrradianceTexture = irradianceMap;
@@ -1126,9 +1134,9 @@ namespace VulkanCore {
 		ImGuiLayer::UpdateDescriptor(m_SkyboxTextureID, *std::dynamic_pointer_cast<VulkanTextureCube>(m_PrefilteredTexture));
 	}
 
-	void SceneRenderer::SetSkybox(const std::string& filepath)
+	void SceneRenderer::SetSkybox(AssetHandle skyTextureHandle)
 	{
-		s_Instance->UpdateSkybox(filepath);
+		s_Instance->UpdateSkybox(skyTextureHandle);
 	}
 
 	void SceneRenderer::CompositePass()

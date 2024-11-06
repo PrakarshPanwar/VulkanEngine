@@ -1,4 +1,4 @@
-#pragma once
+// GLSL Header: Structs.glslh
 
 struct VertexOutput
 {
@@ -13,7 +13,6 @@ struct TessellationOutput
 {
 	vec3 WorldPosition;
 	vec3 ViewPosition;
-	mat4 Transform;
 	mat3 WorldNormals;
 	vec2 TexCoord;
 };

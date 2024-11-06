@@ -15,8 +15,6 @@
 
 namespace VulkanCore {
 
-	static const std::filesystem::path g_AssetPath = "assets";
-
 	static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f)
 	{
 		ImGuiIO& io = ImGui::GetIO();
@@ -323,14 +321,14 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path assetPath = g_AssetPath / path;
+						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
 						std::string filepath = assetPath.generic_string();
-						SceneRenderer::SetSkybox(filepath);
 
 						auto newSkybox = AssetManager::GetAsset<Texture2D>(filepath);
 						component.TextureHandle = newSkybox->Handle;
+
+						SceneRenderer::SetSkybox(component.TextureHandle);
 					}
 
 					ImGui::EndDragDropTarget();
@@ -349,14 +347,14 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path assetPath = g_AssetPath / path;
+						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
 						std::string filepath = assetPath.generic_string();
-						SceneRenderer::SetSkybox(filepath);
 
 						auto newSkybox = AssetManager::GetAsset<Texture2D>(filepath);
 						component.TextureHandle = newSkybox->Handle;
+
+						SceneRenderer::SetSkybox(component.TextureHandle);
 					}
 
 					ImGui::EndDragDropTarget();
@@ -383,8 +381,7 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path assetPath = g_AssetPath / path;
+						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
 						sceneRenderer->UpdateMeshInstanceData(mesh, materialAsset);
 
@@ -407,8 +404,7 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path assetPath = g_AssetPath / path;
+						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
 						sceneRenderer->UpdateMeshInstanceData(mesh, materialAsset);
 
@@ -439,8 +435,7 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path assetPath = g_AssetPath / path;
+						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
 						std::shared_ptr<Mesh> newMesh = AssetManager::GetAsset<Mesh>(assetPath.string());
 						component.MeshHandle = newMesh->Handle;
@@ -460,8 +455,7 @@ namespace VulkanCore {
 					{
 						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 						{
-							const wchar_t* path = (const wchar_t*)payload->Data;
-							std::filesystem::path assetPath = g_AssetPath / path;
+							std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
 							std::shared_ptr<MaterialAsset> newMaterialAsset = AssetManager::GetAsset<MaterialAsset>(assetPath.string());
 							component.MaterialTableHandle = newMaterialAsset->Handle;

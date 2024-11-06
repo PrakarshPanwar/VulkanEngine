@@ -144,12 +144,12 @@ namespace VulkanCore {
 		});
 	}
 
-	std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
+	std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> VulkanRenderer::CreateEnviromentMap(const std::shared_ptr<Texture>& envTexture)
 	{
 		constexpr uint32_t cubemapSize = 1024;
 		constexpr uint32_t irradianceMapSize = 32;
 
-		std::shared_ptr<VulkanTexture> envEquirect = std::dynamic_pointer_cast<VulkanTexture>(AssetManager::GetAsset<Texture2D>(filepath));
+		std::shared_ptr<VulkanTexture> envEquirect = std::dynamic_pointer_cast<VulkanTexture>(envTexture);
 
 		std::shared_ptr<TextureCube> filteredMap = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
 		std::shared_ptr<TextureCube> unFilteredMap = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);

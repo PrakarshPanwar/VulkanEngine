@@ -25,11 +25,16 @@ void main()
 		vec4(a_MRow0.w, a_MRow1.w, a_MRow2.w, 1.0)
 	);
 
-	Output.WorldPosition = a_Position;
+	vec4 worldPosition = transform * vec4(a_Position, 1.0);
+	Output.WorldPosition = worldPosition.xyz;
 	Output.ViewPosition = vec3(u_Camera.View * vec4(Output.WorldPosition, 1.0));
-	Output.WorldNormals = mat3(a_Tangent, a_Normal, a_Binormal);
-	Output.Transform = transform;
-	Output.TexCoord = vec2(a_TexCoord.x, 1.0 - a_TexCoord.y);
 
-	gl_Position = vec4(a_Position, 1.0);
+	vec3 T = vec3(transform * vec4(a_Tangent, 0.0));
+	vec3 B = vec3(transform * vec4(a_Binormal, 0.0));
+    vec3 N = vec3(transform * vec4(a_Normal, 0.0));
+
+	Output.WorldNormals = mat3(T, B, N);
+	Output.TexCoord = a_TexCoord;
+
+	gl_Position = vec4(Output.WorldPosition, 1.0);
 }

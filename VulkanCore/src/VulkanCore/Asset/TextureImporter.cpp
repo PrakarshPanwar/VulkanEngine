@@ -48,10 +48,12 @@ namespace VulkanCore {
 
 			std::transform(path.begin(), path.end(), pathStr.begin(), [](char c) { return std::tolower(c); });
 
-			if (pathStr.find("nor") != std::string::npos || pathStr.find("arm") != std::string::npos || pathStr.find("disp") != std::string::npos)
+			if (pathStr.find("nor") != std::string::npos || pathStr.find("arm") != std::string::npos)
 				spec.Format = ImageFormat::RGBA8_UNORM;
+			else if (pathStr.find("disp") != std::string::npos)
+				spec.Format = ImageFormat::R8_UNORM;
 
-			data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+			data = stbi_load(path.c_str(), &width, &height, &channels, spec.Format == ImageFormat::R8_UNORM ? STBI_grey : STBI_rgb_alpha);
 		}
 
 		spec.Width = width;

@@ -17,7 +17,9 @@ namespace VulkanCore {
 		{
 			switch (format)
 			{
+			case ImageFormat::R8_UNORM:	   return width * height;
 			case ImageFormat::R32I:		   return width * height * sizeof(uint32_t);
+			case ImageFormat::R32F:		   return width * height * sizeof(float);
 			case ImageFormat::RGBA8_SRGB:  return width * height * 4;
 			case ImageFormat::RGBA8_NORM:  return width * height * 4;
 			case ImageFormat::RGBA8_UNORM: return width * height * 4;
