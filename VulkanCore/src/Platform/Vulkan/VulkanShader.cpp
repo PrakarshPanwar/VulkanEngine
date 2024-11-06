@@ -55,7 +55,7 @@ namespace VulkanCore {
 
 		static const char* GetCacheDirectory()
 		{
-			return "assets\\cache";
+			return "cache";
 		}
 
 		static void CreateCacheDirectoryIfRequired()
@@ -191,6 +191,9 @@ namespace VulkanCore {
 
 	std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> VulkanShader::CreateAllDescriptorSetsLayout()
 	{
+		if (HasDescriptorSets())
+			return m_DescriptorSetsLayout;
+
 		// Key: Set number
 		std::map<uint32_t, DescriptorSetLayoutBuilder> descriptorSetLayoutBuilderMap;
 
@@ -347,7 +350,7 @@ namespace VulkanCore {
 	// NOTE: It currently supports single depth headers(i.e. no header within header)
 	std::string VulkanShader::ParsePreprocessIncludes(std::stringstream& sourceCode)
 	{
-		const std::filesystem::path shaderPath = "assets/shaders";
+		const std::filesystem::path shaderPath = "shaders";
 
 		std::string sourceStr = sourceCode.str();
 		std::regex includeRegex("^[ ]*#[ ]*include[ ]+[\"<](.*)[\">].*");

@@ -12,16 +12,11 @@
 
 namespace VulkanCore {
 
-	VulkanMaterial::VulkanMaterial(const std::string& debugName, bool rayTraced)
+	VulkanMaterial::VulkanMaterial(const std::string& debugName)
 		: m_DebugName(debugName), m_Shader(Renderer::GetShader("CorePBR"))
 	{
-		if (rayTraced)
-			InitializeMaterialTextures();
-		else
-		{
-			InvalidateMaterial();
-			InvalidateMaterialDescriptorSets();
-		}
+		InvalidateMaterial();
+		InvalidateMaterialDescriptorSets();
 	}
 
 	VulkanMaterial::VulkanMaterial(std::shared_ptr<Shader> shader, const std::string& debugName, uint32_t setIndex)
@@ -52,7 +47,11 @@ namespace VulkanCore {
 		auto descriptorSetPool = VulkanRenderer::Get()->GetDescriptorPool();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
+		// NOTE: Descriptors creation happens in Pipeline class but as we aren't creating those in RT
 		auto shader = std::dynamic_pointer_cast<VulkanShader>(m_Shader);
+		if (!shader->HasDescriptorSets())
+			shader->CreateAllDescriptorSetsLayout();
+
 		auto materialSetLayout = shader->GetDescriptorSetLayout(1);
 		VkDescriptorSetLayout vulkanMaterialSetLayout = materialSetLayout->GetVulkanDescriptorSetLayout();
 		for (uint32_t i = 0; i < framesInFlight; ++i)

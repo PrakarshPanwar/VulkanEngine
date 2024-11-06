@@ -298,10 +298,7 @@ namespace VulkanCore {
 					uint64_t textureHandle = skyLightComponent["TextureHandle"].as<uint64_t>();
 					slc.TextureHandle = textureHandle;
 
-					AssetMetadata metadata = AssetManager::GetMetadata(slc.TextureHandle);
-
-					std::string filepath = metadata.FilePath.generic_string();
-					SceneRenderer::SetSkybox(filepath);
+					SceneRenderer::SetSkybox(slc.TextureHandle);
 				}
 
 				auto meshComponent = entity["MeshComponent"];

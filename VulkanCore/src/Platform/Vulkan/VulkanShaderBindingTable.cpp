@@ -51,8 +51,6 @@ namespace VulkanCore {
 
 	}
 
-	static std::filesystem::path g_ShaderPath = "assets\\shaders";
-
 	VulkanShaderBindingTable::VulkanShaderBindingTable(const std::string& rayGenPath, const std::vector<HitShaderInfo>& hitShaderInfos, const std::vector<std::string>& rayMissPaths)
 		: m_RayGenPath(rayGenPath), m_HitShaderInfos(hitShaderInfos), m_RayMissPaths(rayMissPaths)
 	{
@@ -136,10 +134,12 @@ namespace VulkanCore {
 
 	void VulkanShaderBindingTable::InvalidateShader()
 	{
+		static const std::filesystem::path shaderPath = "shaders";
+
 		// Create Shader
 		{
 			// Ray Generation
-			std::filesystem::path rayGenAbsPath = g_ShaderPath / m_RayGenPath;
+			std::filesystem::path rayGenAbsPath = shaderPath / m_RayGenPath;
 
 			// Hit Groups
 			std::vector<std::string> rayClosestHitAbsPaths, rayAnyHitAbsPaths, rayIntersectionAbsPaths, rayMissAbsPaths;
@@ -148,21 +148,21 @@ namespace VulkanCore {
 				// Closest Hit
 				if (!hitShaderInfo.ClosestHitPath.empty())
 				{
-					std::filesystem::path rayClosestHitAbsPath = g_ShaderPath / hitShaderInfo.ClosestHitPath;
+					std::filesystem::path rayClosestHitAbsPath = shaderPath / hitShaderInfo.ClosestHitPath;
 					rayClosestHitAbsPaths.emplace_back(rayClosestHitAbsPath.string());
 				}
 
 				// Any Hit
 				if (!hitShaderInfo.AnyHitPath.empty())
 				{
-					std::filesystem::path rayAnyHitAbsPath = g_ShaderPath / hitShaderInfo.AnyHitPath;
+					std::filesystem::path rayAnyHitAbsPath = shaderPath / hitShaderInfo.AnyHitPath;
 					rayAnyHitAbsPaths.emplace_back(rayAnyHitAbsPath.string());
 				}
 
 				// Intersection
 				if (!hitShaderInfo.IntersectionPath.empty())
 				{
-					std::filesystem::path rayIntersectionAbsPath = g_ShaderPath / hitShaderInfo.IntersectionPath;
+					std::filesystem::path rayIntersectionAbsPath = shaderPath / hitShaderInfo.IntersectionPath;
 					rayIntersectionAbsPaths.emplace_back(rayIntersectionAbsPath.string());
 				}
 			}
@@ -170,7 +170,7 @@ namespace VulkanCore {
 			// Miss Groups
 			for (auto& missPath : m_RayMissPaths)
 			{
-				std::filesystem::path rayMissAbsPath = g_ShaderPath / missPath;
+				std::filesystem::path rayMissAbsPath = shaderPath / missPath;
 				rayMissAbsPaths.emplace_back(rayMissAbsPath.string());
 			}
 

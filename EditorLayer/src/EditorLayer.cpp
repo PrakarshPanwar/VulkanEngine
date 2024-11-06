@@ -23,8 +23,6 @@
 
 namespace VulkanCore {
 
-	static const std::filesystem::path g_AssetPath = "assets";
-
 	EditorLayer::EditorLayer()
 		: Layer("Editor Layer")
 	{
@@ -44,7 +42,7 @@ namespace VulkanCore {
 		m_AssetManagerBase = std::make_shared<EditorAssetManager>();
 		AssetManager::Init(m_AssetManagerBase);
 
-		m_MenuIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/MenuIcon.png");
+		m_MenuIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/MenuIcon.png");
 		m_MenuIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_MenuIcon));
 
 		m_Scene = std::make_shared<Scene>();
@@ -255,8 +253,7 @@ namespace VulkanCore {
 		{
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 			{
-				const wchar_t* path = (const wchar_t*)payload->Data;
-				std::filesystem::path scenePath = g_AssetPath / path;
+				std::filesystem::path scenePath = (const wchar_t*)payload->Data;
 				OpenScene(scenePath.string());
 			}
 

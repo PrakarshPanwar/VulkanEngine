@@ -137,7 +137,7 @@ namespace VulkanCore {
  		YAML::Node materialNode = data["Material"];
  
 		std::string filenameStr = metadata.FilePath.stem().string();
-		std::shared_ptr<Material> material = std::make_shared<VulkanMaterial>(filenameStr, Renderer::GetConfig().RayTracing);
+		std::shared_ptr<Material> material = std::make_shared<VulkanMaterial>(filenameStr);
 		std::shared_ptr<MaterialAsset> materialAsset = std::make_shared<MaterialAsset>(material);
 
  		glm::vec4 albedoColor = materialNode["Albedo"].as<glm::vec4>();

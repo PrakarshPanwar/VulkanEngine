@@ -24,6 +24,7 @@ namespace VulkanCore {
 		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout(uint32_t index = 0) const { return m_DescriptorSetsLayout[index]; }
 
 		void Reload() override;
+		inline bool HasDescriptorSets() const { return !m_DescriptorSetsLayout.empty(); }
 		inline bool HasGeometryShader() const override { return !m_GeometryFilePath.empty(); }
 	private:
 		std::tuple<std::string, std::string> ParseShader(const std::string& vertexPath, const std::string& fragmentPath);

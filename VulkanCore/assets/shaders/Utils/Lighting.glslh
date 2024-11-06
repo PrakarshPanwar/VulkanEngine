@@ -1,4 +1,4 @@
-#pragma once
+// GLSL Header: Lighting.glslh
 
 void SampleSphereLight(in PointLight light, out LightSample lightSample)
 {

@@ -753,7 +753,7 @@ namespace VulkanCore {
 			m_SceneImages[i] = ImGuiLayer::AddTexture(*finalPassImage);
 		}
 
-		m_BloomDirtTexture = AssetManager::GetAsset<Texture2D>("assets/textures/LensDirt.png");
+		m_BloomDirtTexture = AssetManager::GetAsset<Texture2D>("textures/LensDirt.png");
 
 		auto blackTextureCube = Renderer::GetBlackTextureCube(ImageFormat::RGBA8_UNORM);
 		m_PrefilteredTexture = blackTextureCube;
@@ -767,8 +767,8 @@ namespace VulkanCore {
 		m_SkyboxTextureID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTextureCube>(m_PrefilteredTexture));
 
 		m_BRDFTexture = Renderer::CreateBRDFTexture();
-		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/PointLightIcon.png");
-		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/SpotLightIcon.png");
+		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/PointLightIcon.png");
+		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/SpotLightIcon.png");
 
 		m_SceneAccelerationStructure = std::make_shared<VulkanAccelerationStructure>();
 	}
@@ -1294,16 +1294,18 @@ namespace VulkanCore {
 		return framebuffer->GetAttachment(true)[index];
 	}
 		
-	void SceneRenderer::UpdateSkybox(const std::string& filepath)
+	void SceneRenderer::UpdateSkybox(AssetHandle skyTextureHandle)
 	{
+		auto equirectTexture = AssetManager::GetAsset<Texture2D>(skyTextureHandle);
+
 		// Obtain Cubemaps
-		auto [filteredMap, irradianceMap] = Renderer::CreateEnviromentMap(filepath);
+		auto [filteredMap, irradianceMap] = Renderer::CreateEnviromentMap(equirectTexture);
 		m_PrefilteredTexture = filteredMap;
 		m_IrradianceTexture = irradianceMap;
 
 		if (IsRayTraced())
 		{
-			m_HDRTexture = AssetManager::GetAsset<Texture2D>(filepath);
+			m_HDRTexture = AssetManager::GetAsset<Texture2D>(skyTextureHandle);
 			auto [PDFTexture, CDFTexture] = Renderer::CreateCDFPDFTextures(m_HDRTexture);
 			m_PDFTexture = PDFTexture;
 			m_CDFTexture = CDFTexture;
@@ -1338,9 +1340,9 @@ namespace VulkanCore {
 		m_RebuildAS = true;
 	}
 
-	void SceneRenderer::SetSkybox(const std::string& filepath)
+	void SceneRenderer::SetSkybox(AssetHandle skyTextureHandle)
 	{
-		s_Instance->UpdateSkybox(filepath);
+		s_Instance->UpdateSkybox(skyTextureHandle);
 	}
 
 	bool SceneRenderer::IsRayTraced() const
@@ -1363,15 +1365,7 @@ namespace VulkanCore {
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().pRenderPass);
 
-		Renderer::Submit([this]
-		{
-			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
-			auto vulkanCompPipeline = std::static_pointer_cast<VulkanPipeline>(m_CompositePipeline);
-
-			vulkanCompPipeline->SetPushConstants(vulkanCmdBuffer->RT_GetActiveCommandBuffer(), &m_SceneSettings, sizeof(SceneSettings));
-		});
-
-		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_CompositePipeline, m_CompositeShaderMaterial);
+		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_CompositePipeline, m_CompositeShaderMaterial, &m_SceneSettings, sizeof(SceneSettings));
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_CompositePipeline->GetSpecification().pRenderPass);
 
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
