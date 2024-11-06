@@ -51,7 +51,7 @@ namespace VulkanCore {
 		void RenderLight(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const glm::vec4& position);
 		void SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial);
 
-		static std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> CreateEnviromentMap(const std::string& filepath);
+		static std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> CreateEnviromentMap(const std::shared_ptr<Texture>& envTexture);
 		std::shared_ptr<Image2D> CreateBRDFTexture();
 		std::shared_ptr<Texture2D> GetWhiteTexture(ImageFormat format);
 		std::shared_ptr<TextureCube> GetBlackTextureCube(ImageFormat format);

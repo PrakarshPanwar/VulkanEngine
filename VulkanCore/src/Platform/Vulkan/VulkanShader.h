@@ -21,7 +21,7 @@ namespace VulkanCore {
 		[[maybe_unused]] std::vector<VkDescriptorSet> AllocateDescriptorSets(uint32_t index = 0);
 		[[maybe_unused]] std::vector<VkDescriptorSet> AllocateAllDescriptorSets();
 
-		inline std::unordered_map<uint32_t, std::vector<uint32_t>>& GetShaderModules() { return m_VulkanSPIRV; }
+		inline std::map<uint32_t, std::vector<uint32_t>>& GetShaderModules() { return m_VulkanSPIRV; }
 		inline uint32_t GetPushConstantSize() const { return (uint32_t)m_PushConstantSize; }
 		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout(uint32_t index = 0) const { return m_DescriptorSetLayouts[index]; }
 
@@ -40,7 +40,7 @@ namespace VulkanCore {
 		std::string m_VertexFilePath, m_FragmentFilePath, m_GeometryFilePath,
 			m_TessellationControlFilePath, m_TessellationEvaluationFilePath, m_ComputeFilePath;
 
-		std::unordered_map<uint32_t, std::vector<uint32_t>> m_VulkanSPIRV;
+		std::map<uint32_t, std::vector<uint32_t>> m_VulkanSPIRV;
 		std::vector<std::future<void>> m_Futures;
 		size_t m_PushConstantSize = 0;
 

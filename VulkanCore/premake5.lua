@@ -21,6 +21,8 @@ project "VulkanCore"
 		"assets/shaders/*.frag",
 		"assets/shaders/*.geom",
 		"assets/shaders/*.comp",
+		"assets/shaders/*.tesc",
+		"assets/shaders/*.tese",
 		"assets/shaders/**.glslh"
 	}
 

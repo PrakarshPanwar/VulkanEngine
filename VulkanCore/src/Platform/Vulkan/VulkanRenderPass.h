@@ -13,7 +13,6 @@ namespace VulkanCore {
 		~VulkanRenderPass();
 
 		void Invalidate();
-		void InvalidateWithDepthTexture();
 		void RecreateFramebuffers(uint32_t width, uint32_t height) override;
 
 		void Begin(const std::shared_ptr<VulkanRenderCommandBuffer>& beginCmd);
@@ -25,8 +24,7 @@ namespace VulkanCore {
 		RenderPassSpecification m_Specification;
 
 		std::vector<VkClearValue> m_ClearValues;
-		std::vector<VkAttachmentDescription> m_AttachmentDescriptions;
-		std::vector<VkAttachmentDescription2> m_AttachmentDescriptions2;
+		std::vector<VkAttachmentDescription2> m_AttachmentDescriptions;
 		VkRenderPass m_RenderPass = nullptr;
 	};
 
