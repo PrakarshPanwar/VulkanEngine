@@ -53,7 +53,7 @@ namespace VulkanCore {
 
 		static const char* GetCacheDirectory()
 		{
-			return "assets\\cache";
+			return "cache";
 		}
 
 		static void CreateCacheDirectoryIfRequired()

@@ -1,4 +1,4 @@
-#pragma once
+// GLSL Header: BSDF.glslh
 
 vec3 EvalDielectricReflection(vec3 V, vec3 N, vec3 L, vec3 H, inout float pdf)
 {

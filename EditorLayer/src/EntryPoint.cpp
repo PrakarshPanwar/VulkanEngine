@@ -19,7 +19,7 @@ namespace VulkanCore {
 	{
 		ApplicationSpecification spec{};
 		spec.Name = "Vulkan Application";
-		spec.WorkingDirectory = "../VulkanCore";
+		spec.WorkingDirectory = "../VulkanCore/assets";
 		spec.Fullscreen = true;
 		spec.RayTracing = RAY_TRACING;
 		spec.CommandLineArgs = args;

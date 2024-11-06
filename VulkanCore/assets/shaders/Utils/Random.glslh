@@ -1,4 +1,4 @@
-#pragma once
+// GLSL Header: Random.glslh
 
 uint InitRandomSeed(uint val0, uint val1)
 {

@@ -36,7 +36,7 @@ namespace VulkanCore {
 		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void SubmitRayTracedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
-		void UpdateSkybox(const std::string& filepath);
+		void UpdateSkybox(AssetHandle skyTextureHandle);
 		void SetUpdateTLAS();
 		void SetRebuildAS();
 		void ResetAccumulationFrameIndex();
@@ -44,7 +44,7 @@ namespace VulkanCore {
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 		static inline VkDescriptorSet GetTextureCubeID() { return s_Instance->m_SkyboxTextureID; }
 		static std::shared_ptr<RenderCommandBuffer> GetRenderCommandBuffer() { return s_Instance->m_SceneCommandBuffer; }
-		static void SetSkybox(const std::string& filepath);
+		static void SetSkybox(AssetHandle skyTextureHandle);
 		void SetSceneEditorData(const SceneEditorData& sceneEditorData) { m_SceneEditorData = sceneEditorData; }
 
 		bool IsRayTraced() const;

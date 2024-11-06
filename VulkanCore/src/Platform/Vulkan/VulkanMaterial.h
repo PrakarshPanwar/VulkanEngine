@@ -11,7 +11,7 @@ namespace VulkanCore {
 	class VulkanMaterial : public Material
 	{
 	public:
-		VulkanMaterial(const std::string& debugName, bool rayTraced = false);
+		VulkanMaterial(const std::string& debugName);
 		VulkanMaterial(std::shared_ptr<Shader> shader, const std::string& debugName, uint32_t setIndex = 0);
 		~VulkanMaterial();
 

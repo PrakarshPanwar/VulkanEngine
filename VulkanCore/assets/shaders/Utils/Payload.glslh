@@ -1,4 +1,4 @@
-#pragma once
+// GLSL Header: Payload.glslh
 
 struct LightSample
 {

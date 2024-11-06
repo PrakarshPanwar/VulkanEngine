@@ -30,7 +30,7 @@ namespace VulkanCore {
 		~VulkanPipeline();
 
 		void Bind(VkCommandBuffer commandBuffer);
-		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size);
+		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, uint32_t size);
 		void ReloadPipeline() override;
 
 		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }

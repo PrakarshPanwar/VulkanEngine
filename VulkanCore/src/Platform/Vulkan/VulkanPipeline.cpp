@@ -412,13 +412,13 @@ namespace VulkanCore {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 	}
 
-	void VulkanPipeline::SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size)
+	void VulkanPipeline::SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, uint32_t size)
 	{
 		vkCmdPushConstants(cmdBuf,
 			m_PipelineLayout,
 			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 			0,
-			(uint32_t)size,
+			size,
 			pcData);
 	}
 

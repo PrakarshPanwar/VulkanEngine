@@ -17,7 +17,7 @@ namespace VulkanCore {
 
 		std::shared_ptr<Shader> MakeShader(const std::string& path)
 		{
-			const std::filesystem::path shaderPath = "assets\\shaders";
+			const std::filesystem::path shaderPath = "shaders";
 			std::filesystem::path vertexShaderPath = shaderPath / path, fragmentShaderPath = shaderPath / path, computeShaderPath = shaderPath / path;
 			vertexShaderPath.replace_extension(".vert");
 			fragmentShaderPath.replace_extension(".frag");
@@ -156,9 +156,9 @@ namespace VulkanCore {
 		s_Renderer->RenderLight(cmdBuffer, pipeline, position);
 	}
 
-	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial)
+	void Renderer::SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial, void* pcData, uint32_t pcSize)
 	{
-		s_Renderer->SubmitFullscreenQuad(cmdBuffer, pipeline, shaderMaterial);
+		s_Renderer->SubmitFullscreenQuad(cmdBuffer, pipeline, shaderMaterial, pcData, pcSize);
 	}
 
 	void Renderer::TraceRays(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<RayTracingPipeline>& pipeline, const std::shared_ptr<ShaderBindingTable>& shaderBindingTable, const std::vector<std::shared_ptr<Material>>& shaderMaterials, uint32_t width, uint32_t height, void* pcData, uint32_t pcSize)
@@ -166,9 +166,9 @@ namespace VulkanCore {
 		s_Renderer->TraceRays(cmdBuffer, pipeline, shaderBindingTable, shaderMaterials, width, height, pcData, pcSize);
 	}
 
-	std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> Renderer::CreateEnviromentMap(const std::string& filepath)
+	std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> Renderer::CreateEnviromentMap(const std::shared_ptr<Texture2D>& envTexture)
 	{
-		return s_Renderer->CreateEnviromentMap(filepath);
+		return s_Renderer->CreateEnviromentMap(envTexture);
 	}
 
 	std::shared_ptr<Image2D> Renderer::CreateBRDFTexture()

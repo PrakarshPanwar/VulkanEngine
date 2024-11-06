@@ -180,12 +180,12 @@ namespace VulkanCore {
 		});
 	}
 
-	std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> VulkanRenderer::CreateEnviromentMap(const std::string& filepath)
+	std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> VulkanRenderer::CreateEnviromentMap(const std::shared_ptr<Texture2D>& envTexture)
 	{
 		constexpr uint32_t cubemapSize = 1024;
 		constexpr uint32_t irradianceMapSize = 32;
 
-		std::shared_ptr<VulkanTexture> envEquirect = std::dynamic_pointer_cast<VulkanTexture>(AssetManager::GetAsset<Texture2D>(filepath));
+		std::shared_ptr<VulkanTexture> envEquirect = std::dynamic_pointer_cast<VulkanTexture>(envTexture);
 
 		std::shared_ptr<TextureCube> filteredMap = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
 		std::shared_ptr<TextureCube> unFilteredMap = std::make_shared<VulkanTextureCube>(cubemapSize, cubemapSize, ImageFormat::RGBA32F);
@@ -875,15 +875,18 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial)
+	void VulkanRenderer::SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial, void* pcData, uint32_t pcSize)
 	{
-		Renderer::Submit([cmdBuffer, pipeline, shaderMaterial]
+		Renderer::Submit([cmdBuffer, pipeline, shaderMaterial, pcData, pcSize]
 		{
 			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad");
 
 			VkCommandBuffer vulkanDrawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
 			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
 			vulkanPipeline->Bind(vulkanDrawCmd);
+
+			if (pcData)
+				vulkanPipeline->SetPushConstants(vulkanDrawCmd, pcData, pcSize);
 
 			auto vulkanMaterial = std::static_pointer_cast<VulkanMaterial>(shaderMaterial);
 			vkCmdBindDescriptorSets(vulkanDrawCmd,
@@ -1009,6 +1012,8 @@ namespace VulkanCore {
 
 	void VulkanRenderer::FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers)
 	{
+		VK_CORE_PROFILE_FN("VulkanRenderer::FinalQueueSubmit");
+
 		auto result = m_SwapChain->SubmitCommandBuffers(cmdBuffers, &m_CurrentImageIndex);
 
 		if (!RenderThread::IsDeletionQueueEmpty())
