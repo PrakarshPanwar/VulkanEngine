@@ -555,42 +555,42 @@ namespace VulkanCore {
 			float splitDist = cascadeSplits[i];
 
 			glm::vec3 frustumCorners[8] = {
-				glm::vec3(-1.0f,  1.0f, -1.0f),
-				glm::vec3( 1.0f,  1.0f, -1.0f),
-				glm::vec3( 1.0f, -1.0f, -1.0f),
-				glm::vec3(-1.0f, -1.0f, -1.0f),
-				glm::vec3(-1.0f,  1.0f,  1.0f),
-				glm::vec3( 1.0f,  1.0f,  1.0f),
-				glm::vec3( 1.0f, -1.0f,  1.0f),
-				glm::vec3(-1.0f, -1.0f,  1.0f)
+				glm::vec3(-1.0f,  1.0f, 0.0f),
+				glm::vec3( 1.0f,  1.0f, 0.0f),
+				glm::vec3( 1.0f, -1.0f, 0.0f),
+				glm::vec3(-1.0f, -1.0f, 0.0f),
+				glm::vec3(-1.0f,  1.0f, 1.0f),
+				glm::vec3( 1.0f,  1.0f, 1.0f),
+				glm::vec3( 1.0f, -1.0f, 1.0f),
+				glm::vec3(-1.0f, -1.0f, 1.0f)
 			};
 
 			// Project Frustum Corners into World Space
-			glm::mat4 projViewInv = glm::inverse(cameraData.GetProjectionMatrix() * cameraData.GetViewMatrix());
-			for (uint32_t i = 0; i < 8; ++i)
+			glm::mat4 invCam = glm::inverse(cameraData.GetProjectionMatrix() * cameraData.GetViewMatrix());
+			for (uint32_t j = 0; j < 8; j++)
 			{
-				glm::vec4 cornerInv = projViewInv * glm::vec4(frustumCorners[i], 1.0f);
-				frustumCorners[i] = cornerInv / cornerInv.w;
+				glm::vec4 invCorner = invCam * glm::vec4(frustumCorners[j], 1.0f);
+				frustumCorners[j] = invCorner / invCorner.w;
 			}
 
-			for (uint32_t i = 0; i < 4; ++i)
+			for (uint32_t j = 0; j < 4; j++)
 			{
-				glm::vec3 dist = frustumCorners[i + 4] - frustumCorners[i];
-				frustumCorners[i + 4] = frustumCorners[i] + (dist * splitDist);
-				frustumCorners[i] = frustumCorners[i] + (dist * lastSplitDist);
+				glm::vec3 dist = frustumCorners[j + 4] - frustumCorners[j];
+				frustumCorners[j + 4] = frustumCorners[j] + (dist * splitDist);
+				frustumCorners[j] = frustumCorners[j] + (dist * lastSplitDist);
 			}
 
 			// Get Frustum Center
-			glm::vec3 frustumCenter{ 0.0f };
-			for (uint32_t i = 0; i < 8; ++i)
-				frustumCenter += frustumCorners[i];
+			glm::vec3 frustumCenter = glm::vec3(0.0f);
+			for (uint32_t j = 0; j < 8; j++)
+				frustumCenter += frustumCorners[j];
 
 			frustumCenter /= 8.0f;
 
 			float radius = 0.0f;
-			for (uint32_t i = 0; i < 8; ++i)
+			for (uint32_t j = 0; j < 8; j++)
 			{
-				float distance = glm::length(frustumCorners[i] - frustumCenter);
+				float distance = glm::length(frustumCorners[j] - frustumCenter);
 				radius = glm::max(radius, distance);
 			}
 

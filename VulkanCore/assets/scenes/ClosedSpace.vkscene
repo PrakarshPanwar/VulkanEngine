@@ -50,10 +50,6 @@ Entities:
   - Entity: 4461713910826235506
     TagComponent:
       Tag: Skybox
-    TransformComponent:
-      Translation: [0, -1, 0]
-      Rotation: [0, -0, 0]
-      Scale: [1, 0.5, 1]
     SkyLightComponent:
       TextureHandle: 3546977580009258482
   - Entity: 6393257465138400864
