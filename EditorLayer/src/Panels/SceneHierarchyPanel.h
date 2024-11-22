@@ -21,6 +21,12 @@ namespace VulkanCore {
 		template<typename T>
 		void DisplayAddComponentEntry(const std::string& entryName);
 
+		template<>
+		void DisplayAddComponentEntry<SkyLightComponent>(const std::string& entryName);
+
+		template<>
+		void DisplayAddComponentEntry<DirectionalLightComponent>(const std::string& entryName);
+
 		void DrawEntityNode(Entity entity);
 		void DrawComponents(Entity entity);
 	private:

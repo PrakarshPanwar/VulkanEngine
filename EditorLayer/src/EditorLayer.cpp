@@ -199,7 +199,7 @@ namespace VulkanCore {
 				{
 					ImGui::PushItemWidth(45.0f);
 					ImGui::SetKeyboardFocusHere();
-					bool edited = ImGui::InputFloat("##TransformInput", &m_TransformScalarInput);
+					bool edited = ImGui::InputFloat("##TransformInput", &m_TransformScalarInput, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_CharsDecimal);
 					ImGui::PopItemWidth();
 
 					ImGui::TextColored(m_TransformInputMask & 0x1 ? ImVec4{ 0.8f, 0.0f, 0.0f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "X = %.3f", m_TransformInput.x);

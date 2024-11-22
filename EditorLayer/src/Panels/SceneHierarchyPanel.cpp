@@ -248,7 +248,12 @@ namespace VulkanCore {
 		ImGui::PushItemWidth(-1);
 
 		if (ImGui::Button("Add Component"))
-			ImGui::OpenPopup("AddComponent");
+		{
+			if (entity.HasAnyComponent<SkyLightComponent, DirectionalLightComponent>())
+				ImGui::OpenPopup("NoComponent");
+			else
+				ImGui::OpenPopup("AddComponent");
+		}
 
 		if (ImGui::BeginPopup("AddComponent"))
 		{
@@ -258,6 +263,12 @@ namespace VulkanCore {
 			DisplayAddComponentEntry<SkyLightComponent>("Skybox");
 			DisplayAddComponentEntry<MeshComponent>("Mesh");
 
+			ImGui::EndPopup();
+		}
+
+		if (ImGui::BeginPopup("NoComponent"))
+		{
+			ImGui::Text("Entity has either Skybox or Directional Light");
 			ImGui::EndPopup();
 		}
 
@@ -483,4 +494,29 @@ namespace VulkanCore {
 			}
 		}
 	}
+
+	template<>
+	void SceneHierarchyPanel::DisplayAddComponentEntry<SkyLightComponent>(const std::string& entryName)
+	{
+		if (ImGui::MenuItem(entryName.c_str()))
+		{
+			m_SelectionContext.AddComponent<SkyLightComponent>();
+			m_SelectionContext.RemoveComponent<TransformComponent>();
+
+			ImGui::CloseCurrentPopup();
+		}
+	}
+
+	template<>
+	void SceneHierarchyPanel::DisplayAddComponentEntry<DirectionalLightComponent>(const std::string& entryName)
+	{
+		if (ImGui::MenuItem(entryName.c_str()))
+		{
+			m_SelectionContext.AddComponent<DirectionalLightComponent>();
+			m_SelectionContext.RemoveComponent<TransformComponent>();
+
+			ImGui::CloseCurrentPopup();
+		}
+	}
+
 }

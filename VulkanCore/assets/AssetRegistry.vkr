@@ -459,3 +459,7 @@ Asset Registry:
     Metadata:
       Filepath: meshes/Source/Rock2K/textures/rock_09_nor_gl_2k.png
       Type: Texture2D
+  - Handle: 896876980868865
+    Metadata:
+      Filepath: scenes/ShadowDemo.vkscene
+      Type: Scene

@@ -110,9 +110,5 @@ Entities:
   - Entity: 13446844955117675010
     TagComponent:
       Tag: SkyLight
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
     SkyLightComponent:
       TextureHandle: 9942358174109122911
