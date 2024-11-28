@@ -1,5 +1,12 @@
 // GLSL Header: Shadow.glslh
 
+float LinearizeDepth(const float screenDepth)
+{
+	float depthLinearizeMul = u_Camera.DepthUnpackConsts.x;
+	float depthLinearizeAdd = u_Camera.DepthUnpackConsts.y;
+	return depthLinearizeMul / (depthLinearizeAdd - screenDepth);
+}
+
 float ShadowTextureProjection(vec4 coords, vec2 offset, uint index)
 {
     float shadow = 1.0;

@@ -100,7 +100,6 @@ namespace VulkanCore {
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
-
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = buffers;
 
@@ -114,22 +113,18 @@ namespace VulkanCore {
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
 
 		VkSwapchainKHR swapChains[] = { m_SwapChain };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
-
 		presentInfo.pImageIndices = imageIndex;
-
-		auto result = vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
 
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		m_CurrentFrame = (m_CurrentFrame + 1) % framesInFlight;
 
-		return result;
+		return vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
 	}
 
 	VkResult VulkanSwapChain::SubmitCommandBuffers(const std::vector<VkCommandBuffer>& buffers, uint32_t* imageIndex)
@@ -170,12 +165,10 @@ namespace VulkanCore {
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = imageIndex;
 
-		auto result = vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
-
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		m_CurrentFrame = (m_CurrentFrame + 1) % framesInFlight;
 
-		return result;
+		return vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
 	}
 
 	bool VulkanSwapChain::CompareSwapFormats(const VulkanSwapChain& swapChain) const
