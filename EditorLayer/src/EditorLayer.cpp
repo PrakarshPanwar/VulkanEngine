@@ -196,11 +196,7 @@ namespace VulkanCore {
 			if (ImGui::BeginMenu("Settings"))
 			{
 				ImGui::Checkbox("Show Application Stats", &m_ShowApplicationStats);
-				if (ImGui::BeginMenu("Camera"))
-				{
-					ImGui::Text("Camera Aspect Ratio: %.6f", m_EditorCamera.GetAspectRatio());
-					ImGui::EndMenu();
-				}
+				ImGui::Checkbox("Show Camera Data", &m_ShowCameraData);
 
 				ImGui::EndMenu();
 			}
@@ -309,6 +305,14 @@ namespace VulkanCore {
 		{
 			ImGui::SetCursorPos({ viewportMinRegion.x + 50.0f, viewportMinRegion.y + 10.0f });
 			SHOW_FRAMERATES;
+		}
+
+		if (m_ShowCameraData)
+		{
+			ImGui::SetCursorPos({ viewportMaxRegion.x - 350.0f, viewportMinRegion.y + 10.0f });
+
+			glm::vec3 cameraDirection = m_EditorCamera.GetForwardDirection();
+			ImGui::Text("Aspect Ratio: %.2f\t Direction: %.3f, %.3f, %.3f", m_EditorCamera.GetAspectRatio(), cameraDirection.x, cameraDirection.y, cameraDirection.z);
 		}
 
 		RenderGizmo();

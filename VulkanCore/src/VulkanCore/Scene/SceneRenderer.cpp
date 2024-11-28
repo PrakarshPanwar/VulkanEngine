@@ -1004,7 +1004,7 @@ namespace VulkanCore {
 		UBCamera cameraUB{};
 		cameraUB.Projection = m_SceneEditorData.CameraData.GetProjectionMatrix();
 		cameraUB.View = m_SceneEditorData.CameraData.GetViewMatrix();
-		cameraUB.InverseView = glm::inverse(m_SceneEditorData.CameraData.GetViewMatrix());
+		cameraUB.InverseView = m_SceneEditorData.CameraData.GetInverseViewMatrix();
 		cameraUB.InverseProjection = glm::inverse(m_SceneEditorData.CameraData.GetProjectionMatrix());
 
 		glm::vec2 nearFarClip = m_SceneEditorData.CameraData.GetNearFarClip();
@@ -1049,7 +1049,7 @@ namespace VulkanCore {
 		cameraUB.Projection = m_SceneEditorData.CameraData.GetProjectionMatrix();
 		cameraUB.View = m_SceneEditorData.CameraData.GetViewMatrix();
 		cameraUB.InverseProjection = glm::inverse(m_SceneEditorData.CameraData.GetProjectionMatrix());
-		cameraUB.InverseView = glm::inverse(m_SceneEditorData.CameraData.GetViewMatrix());
+		cameraUB.InverseView = m_SceneEditorData.CameraData.GetInverseViewMatrix();
 
 		glm::vec2 nearFarClip = m_SceneEditorData.CameraData.GetNearFarClip();
 		cameraUB.DepthUnpackConsts.x = (nearFarClip.y * nearFarClip.x) / (nearFarClip.y - nearFarClip.x);
