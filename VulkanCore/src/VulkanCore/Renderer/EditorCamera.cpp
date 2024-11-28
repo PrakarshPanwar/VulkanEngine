@@ -13,14 +13,14 @@ namespace VulkanCore {
 	EditorCamera::EditorCamera(float fov, float aspectRatio, float nearClip, float farClip)
 		: m_FOV(fov), m_AspectRatio(aspectRatio), m_NearClip(nearClip), m_FarClip(farClip)
 	{
-		m_Projection = glm::perspective(fov, aspectRatio, nearClip, farClip);
+		m_ProjectionMatrix = glm::perspective(fov, aspectRatio, nearClip, farClip);
 		UpdateView();
 	}
 
 	void EditorCamera::UpdateProjection()
 	{
 		//m_AspectRatio = m_ViewportWidth / m_ViewportHeight;
-		m_Projection = glm::perspective(m_FOV, m_AspectRatio, m_NearClip, m_FarClip);
+		m_ProjectionMatrix = glm::perspective(m_FOV, m_AspectRatio, m_NearClip, m_FarClip);
 	}
 
 	void EditorCamera::UpdateView()
@@ -29,8 +29,8 @@ namespace VulkanCore {
 		m_Position = CalculatePosition();
 
 		glm::quat orientation = GetOrientation();
-		m_ViewMatrix = glm::translate(glm::mat4(1.0f), m_Position) * glm::toMat4(orientation);
-		m_ViewMatrix = glm::inverse(m_ViewMatrix);
+		m_InverseViewMatrix = glm::translate(glm::mat4(1.0f), m_Position) * glm::toMat4(orientation);
+		m_ViewMatrix = glm::inverse(m_InverseViewMatrix);
 	}
 
 	std::pair<float, float> EditorCamera::PanSpeed() const

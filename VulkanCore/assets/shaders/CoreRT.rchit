@@ -217,9 +217,8 @@ void main()
     Input.TexCoord = vec2(texCoord.x, 1.0 - texCoord.y);
 
     vec3 T = normalize(vec3(tangent * gl_WorldToObjectEXT));
-    vec3 N = Input.Normal;
-    T = normalize(T - dot(T, N) * N);
-    vec3 B = cross(N, T);
+    vec3 B = normalize(vec3(binormal * gl_WorldToObjectEXT));
+	vec3 N = Input.Normal;
 
     Input.WorldNormals = mat3(T, B, N);
 

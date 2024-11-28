@@ -45,7 +45,7 @@ project "VulkanCore"
 		"%{IncludeDir.Assimp}"
 	}
 
-	defines { "IMGUI_DEFINE_MATH_OPERATORS", "SPDLOG_USE_STD_FORMAT" }
+	defines { "IMGUI_DEFINE_MATH_OPERATORS", "SPDLOG_USE_STD_FORMAT", "GLM_FORCE_DEPTH_ZERO_TO_ONE" }
 	links { "GLFW", "%{Library.Vulkan}", "ImGui", "yaml-cpp", "%{Library.optick_Release}" }
 
 	filter "system:windows"
