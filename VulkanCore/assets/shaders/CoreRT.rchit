@@ -294,7 +294,7 @@ void main()
 	// Russian Roulette
 	if (Max3(o_RayPayload.Beta) < 0.01 && o_RayPayload.Depth > 2)
 	{
-		float q = max(float(0.05), 1.0 - Max3(o_RayPayload.Beta));
+		float q = max(0.05, 1.0 - Max3(o_RayPayload.Beta));
 		if (RandomFloat(o_RayPayload.Seed) < q)
 			o_RayPayload.Distance = -1.0;
 

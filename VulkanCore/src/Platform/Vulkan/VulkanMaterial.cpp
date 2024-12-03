@@ -47,7 +47,7 @@ namespace VulkanCore {
 		auto descriptorSetPool = VulkanRenderer::Get()->GetDescriptorPool();
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
-		// NOTE: Descriptors creation happens in Pipeline class but as we aren't creating those in RT
+		// NOTE: Descriptors creation happens in Pipeline class but as we are not creating those in RT
 		auto shader = std::dynamic_pointer_cast<VulkanShader>(m_Shader);
 		if (!shader->HasDescriptorSets())
 			shader->CreateAllDescriptorSetsLayout();

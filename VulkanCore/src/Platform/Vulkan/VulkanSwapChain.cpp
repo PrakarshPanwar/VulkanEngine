@@ -121,12 +121,10 @@ namespace VulkanCore {
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = imageIndex;
 
-		auto result = vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
-
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		m_CurrentFrame = (m_CurrentFrame + 1) % framesInFlight;
 
-		return result;
+		return vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
 	}
 
 	bool VulkanSwapChain::CompareSwapFormats(const VulkanSwapChain& swapChain) const
