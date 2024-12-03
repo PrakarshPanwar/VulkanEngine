@@ -37,18 +37,6 @@ namespace VulkanCore {
 			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
 		}
 
-		static uint64_t GetBufferDeviceAddress(VkBuffer buffer, uint64_t offset = 0)
-		{
-			auto vulkanDevice = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
-
-			VkBufferDeviceAddressInfoKHR bufferDeviceAddressInfo{};
-			bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-			bufferDeviceAddressInfo.buffer = buffer;
-			
-			uint64_t deviceAddress = vkGetBufferDeviceAddressKHR(vulkanDevice, &bufferDeviceAddressInfo);
-			return deviceAddress + offset;
-		}
-
 	}
 
 	SceneRenderer* SceneRenderer::s_Instance = nullptr;
@@ -946,7 +934,7 @@ namespace VulkanCore {
 				ImGui::DragFloat("At Distance", &m_RTMaterialData.Extinction_AtDistance.w, 0.01f, 0.01f, 1000.0f);
 				ImGui::DragFloat("Transmission", &m_RTMaterialData.Transmission, 0.01f, 0.001f, 1.0f);
 				ImGui::DragFloat("Specular Tint", &m_RTMaterialData.SpecularTint, 0.01f, 0.001f, 1.0f);
-				ImGui::DragFloat("IOR", &m_RTMaterialData.IOR, 0.01f, 1.0f, 5.0f);
+				ImGui::DragFloat("IOR", &m_RTMaterialData.IOR, 0.01f, 0.001f, 5.0f);
 				ImGui::DragFloat("Sheen", &m_RTMaterialData.Sheen, 0.01f, 0.001f, 1.0f);
 				ImGui::DragFloat("Sheen Tint", &m_RTMaterialData.SheenTint, 0.01f, 0.001f, 1.0f);
 				ImGui::DragFloat("Clearcoat", &m_RTMaterialData.Clearcoat, 0.01f, 0.001f, 1.0f);
@@ -1096,7 +1084,7 @@ namespace VulkanCore {
 		for (auto pointLightPosition : m_PointLightPositions)
 			Renderer::RenderLight(m_SceneCommandBuffer, m_LightPipeline, pointLightPosition);
 
-		Renderer::Submit([this] { m_SpotLightShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_LightPipeline); });
+		Renderer::BindPipeline(m_SceneCommandBuffer, m_LightPipeline, m_SpotLightShaderMaterial);
 
 		// Spot Lights
 		for (auto spotLightPosition : m_SpotLightPositions)

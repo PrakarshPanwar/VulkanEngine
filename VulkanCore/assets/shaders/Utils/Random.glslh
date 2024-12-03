@@ -1,5 +1,6 @@
 // GLSL Header: Random.glslh
 
+// Tiny Encryption Algorithm(TEA)
 uint InitRandomSeed(uint val0, uint val1)
 {
 	uint v0 = val0, v1 = val1, s0 = 0;
