@@ -567,13 +567,13 @@ namespace VulkanCore {
 
 			// Project Frustum Corners into World Space
 			glm::mat4 invCam = glm::inverse(cameraData.GetProjectionMatrix() * cameraData.GetViewMatrix());
-			for (uint32_t j = 0; j < 8; j++)
+			for (uint32_t j = 0; j < 8; ++j)
 			{
 				glm::vec4 invCorner = invCam * glm::vec4(frustumCorners[j], 1.0f);
 				frustumCorners[j] = invCorner / invCorner.w;
 			}
 
-			for (uint32_t j = 0; j < 4; j++)
+			for (uint32_t j = 0; j < 4; ++j)
 			{
 				glm::vec3 dist = frustumCorners[j + 4] - frustumCorners[j];
 				frustumCorners[j + 4] = frustumCorners[j] + (dist * splitDist);
@@ -582,13 +582,13 @@ namespace VulkanCore {
 
 			// Get Frustum Center
 			glm::vec3 frustumCenter = glm::vec3(0.0f);
-			for (uint32_t j = 0; j < 8; j++)
+			for (uint32_t j = 0; j < 8; ++j)
 				frustumCenter += frustumCorners[j];
 
 			frustumCenter /= 8.0f;
 
 			float radius = 0.0f;
-			for (uint32_t j = 0; j < 8; j++)
+			for (uint32_t j = 0; j < 8; ++j)
 			{
 				float distance = glm::length(frustumCorners[j] - frustumCenter);
 				radius = glm::max(radius, distance);
@@ -942,6 +942,7 @@ namespace VulkanCore {
 		m_Scene = scene;
 
 		m_MeshDrawList.clear();
+		m_MeshTessellatedDrawList.clear();
 		m_MeshTransformMap.clear();
 	}
 

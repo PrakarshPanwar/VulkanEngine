@@ -6,7 +6,7 @@ layout(vertices = 3) out;
 layout(location = 0) in TessellationOutput Input[];
 layout(location = 0) out TessellationOutput Output[3];
 
-#define TESSELLATION_LEVEL 0.01
+#define TESSELLATION_LEVEL 1.0
 
 void main()
 {

@@ -283,7 +283,7 @@ void main()
 
     // Shadow
     float shadow = CalculateShadow();
-    vec3 color = iblContribution + lightContribution * shadow;
+    vec3 color = (iblContribution + lightContribution) * shadow;
 
     // TODO: Transparent Materials(OIT)
 	o_Color = vec4(color, u_Material.Albedo.a * diffuse.a);
