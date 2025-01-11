@@ -29,9 +29,9 @@ void main()
 	Output.WorldPosition = worldPosition.xyz;
 	Output.ViewPosition = vec3(u_Camera.View * vec4(Output.WorldPosition, 1.0));
 
-	vec3 T = vec3(transform * vec4(a_Tangent, 0.0));
-	vec3 B = vec3(transform * vec4(a_Binormal, 0.0));
-    vec3 N = vec3(transform * vec4(a_Normal, 0.0));
+	vec3 T = mat3(transform) * a_Tangent;
+    vec3 N = mat3(transform) * a_Normal;
+	vec3 B = mat3(transform) * a_Binormal;
 
 	Output.WorldNormals = mat3(T, B, N);
 	Output.TexCoord = a_TexCoord;

@@ -1,0 +1,45 @@
+Scene: TessellationDemo
+Entities:
+  - Entity: 9818755990096124780
+    TagComponent:
+      Tag: Plate
+    TransformComponent:
+      Translation: [-9.31322575e-10, 0.298309684, -9.31322575e-10]
+      Rotation: [0, -0, 0]
+      Scale: [0.100000001, 0.100000001, 0.00999999978]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialHandle: 17021666477382963620
+  - Entity: 17464747021121101485
+    TagComponent:
+      Tag: SunLight
+    DirectionalLightComponent:
+      Direction: [1, -5, 1]
+      Color: [0.32013008, 0.126056567, 0.583011627, 1]
+      Falloff: 1
+  - Entity: 15876077738153576187
+    TagComponent:
+      Tag: Light
+    TransformComponent:
+      Translation: [0, 0.601303518, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [1, 1, 1, 2]
+      Falloff: 1
+      Radius: 0.0500000007
+  - Entity: 12811185875949628190
+    TagComponent:
+      Tag: TessellatedPlane
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [-1.57079601, 0, 0]
+      Scale: [1, 0.999997973, 0.999997973]
+    MeshComponent:
+      MeshHandle: 2677317853970780333
+      MaterialHandle: 18152442800595508283
+  - Entity: 13864300822302726875
+    TagComponent:
+      Tag: SkyLight
+    SkyLightComponent:
+      TextureHandle: 9942358174109122911
