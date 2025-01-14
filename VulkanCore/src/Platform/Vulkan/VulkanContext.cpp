@@ -209,16 +209,16 @@ namespace VulkanCore {
 		VkApplicationInfo appInfo = {};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 		appInfo.pApplicationName = m_Window->GetWindowName().c_str();
-		appInfo.applicationVersion = VK_MAKE_API_VERSION(0, 1, 3, 0);
+		appInfo.applicationVersion = VK_MAKE_API_VERSION(0, 1, 4, 0);
 		appInfo.pEngineName = "VulkanEngine";
-		appInfo.engineVersion = VK_MAKE_API_VERSION(0, 1, 3, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_3;
+		appInfo.engineVersion = VK_MAKE_API_VERSION(0, 1, 4, 0);
+		appInfo.apiVersion = VK_API_VERSION_1_4;
+
+		auto extensions = GetRequiredExtensions();
 
 		VkInstanceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		createInfo.pApplicationInfo = &appInfo;
-
-		auto extensions = GetRequiredExtensions();
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 		createInfo.ppEnabledExtensionNames = extensions.data();
 

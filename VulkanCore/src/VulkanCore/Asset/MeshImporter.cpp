@@ -99,7 +99,6 @@ namespace VulkanCore {
 		for (uint32_t m = 0; m < (uint32_t)meshSource->m_Submeshes.size(); ++m)
 		{
 			aiMesh* mesh = meshSource->m_Scene->mMeshes[m];
-			aiMaterial* material = meshSource->m_Scene->mMaterials[m];
 
 			for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
 			{
