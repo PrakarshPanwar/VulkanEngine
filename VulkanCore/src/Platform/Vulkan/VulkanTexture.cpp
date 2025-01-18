@@ -364,6 +364,7 @@ namespace VulkanCore {
 		
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &m_Info.ImageView), "Failed to Create Cubemap Image View!");
 	
+		VkPhysicalDeviceProperties deviceProps = device->GetPhysicalDeviceProperties();
 		VkSamplerAddressMode addressMode = Utils::VulkanSamplerWrap(m_Specification.SamplerWrap);
 
 		// Create a sampler for Cubemap
@@ -375,10 +376,7 @@ namespace VulkanCore {
 		sampler.addressModeV = addressMode;
 		sampler.addressModeW = addressMode;
 		sampler.anisotropyEnable = VK_TRUE;
-
-		VkPhysicalDeviceProperties deviceProps = device->GetPhysicalDeviceProperties();
 		sampler.maxAnisotropy = deviceProps.limits.maxSamplerAnisotropy;
-
 		sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 		sampler.unnormalizedCoordinates = VK_FALSE;
 		sampler.compareEnable = VK_FALSE;

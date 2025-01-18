@@ -9,7 +9,6 @@ Entities:
       Scale: [0.99999696, 1, 0.99999696]
     SpotLightComponent:
       Color: [0.0722646788, 0.0505806431, 0.451737463, 30]
-      Direction: [0, 0, 0]
       InnerCutoff: 0.52359879
       OuterCutoff: 0.785398185
       Falloff: 0
@@ -112,3 +111,10 @@ Entities:
       Tag: SkyLight
     SkyLightComponent:
       TextureHandle: 9942358174109122911
+  - Entity: 2234163345445821911
+    TagComponent:
+      Tag: SunLight
+    DirectionalLightComponent:
+      Direction: [1, 1, 1]
+      Color: [1, 1, 1, 1]
+      Falloff: 1

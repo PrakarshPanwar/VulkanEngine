@@ -158,7 +158,7 @@ namespace VulkanCore {
 
 			auto& slc = entity.GetComponent<SpotLightComponent>();
 			out << YAML::Key << "Color" << YAML::Value << slc.Color;
-			out << YAML::Key << "Direction" << YAML::Value << slc.Direction;
+			//out << YAML::Key << "Direction" << YAML::Value << slc.Direction;
 			out << YAML::Key << "InnerCutoff" << YAML::Value << slc.InnerCutoff;
 			out << YAML::Key << "OuterCutoff" << YAML::Value << slc.OuterCutoff;
 			out << YAML::Key << "Falloff" << YAML::Value << slc.Falloff;
@@ -297,7 +297,7 @@ namespace VulkanCore {
 					auto& slc = deserializedEntity.AddComponent<SpotLightComponent>();
 
 					slc.Color = spotLightComponent["Color"].as<glm::vec4>();
-					slc.Direction = spotLightComponent["Direction"].as<glm::vec3>();
+					//slc.Direction = spotLightComponent["Direction"].as<glm::vec3>();
 					slc.InnerCutoff = spotLightComponent["InnerCutoff"].as<float>();
 					slc.OuterCutoff = spotLightComponent["OuterCutoff"].as<float>();
 					slc.Falloff = spotLightComponent["Falloff"].as<float>();

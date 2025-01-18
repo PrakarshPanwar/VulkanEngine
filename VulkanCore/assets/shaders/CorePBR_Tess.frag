@@ -23,8 +23,8 @@ struct SpotLight
     vec4 Position;
     vec4 Color;
     vec3 Direction;
-    float InnerCutoff;
-    float OuterCutoff;
+    float InnerCutoff; // Cutoff Threshold
+    float OuterCutoff; // Final Cutoff
     float Radius;
     float Falloff;
 };
@@ -158,9 +158,9 @@ vec3 Lighting(vec3 F0)
         vec3 H = normalize(m_Params.View + L);
         float dist = length(spotLight.Position.xyz - Input.WorldPosition);
 
-        float theta = dot(L, normalize(-spotLight.Direction)); 
-        float epsilon = (spotLight.InnerCutoff - spotLight.OuterCutoff);
-        float intensity = clamp((theta - spotLight.OuterCutoff) / epsilon, 0.0, 1.0);
+        float theta = dot(L, normalize(-spotLight.Direction));
+        float epsilon = spotLight.OuterCutoff - spotLight.InnerCutoff;
+        float intensity = clamp((theta - spotLight.InnerCutoff) / epsilon, 0.0, 1.0);
 
         // Calculating Attentuation
         float attenuation = (1.0) / (dist * (spotLight.Falloff + dist));
@@ -333,14 +333,13 @@ void main()
     // of 0.04 and if it's a Metal, use the Albedo color as F0 (Metallic Workflow)
     vec3 F0 = mix(Fdielectric, m_Params.Albedo, m_Params.Metallic);
 
-    vec3 lightContribution = Lighting(F0);
+    // Shadow
+    float shadow = CalculateShadow();
+
+    vec3 lightContribution = Lighting(F0) * shadow;
     vec3 iblContribution = IBL(F0, Lr);
 
     vec3 color = iblContribution + lightContribution;
-
-    // Shadow
-    float shadow = CalculateShadow();
-    color *= shadow;
 
     // TODO: Transparent Materials(OIT)
 	o_Color = vec4(color, u_Material.Albedo.a * diffuse.a);

@@ -124,7 +124,7 @@ namespace VulkanCore {
 		glm::vec4 Color{ 1.0f };
 		glm::vec3 Direction{ 1.0f };
 		float InnerCutoff = 0.174f;
-		float OuterCutoff = 0.261f;
+		float OuterCutoff = 0.261f; // NOTE: OuterCutoff > InnerCutoff
 		float Radius = 0.1f;
 		float Falloff = 1.0f;
 

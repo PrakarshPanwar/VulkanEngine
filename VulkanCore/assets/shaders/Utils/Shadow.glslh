@@ -56,7 +56,9 @@ float CalculateShadow()
 
 	// Depth Compare for Shadowing
 	vec4 shadowCoord = (BIAS_MATRIX * u_CascadeData.LightSpaceMatrices[cascadeIndex]) * vec4(Input.WorldPosition, 1.0);
-	float shadow = FilterPCF(shadowCoord / shadowCoord.w, cascadeIndex);
+	shadowCoord = shadowCoord / shadowCoord.w;
+
+	float shadow = FilterPCF(shadowCoord, cascadeIndex);
     //float shadow = ShadowTextureProjection(shadowCoord / shadowCoord.w, vec2(0.0), cascadeIndex);
 
     return shadow;
