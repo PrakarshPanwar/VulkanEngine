@@ -299,7 +299,7 @@ namespace VulkanCore {
 			float innerCutoff = glm::degrees(component.InnerCutoff);
 			float outerCutoff = glm::degrees(component.OuterCutoff);
 			ImGui::DragFloat("Inner Cutoff", &innerCutoff, 0.01f, 0.01f, outerCutoff);
-			ImGui::DragFloat("Outer Cutoff", &outerCutoff, 0.01f, innerCutoff, 80.0f);
+			ImGui::DragFloat("Outer Cutoff", &outerCutoff, 0.01f, innerCutoff, 80.0f); // Outer cutoff should be greater than Inner cutoff
 			component.InnerCutoff = glm::radians(innerCutoff);
 			component.OuterCutoff = glm::radians(outerCutoff);
 
@@ -312,6 +312,7 @@ namespace VulkanCore {
 			DrawVec3Control("Direction", component.Direction, 1.0f, 75.0f);
 			ImGui::Spacing();
 			ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
+			ImGui::DragFloat("Intensity", (float*)&component.Color.w, 0.01f, 0.0f, 10000.0f);
 			ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 10000.0f);
 		});
 
