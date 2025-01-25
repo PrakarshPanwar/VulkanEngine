@@ -41,7 +41,6 @@ namespace VulkanCore {
 			spec.Format = ImageFormat::RGBA32F;
 			data = (uint8_t*)stbi_loadf(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 		}
-
 		else if (!path.empty())
 		{
 			std::string pathStr{};
@@ -49,7 +48,10 @@ namespace VulkanCore {
 
 			std::transform(path.begin(), path.end(), pathStr.begin(), [](char c) { return std::tolower(c); });
 
-			if (pathStr.find("nor") != std::string::npos || pathStr.find("arm") != std::string::npos)
+			bool isNormal = pathStr.find("nor") != std::string::npos;
+			bool isARM = pathStr.find("arm") != std::string::npos || path.find("metallicRoughness") != std::string::npos;
+
+			if (isNormal || isARM)
 				spec.Format = ImageFormat::RGBA8_UNORM;
 
 			data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);

@@ -76,7 +76,7 @@ namespace VulkanCore {
 				spec.Samples = m_Specification.Samples;
 				spec.Transfer = m_Specification.Transfer && !multisampled;
 				spec.Format = attachment.ImgFormat;
-				spec.Usage = ImageUsage::Attachment;
+				spec.Usage = multisampled ? ImageUsage::Attachment : ImageUsage::ReadAttachment;
 
 				auto attachmentColorImage = std::make_shared<VulkanImage>(spec);
 				attachmentColorImage->Invalidate();
@@ -129,7 +129,7 @@ namespace VulkanCore {
 				spec.Height = m_Specification.Height;
 				spec.Samples = m_Specification.Samples;
 				spec.Format = m_DepthAttachmentSpecification.ImgFormat;
-				spec.Usage = ImageUsage::Attachment;
+				spec.Usage = multisampled ? ImageUsage::Attachment : ImageUsage::ReadAttachment;
 
 				auto depthImage = std::make_shared<VulkanImage>(spec);
 				depthImage->Invalidate();
