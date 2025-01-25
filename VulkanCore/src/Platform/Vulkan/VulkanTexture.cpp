@@ -82,6 +82,7 @@ namespace VulkanCore {
 		spec.Height = m_Specification.Height;
 		spec.Usage = ImageUsage::Texture;
 		spec.Format = m_Specification.Format;
+		spec.SamplerWrap = m_Specification.SamplerWrap;
 		spec.MipLevels = m_Specification.GenerateMips ? Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height) : 1;
 		m_Image = std::make_shared<VulkanImage>(spec);
 		m_Image->Invalidate();
@@ -363,6 +364,7 @@ namespace VulkanCore {
 		
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &m_Info.ImageView), "Failed to Create Cubemap Image View!");
 	
+		VkPhysicalDeviceProperties deviceProps = device->GetPhysicalDeviceProperties();
 		VkSamplerAddressMode addressMode = Utils::VulkanSamplerWrap(m_Specification.SamplerWrap);
 
 		// Create a sampler for Cubemap
@@ -374,10 +376,7 @@ namespace VulkanCore {
 		sampler.addressModeV = addressMode;
 		sampler.addressModeW = addressMode;
 		sampler.anisotropyEnable = VK_TRUE;
-
-		VkPhysicalDeviceProperties deviceProps = device->GetPhysicalDeviceProperties();
 		sampler.maxAnisotropy = deviceProps.limits.maxSamplerAnisotropy;
-
 		sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 		sampler.unnormalizedCoordinates = VK_FALSE;
 		sampler.compareEnable = VK_FALSE;

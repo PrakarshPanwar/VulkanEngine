@@ -41,12 +41,18 @@ namespace VulkanCore {
 		VkFormat vulkanFormat = Utils::VulkanImageFormat(m_Specification.Format);
 		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT; // TODO: This shouldn't(probably) be implied
 
-		if (m_Specification.Usage == ImageUsage::Attachment)
+		if (m_Specification.Usage == ImageUsage::Attachment || m_Specification.Usage == ImageUsage::ReadAttachment)
 		{
 			if (Utils::IsDepthFormat(m_Specification.Format))
 				usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 			else
 				usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+			if (multisampled)
+			{
+				usage |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+				usage &= ~VK_IMAGE_USAGE_SAMPLED_BIT;
+			}
 		}
 
 		if (m_Specification.Transfer || m_Specification.Usage == ImageUsage::Texture)
@@ -86,11 +92,12 @@ namespace VulkanCore {
 		viewCreateInfo.subresourceRange.baseMipLevel = 0;
 		viewCreateInfo.subresourceRange.levelCount = m_Specification.MipLevels;
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		viewCreateInfo.subresourceRange.layerCount = 1;
+		viewCreateInfo.subresourceRange.layerCount = m_Specification.Layers;
 
 		VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewCreateInfo, nullptr, &m_Info.ImageView), "Failed to Create Image View!");
 		VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_IMAGE_VIEW, std::format("{} default image view", m_Specification.DebugName), m_Info.ImageView);
 
+		auto deviceProps = device->GetPhysicalDeviceProperties();
 		VkSamplerAddressMode addressMode = Utils::VulkanSamplerWrap(m_Specification.SamplerWrap);
 
 		// Create a sampler for Image
@@ -102,10 +109,7 @@ namespace VulkanCore {
 		sampler.addressModeV = addressMode;
 		sampler.addressModeW = addressMode;
 		sampler.anisotropyEnable = VK_TRUE;
-
-		auto deviceProps = device->GetPhysicalDeviceProperties();
 		sampler.maxAnisotropy = deviceProps.limits.maxSamplerAnisotropy;
-
 		sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 		sampler.unnormalizedCoordinates = VK_FALSE;
 		sampler.compareEnable = VK_FALSE;
@@ -126,12 +130,32 @@ namespace VulkanCore {
 			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			subresourceRange.baseMipLevel = 0;
 			subresourceRange.levelCount = m_Specification.MipLevels;
-			subresourceRange.layerCount = 1;
+			subresourceRange.layerCount = m_Specification.Layers;
 
 			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
 				VK_ACCESS_2_NONE, VK_ACCESS_2_NONE,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+				subresourceRange);
+
+			device->FlushCommandBuffer(barrierCmd);
+		}
+
+		if (m_Specification.Usage == ImageUsage::ReadAttachment)
+		{
+			auto barrierCmd = device->GetCommandBuffer();
+
+			VkImageSubresourceRange subresourceRange{};
+			subresourceRange.aspectMask = aspectMask;
+			subresourceRange.baseMipLevel = 0;
+			subresourceRange.levelCount = m_Specification.MipLevels;
+			subresourceRange.baseArrayLayer = 0;
+			subresourceRange.layerCount = m_Specification.Layers;
+
+			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
+				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				subresourceRange);
 
 			device->FlushCommandBuffer(barrierCmd);
@@ -146,7 +170,7 @@ namespace VulkanCore {
 			subresourceRange.baseMipLevel = 0;
 			subresourceRange.levelCount = m_Specification.MipLevels;
 			subresourceRange.baseArrayLayer = 0;
-			subresourceRange.layerCount = 1;
+			subresourceRange.layerCount = m_Specification.Layers;
 
 			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
 				VK_ACCESS_2_NONE, VK_ACCESS_TRANSFER_WRITE_BIT,
