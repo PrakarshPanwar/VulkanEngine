@@ -282,26 +282,28 @@ namespace VulkanCore {
 			VkImage srcImage = std::static_pointer_cast<VulkanImage>(sourceImage)->GetVulkanImageInfo().Image;
 			VkImage dstImage = std::static_pointer_cast<VulkanImage>(destImage)->GetVulkanImageInfo().Image;
 
+			VkImageAspectFlags aspectMask = Utils::IsDepthFormat(sourceImage->GetSpecification().Format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
 			// TODO: We cannot determine layout like this for image but we are doing this for now to get Bloom
 			// Changing Source Image Layout
 			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, srcImage,
 				VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 				VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+				VkImageSubresourceRange{ aspectMask, 0, 1, 0, 1 });
 
 			// Changing Destination Image Layout
 			Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, dstImage,
 				VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+				VkImageSubresourceRange{ aspectMask, 0, 1, 0, 1 });
 
 			VkImageCopy region{};
 			region.srcOffset = { 0, 0, 0 };
 			region.dstOffset = { 0, 0, 0 };
 			region.extent = { sourceImage->GetSpecification().Width, sourceImage->GetSpecification().Height, 1 };
-			region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			region.srcSubresource.aspectMask = aspectMask;
 			region.srcSubresource.baseArrayLayer = 0;
 			region.srcSubresource.mipLevel = 0;
 			region.srcSubresource.layerCount = 1;
@@ -318,7 +320,7 @@ namespace VulkanCore {
 				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
 				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+				VkImageSubresourceRange{ aspectMask, 0, 1, 0, 1 });
 		});
 	}
 
@@ -333,9 +335,12 @@ namespace VulkanCore {
 			const uint32_t mipLevels = image->GetSpecification().MipLevels;
 			const glm::uvec2 imgSize = { image->GetSpecification().Width, image->GetSpecification().Height };
 
+			VkImageAspectFlags aspectMask = Utils::IsDepthFormat(image->GetSpecification().Format) ? VK_IMAGE_ASPECT_DEPTH_BIT
+				: VK_IMAGE_ASPECT_COLOR_BIT;
+
 			// Setting Base Mip(Oth) to Source
 			VkImageSubresourceRange baseMipSubRange{};
-			baseMipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			baseMipSubRange.aspectMask = aspectMask;
 			baseMipSubRange.baseMipLevel = 0;
 			baseMipSubRange.baseArrayLayer = 0;
 			baseMipSubRange.levelCount = 1;
@@ -353,7 +358,7 @@ namespace VulkanCore {
 				VkImageBlit imageBlit{};
 
 				// Source
-				imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imageBlit.srcSubresource.aspectMask = aspectMask;
 				imageBlit.srcSubresource.layerCount = 1;
 				imageBlit.srcSubresource.mipLevel = i - 1;
 				imageBlit.srcSubresource.baseArrayLayer = 0;
@@ -362,7 +367,7 @@ namespace VulkanCore {
 				imageBlit.srcOffsets[1].z = 1;
 
 				// Destination
-				imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imageBlit.dstSubresource.aspectMask = aspectMask;
 				imageBlit.dstSubresource.layerCount = 1;
 				imageBlit.dstSubresource.mipLevel = i;
 				imageBlit.dstSubresource.baseArrayLayer = 0;
@@ -371,7 +376,7 @@ namespace VulkanCore {
 				imageBlit.dstOffsets[1].z = 1;
 
 				VkImageSubresourceRange mipSubRange{};
-				mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				mipSubRange.aspectMask = aspectMask;
 				mipSubRange.baseMipLevel = i;
 				mipSubRange.baseArrayLayer = 0;
 				mipSubRange.levelCount = 1;
@@ -397,7 +402,7 @@ namespace VulkanCore {
 			}
 
 			VkImageSubresourceRange subresourceRange{};
-			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.aspectMask = aspectMask;
 			subresourceRange.layerCount = 1;
 			subresourceRange.levelCount = mipLevels;
 

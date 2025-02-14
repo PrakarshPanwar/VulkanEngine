@@ -1,0 +1,155 @@
+#version 460
+
+layout(binding = 0, rgba32f) writeonly uniform image2D o_AOTexture;
+layout(binding = 1) uniform sampler2D u_DepthTexture; // Depth with mips
+layout(binding = 2) uniform sampler2D u_ViewsNormalTexture; // Normals
+layout(binding = 3) uniform sampler2D u_LightScreenTexture; // Light
+
+layout(binding = 4) uniform Camera
+{
+	mat4 Projection;
+	mat4 View;
+	mat4 InverseView;
+	vec2 DepthUnpackConsts;
+} u_Camera;
+
+// Ground truth-based ambient occlusion
+// Implementation based on:
+// Practical Realtime Strategies for Accurate Indirect Occlusion, Siggraph 2016
+// Jorge Jimenez, Xianchun Wu, Angelo Pesce, Adrian Jarabo
+ 
+// Implementation by /u/Kvaleya
+// 2018-08-11
+ 
+//#include sharedUniformsBuffer.glsl
+/*
+    The only varibale needed from sharedUniformsBuffer is:
+    vec2 viewsizediv = vec2(1.0 / sreenWidth, 1.0 / screenHeight)
+*/
+ 
+#define PI 3.1415926535897932384626433832795
+#define PI_HALF 1.5707963267948966192313216916398
+
+#define SSAO_LIMIT 100
+#define SSAO_SAMPLES 4.0
+#define SSAO_RADIUS 2.5
+#define SSAO_FALLOFF 1.5
+#define SSAO_THICKNESSMIX 0.5
+#define SSAO_MAX_STRIDE 32
+#define SSAO_SLICE 4.0
+ 
+float randf(int x, int y)
+{
+    return mod(52.9829189 * mod(0.06711056 * float(x) + 0.00583715 * float(y), 1.0), 1.0);
+}
+
+// https://graphics.stanford.edu/%7Eseander/bithacks.html
+uint CustomBitCount(uint value)
+{
+    value = value - ((value >> 1u) & 0x55555555u);
+    value = (value & 0x33333333u) + ((value >> 2u) & 0x33333333u);
+    return ((value + (value >> 4u) & 0xF0F0F0Fu) * 0x1010101u) >> 24u;
+}
+
+// https://cdrinmatane.github.io/posts/ssaovb-code/
+const uint sectorCount = 32u;
+uint UpdateSectors(float minHorizon, float maxHorizon, uint outBitfield)
+{
+    uint startBit = uint(minHorizon * float(sectorCount));
+    uint horizonAngle = uint(ceil((maxHorizon - minHorizon) * float(sectorCount)));
+    uint angleBit = horizonAngle > 0u ? uint(0xFFFFFFFFu >> (sectorCount - horizonAngle)) : 0u;
+    uint currentBitfield = angleBit << startBit;
+    return outBitfield | currentBitfield;
+}
+
+vec3 ViewPositionFromDepth(vec2 uv)
+{
+    float depth = texture(u_DepthTexture, uv).r;
+    vec4 clipSpace = vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    vec4 viewSpace = u_Camera.InverseView * clipSpace;
+    return viewSpace.xyz;
+}
+
+// View Space Transform
+//uniform sampler2D screenPosition; // Use Depth Buffer
+//uniform sampler2D screenNormal; // Create Extra View Normals Texture
+//uniform sampler2D screenLight; // ??? Try storing light contribution maybe
+
+//uniform float sampleCount; == 4
+//uniform float sampleRadius; == 4.0
+//uniform float sliceCount; == 4
+//uniform float hitThickness; == 0.5
+
+//uniform vec2 screenSize;
+//uniform mat4 projection;
+
+// Get Indirect Lighting and Ambient Occlusion
+layout(local_size_x = 32, local_size_y = 32) in;
+void main()
+{
+    vec2 imgSize = vec2(imageSize(o_AOTexture));
+	vec2 texCoords = (gl_GlobalInvocationID.xy + vec2(0.5)) / imgSize;
+
+    uint indirect = 0u;
+    uint occlusion = 0u;
+
+    float visibility = 0.0;
+    vec3 lighting = vec3(0.0);
+    vec2 frontBackHorizon = vec2(0.0);
+    vec2 aspect = imgSize.yx / imgSize.x;
+    vec3 position = ViewPositionFromDepth(texCoords);
+    vec3 camRay = normalize(-position);
+    vec3 normal = normalize(texture(u_ViewsNormalTexture, texCoords).rgb);
+
+    float sliceRotation = (2.0 * PI) / (SSAO_SLICE - 1.0);
+    float sampleScale = (-SSAO_RADIUS * u_Camera.Projection[0][0]) / position.z;
+    float sampleOffset = 0.01;
+    float jitter = randf(int(texCoords.x), int(texCoords.y)) - 0.5;
+
+    for (float slice = 0.0; slice < SSAO_SLICE + 0.5; slice += 1.0)
+    {
+        float phi = sliceRotation * (slice + jitter) + PI;
+        vec2 omega = vec2(cos(phi), sin(phi));
+        vec3 direction = vec3(omega.x, omega.y, 0.0);
+        vec3 orthoDirection = direction - dot(direction, camRay) * camRay;
+        vec3 axis = cross(direction, camRay);
+        vec3 projNormal = normal - axis * dot(normal, axis);
+        float projLength = length(projNormal);
+
+        float signN = sign(dot(orthoDirection, projNormal));
+        float cosN = clamp(dot(projNormal, camRay) / projLength, 0.0, 1.0);
+        float n = signN * acos(cosN);
+
+        for (float currentSample = 0.0; currentSample < SSAO_SAMPLES + 0.5; currentSample += 1.0)
+        {
+            float sampleStep = (currentSample + jitter) / SSAO_SAMPLES + sampleOffset;
+            vec2 sampleUV = texCoords - sampleStep * sampleScale * omega * aspect;
+            vec3 samplePosition = ViewPositionFromDepth(sampleUV);
+            vec3 sampleNormal = normalize(texture(u_ViewsNormalTexture, sampleUV).rgb);
+            vec3 sampleLight = texture(u_LightScreenTexture, sampleUV).rgb;
+            vec3 sampleDistance = samplePosition - position;
+            float sampleLength = length(sampleDistance);
+            vec3 sampleHorizon = sampleDistance / sampleLength;
+
+            frontBackHorizon.x = dot(sampleHorizon, camRay);
+            frontBackHorizon.y = dot(normalize(sampleDistance - camRay * SSAO_THICKNESSMIX), camRay);
+
+            frontBackHorizon = acos(frontBackHorizon);
+            frontBackHorizon = clamp((frontBackHorizon + n + PI_HALF) / PI, 0.0, 1.0);
+
+            indirect = UpdateSectors(frontBackHorizon.x, frontBackHorizon.y, 0u);
+            lighting += (1.0 - float(CustomBitCount(indirect & ~occlusion)) / float(sectorCount)) *
+                sampleLight * clamp(dot(normal, sampleHorizon), 0.0, 1.0) *
+                clamp(dot(sampleNormal, -sampleHorizon), 0.0, 1.0);
+
+            occlusion |= indirect;
+        }
+
+        visibility += 1.0 - float(CustomBitCount(occlusion)) / float(sectorCount);
+    }
+
+    visibility /= SSAO_SLICE;
+    lighting /= SSAO_SLICE;
+
+    imageStore(o_AOTexture, ivec2(gl_GlobalInvocationID), vec4(lighting, visibility));
+}

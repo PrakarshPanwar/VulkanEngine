@@ -99,12 +99,14 @@ namespace VulkanCore {
 
 		auto deviceProps = device->GetPhysicalDeviceProperties();
 		VkSamplerAddressMode addressMode = Utils::VulkanSamplerWrap(m_Specification.SamplerWrap);
+		VkSamplerMipmapMode mipmapMode = Utils::VulkanMipmapMode(m_Specification.SamplerFilter);
+		VkFilter filterMode = Utils::VulkanFilterMode(m_Specification.SamplerFilter);
 
 		// Create a sampler for Image
 		VkSamplerCreateInfo sampler{};
 		sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		sampler.magFilter = VK_FILTER_LINEAR;
-		sampler.minFilter = VK_FILTER_LINEAR;
+		sampler.magFilter = filterMode;
+		sampler.minFilter = filterMode;
 		sampler.addressModeU = addressMode;
 		sampler.addressModeV = addressMode;
 		sampler.addressModeW = addressMode;
@@ -114,7 +116,7 @@ namespace VulkanCore {
 		sampler.unnormalizedCoordinates = VK_FALSE;
 		sampler.compareEnable = VK_FALSE;
 		sampler.compareOp = VK_COMPARE_OP_ALWAYS;
-		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		sampler.mipmapMode = mipmapMode;
 		sampler.mipLodBias = 0.0f;
 		sampler.minLod = 0.0f;
 		sampler.maxLod = (float)m_Specification.MipLevels;
@@ -166,7 +168,7 @@ namespace VulkanCore {
 			auto barrierCmd = device->GetCommandBuffer();
 
 			VkImageSubresourceRange subresourceRange{};
-			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.aspectMask = aspectMask;
 			subresourceRange.baseMipLevel = 0;
 			subresourceRange.levelCount = m_Specification.MipLevels;
 			subresourceRange.baseArrayLayer = 0;

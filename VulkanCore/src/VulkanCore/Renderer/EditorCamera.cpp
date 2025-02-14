@@ -74,6 +74,8 @@ namespace VulkanCore {
 
 			Input::SetCursorMode(CursorMode::Locked);
 			MouseRotate(delta);
+
+			m_Distance = 0.5f;
 		}
 		else if (Input::IsKeyPressed(Key::LeftAlt))
 		{

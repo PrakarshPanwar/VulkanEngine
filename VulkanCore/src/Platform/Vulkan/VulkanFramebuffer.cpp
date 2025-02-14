@@ -150,6 +150,7 @@ namespace VulkanCore {
 					spec.Height = m_Specification.Height;
 					spec.Samples = 1;
 					spec.Layers = m_Specification.Layers;
+					spec.Transfer = m_Specification.Transfer;
 					spec.Format = m_DepthAttachmentSpecification.ImgFormat;
 					spec.Usage = ImageUsage::ReadAttachment;
 

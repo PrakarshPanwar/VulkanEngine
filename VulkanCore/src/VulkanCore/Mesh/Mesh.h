@@ -1,7 +1,6 @@
 #pragma once
-#include "VulkanCore/Asset/Asset.h"
 #include "VulkanCore/Asset/AssetMetadata.h"
-#include "VulkanCore/Renderer/Material.h"
+#include "VulkanCore/Asset/MaterialAsset.h"
 #include "VulkanCore/Renderer/VertexBuffer.h"
 #include "VulkanCore/Renderer/IndexBuffer.h"
 
@@ -56,9 +55,8 @@ namespace VulkanCore {
 		inline const std::vector<MeshNode>& GetMeshNodes() const { return m_Nodes; }
 		inline const std::vector<Submesh>& GetSubmeshes() const { return m_Submeshes; }
 
-		inline std::shared_ptr<Material> GetMaterial(uint32_t index = 0) const { return m_Materials[index]; }
-		// TODO: This method is temporary for now
-		inline void SetMaterial(std::shared_ptr<Material> material) { m_Materials[0] = material; }
+		inline std::shared_ptr<MaterialAsset> GetBaseMaterial() const { return m_BaseMaterial; }
+		inline void SetBaseMaterial(std::shared_ptr<MaterialAsset> baseMaterial) { m_BaseMaterial = baseMaterial; }
 
 		inline std::shared_ptr<VertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
 		inline std::shared_ptr<IndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
@@ -76,8 +74,7 @@ namespace VulkanCore {
 		std::vector<Vertex> m_Vertices{};
 		std::vector<uint32_t> m_Indices{};
 
-		// TODO: In future we will support separate material for each submesh
-		std::vector<std::shared_ptr<Material>> m_Materials;
+		std::shared_ptr<MaterialAsset> m_BaseMaterial;
 
 		std::shared_ptr<VertexBuffer> m_VertexBuffer;
 		std::shared_ptr<IndexBuffer> m_IndexBuffer;

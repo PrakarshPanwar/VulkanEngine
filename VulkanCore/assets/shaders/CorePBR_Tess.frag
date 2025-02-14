@@ -31,8 +31,8 @@ struct SpotLight
 
 struct DirectionalLight
 {
-    vec3 Direction;
     vec4 Color;
+    vec3 Direction;
     float Falloff;
 };
 

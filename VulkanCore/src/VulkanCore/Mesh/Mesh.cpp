@@ -104,6 +104,7 @@ namespace VulkanCore {
 		}
 
 		m_Scene = (aiScene*)scene;
+		m_Submeshes.reserve(scene->mNumMeshes);
 
 		uint32_t vertexCount = 0, indexCount = 0;
 		for (uint32_t m = 0; m < scene->mNumMeshes; ++m)
@@ -122,7 +123,8 @@ namespace VulkanCore {
 			indexCount += submesh.IndexCount;
 		}
 
-		m_Materials.push_back(nullptr);
+		m_Vertices.reserve(vertexCount);
+		m_Indices.reserve(indexCount);
 
 		// Allocating Root Node
 		m_Nodes.emplace_back();

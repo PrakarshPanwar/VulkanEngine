@@ -9,7 +9,8 @@ Entities:
       Scale: [200, 200, 200]
     MeshComponent:
       MeshHandle: 6944358963220749138
-      MaterialHandle: 13101957755938767227
+      MaterialTable:
+        0: 13101957755938767227
   - Entity: 13841765569656559826
     TagComponent:
       Tag: Sphere
@@ -19,7 +20,8 @@ Entities:
       Scale: [6, 6, 6]
     MeshComponent:
       MeshHandle: 5887157471203535698
-      MaterialHandle: 17021666477382963620
+      MaterialTable:
+        0: 17021666477382963620
   - Entity: 15851074549022986198
     TagComponent:
       Tag: Sun Light
@@ -36,7 +38,8 @@ Entities:
       Scale: [10, 4, 0.25]
     MeshComponent:
       MeshHandle: 9816593081404201911
-      MaterialHandle: 3893884925322395954
+      MaterialTable:
+        0: 3893884925322395954
   - Entity: 1153411140672436239
     TagComponent:
       Tag: Wall2
@@ -46,7 +49,8 @@ Entities:
       Scale: [0.25, 4, 10]
     MeshComponent:
       MeshHandle: 9816593081404201911
-      MaterialHandle: 3893884925322395954
+      MaterialTable:
+        0: 3893884925322395954
   - Entity: 4461713910826235506
     TagComponent:
       Tag: Skybox
@@ -61,7 +65,8 @@ Entities:
       Scale: [10, 0.25, 10]
     MeshComponent:
       MeshHandle: 9816593081404201911
-      MaterialHandle: 18152442800595508283
+      MaterialTable:
+        0: 18152442800595508283
   - Entity: 18388049089659310855
     TagComponent:
       Tag: Wall0
@@ -71,7 +76,8 @@ Entities:
       Scale: [10, 4, 0.25]
     MeshComponent:
       MeshHandle: 9816593081404201911
-      MaterialHandle: 3893884925322395954
+      MaterialTable:
+        0: 3893884925322395954
   - Entity: 12905070812060394482
     TagComponent:
       Tag: Wall1
@@ -81,4 +87,5 @@ Entities:
       Scale: [0.25, 4, 10.5]
     MeshComponent:
       MeshHandle: 9816593081404201911
-      MaterialHandle: 3893884925322395954
+      MaterialTable:
+        0: 3893884925322395954

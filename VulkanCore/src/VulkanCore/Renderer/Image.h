@@ -10,12 +10,15 @@ namespace VulkanCore {
 		R8_UNORM,
 		R32I,
 		R32F,
+		RGB8_SRGB,
 		RGBA8_SRGB,
 		RGBA8_NORM,
+		RGB8_UNORM,
 		RGBA8_UNORM,
 		RGBA16_NORM,
 		RGBA16_UNORM,
 		RGBA16F,
+		RGB32F,
 		RGBA32F,
 		R11G11B10F,
 
@@ -28,6 +31,12 @@ namespace VulkanCore {
 	{
 		Repeat,
 		Clamp
+	};
+
+	enum class FilterMode
+	{
+		Nearest,
+		Linear
 	};
 
 	enum class ImageUsage
@@ -57,6 +66,7 @@ namespace VulkanCore {
 		ImageUsage Usage;
 		bool Transfer = false;
 		TextureWrap SamplerWrap = TextureWrap::Clamp;
+		FilterMode SamplerFilter = FilterMode::Linear;
 	};
 
 	class Image2D : public Resource

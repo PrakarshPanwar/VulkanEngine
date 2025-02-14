@@ -9,6 +9,7 @@ Entities:
       Scale: [0.99999696, 1, 0.99999696]
     SpotLightComponent:
       Color: [0.0722646788, 0.0505806431, 0.451737463, 30]
+      Direction: [0, 0, 0]
       InnerCutoff: 0.52359879
       OuterCutoff: 0.785398185
       Falloff: 0
@@ -22,7 +23,8 @@ Entities:
       Scale: [3, 2.99965668, 2.99965668]
     MeshComponent:
       MeshHandle: 11844912818719243279
-      MaterialHandle: 18198936774292638234
+      MaterialTable:
+        0: 18198936774292638234
   - Entity: 309879778789
     TagComponent:
       Tag: Wall1
@@ -32,7 +34,8 @@ Entities:
       Scale: [9.99999332, 2.68595648, 0.109166376]
     MeshComponent:
       MeshHandle: 9816593081404201911
-      MaterialHandle: 3893884925322395954
+      MaterialTable:
+        0: 3893884925322395954
   - Entity: 842353453534
     TagComponent:
       Tag: Green Point Light
@@ -75,7 +78,8 @@ Entities:
       Scale: [6, 6, 6]
     MeshComponent:
       MeshHandle: 12839587798147330480
-      MaterialHandle: 4518070022644985823
+      MaterialTable:
+        0: 4518070022644985823
   - Entity: 99678686667
     TagComponent:
       Tag: Basic Sphere
@@ -85,7 +89,8 @@ Entities:
       Scale: [1, 1, 1]
     MeshComponent:
       MeshHandle: 5887157471203535698
-      MaterialHandle: 11134850192642027083
+      MaterialTable:
+        0: 11134850192642027083
   - Entity: 538537539842
     TagComponent:
       Tag: Flat Plane
@@ -95,7 +100,8 @@ Entities:
       Scale: [10, 0.100000001, 10]
     MeshComponent:
       MeshHandle: 9816593081404201911
-      MaterialHandle: 3893884925322395954
+      MaterialTable:
+        0: 3893884925322395954
   - Entity: 524536352442
     TagComponent:
       Tag: Ceramic Vase
@@ -105,7 +111,8 @@ Entities:
       Scale: [3.5, 3.5, 3.5]
     MeshComponent:
       MeshHandle: 11844912818719243279
-      MaterialHandle: 18198936774292638234
+      MaterialTable:
+        0: 18198936774292638234
   - Entity: 13446844955117675010
     TagComponent:
       Tag: SkyLight
@@ -115,6 +122,6 @@ Entities:
     TagComponent:
       Tag: SunLight
     DirectionalLightComponent:
-      Direction: [1, 1, 1]
+      Direction: [6, -20, 19]
       Color: [1, 1, 1, 1]
       Falloff: 1
