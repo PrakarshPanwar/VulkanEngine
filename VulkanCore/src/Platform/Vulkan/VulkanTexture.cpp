@@ -83,6 +83,7 @@ namespace VulkanCore {
 		spec.Height = m_Specification.Height;
 		spec.Usage = ImageUsage::Texture;
 		spec.Format = m_Specification.Format;
+		spec.SamplerWrap = m_Specification.SamplerWrap;
 		spec.MipLevels = m_Specification.GenerateMips ? Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height) : 1;
 		m_Image = std::make_shared<VulkanImage>(spec);
 		m_Image->Invalidate();

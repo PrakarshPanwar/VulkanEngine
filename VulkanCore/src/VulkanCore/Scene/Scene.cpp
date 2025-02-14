@@ -44,8 +44,7 @@ namespace VulkanCore {
 			auto [transform, meshComponent] = view.get<TransformComponent, MeshComponent>(ent);
 
 			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshComponent.MeshHandle);
-			std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(meshComponent.MaterialTableHandle);
-			renderer->SubmitMesh(mesh, materialAsset, transform.GetTransform());
+			renderer->SubmitMesh(mesh, meshComponent.MaterialTableHandle, transform.GetTransform());
 		}
 	}
 
@@ -58,8 +57,7 @@ namespace VulkanCore {
 			auto [transform, meshComponent] = view.get<TransformComponent, MeshComponent>(ent);
 
 			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshComponent.MeshHandle);
-			std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(meshComponent.MaterialTableHandle);
-			renderer->SubmitSelectedMesh(mesh, materialAsset, transform.GetTransform(), (uint32_t)ent);
+			renderer->SubmitSelectedMesh(mesh, meshComponent.MaterialTableHandle, transform.GetTransform(), (uint32_t)ent);
 		}
 	}
 
@@ -150,11 +148,10 @@ namespace VulkanCore {
 			for (auto ent : view)
 			{
 				auto lightComponent = view.get<DirectionalLightComponent>(ent);
-
 				directionalLights.DirectionalLights[lightIndex++] =
 				{
-					lightComponent.Direction,
 					lightComponent.Color,
+					lightComponent.Direction,
 					lightComponent.Falloff
 				};
 			}

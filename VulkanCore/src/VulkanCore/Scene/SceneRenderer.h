@@ -26,10 +26,10 @@ namespace VulkanCore {
 		void RenderScene();
 		void RenderLights();
 		void SelectionPass();
-		void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
-		void SubmitSelectedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform, uint32_t entityID);
-		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
-		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset);
+		void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialTable>& materialAsset, const glm::mat4& transform);
+		void SubmitSelectedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialTable>& materialTable , const glm::mat4& transform, uint32_t entityID);
+		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialTable>& materialTable, const glm::mat4& transform);
+		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialTable> materialTable);
 		void UpdateSkybox(AssetHandle skyTextureHandle);
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
@@ -95,6 +95,7 @@ namespace VulkanCore {
 		void ShadowPass();
 		void GeometryPass();
 		void CompositePass();
+		void GTAOCompute();
 		void BloomCompute();
 		void ResetDrawCommands();
 	private:
@@ -163,6 +164,16 @@ namespace VulkanCore {
 			float Intensity = 0.05f;
 			float LOD = 0.0f;
 		} m_SkyboxSettings;
+
+		struct ShadowSettings
+		{
+			glm::vec3 CascadeOrigin{ 0.0f };
+			float CascadeSplitLambda = 0.92f;
+			float CascadeNearPlaneOffset = 0.5f;
+			float CascadeFarPlaneOffset = 48.0f;
+			uint32_t MapSize = 2048;
+			int CascadeOffset = 0;
+		} m_CSMSettings;
 	private:
 		std::shared_ptr<Scene> m_Scene;
 
@@ -181,6 +192,7 @@ namespace VulkanCore {
 		std::shared_ptr<Pipeline> m_CompositePipeline;
 		std::shared_ptr<Pipeline> m_SkyboxPipeline;
 		std::shared_ptr<ComputePipeline> m_BloomPipeline;
+		std::shared_ptr<ComputePipeline> m_GTAOPipeline; // Ground Truth Ambient Occlusion
 
 		// Material Resources
 		// Material per Shader set
@@ -192,6 +204,7 @@ namespace VulkanCore {
 		std::shared_ptr<Material> m_LightSelectMaterial;
 		std::shared_ptr<Material> m_CompositeShaderMaterial;
 		std::shared_ptr<Material> m_SkyboxMaterial;
+		std::shared_ptr<Material> m_GTAOMaterial;
 
 		// Bloom Materials
 		struct BloomComputeMaterials
@@ -212,11 +225,11 @@ namespace VulkanCore {
 
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 		std::vector<uint32_t> m_LightHandles;
-		float m_CascadeSplitLambda = 0.95f;
-		uint32_t m_ShadowMapSize = 2048;
 
 		std::vector<std::shared_ptr<Image2D>> m_BloomTextures;
-		std::vector<std::shared_ptr<Image2D>> m_SceneRenderTextures;
+		std::vector<std::shared_ptr<Image2D>> m_AOTextures;
+		std::vector<std::shared_ptr<Image2D>> m_SceneRenderTextures; // For Bloom
+		std::vector<std::shared_ptr<Image2D>> m_SceneDepthTextures; // For AO
 
 		std::shared_ptr<Texture2D> m_BloomDirtTexture;
 		std::shared_ptr<Texture2D> m_PointLightTextureIcon, m_SpotLightTextureIcon;

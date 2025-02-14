@@ -45,6 +45,28 @@ namespace VulkanCore {
 			}
 		}
 
+		VkFilter VulkanFilterMode(FilterMode filter)
+		{
+			switch (filter)
+			{
+			case FilterMode::Nearest: return VK_FILTER_NEAREST;
+			case FilterMode::Linear:  return VK_FILTER_LINEAR;
+			default:
+				return (VkFilter)0;
+			}
+		}
+
+		VkSamplerMipmapMode VulkanMipmapMode(FilterMode filter)
+		{
+			switch (filter)
+			{
+			case FilterMode::Nearest: return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+			case FilterMode::Linear:  return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+			default:
+				return (VkSamplerMipmapMode)0;
+			}
+		}
+
 		VkSampleCountFlagBits VulkanSampleCount(uint32_t sampleCount)
 		{
 			switch (sampleCount)

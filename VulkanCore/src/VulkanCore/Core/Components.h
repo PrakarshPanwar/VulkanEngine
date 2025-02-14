@@ -1,7 +1,7 @@
 #pragma once
 #include "VulkanCore/Renderer/Camera.h"
 #include "VulkanCore/Mesh/Mesh.h"
-#include "VulkanCore/Renderer/Material.h"
+#include "VulkanCore/Asset/MaterialAsset.h"
 #include "VulkanCore/Core/UUID.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -86,7 +86,7 @@ namespace VulkanCore {
 	struct MeshComponent
 	{
 		AssetHandle MeshHandle = 0;
-		AssetHandle MaterialTableHandle = 0;
+		std::shared_ptr<MaterialTable> MaterialTableHandle;
 
 		MeshComponent() = default;
 		MeshComponent(const MeshComponent&) = default;
@@ -140,8 +140,8 @@ namespace VulkanCore {
 
 	struct DirectionalLightComponent
 	{
-		glm::vec3 Direction{ 1.0f };
 		glm::vec4 Color{ 1.0f };
+		glm::vec3 Direction{ 1.0f };
 		float Falloff = 1.0f;
 	};
 

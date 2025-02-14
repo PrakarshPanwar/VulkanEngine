@@ -20,6 +20,19 @@ namespace VulkanCore {
 			}
 		}
 
+		static VmaAllocationCreateFlags VulkanAllocationFlags(VmaMemoryUsage usage)
+		{
+			switch (usage)
+			{
+			case VMA_MEMORY_USAGE_AUTO:               return 0;
+			case VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE: return 0;
+			case VMA_MEMORY_USAGE_AUTO_PREFER_HOST:   return VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			default:
+				VK_CORE_ASSERT(false, "Could not find necessary Format!");
+				return 0;
+			}
+		}
+
 	}
 
 	VulkanAllocator::VulkanAllocator(const char* debugName)
@@ -35,7 +48,7 @@ namespace VulkanCore {
 	{
 		VmaAllocationCreateInfo allocInfo{};
 		allocInfo.usage = usage;
-		allocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+		allocInfo.flags = Utils::VulkanAllocationFlags(usage);
 		allocInfo.preferredFlags = Utils::VulkanMemoryFlags(usage);
 
 		VmaAllocation vmaAllocation;

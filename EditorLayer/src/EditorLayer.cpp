@@ -388,7 +388,7 @@ namespace VulkanCore {
 			if (!ImGuizmo::IsUsing() && !isFlying)
 				m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
 
-			if (altKey)
+			if (shiftKey)
 			{
 				Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
 				m_TransformInputMask = !m_EditorCamera.IsInFly() && selectedEntity ? 0x7 : 0;
@@ -403,7 +403,7 @@ namespace VulkanCore {
 			if (!ImGuizmo::IsUsing())
 				m_GizmoType = ImGuizmo::OPERATION::ROTATE;
 
-			if (altKey)
+			if (shiftKey)
 			{
 				Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
 				m_TransformInputMask = !m_EditorCamera.IsInFly() && selectedEntity ? 0x7 : 0;
@@ -418,7 +418,7 @@ namespace VulkanCore {
 			if (!ImGuizmo::IsUsing())
 				m_GizmoType = ImGuizmo::OPERATION::SCALE;
 
-			if (altKey)
+			if (shiftKey)
 			{
 				Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
 				m_TransformInputMask = !m_EditorCamera.IsInFly() && selectedEntity ? 0x7 : 0;

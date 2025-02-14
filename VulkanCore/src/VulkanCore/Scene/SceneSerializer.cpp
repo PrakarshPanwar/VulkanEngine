@@ -198,7 +198,16 @@ namespace VulkanCore {
 
 			auto& mc = entity.GetComponent<MeshComponent>();
 			out << YAML::Key << "MeshHandle" << YAML::Value << mc.MeshHandle;
-			out << YAML::Key << "MaterialHandle" << YAML::Value << mc.MaterialTableHandle;
+			out << YAML::Key << "MaterialTable" << YAML::Value;
+
+			out << YAML::BeginMap; // Begin Material Table
+			for (auto& [materialIndex, materialAsset] : mc.MaterialTableHandle->GetMaterialMap())
+			{
+				if (materialAsset)
+					out << YAML::Key << materialIndex << YAML::Value << materialAsset->Handle;
+			}
+
+			out << YAML::EndMap; // End Material Table
 
 			out << YAML::EndMap;
 		}
@@ -333,13 +342,27 @@ namespace VulkanCore {
 					uint64_t meshHandle = meshComponent["MeshHandle"].as<uint64_t>();
 					mc.MeshHandle = meshHandle;
 
-					uint64_t materialHandle = meshComponent["MaterialHandle"].as<uint64_t>();
-					mc.MaterialTableHandle = materialHandle;
+					// Only contains Material handles
+					auto materialTable = meshComponent["MaterialTable"].as<std::map<uint32_t, uint64_t>>();
 
+					// Creating Material Table
+					std::map<uint32_t, std::shared_ptr<MaterialAsset>> materialTableAssets{};
+					for (auto& [materialIndex, materialHandle] : materialTable)
+						materialTableAssets[materialIndex] = AssetManager::GetAsset<MaterialAsset>(materialHandle);
+
+					// Add null material for submeshes that don't have a material
 					std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(mc.MeshHandle);
-					std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(mc.MaterialTableHandle);
+					for (auto& submesh : mesh->GetMeshSource()->GetSubmeshes())
+					{
+						if (!materialTableAssets.contains(submesh.MaterialIndex))
+							materialTableAssets[submesh.MaterialIndex] = nullptr;
+					}
+
+					mc.MaterialTableHandle = std::make_shared<MaterialTable>(materialTableAssets);
+
+					std::shared_ptr<MaterialAsset> materialAsset = materialTableAssets[0]; // Default Base Material
 					std::shared_ptr<MeshSource> meshSource = mesh->GetMeshSource();
-					meshSource->SetMaterial(materialAsset->GetMaterial());
+					meshSource->SetBaseMaterial(materialAsset);
 				}
 			}
 		}

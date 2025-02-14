@@ -11,14 +11,6 @@ namespace VulkanCore {
 		Camera(float fov, float aspectRatio, float nearClip, float farClip);
 		~Camera();
 
-#if 0
-		void SetOrthographicProjection(float left, float right, float top, float bottom, float near, float far);
-		void SetPerspectiveProjection(float fovy, float aspect, float near, float far);
-		void SetViewDirection(glm::vec3 position, glm::vec3 direction, glm::vec3 up = glm::vec3(0.0f, -1.0f, 0.0f));
-		void SetViewTarget(glm::vec3 position, glm::vec3 target, glm::vec3 up = glm::vec3(0.0f, -1.0f, 0.0f));
-		void SetViewYXZ(glm::vec3 position, glm::vec3 rotation);
-#endif
-
 		virtual const glm::mat4& GetProjectionMatrix() const = 0;
 		virtual const glm::mat4& GetViewMatrix() const = 0;
 		virtual const glm::mat4& GetInverseViewMatrix() const = 0;

@@ -16,7 +16,7 @@ float ShadowTextureProjection(vec4 coords, vec2 offset, uint index)
     {
 		float dist = texture(u_ShadowMap, vec3(coords.st + offset, index)).r;
 		if (coords.w > 0 && dist < coords.z - bias)
-			shadow = 0.3; // Ambient Value
+			shadow = 0.1; // Ambient Value
 	}
 
 	return shadow;

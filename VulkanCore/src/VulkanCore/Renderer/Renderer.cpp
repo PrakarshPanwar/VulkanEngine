@@ -91,6 +91,7 @@ namespace VulkanCore {
 		m_Shaders["EnvironmentMipFilter"] = Utils::MakeShader("EnvironmentMipFilter");
 		m_Shaders["EnvironmentIrradiance"] = Utils::MakeShader("EnvironmentIrradiance");
 		m_Shaders["GenerateBRDF"] = Utils::MakeShader("GenerateBRDF");
+		m_Shaders["GTAO"] = Utils::MakeShader("GTAO");
 	}
 
 	void Renderer::ShutDown()

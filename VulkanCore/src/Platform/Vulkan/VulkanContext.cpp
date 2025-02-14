@@ -270,12 +270,12 @@ namespace VulkanCore {
 		VkPhysicalDeviceMemoryProperties memProperties;
 		vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
-		VmaAllocatorCreateInfo allocatorInfo;
+		VmaAllocatorCreateInfo allocatorInfo{};
 		allocatorInfo.device = m_Device->GetVulkanDevice();
 		allocatorInfo.instance = m_VulkanInstance;
 		allocatorInfo.physicalDevice = physicalDevice;
 		allocatorInfo.pVulkanFunctions = &vulkanFunctions;
-		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_4;
 		allocatorInfo.pAllocationCallbacks = nullptr;
 		allocatorInfo.pDeviceMemoryCallbacks = nullptr;
 		allocatorInfo.pHeapSizeLimit = nullptr;

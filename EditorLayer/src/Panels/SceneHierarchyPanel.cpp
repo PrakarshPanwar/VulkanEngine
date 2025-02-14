@@ -168,15 +168,16 @@ namespace VulkanCore {
 					MeshComponent meshComponent = entity.GetComponent<MeshComponent>();
 
 					std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshComponent.MeshHandle);
-					for (const MeshNode& submeshes : mesh->GetMeshSource()->GetMeshNodes())
+					for (const Submesh& submesh : mesh->GetMeshSource()->GetSubmeshes())
 					{
-						if (ImGui::TreeNode(submeshes.Name.c_str()))
+						if (ImGui::TreeNodeEx((void*)submesh.BaseVertex, 0, submesh.NodeName.c_str()))
 							ImGui::TreePop();
 					}
 				}
 
 				ImGui::TreePop();
 			}
+
 			ImGui::TreePop();
 		}
 
@@ -379,9 +380,9 @@ namespace VulkanCore {
 			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
 			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(component.MeshHandle);
-			std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(component.MaterialTableHandle);
+			std::shared_ptr<MaterialTable> materialTable = component.MaterialTableHandle;
 
-			if (mesh && materialAsset)
+			if (mesh && materialTable)
 			{
 				// Mesh Asset
 				auto meshSource = mesh->GetMeshSource();
@@ -395,10 +396,17 @@ namespace VulkanCore {
 					{
 						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
-						sceneRenderer->UpdateMeshInstanceData(mesh, materialAsset);
+						sceneRenderer->UpdateMeshInstanceData(mesh, materialTable);
 
 						std::shared_ptr<Mesh> newMesh = AssetManager::GetAsset<Mesh>(assetPath.string());
 						component.MeshHandle = newMesh->Handle;
+
+						// Initialize Material Table
+						std::map<uint32_t, std::shared_ptr<MaterialAsset>> materialTableAssets{};
+						for (auto& submesh : newMesh->GetMeshSource()->GetSubmeshes())
+							materialTableAssets[submesh.MaterialIndex] = nullptr;
+
+						component.MaterialTableHandle = std::make_shared<MaterialTable>(materialTableAssets);
 					}
 
 					ImGui::EndDragDropTarget();
@@ -406,29 +414,38 @@ namespace VulkanCore {
 
 				ImGui::Separator();
 
-				// Material Asset
-				AssetHandle materialHandle = component.MaterialTableHandle;
-				auto& materialAssetMetadata = AssetManager::GetMetadata(materialHandle);
-				const auto& materialAssetPath = materialAssetMetadata.FilePath.generic_string();
-				ImGui::InputText("Material", (char*)materialAssetPath.data(), materialAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
-
-				if (ImGui::BeginDragDropTarget())
+				ImGui::Text("Material Table");
+				for (auto& [materialIndex, materialAsset] : materialTable->GetMaterialMap())
 				{
-					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					std::string materialIndexLabel = std::format("[{}]", materialIndex);
+
+					// Material Asset
+					if (materialAsset)
 					{
-						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
-
-						sceneRenderer->UpdateMeshInstanceData(mesh, materialAsset);
-
-						std::shared_ptr<MaterialAsset> newMaterialAsset = AssetManager::GetAsset<MaterialAsset>(assetPath.string());
-						component.MaterialTableHandle = newMaterialAsset->Handle;
-						meshSource->SetMaterial(newMaterialAsset->GetMaterial());
+						AssetHandle materialHandle = materialAsset->Handle;
+						auto& materialAssetMetadata = AssetManager::GetMetadata(materialHandle);
+						const auto& materialAssetPath = materialAssetMetadata.FilePath.generic_string();
+						ImGui::InputText(materialIndexLabel.c_str(), (char*)materialAssetPath.data(), materialAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
+					}
+					else
+					{
+						char materialNullPath[5] = "NULL";
+						ImGui::InputText(materialIndexLabel.c_str(), materialNullPath, strlen(materialNullPath), ImGuiInputTextFlags_ReadOnly);
 					}
 
-					ImGui::EndDragDropTarget();
-				}
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+						{
+							std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
-				ImGui::Separator();
+							std::shared_ptr<MaterialAsset> newMaterialAsset = AssetManager::GetAsset<MaterialAsset>(assetPath.string());
+							materialTable->SetMaterial(materialIndex, newMaterialAsset);
+						}
+
+						ImGui::EndDragDropTarget();
+					}
+				}
 
 				// Mesh Stats
 				ImGui::Text("Vertex Count: %d", meshSource->GetVertexCount());
@@ -451,33 +468,20 @@ namespace VulkanCore {
 
 						std::shared_ptr<Mesh> newMesh = AssetManager::GetAsset<Mesh>(assetPath.string());
 						component.MeshHandle = newMesh->Handle;
+
+						// Initialize Material Table
+						std::map<uint32_t, std::shared_ptr<MaterialAsset>> materialTableAssets{};
+						for (auto& submesh : newMesh->GetMeshSource()->GetSubmeshes())
+							materialTableAssets[submesh.MaterialIndex] = nullptr;
+
+						// TODO: Create only default material as memory only asset
+						auto meshSource = newMesh->GetMeshSource();
+						meshSource->SetBaseMaterial(std::make_shared<MaterialAsset>(Material::Create("Default Material")));
+
+						component.MaterialTableHandle = std::make_shared<MaterialTable>(materialTableAssets);
 					}
 
 					ImGui::EndDragDropTarget();
-				}
-
-				if (component.MeshHandle)
-				{
-					// Import Material Asset
-					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-					ImGui::Button("Import Material", buttonSize);
-					ImGui::PopItemFlag();
-
-					if (ImGui::BeginDragDropTarget())
-					{
-						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-						{
-							std::filesystem::path assetPath = (const wchar_t*)payload->Data;
-
-							std::shared_ptr<MaterialAsset> newMaterialAsset = AssetManager::GetAsset<MaterialAsset>(assetPath.string());
-							component.MaterialTableHandle = newMaterialAsset->Handle;
-
-							auto meshSource = mesh->GetMeshSource();
-							meshSource->SetMaterial(newMaterialAsset->GetMaterial());
-						}
-
-						ImGui::EndDragDropTarget();
-					}
 				}
 			}
 		});

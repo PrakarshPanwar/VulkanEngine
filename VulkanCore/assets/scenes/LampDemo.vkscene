@@ -9,7 +9,8 @@ Entities:
       Scale: [0.100000001, 2.5, 4.99762774]
     MeshComponent:
       MeshHandle: 9816593081404201911
-      MaterialHandle: 11134850192642027083
+      MaterialTable:
+        0: 11134850192642027083
   - Entity: 11083512246634496834
     TagComponent:
       Tag: Plane
@@ -19,7 +20,8 @@ Entities:
       Scale: [5, 0.0500000007, 5]
     MeshComponent:
       MeshHandle: 9816593081404201911
-      MaterialHandle: 11134850192642027083
+      MaterialTable:
+        0: 11134850192642027083
   - Entity: 15512763241384639425
     TagComponent:
       Tag: Vintage Lamp
@@ -29,7 +31,8 @@ Entities:
       Scale: [2.5, 2.49999976, 2.49999976]
     MeshComponent:
       MeshHandle: 5959344745003257604
-      MaterialHandle: 6952677873291693697
+      MaterialTable:
+        0: 6952677873291693697
   - Entity: 14374818309247147955
     TagComponent:
       Tag: Sphere
@@ -39,7 +42,8 @@ Entities:
       Scale: [1, 1, 1]
     MeshComponent:
       MeshHandle: 5887157471203535698
-      MaterialHandle: 16590454202587251103
+      MaterialTable:
+        0: 16590454202587251103
   - Entity: 13446849234117679010
     TagComponent:
       Tag: SkyLight

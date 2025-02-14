@@ -31,8 +31,8 @@ struct SpotLight
 
 struct DirectionalLight
 {
-    vec3 Direction;
     vec4 Color;
+    vec3 Direction;
     float Falloff;
 };
 
@@ -287,5 +287,5 @@ void main()
     vec3 color = iblContribution + lightContribution;
 
     // TODO: Transparent Materials(OIT)
-	o_Color = vec4(color, u_Material.Albedo.a * diffuse.a);
+	o_Color = vec4(color, u_Material.Albedo.a);
 }

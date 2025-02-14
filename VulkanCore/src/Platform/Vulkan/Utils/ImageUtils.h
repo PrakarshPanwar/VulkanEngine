@@ -7,6 +7,8 @@ namespace VulkanCore {
 
 		VkFormat VulkanImageFormat(ImageFormat format);
 		VkSamplerAddressMode VulkanSamplerWrap(TextureWrap wrap);
+		VkFilter VulkanFilterMode(FilterMode filter);
+		VkSamplerMipmapMode VulkanMipmapMode(FilterMode filter);
 		VkSampleCountFlagBits VulkanSampleCount(uint32_t sampleCount);
 		uint32_t CalculateMipCount(uint32_t width, uint32_t height);
 		bool IsDepthFormat(ImageFormat format);

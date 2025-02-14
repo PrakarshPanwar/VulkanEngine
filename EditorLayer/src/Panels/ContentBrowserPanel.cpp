@@ -23,6 +23,7 @@ namespace VulkanCore {
 			{ ".jpg", AssetType::Texture2D },
 			{ ".hdr", AssetType::Texture2D },
 			{ ".fbx", AssetType::MeshAsset },
+			{ ".gltf", AssetType::MeshAsset },
 			{ ".obj", AssetType::MeshAsset },
 			{ ".vkmesh", AssetType::Mesh },
 			{ ".vkmat", AssetType::Material }

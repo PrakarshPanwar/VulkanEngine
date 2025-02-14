@@ -25,6 +25,7 @@
 #include "Platform/Vulkan/Utils/ImageUtils.h"
 
 #include <imgui.h>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace VulkanCore {
 
@@ -153,8 +154,8 @@ namespace VulkanCore {
 		// Shadow Map Pipeline(NOTE: Currently not working properly)
 		{
 			FramebufferSpecification shadowMapFramebufferSpec;
-			shadowMapFramebufferSpec.Width = m_ShadowMapSize;
-			shadowMapFramebufferSpec.Height = m_ShadowMapSize;
+			shadowMapFramebufferSpec.Width = m_CSMSettings.MapSize;
+			shadowMapFramebufferSpec.Height = m_CSMSettings.MapSize;
 			shadowMapFramebufferSpec.Attachments = { ImageFormat::DEPTH16F };
 			shadowMapFramebufferSpec.ReadDepthTexture = true;
 			shadowMapFramebufferSpec.Transfer = true;
@@ -212,6 +213,11 @@ namespace VulkanCore {
 		// Bloom Pipeline
 		{
 			m_BloomPipeline = std::make_shared<VulkanComputePipeline>(Renderer::GetShader("Bloom"), "Bloom Pipeline");
+		}
+
+		// Ground Truth Ambient Occlusion
+		{
+			m_GTAOPipeline = std::make_shared<VulkanComputePipeline>(Renderer::GetShader("GTAO"), "GTAO");
 		}
 	}
 
@@ -350,6 +356,15 @@ namespace VulkanCore {
 			}
 		}
 
+		// AO Material
+		{
+			m_GTAOMaterial = std::make_shared<VulkanMaterial>(m_GTAOPipeline->GetShader(), "GTAO Material");
+
+			m_GTAOMaterial->SetImages(0, m_AOTextures);
+			m_GTAOMaterial->SetImages(1, m_SceneDepthTextures);
+			m_GTAOMaterial->PrepareShaderMaterial();
+		}
+
 		// Composite Material
 		{
 			m_CompositeShaderMaterial = std::make_shared<VulkanMaterial>(m_CompositePipeline->GetSpecification().pShader, "Composite Shader Material");
@@ -482,6 +497,13 @@ namespace VulkanCore {
 			m_CompositeShaderMaterial->PrepareShaderMaterial();
 		}
 
+		// AO Material
+		{
+			m_GTAOMaterial->SetImages(0, m_AOTextures);
+			m_GTAOMaterial->SetImages(1, m_SceneDepthTextures);
+			m_GTAOMaterial->PrepareShaderMaterial();
+		}
+
 		// Skybox Material
 		{
 			m_SkyboxMaterial->SetBuffers(0, m_UBCamera);
@@ -544,7 +566,7 @@ namespace VulkanCore {
 			float p = (i + 1) / (float)SHADOW_MAP_CASCADE_COUNT;
 			float log = minZ * std::pow(ratio, p);
 			float uniform = minZ + range * p;
-			float d = m_CascadeSplitLambda * (log - uniform) + uniform;
+			float d = m_CSMSettings.CascadeSplitLambda * (log - uniform) + uniform;
 			cascadeSplits[i] = (d - nearFarClip.x) / clipRange;
 		}
 
@@ -599,27 +621,29 @@ namespace VulkanCore {
 			glm::vec3 maxExtents = glm::vec3(radius);
 			glm::vec3 minExtents = -maxExtents;
 
-			glm::vec3 lightDir = glm::normalize(-shadowLight.Direction);
+			glm::vec3 lightDir = glm::normalize(shadowLight.Direction);
 			glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
-			glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
+			glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y,
+				m_CSMSettings.CascadeNearPlaneOffset, maxExtents.z - minExtents.z + m_CSMSettings.CascadeFarPlaneOffset);
 
-#if 1
-			float shadowMapSize = (float)m_ShadowMapSize;
-			glm::mat4 shadowMatrix = lightOrthoMatrix * lightViewMatrix;
-			glm::vec4 shadowOrigin = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-			shadowOrigin = shadowMatrix * shadowOrigin;
-			shadowOrigin = shadowOrigin * shadowMapSize / 2.0f;
+			if (m_CSMSettings.CascadeOffset)
+			{
+				float shadowMapSize = (float)m_CSMSettings.MapSize;
+				glm::mat4 shadowMatrix = lightOrthoMatrix * lightViewMatrix;
+				glm::vec4 shadowOrigin = glm::vec4(m_CSMSettings.CascadeOrigin, 1.0f);
+				shadowOrigin = shadowMatrix * shadowOrigin;
+				shadowOrigin = shadowOrigin * shadowMapSize / 2.0f;
 
-			glm::vec4 roundedOrigin = glm::round(shadowOrigin);
-			glm::vec4 roundOffset = roundedOrigin - shadowOrigin;
-			roundOffset = roundOffset * 2.0f / shadowMapSize;
-			roundOffset.z = 0.0f;
-			roundOffset.w = 0.0f;
+				glm::vec4 roundedOrigin = glm::round(shadowOrigin);
+				glm::vec4 roundOffset = roundedOrigin - shadowOrigin;
+				roundOffset = roundOffset * 2.0f / shadowMapSize;
+				roundOffset.z = 0.0f;
+				roundOffset.w = 0.0f;
 
-			glm::mat4 shadowProj = lightOrthoMatrix;
-			shadowProj[3] += roundOffset;
-			lightOrthoMatrix = shadowProj;
-#endif
+				glm::mat4 shadowProj = lightOrthoMatrix;
+				shadowProj[3] += roundOffset;
+				lightOrthoMatrix = shadowProj;
+			}
 
 			// Store Split Distance and matrix in Cascade
 			m_CascadeData.CascadeSplitLevels[i] = (nearFarClip.x + splitDist * clipRange) * -1.0f;
@@ -728,14 +752,16 @@ namespace VulkanCore {
 		m_BloomMipSize += 16u - m_BloomMipSize % 16u;
 
 		m_BloomTextures.reserve(framesInFlight);
+		m_AOTextures.reserve(framesInFlight);
 		m_SceneRenderTextures.reserve(framesInFlight);
+		m_SceneDepthTextures.reserve(framesInFlight);
 
 		VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
-		// Bloom Compute Textures
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
-			ImageSpecification bloomRTSpec = {};
+			// Bloom Compute Textures
+			ImageSpecification bloomRTSpec{};
 			bloomRTSpec.DebugName = std::format("Bloom Compute Texture {}", i);
 			bloomRTSpec.Width = m_BloomMipSize.x;
 			bloomRTSpec.Height = m_BloomMipSize.y;
@@ -745,19 +771,27 @@ namespace VulkanCore {
 
 			auto BloomTexture = std::static_pointer_cast<VulkanImage>(m_BloomTextures.emplace_back(std::make_shared<VulkanImage>(bloomRTSpec)));
 			BloomTexture->Invalidate();
-		}
 
-		// Scene Render Textures
-		ImageSpecification sceneRTSpec = {};
-		sceneRTSpec.DebugName = "Scene Render Texture";
-		sceneRTSpec.Width = m_ViewportSize.x;
-		sceneRTSpec.Height = m_ViewportSize.y;
-		sceneRTSpec.Format = ImageFormat::RGBA32F;
-		sceneRTSpec.Usage = ImageUsage::Texture;
-		sceneRTSpec.MipLevels = Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y);
+			// AO Textures
+			ImageSpecification aoTexSpec{};
+			aoTexSpec.DebugName = std::format("AO Texture {}", i);
+			aoTexSpec.Width = m_ViewportSize.x;
+			aoTexSpec.Height = m_ViewportSize.y;
+			aoTexSpec.Format = ImageFormat::RGBA32F;
+			aoTexSpec.Usage = ImageUsage::Storage;
 
-		for (uint32_t i = 0; i < framesInFlight; ++i)
-		{
+			auto AOTexture = std::static_pointer_cast<VulkanImage>(m_AOTextures.emplace_back(std::make_shared<VulkanImage>(aoTexSpec)));
+			AOTexture->Invalidate();
+
+			// Scene Render Textures
+			ImageSpecification sceneRTSpec{};
+			sceneRTSpec.DebugName = std::format("Scene Render Texture {}", i);
+			sceneRTSpec.Width = m_ViewportSize.x;
+			sceneRTSpec.Height = m_ViewportSize.y;
+			sceneRTSpec.Format = ImageFormat::RGBA32F;
+			sceneRTSpec.Usage = ImageUsage::Texture;
+			sceneRTSpec.MipLevels = Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y);
+
 			auto SceneTexture = std::static_pointer_cast<VulkanImage>(m_SceneRenderTextures.emplace_back(std::make_shared<VulkanImage>(sceneRTSpec)));
 			SceneTexture->Invalidate();
 
@@ -766,6 +800,26 @@ namespace VulkanCore {
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneTexture->GetSpecification().MipLevels, 0, 1 });
+
+			// Scene Depth Textures
+			ImageSpecification sceneDepthSpec = {};
+			sceneDepthSpec.DebugName = std::format("Scene Depth Texture {}", i);
+			sceneDepthSpec.Width = m_ViewportSize.x;
+			sceneDepthSpec.Height = m_ViewportSize.y;
+			sceneDepthSpec.Format = ImageFormat::DEPTH32F;
+			sceneDepthSpec.Usage = ImageUsage::Texture;
+			sceneDepthSpec.MipLevels = sceneRTSpec.MipLevels;
+			sceneDepthSpec.SamplerFilter = FilterMode::Nearest;
+
+			auto SceneDepthTexture = std::static_pointer_cast<VulkanImage>(m_SceneDepthTextures.emplace_back(std::make_shared<VulkanImage>(sceneDepthSpec)));
+			SceneDepthTexture->Invalidate();
+
+			Utils::InsertImageMemoryBarrier(barrierCmd, SceneDepthTexture->GetVulkanImageInfo().Image,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
+
 		}
 
 		device->FlushCommandBuffer(barrierCmd);
@@ -796,7 +850,6 @@ namespace VulkanCore {
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 
 		VK_CORE_INFO("Scene Resized!");
-		//m_ShadowMapPipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 		m_GeometryPipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 		m_GeometrySelectPipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
 		m_CompositePipeline->GetSpecification().pRenderPass->RecreateFramebuffers(m_ViewportSize.x, m_ViewportSize.y);
@@ -814,6 +867,12 @@ namespace VulkanCore {
 				vulkanBloomTexture->Resize(m_BloomMipSize.x, m_BloomMipSize.y, Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2);
 			}
 
+			for (auto& AOTexture : m_AOTextures)
+			{
+				auto vulkanAOTexture = std::dynamic_pointer_cast<VulkanImage>(AOTexture);
+				vulkanAOTexture->Resize(m_ViewportSize.x, m_ViewportSize.y);
+			}
+
 			for (auto& SceneRenderTexture : m_SceneRenderTextures)
 			{
 				auto vulkanSceneTexture = std::dynamic_pointer_cast<VulkanImage>(SceneRenderTexture);
@@ -824,6 +883,18 @@ namespace VulkanCore {
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRenderTexture->GetSpecification().MipLevels, 0, 1 });
+			}
+
+			for (auto& SceneDepthTexture : m_SceneDepthTextures)
+			{
+				auto vulkanSceneTexture = std::dynamic_pointer_cast<VulkanImage>(SceneDepthTexture);
+				vulkanSceneTexture->Resize(m_ViewportSize.x, m_ViewportSize.y, Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y));
+
+				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanSceneTexture->GetVulkanImageInfo().Image,
+					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, SceneDepthTexture->GetSpecification().MipLevels, 0, 1 });
 			}
 
 			device->FlushCommandBuffer(barrierCmd);
@@ -890,7 +961,11 @@ namespace VulkanCore {
 
 		if (ImGui::TreeNodeEx("Shadow Settings", treeFlags))
 		{
-			ImGui::DragFloat("Cascade Split Lambda", &m_CascadeSplitLambda, 0.001f, 0.0f, 1.0f);
+			ImGui::DragFloat("Cascade Split Lambda", &m_CSMSettings.CascadeSplitLambda, 0.001f, 0.0f, 1.0f);
+			ImGui::DragFloat("Cascade Near Offset", &m_CSMSettings.CascadeNearPlaneOffset, 0.01f, 0.05f, 1000.0f);
+			ImGui::DragFloat("Cascade Far Offset", &m_CSMSettings.CascadeFarPlaneOffset, 0.01f, 0.05f, 1000.0f);
+			ImGui::DragFloat3("Cascade Origin", glm::value_ptr(m_CSMSettings.CascadeOrigin), 0.01f);
+			ImGui::Checkbox("Cascade Offset", (bool*)&m_CSMSettings.CascadeOffset);
 
 			ImVec2 quadSize = { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x };
 			ImGui::Image(m_ShadowDepthPassImages[Renderer::RT_GetCurrentFrameIndex()], quadSize);
@@ -989,6 +1064,7 @@ namespace VulkanCore {
 
 		ShadowPass();
 		GeometryPass();
+		GTAOCompute();
 		BloomCompute();
 		CompositePass();
 
@@ -1008,31 +1084,35 @@ namespace VulkanCore {
 		for (auto pointLightPosition : m_PointLightPositions)
 			Renderer::RenderLight(m_SceneCommandBuffer, m_LightPipeline, pointLightPosition);
 
-		Renderer::Submit([this] { m_SpotLightShaderMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_LightPipeline); });
+		Renderer::BindPipeline(m_SceneCommandBuffer, m_LightPipeline, m_SpotLightShaderMaterial);
 
 		// Spot Lights
 		for (auto spotLightPosition : m_SpotLightPositions)
 			Renderer::RenderLight(m_SceneCommandBuffer, m_LightPipeline, spotLightPosition);
 	}
 
-	void SceneRenderer::SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform)
+	void SceneRenderer::SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialTable>& materialTable, const glm::mat4& transform)
 	{
 		VK_CORE_PROFILE();
 
-		if (!mesh || !materialAsset)
+		if (!mesh || !materialTable)
 			return;
 
 		auto meshSource = mesh->GetMeshSource();
 		auto& submeshData = meshSource->GetSubmeshes();
 		uint64_t meshHandle = mesh->Handle;
-		uint64_t materialHandle = materialAsset->Handle;
-		bool isTessellated = materialAsset->HasDisplacementTexture();
 
-		if (meshSource->GetVertexCount() == 0)
+		if (meshSource->GetVertexCount() < 1)
 			return;
 
 		for (uint32_t submeshIndex : mesh->GetSubmeshes())
 		{
+			int materialIndex = submeshData[submeshIndex].MaterialIndex;
+			std::shared_ptr<MaterialAsset> materialAsset = materialTable->HasMaterial(materialIndex) ? materialTable->GetMaterial(materialIndex) : meshSource->GetBaseMaterial();
+
+			uint64_t materialHandle = materialAsset->Handle;
+			bool isTessellated = materialAsset->HasDisplacementTexture();
+
 			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
 			auto& transformBuffer = isTessellated ? m_MeshTessellatedTransformMap[meshKey].Transforms.emplace_back()
 				: m_MeshTransformMap[meshKey].Transforms.emplace_back();
@@ -1056,23 +1136,26 @@ namespace VulkanCore {
 		}
 	}
 
-	void SceneRenderer::SubmitSelectedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform, uint32_t entityID)
+	void SceneRenderer::SubmitSelectedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialTable>& materialTable, const glm::mat4& transform, uint32_t entityID)
 	{
 		VK_CORE_PROFILE();
 
-		if (!mesh || !materialAsset)
+		if (!mesh || !materialTable)
 			return;
 
 		auto meshSource = mesh->GetMeshSource();
 		auto& submeshData = meshSource->GetSubmeshes();
 		uint64_t meshHandle = mesh->Handle;
-		uint64_t materialHandle = materialAsset->Handle;
 
-		if (meshSource->GetVertexCount() == 0)
+		if (meshSource->GetVertexCount() < 1)
 			return;
 
 		for (uint32_t submeshIndex : mesh->GetSubmeshes())
 		{
+			int materialIndex = submeshData[submeshIndex].MaterialIndex;
+			std::shared_ptr<MaterialAsset> materialAsset = materialTable->HasMaterial(materialIndex) ? materialTable->GetMaterial(materialIndex) : meshSource->GetBaseMaterial();
+
+			uint64_t materialHandle = materialAsset->Handle;
 			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
 			auto& transformBuffer = m_SelectedMeshTransformMap[meshKey].Transforms.emplace_back();
 
@@ -1090,18 +1173,23 @@ namespace VulkanCore {
 		}
 	}
 
-	void SceneRenderer::SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform)
+	void SceneRenderer::SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialTable>& materialTable, const glm::mat4& transform)
 	{
 
 	}
 
-	void SceneRenderer::UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialAsset> materialAsset)
+	void SceneRenderer::UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialTable> materialTable)
 	{
+		auto meshSource = mesh->GetMeshSource();
+		auto& submeshData = meshSource->GetSubmeshes();
 		uint64_t meshHandle = mesh->Handle;
-		uint64_t materialHandle = materialAsset->Handle;
 
 		for (uint32_t submeshIndex : mesh->GetSubmeshes())
 		{
+			int materialIndex = submeshData[submeshIndex].MaterialIndex;
+			std::shared_ptr<MaterialAsset> materialAsset = materialTable->HasMaterial(materialIndex) ? materialTable->GetMaterial(materialIndex) : meshSource->GetBaseMaterial();
+
+			uint64_t materialHandle = materialAsset->Handle;
 			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
 			m_MeshTransformMap.erase(meshKey);
 			m_MeshDrawList.erase(meshKey);
@@ -1231,7 +1319,12 @@ namespace VulkanCore {
 			m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetAttachment()[frameIndex],
 			m_SceneRenderTextures[frameIndex]);
 
+		Renderer::CopyVulkanImage(m_SceneCommandBuffer,
+			m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[frameIndex],
+			m_SceneDepthTextures[frameIndex]);
+
 		Renderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
+		Renderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneDepthTextures[frameIndex]);
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 	}
@@ -1271,6 +1364,23 @@ namespace VulkanCore {
 
 			void* pixelData = frameBuffer->ReadPixel(m_SceneCommandBuffer, m_ImageBuffer[frameIndex], 0, m_SceneEditorData.ViewportMousePos.x, m_SceneEditorData.ViewportMousePos.y);
 			m_HoveredEntity = *(int*)pixelData;
+		});
+	}
+
+	void SceneRenderer::GTAOCompute()
+	{
+		Renderer::Submit([this]
+		{
+			auto vulkanGTAOPipeline = std::static_pointer_cast<VulkanComputePipeline>(m_GTAOPipeline);
+			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
+
+			VkCommandBuffer dispatchCmd = vulkanCmdBuffer->RT_GetActiveCommandBuffer();
+			vulkanGTAOPipeline->Bind(dispatchCmd);
+
+			glm::uvec2 workGroups = glm::ceil((glm::vec2)m_ViewportSize / 32.0f);
+			
+			m_GTAOMaterial->RT_BindMaterial(m_SceneCommandBuffer, m_GTAOPipeline);
+			vulkanGTAOPipeline->Dispatch(dispatchCmd, workGroups.x, workGroups.y, 1);
 		});
 	}
 
