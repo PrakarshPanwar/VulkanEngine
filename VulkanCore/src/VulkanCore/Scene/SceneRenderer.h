@@ -171,7 +171,7 @@ namespace VulkanCore {
 			float CascadeSplitLambda = 0.92f;
 			float CascadeNearPlaneOffset = 0.5f;
 			float CascadeFarPlaneOffset = 48.0f;
-			uint32_t MapSize = 2048;
+			uint32_t MapSize = 4096;
 			int CascadeOffset = 0;
 		} m_CSMSettings;
 	private:

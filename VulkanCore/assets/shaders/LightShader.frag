@@ -7,5 +7,9 @@ layout(binding = 1) uniform sampler2D u_LightTextureIcon;
 
 void main()
 {
-	o_Color = texture(u_LightTextureIcon, v_TexCoord);
+	vec4 color = texture(u_LightTextureIcon, v_TexCoord);
+	if (color.a < 0.5)
+		discard;
+
+	o_Color = color;
 }

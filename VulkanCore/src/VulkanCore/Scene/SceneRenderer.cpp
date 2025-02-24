@@ -156,7 +156,7 @@ namespace VulkanCore {
 			FramebufferSpecification shadowMapFramebufferSpec;
 			shadowMapFramebufferSpec.Width = m_CSMSettings.MapSize;
 			shadowMapFramebufferSpec.Height = m_CSMSettings.MapSize;
-			shadowMapFramebufferSpec.Attachments = { ImageFormat::DEPTH16F };
+			shadowMapFramebufferSpec.Attachments = { ImageFormat::DEPTH32F };
 			shadowMapFramebufferSpec.ReadDepthTexture = true;
 			shadowMapFramebufferSpec.Transfer = true;
 			shadowMapFramebufferSpec.Samples = 1;
