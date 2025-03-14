@@ -9,7 +9,8 @@ Entities:
       Scale: [0.100000001, 0.100000001, 0.00999999978]
     MeshComponent:
       MeshHandle: 9816593081404201911
-      MaterialHandle: 17021666477382963620
+      MaterialTable:
+        0: 17021666477382963620
   - Entity: 17464747021121101485
     TagComponent:
       Tag: SunLight
@@ -37,7 +38,8 @@ Entities:
       Scale: [1, 0.999997973, 0.999997973]
     MeshComponent:
       MeshHandle: 2677317853970780333
-      MaterialHandle: 18152442800595508283
+      MaterialTable:
+        0: 18152442800595508283
   - Entity: 13864300822302726875
     TagComponent:
       Tag: SkyLight
