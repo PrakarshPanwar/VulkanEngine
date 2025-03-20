@@ -32,8 +32,7 @@ namespace VulkanCore {
 		uint32_t Samples = 1;
 		uint32_t Layers = 1;
 		glm::vec4 ClearColor = { 0.01f, 0.01f, 0.01f, 1.0f };
-		bool Transfer = false;
-		bool ReadDepthTexture = false;
+		bool Transfer = false, ReadDepthTexture = false;
 	};
 
 	class Framebuffer : public Resource
