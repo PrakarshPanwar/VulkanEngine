@@ -13,6 +13,7 @@ IncludeDir["optick"] = "%{wks.location}/VulkanCore/vendor/Optick/include"
 IncludeDir["TinyObjLoader"] = "%{wks.location}/VulkanCore/vendor/tinyobjloader"
 IncludeDir["VulkanSDK"] = "%{wks.location}/VulkanCore/vendor/VulkanSDK/Include"
 IncludeDir["Assimp"] = "%{wks.location}/VulkanCore/vendor/Assimp/include"
+IncludeDir["Jolt"] = "%{wks.location}/VulkanCore/vendor/JoltPhysics"
 
 LibraryDir = {}
 LibraryDir["VulkanSDK"] = "%{wks.location}/VulkanCore/vendor/VulkanSDK/Lib"

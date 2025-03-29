@@ -2,6 +2,7 @@
 #include <entt.hpp>
 #include "VulkanCore/Core/Components.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
+#include "PhysicsWorld.h"
 
 namespace VulkanCore {
 
@@ -33,8 +34,18 @@ namespace VulkanCore {
 
 		inline AssetType GetType() const override { return AssetType::Scene; }
 		static AssetType GetStaticType() { return AssetType::Scene; }
+
+		template<typename... Components>
+		auto GetAllEntitiesWith()
+		{
+			return m_Registry.view<Components...>();
+		}
+	private:
+		void OnCreatePhysicsWorld();
+		void OnDestroyPhysicsWorld();
 	private:
 		entt::registry m_Registry;
+		std::unique_ptr<PhysicsWorld> m_PhysicsWorld;
 
 		friend class Entity;
 		friend class SceneHierarchyPanel;

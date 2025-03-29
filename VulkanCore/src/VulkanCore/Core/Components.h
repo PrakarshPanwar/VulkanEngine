@@ -151,6 +151,55 @@ namespace VulkanCore {
 		AssetHandle TextureHandle = 0;
 	};
 
+	struct Rigidbody3DComponent // Entity ID will be Body ID
+	{
+		enum class BodyType { Static = 0, Dynamic, Kinematic };
+		BodyType Type = BodyType::Static;
+		bool FixedRotation = false;
+
+		// Storage for runtime
+		void* RuntimeBody = nullptr;
+
+		Rigidbody3DComponent() = default;
+		Rigidbody3DComponent(const Rigidbody3DComponent&) = default;
+	};
+
+	struct BoxCollider3DComponent
+	{
+		glm::vec3 Offset{ 0.0f };
+		glm::vec3 Size{ 0.5f };
+
+		// TODO: Move into Physics Material in the future maybe
+		float Density = 1.0f;
+		float Friction = 0.5f;
+		float Restitution = 0.0f;
+		float RestitutionThreshold = 0.5f;
+
+		// Storage for runtime
+		void* RuntimeFixture = nullptr;
+
+		BoxCollider3DComponent() = default;
+		BoxCollider3DComponent(const BoxCollider3DComponent&) = default;
+	};
+
+	struct SphereColliderComponent
+	{
+		glm::vec3 Offset{ 0.0f };
+		float Radius = 0.5f;
+
+		// TODO: Move into Physics Material in the future maybe
+		float Density = 1.0f;
+		float Friction = 0.5f;
+		float Restitution = 0.0f;
+		float RestitutionThreshold = 0.5f;
+
+		// Storage for runtime
+		void* RuntimeFixture = nullptr;
+
+		SphereColliderComponent() = default;
+		SphereColliderComponent(const SphereColliderComponent&) = default;
+	};
+
 	struct UBCamera
 	{
 		glm::mat4 Projection{ 1.0f };
