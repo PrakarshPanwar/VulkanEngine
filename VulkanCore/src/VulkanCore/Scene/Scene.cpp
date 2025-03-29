@@ -11,6 +11,7 @@ namespace VulkanCore {
 
 	Scene::Scene()
 	{
+		m_PhysicsWorld = PhysicsWorld::Create();
 	}
 
 	Scene::~Scene()
@@ -172,6 +173,16 @@ namespace VulkanCore {
 	void Scene::DestroyEntity(Entity entity)
 	{
 		m_Registry.destroy(entity);
+	}
+
+	void Scene::OnCreatePhysicsWorld()
+	{
+		m_PhysicsWorld->CreateBodies(this);
+	}
+
+	void Scene::OnDestroyPhysicsWorld()
+	{
+
 	}
 
 }
