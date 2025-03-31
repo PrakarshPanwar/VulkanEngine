@@ -12,7 +12,7 @@ namespace VulkanCore {
 
 		void Init(Scene* scene) override;
 		void Update(Scene* scene) override;
-		void DestroyBodies() override; // No need
+		void DestroySystem() override;
 
 		void CreateBodies(Scene* scene) override;
 		void RemoveAndDestroyBodies(Scene* scene) override;

@@ -113,7 +113,7 @@ namespace VulkanCore {
 		}
 	}
 
-	void JoltPhysicsWorld::DestroyBodies()
+	void JoltPhysicsWorld::DestroySystem()
 	{
 		if (m_PhysicsSystem)
 		{

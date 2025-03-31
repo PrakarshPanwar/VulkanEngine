@@ -291,6 +291,7 @@ namespace VulkanCore {
 	void Scene::OnPhysicsWorldStop()
 	{
 		m_PhysicsWorld->RemoveAndDestroyBodies(this);
+		m_PhysicsWorld->DestroySystem();
 	}
 
 }
