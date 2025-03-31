@@ -173,10 +173,7 @@ namespace VulkanCore {
 		float Density = 1.0f;
 		float Friction = 0.5f;
 		float Restitution = 0.0f;
-		float RestitutionThreshold = 0.5f;
-
-		// Storage for runtime
-		void* RuntimeFixture = nullptr;
+		//float RestitutionThreshold = 0.5f;
 
 		BoxCollider3DComponent() = default;
 		BoxCollider3DComponent(const BoxCollider3DComponent&) = default;
@@ -191,10 +188,7 @@ namespace VulkanCore {
 		float Density = 1.0f;
 		float Friction = 0.5f;
 		float Restitution = 0.0f;
-		float RestitutionThreshold = 0.5f;
-
-		// Storage for runtime
-		void* RuntimeFixture = nullptr;
+		//float RestitutionThreshold = 0.5f;
 
 		SphereColliderComponent() = default;
 		SphereColliderComponent(const SphereColliderComponent&) = default;
@@ -234,5 +228,15 @@ namespace VulkanCore {
 		glm::vec4 Position{};
 		int EntityID = -1;
 	};
+
+	template<typename... Component>
+	struct ComponentGroup
+	{
+	};
+
+	using AllComponents =
+		ComponentGroup<TransformComponent, MeshComponent,
+		PointLightComponent, SpotLightComponent, DirectionalLightComponent, SkyLightComponent,
+		Rigidbody3DComponent, BoxCollider3DComponent, SphereColliderComponent>;
 
 }

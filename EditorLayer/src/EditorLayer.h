@@ -36,6 +36,7 @@ namespace VulkanCore {
 		bool OnMouseScroll(MouseScrolledEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
 		void RenderGizmo();
+		void UI_Toolbar();
 
 		void NewScene();
 		void OpenScene();
@@ -43,8 +44,18 @@ namespace VulkanCore {
 		void SaveScene();
 		void SaveSceneAs();
 		void SerializeScene(std::shared_ptr<Scene> scene, const std::filesystem::path& scenePath);
+
+		void OnScenePlay();
+		void OnSceneSimulate();
+		void OnSceneStop();
+		void OnScenePause();
 	private:
-		std::shared_ptr<Scene> m_Scene;
+		enum class SceneState
+		{
+			Edit = 0, Play = 1, Simulate = 2
+		} m_SceneState = SceneState::Edit;
+	private:
+		std::shared_ptr<Scene> m_ActiveScene, m_EditorScene;
 		std::shared_ptr<SceneRenderer> m_SceneRenderer;
 		std::filesystem::path m_EditorScenePath;
 		EditorCamera m_EditorCamera;
@@ -67,8 +78,8 @@ namespace VulkanCore {
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		std::unique_ptr<ContentBrowserPanel> m_ContentBrowserPanel;
 
-		std::shared_ptr<Texture2D> m_MenuIcon;
-		VkDescriptorSet m_MenuIconID;
+		std::shared_ptr<Texture2D> m_MenuIcon, m_PlayIcon, m_PauseIcon, m_StepIcon, m_SimulateIcon, m_StopIcon;
+		VkDescriptorSet m_MenuIconID, m_PlayIconID, m_PauseIconID, m_StepIconID, m_SimulateIconID, m_StopIconID;
 	};
 
 }

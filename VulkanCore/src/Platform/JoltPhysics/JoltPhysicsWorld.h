@@ -11,16 +11,18 @@ namespace VulkanCore {
 		~JoltPhysicsWorld();
 
 		void Init(Scene* scene) override;
-		void Update(float dt) override;
-		void Destroy() override;
+		void Update(Scene* scene) override;
+		void DestroyBodies() override; // No need
 
 		void CreateBodies(Scene* scene) override;
+		void RemoveAndDestroyBodies(Scene* scene) override;
 	//protected:
 		//void CreateBoxShape(Scene* scene) override;
 		//void CreateSphereShape(Scene* scene) override;
 	private:
-		JPH::PhysicsSystem* m_PhysicsSystem;
-		JPH::JobSystemThreadPool* m_JobSystem;
+		JPH::PhysicsSystem* m_PhysicsSystem = nullptr;
+		JPH::TempAllocator* m_TempAllocator = nullptr;
+		JPH::JobSystemThreadPool* m_JobSystem = nullptr;
 
 		// Create mapping table from object layer to broadphase layer
 		// Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!

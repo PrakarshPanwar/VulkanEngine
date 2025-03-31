@@ -42,13 +42,26 @@ namespace VulkanCore {
 		m_AssetManagerBase = std::make_shared<EditorAssetManager>();
 		AssetManager::Init(m_AssetManagerBase);
 
+		// TODO: Move this to Icon class
 		m_MenuIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/MenuIcon.png");
+		m_PlayIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/PlayIcon.png");
+		m_PauseIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/PauseIcon.png");
+		m_StepIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/StepIcon.png");
+		m_SimulateIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/SimulateIcon.png");
+		m_StopIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/StopIcon.png");
+
 		m_MenuIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_MenuIcon));
+		m_PlayIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_PlayIcon));
+		m_PauseIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_PauseIcon));
+		m_StepIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_StepIcon));
+		m_SimulateIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_SimulateIcon));
+		m_StopIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_StopIcon));
 
-		m_Scene = std::make_shared<Scene>();
-		m_SceneRenderer = std::make_shared<SceneRenderer>(m_Scene);
+		m_EditorScene = std::make_shared<Scene>();
+		m_ActiveScene = m_EditorScene;
+		m_SceneRenderer = std::make_shared<SceneRenderer>(m_ActiveScene);
 
-		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
+		m_SceneHierarchyPanel = SceneHierarchyPanel(m_ActiveScene);
 		m_ContentBrowserPanel = std::make_unique<ContentBrowserPanel>();
 
 		auto commandLineArgs = Application::Get()->GetSpecification().CommandLineArgs;
@@ -72,6 +85,26 @@ namespace VulkanCore {
 
 		if ((m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing()) || m_EditorCamera.IsInFly())
 			m_EditorCamera.OnUpdate();
+
+		switch (m_SceneState)
+		{
+		case SceneState::Edit:
+		{
+			m_EditorCamera.OnUpdate();
+			break;
+		}
+		case SceneState::Simulate:
+		{
+			m_EditorCamera.OnUpdate();
+			m_ActiveScene->OnUpdateSimulation();
+			break;
+		}
+		case SceneState::Play:
+		{
+			m_ActiveScene->OnUpdateRuntime();
+			break;
+		}
+		}
 
 		// Mouse Position relative to Viewport
 		auto [mx, my] = Input::GetMousePosition();
@@ -338,7 +371,7 @@ namespace VulkanCore {
 			&& !ImGui::IsKeyDown(ImGuiKey_LeftAlt) && !ImGuizmo::IsOver())
 		{
 			int entityHandle = m_SceneRenderer->GetHoveredEntity();
-			Entity hoveredEntity = entityHandle == -1 ? Entity{} : Entity{ (entt::entity)entityHandle, m_Scene.get() };
+			Entity hoveredEntity = entityHandle == -1 ? Entity{} : Entity{ (entt::entity)entityHandle, m_ActiveScene.get() };
 
 			m_SceneHierarchyPanel.SetSelectedEntity(hoveredEntity);
 		}
@@ -360,6 +393,7 @@ namespace VulkanCore {
 		RenderGizmo();
 		ImGui::End(); // End of Viewport
 
+		UI_Toolbar();
 		m_SceneHierarchyPanel.OnImGuiRender();
 		m_ContentBrowserPanel->OnImGuiRender();
 		m_SceneRenderer->OnImGuiRender();
@@ -562,11 +596,93 @@ namespace VulkanCore {
 		}
 	}
 
+	void EditorLayer::UI_Toolbar()
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+		auto& colors = ImGui::GetStyle().Colors;
+		const auto& buttonHovered = colors[ImGuiCol_ButtonHovered];
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(buttonHovered.x, buttonHovered.y, buttonHovered.z, 0.5f));
+		const auto& buttonActive = colors[ImGuiCol_ButtonActive];
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
+
+		ImGui::Begin("##Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+		bool toolbarEnabled = (bool)m_ActiveScene;
+
+		ImVec4 tintColor = ImVec4(1, 1, 1, 1);
+		if (!toolbarEnabled)
+			tintColor.w = 0.5f;
+
+		float size = ImGui::GetWindowHeight() - 4.0f;
+		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+
+		bool hasPlayButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play;
+		bool hasSimulateButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate;
+		bool hasPauseButton = m_SceneState != SceneState::Edit;
+
+		if (hasPlayButton)
+		{
+			auto icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate) ? m_PlayIconID : m_StopIconID;
+			if (ImGui::ImageButton("##PlayState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
+			{
+				if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate)
+					OnScenePlay();
+				else if (m_SceneState == SceneState::Play)
+					OnSceneStop();
+			}
+		}
+
+		if (hasSimulateButton)
+		{
+			if (hasPlayButton)
+				ImGui::SameLine();
+
+			auto icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play) ? m_SimulateIconID : m_StopIconID;
+			if (ImGui::ImageButton("##SimulateState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
+			{
+				if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play)
+					OnSceneSimulate();
+				else if (m_SceneState == SceneState::Simulate)
+					OnSceneStop();
+			}
+		}
+		if (hasPauseButton)
+		{
+			bool isPaused = m_ActiveScene->IsPaused();
+			ImGui::SameLine();
+			{
+				if (ImGui::ImageButton("##PauseState", (ImTextureID)m_PauseIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
+				{
+					m_ActiveScene->SetPaused(!isPaused);
+				}
+			}
+
+			// Step button
+			if (isPaused)
+			{
+				ImGui::SameLine();
+				{
+					bool isPaused = m_ActiveScene->IsPaused();
+					if (ImGui::ImageButton("##StepState", (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
+					{
+						m_ActiveScene->StepFrames();
+					}
+				}
+			}
+		}
+
+		ImGui::PopStyleVar(2);
+		ImGui::PopStyleColor(3);
+		ImGui::End();
+	}
+
 	void EditorLayer::NewScene()
 	{
-		m_Scene = std::make_shared<Scene>();
-		m_SceneRenderer->SetActiveScene(m_Scene);
-		m_SceneHierarchyPanel.SetContext(m_Scene);
+		m_ActiveScene = std::make_shared<Scene>();
+		m_SceneRenderer->SetActiveScene(m_ActiveScene);
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
 		m_EditorScenePath = std::filesystem::path();
 	}
@@ -591,9 +707,11 @@ namespace VulkanCore {
 		auto newScene = AssetManager::GetAsset<Scene>(path);
 		if (newScene)
 		{
-			m_Scene = newScene;
-			m_SceneRenderer->SetActiveScene(m_Scene);
-			m_SceneHierarchyPanel.SetContext(m_Scene);
+			m_ActiveScene = newScene;
+			m_EditorScene = newScene;
+
+			m_SceneRenderer->SetActiveScene(m_ActiveScene);
+			m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 			m_EditorScenePath = path;
 		}
 	}
@@ -601,7 +719,7 @@ namespace VulkanCore {
 	void EditorLayer::SaveScene()
 	{
 		if (!m_EditorScenePath.empty())
-			SerializeScene(m_Scene, m_EditorScenePath);
+			SerializeScene(m_ActiveScene, m_EditorScenePath);
 		else
 			SaveSceneAs();
 	}
@@ -611,9 +729,61 @@ namespace VulkanCore {
 		std::string filepath = FileDialogs::SaveFile("VulkanEngine Scene (*.vkscene)\0*.vkscene\0");
 		if (!filepath.empty())
 		{
-			SerializeScene(m_Scene, filepath);
+			SerializeScene(m_ActiveScene, filepath);
 			m_EditorScenePath = filepath;
 		}
+	}
+
+	void EditorLayer::OnScenePlay()
+	{
+		if (m_SceneState == SceneState::Simulate)
+			OnSceneStop();
+
+		m_SceneState = SceneState::Play;
+
+		m_ActiveScene = Scene::CopyScene(m_EditorScene);
+		m_ActiveScene->OnRuntimeStart();
+
+		m_SceneRenderer->SetActiveScene(m_ActiveScene);
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+	}
+
+	void EditorLayer::OnSceneSimulate()
+	{
+		if (m_SceneState == SceneState::Play)
+			OnSceneStop();
+
+		m_SceneState = SceneState::Simulate;
+
+		m_ActiveScene = Scene::CopyScene(m_EditorScene);
+		m_ActiveScene->OnSimulationStart();
+
+		m_SceneRenderer->SetActiveScene(m_ActiveScene);
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+	}
+
+	void EditorLayer::OnSceneStop()
+	{
+		VK_CORE_ASSERT(m_SceneState == SceneState::Play || m_SceneState == SceneState::Simulate, "Invalid Scene State!");
+
+		if (m_SceneState == SceneState::Play)
+			m_ActiveScene->OnRuntimeStop();
+		else if (m_SceneState == SceneState::Simulate)
+			m_ActiveScene->OnSimulationStop();
+
+		m_SceneState = SceneState::Edit;
+
+		m_ActiveScene = m_EditorScene;
+
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+	}
+
+	void EditorLayer::OnScenePause()
+	{
+		if (m_SceneState == SceneState::Edit)
+			return;
+
+		m_ActiveScene->SetPaused(true);
 	}
 
 	void EditorLayer::SerializeScene(std::shared_ptr<Scene> scene, const std::filesystem::path& scenePath)
