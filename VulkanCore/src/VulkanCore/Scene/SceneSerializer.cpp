@@ -90,7 +90,7 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		static std::map<std::string, Rigidbody3DComponent::BodyType> s_BodyTypeStrings = {
+		static std::map<std::string, Rigidbody3DComponent::BodyType> s_StringToBodyTypeMap = {
 			{ "Static", Rigidbody3DComponent::BodyType::Static },
 			{ "Dynamic", Rigidbody3DComponent::BodyType::Dynamic },
 			{ "Kinematic", Rigidbody3DComponent::BodyType::Kinematic }
@@ -436,7 +436,7 @@ namespace VulkanCore {
 				if (rigidbody3DComponent)
 				{
 					auto& rb3d = deserializedEntity.AddComponent<Rigidbody3DComponent>();
-					rb3d.Type = Utils::s_BodyTypeStrings[rigidbody3DComponent["BodyType"].as<std::string>()];
+					rb3d.Type = Utils::s_StringToBodyTypeMap[rigidbody3DComponent["BodyType"].as<std::string>()];
 					rb3d.FixedRotation = rigidbody3DComponent["FixedRotation"].as<bool>();
 				}
 
