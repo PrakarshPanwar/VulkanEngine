@@ -23,11 +23,26 @@
 namespace VulkanCore {
 
 	JoltPhysicsWorld::JoltPhysicsWorld()
-		: m_PhysicsSystem(new JPH::PhysicsSystem), m_ObjectVsBroadPhaseLayerFilter(), m_ObjectVsObjectLayerFilter()
 	{
+		// Register allocation hook. In this example we'll just let Jolt use malloc / free but you can override these if you want (see Memory.h).
+		// This needs to be done before any other Jolt function is called.
+		JPH::RegisterDefaultAllocator();
+
+		// Create a factory, this class is responsible for creating instances of classes based on their name or hash and is mainly used for deserialization of saved data.
+		// It is not directly used currently but still required.
 		JPH::Factory::sInstance = new JPH::Factory();
 
-		m_JobSystem = new JPH::JobSystemThreadPool(2, 2, 2);
+		// Register all physics types with the factory and install their collision handlers with the CollisionDispatch class.
+		// If you have your own custom shape types you probably need to register their handlers with the CollisionDispatch before calling this function.
+		// If you implement your own default material (PhysicsMaterial::sDefault) make sure to initialize it before this function or else this function will create one for you.
+		JPH::RegisterTypes();
+
+		m_TempAllocator = new JPH::TempAllocatorImpl(10 * 1024 * 1024); // 10 MB
+
+		// We need a job system that will execute physics jobs on multiple threads
+		// Typically you would implement the JobSystem interface yourself and let Jolt Physics run on top
+		// of your own job scheduler. JobSystemThreadPool is an example implementation.
+		m_JobSystem = new JPH::JobSystemThreadPool(2048, 8, 2);
 	}
 
 	JoltPhysicsWorld::~JoltPhysicsWorld()
@@ -40,27 +55,71 @@ namespace VulkanCore {
 		JPH::Factory::sInstance = nullptr;
 
 		if (m_JobSystem)
+		{
 			delete m_JobSystem;
+			m_JobSystem = nullptr;
+		}
+
+		if (m_TempAllocator)
+		{
+			delete m_TempAllocator;
+			m_TempAllocator = nullptr;
+		}
 
 		if (m_PhysicsSystem)
+		{
 			delete m_PhysicsSystem;
+			m_PhysicsSystem = nullptr;
+		}
 	}
 
 	void JoltPhysicsWorld::Init(Scene* scene)
 	{
-		JPH::RegisterDefaultAllocator();
+		// Create the Physics System
+		JPH::PhysicsSettings jphSettings{};
+		jphSettings.mNumVelocitySteps = 6;
+		jphSettings.mNumPositionSteps = 2;
 
+		m_PhysicsSystem = new JPH::PhysicsSystem;
 		m_PhysicsSystem->Init(MAX_BODIES, NUM_BODY_MUTEXES, MAX_BODY_PAIRS, MAX_CONTACT_CONSTRAINTS, m_BroadPhaseLayerInterface, m_ObjectVsBroadPhaseLayerFilter, m_ObjectVsObjectLayerFilter);
+		m_PhysicsSystem->SetPhysicsSettings(jphSettings);
+		m_PhysicsSystem->SetGravity(JPH::Vec3(0, -9.81f, 0)); // Default Gravity
 	}
 
-	void JoltPhysicsWorld::Update(float dt)
+	void JoltPhysicsWorld::Update(Scene* scene)
 	{
-		m_PhysicsSystem->Update(dt, 1, nullptr, m_JobSystem);
+		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
+
+		constexpr uint32_t collisionSteps = 1;
+		constexpr float deltaTime = 1.0f / 60.0f; // It's kept at 60 FPS shouldn't be variable to Timestep
+
+		m_PhysicsSystem->Update(deltaTime, collisionSteps, m_TempAllocator, m_JobSystem);
+
+		// Update Transform Components
+		auto view = scene->GetAllEntitiesWith<TransformComponent, Rigidbody3DComponent>();
+		for (auto e : view)
+		{
+			auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(e);
+			auto bodyID = JPH::BodyID{ (uint32_t)e };
+
+			// Get Body Position and Rotation
+			JPH::RVec3 bodyPosition = bodyInterface.GetPosition(bodyID);
+			JPH::Quat bodyQuaternion = bodyInterface.GetRotation(bodyID);
+			JPH::Vec3 bodyRotation = bodyQuaternion.GetEulerAngles();
+
+			// Update Transform
+			transform.Translation = { bodyPosition.GetX(), bodyPosition.GetY(), bodyPosition.GetZ() };
+			transform.Rotation = { bodyRotation.GetX(), bodyRotation.GetY(), bodyRotation.GetZ() };
+		}
 	}
 
-	void JoltPhysicsWorld::Destroy()
+	void JoltPhysicsWorld::DestroyBodies()
 	{
-		auto& bodyInterface = m_PhysicsSystem->GetBodyInterface();
+		if (m_PhysicsSystem)
+		{
+			delete m_PhysicsSystem;
+			m_PhysicsSystem = nullptr;
+		}
 	}
 
 	void JoltPhysicsWorld::CreateBodies(Scene* scene)
@@ -76,21 +135,32 @@ namespace VulkanCore {
 			Entity entity = { e, scene };
 			if (entity.HasComponent<BoxCollider3DComponent>())
 			{
-				auto bc3d = entity.GetComponent<BoxCollider3DComponent>();
+				auto& bc3d = entity.GetComponent<BoxCollider3DComponent>();
+
 				JPH::BoxShapeSettings boxSettings{ JPH::Vec3(bc3d.Size.x, bc3d.Size.y, bc3d.Size.z) };
+				boxSettings.SetDensity(bc3d.Density);
+
 				auto shapeResult = boxSettings.Create();
 				auto shapeRef = shapeResult.Get();
+
+				// Obtain Transforms
+				glm::quat gquat(transform.Rotation);
+				auto bodyTransform = JPH::RVec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
+				auto bodyQuaternion = JPH::Quat(gquat.x, gquat.y, gquat.z, gquat.w);
 
 				// Set Body Settings
 				JPH::BodyCreationSettings settings{
 					shapeRef,
-					JPH::Vec3(bc3d.Offset.x, bc3d.Offset.y, bc3d.Offset.z),
-					JPH::Quat::sIdentity(),
+					bodyTransform,
+					bodyQuaternion,
 					motionType,
 					objectLayer
 				};
 
-				auto bodyPtr = bodyInterface.CreateBodyWithID(JPH::BodyID{ (uint32_t)e }, settings); // Create Body
+				auto bodyPtr = bodyInterface.CreateBodyWithID(JPH::BodyID{ (uint32_t)e }, settings); // Create Body with Entity ID
+				bodyPtr->SetFriction(bc3d.Friction);
+				bodyPtr->SetRestitution(bc3d.Restitution);
+
 				bodyInterface.AddBody(bodyPtr->GetID(), activation); // Add Body
 
 				rb3d.RuntimeBody = bodyPtr;
@@ -98,26 +168,49 @@ namespace VulkanCore {
 
 			if (entity.HasComponent<SphereColliderComponent>())
 			{
-				auto sc3d = entity.GetComponent<SphereColliderComponent>();
+				auto& sc3d = entity.GetComponent<SphereColliderComponent>();
 
 				JPH::SphereShapeSettings sphereSettings{ sc3d.Radius };
+				sphereSettings.SetDensity(sc3d.Density);
+
 				auto shapeResult = sphereSettings.Create();
 				auto shapeRef = shapeResult.Get();
 
 				// Set Body Settings
 				JPH::BodyCreationSettings settings{
 					shapeRef,
-					JPH::Vec3(sc3d.Offset.x, sc3d.Offset.y, sc3d.Offset.z),
+					JPH::RVec3(transform.Translation.x, transform.Translation.y, transform.Translation.z),
 					JPH::Quat::sIdentity(),
 					motionType,
 					objectLayer
 				};
 
-				auto bodyPtr = bodyInterface.CreateBodyWithID(JPH::BodyID{ (uint32_t)e }, settings); // Create Body
+				auto bodyPtr = bodyInterface.CreateBodyWithID(JPH::BodyID{ (uint32_t)e }, settings); // Create Body with Entity ID
+				bodyPtr->SetFriction(sc3d.Friction);
+				bodyPtr->SetRestitution(sc3d.Restitution);
+
 				bodyInterface.AddBody(bodyPtr->GetID(), activation); // Add Body
 
 				rb3d.RuntimeBody = bodyPtr;
 			}
+		}
+
+		// Optimize Broad Phase Tree
+		m_PhysicsSystem->OptimizeBroadPhase();
+	}
+
+	void JoltPhysicsWorld::RemoveAndDestroyBodies(Scene* scene)
+	{
+		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
+
+		auto view = scene->GetAllEntitiesWith<TransformComponent, Rigidbody3DComponent>();
+		for (auto e : view)
+		{
+			auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(e);
+			auto bodyID = JPH::BodyID{ (uint32_t)e };
+
+			bodyInterface.RemoveBody(bodyID);  // Remove Body
+			bodyInterface.DestroyBody(bodyID); // Destroy Body
 		}
 	}
 

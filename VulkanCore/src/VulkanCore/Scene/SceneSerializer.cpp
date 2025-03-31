@@ -88,6 +88,29 @@ namespace YAML {
 
 namespace VulkanCore {
 
+	namespace Utils {
+
+		static std::map<std::string, Rigidbody3DComponent::BodyType> s_BodyTypeStrings = {
+			{ "Static", Rigidbody3DComponent::BodyType::Static },
+			{ "Dynamic", Rigidbody3DComponent::BodyType::Dynamic },
+			{ "Kinematic", Rigidbody3DComponent::BodyType::Kinematic }
+		};
+
+		static std::string RigidBody3DBodyTypeToString(Rigidbody3DComponent::BodyType bodyType)
+		{
+			switch (bodyType)
+			{
+			case Rigidbody3DComponent::BodyType::Static:    return "Static";
+			case Rigidbody3DComponent::BodyType::Dynamic:   return "Dynamic";
+			case Rigidbody3DComponent::BodyType::Kinematic: return "Kinematic";
+			default:
+				VK_CORE_ASSERT(false, "Unknown body type");
+				return {};
+			}
+		}
+
+	}
+
 	static YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
 	{
 		out << YAML::Flow;
@@ -210,6 +233,50 @@ namespace VulkanCore {
 			out << YAML::EndMap; // End Material Table
 
 			out << YAML::EndMap;
+		}
+
+		if (entity.HasComponent<Rigidbody3DComponent>())
+		{
+			out << YAML::Key << "Rigidbody3DComponent";
+			out << YAML::BeginMap; // Rigidbody3DComponent
+
+			auto& rb3dComponent = entity.GetComponent<Rigidbody3DComponent>();
+			out << YAML::Key << "BodyType" << YAML::Value << Utils::RigidBody3DBodyTypeToString(rb3dComponent.Type);
+			out << YAML::Key << "FixedRotation" << YAML::Value << rb3dComponent.FixedRotation;
+
+			out << YAML::EndMap; // Rigidbody3DComponent
+		}
+
+		if (entity.HasComponent<BoxCollider3DComponent>())
+		{
+			out << YAML::Key << "BoxCollider3DComponent";
+			out << YAML::BeginMap; // BoxCollider3DComponent
+
+			auto& bc3dComponent = entity.GetComponent<BoxCollider3DComponent>();
+			out << YAML::Key << "Offset" << YAML::Value << bc3dComponent.Offset;
+			out << YAML::Key << "Size" << YAML::Value << bc3dComponent.Size;
+			out << YAML::Key << "Density" << YAML::Value << bc3dComponent.Density;
+			out << YAML::Key << "Friction" << YAML::Value << bc3dComponent.Friction;
+			out << YAML::Key << "Restitution" << YAML::Value << bc3dComponent.Restitution;
+			//out << YAML::Key << "RestitutionThreshold" << YAML::Value << bc3dComponent.RestitutionThreshold;
+
+			out << YAML::EndMap; // BoxCollider3DComponent
+		}
+
+		if (entity.HasComponent<SphereColliderComponent>())
+		{
+			out << YAML::Key << "SphereColliderComponent";
+			out << YAML::BeginMap; // SphereColliderComponent
+
+			auto& sc3dComponent = entity.GetComponent<SphereColliderComponent>();
+			out << YAML::Key << "Offset" << YAML::Value << sc3dComponent.Offset;
+			out << YAML::Key << "Radius" << YAML::Value << sc3dComponent.Radius;
+			out << YAML::Key << "Density" << YAML::Value << sc3dComponent.Density;
+			out << YAML::Key << "Friction" << YAML::Value << sc3dComponent.Friction;
+			out << YAML::Key << "Restitution" << YAML::Value << sc3dComponent.Restitution;
+			//out << YAML::Key << "RestitutionThreshold" << YAML::Value << cc3dComponent.RestitutionThreshold;
+
+			out << YAML::EndMap; // SphereColliderComponent
 		}
 
 		out << YAML::EndMap; // Entity
@@ -363,6 +430,38 @@ namespace VulkanCore {
 					std::shared_ptr<MaterialAsset> materialAsset = materialTableAssets[0]; // Default Base Material
 					std::shared_ptr<MeshSource> meshSource = mesh->GetMeshSource();
 					meshSource->SetBaseMaterial(materialAsset);
+				}
+
+				auto rigidbody3DComponent = entity["Rigidbody3DComponent"];
+				if (rigidbody3DComponent)
+				{
+					auto& rb3d = deserializedEntity.AddComponent<Rigidbody3DComponent>();
+					rb3d.Type = Utils::s_BodyTypeStrings[rigidbody3DComponent["BodyType"].as<std::string>()];
+					rb3d.FixedRotation = rigidbody3DComponent["FixedRotation"].as<bool>();
+				}
+
+				auto boxCollider3DComponent = entity["BoxCollider3DComponent"];
+				if (boxCollider3DComponent)
+				{
+					auto& bc3d = deserializedEntity.AddComponent<BoxCollider3DComponent>();
+					bc3d.Offset = boxCollider3DComponent["Offset"].as<glm::vec3>();
+					bc3d.Size = boxCollider3DComponent["Size"].as<glm::vec3>();
+					bc3d.Density = boxCollider3DComponent["Density"].as<float>();
+					bc3d.Friction = boxCollider3DComponent["Friction"].as<float>();
+					bc3d.Restitution = boxCollider3DComponent["Restitution"].as<float>();
+					//bc3d.RestitutionThreshold = boxCollider3DComponent["RestitutionThreshold"].as<float>();
+				}
+
+				auto sphereColliderComponent = entity["SphereColliderComponent"];
+				if (sphereColliderComponent)
+				{
+					auto& sc3d = deserializedEntity.AddComponent<SphereColliderComponent>();
+					sc3d.Offset = sphereColliderComponent["Offset"].as<glm::vec3>();
+					sc3d.Radius = sphereColliderComponent["Radius"].as<float>();
+					sc3d.Density = sphereColliderComponent["Density"].as<float>();
+					sc3d.Friction = sphereColliderComponent["Friction"].as<float>();
+					sc3d.Restitution = sphereColliderComponent["Restitution"].as<float>();
+					//sc3d.RestitutionThreshold = sphereColliderComponent["RestitutionThreshold"].as<float>();
 				}
 			}
 		}

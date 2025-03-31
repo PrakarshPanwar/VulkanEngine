@@ -18,6 +18,70 @@ namespace VulkanCore {
 	{
 	}
 
+	template<typename... Component>
+	static void CopyComponent(entt::registry& dst, entt::registry& src, const std::unordered_map<UUID, entt::entity>& enttMap)
+	{
+		([&]()
+		{
+			auto view = src.view<Component>();
+			for (auto srcEntity : view)
+			{
+				entt::entity dstEntity = enttMap.at(src.get<IDComponent>(srcEntity).ID);
+
+				auto& srcComponent = src.get<Component>(srcEntity);
+				dst.emplace_or_replace<Component>(dstEntity, srcComponent);
+			}
+		}(), ...);
+	}
+
+	template<typename... Component>
+	static void CopyComponent(ComponentGroup<Component...>, entt::registry& dst, entt::registry& src, const std::unordered_map<UUID, entt::entity>& enttMap)
+	{
+		CopyComponent<Component...>(dst, src, enttMap);
+	}
+
+#if 0
+	template<typename... Component>
+	static void CopyComponentIfExists(Entity dst, Entity src)
+	{
+		([&]()
+		{
+			if (src.HasComponent<Component>())
+				dst.AddOrReplaceComponent<Component>(src.GetComponent<Component>());
+		}(), ...);
+	}
+
+	template<typename... Component>
+	static void CopyComponentIfExists(ComponentGroup<Component...>, Entity dst, Entity src)
+	{
+		CopyComponentIfExists<Component...>(dst, src);
+	}
+#endif
+
+	std::shared_ptr<Scene> Scene::CopyScene(std::shared_ptr<Scene> other)
+	{
+		std::shared_ptr<Scene> newScene = std::make_shared<Scene>();
+
+		auto& srcSceneRegistry = other->m_Registry;
+		auto& dstSceneRegistry = newScene->m_Registry;
+		std::unordered_map<UUID, entt::entity> enttMap;
+
+		// Create entities in new scene
+		auto idView = srcSceneRegistry.view<IDComponent>();
+		for (auto e : idView)
+		{
+			UUID uuid = srcSceneRegistry.get<IDComponent>(e).ID;
+			const auto& name = srcSceneRegistry.get<TagComponent>(e).Tag;
+			Entity newEntity = newScene->CreateEntityWithUUID(uuid, name);
+			enttMap[uuid] = (entt::entity)newEntity;
+		}
+
+		// Copy components (except IDComponent and TagComponent)
+		CopyComponent(AllComponents{}, dstSceneRegistry, srcSceneRegistry, enttMap);
+
+		return newScene;
+	}
+
 	Entity Scene::CreateEntity(const std::string& name)
 	{
 		Entity entity = CreateEntityWithUUID(UUID{}, name);
@@ -175,14 +239,58 @@ namespace VulkanCore {
 		m_Registry.destroy(entity);
 	}
 
-	void Scene::OnCreatePhysicsWorld()
+	void Scene::OnRuntimeStart()
 	{
+		m_IsRunning = true;
+		OnPhysicsWorldStart();
+	}
+
+	void Scene::OnRuntimeStop()
+	{
+		m_IsRunning = false;
+		OnPhysicsWorldStop();
+	}
+
+	void Scene::OnSimulationStart()
+	{
+		OnPhysicsWorldStart();
+	}
+
+	void Scene::OnSimulationStop()
+	{
+		OnPhysicsWorldStop();
+	}
+
+	void Scene::OnUpdateRuntime()
+	{
+		if (!m_IsPaused || m_StepFrames-- > 0)
+		{
+			m_PhysicsWorld->Update(this);
+		}
+	}
+
+	void Scene::OnUpdateSimulation()
+	{
+		if (!m_IsPaused || m_StepFrames-- > 0)
+		{
+			m_PhysicsWorld->Update(this);
+		}
+	}
+
+	void Scene::StepFrames(int frames)
+	{
+		m_StepFrames = frames;
+	}
+
+	void Scene::OnPhysicsWorldStart()
+	{
+		m_PhysicsWorld->Init(this);
 		m_PhysicsWorld->CreateBodies(this);
 	}
 
-	void Scene::OnDestroyPhysicsWorld()
+	void Scene::OnPhysicsWorldStop()
 	{
-
+		m_PhysicsWorld->RemoveAndDestroyBodies(this);
 	}
 
 }

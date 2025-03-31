@@ -475,3 +475,7 @@ Asset Registry:
     Metadata:
       Filepath: scenes/TessellationDemo.vkscene
       Type: Scene
+  - Handle: 89283744953943652
+    Metadata:
+      Filepath: scenes/PhysicsDemo.vkscene
+      Type: Scene

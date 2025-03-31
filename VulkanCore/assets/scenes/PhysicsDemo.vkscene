@@ -1,0 +1,67 @@
+Scene: PhysicsDemo
+Entities:
+  - Entity: 18343649490291704536
+    TagComponent:
+      Tag: SkyLight
+    SkyLightComponent:
+      TextureHandle: 8997689789897987
+  - Entity: 1019278085276016114
+    TagComponent:
+      Tag: Ball
+    TransformComponent:
+      Translation: [-93.2919235, 131.515671, -0.0940544009]
+      Rotation: [0, -0, 0]
+      Scale: [5, 5, 5]
+    MeshComponent:
+      MeshHandle: 5887157471203535698
+      MaterialTable:
+        0: 17021666477382963620
+    Rigidbody3DComponent:
+      BodyType: Dynamic
+      FixedRotation: false
+    SphereColliderComponent:
+      Offset: [0, 0, 0]
+      Radius: 5
+      Density: 0.1
+      Friction: 0.5
+      Restitution: 1
+  - Entity: 14634636681268115515
+    TagComponent:
+      Tag: Plane2
+    TransformComponent:
+      Translation: [40.3777657, -22.4611225, 0]
+      Rotation: [0, 0, -0.500033736]
+      Scale: [49.9999809, 0.999999166, 20]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 17021666477382963620
+    Rigidbody3DComponent:
+      BodyType: Static
+      FixedRotation: false
+    BoxCollider3DComponent:
+      Offset: [0, 0, 0]
+      Size: [50, 1, 20]
+      Density: 0.5
+      Friction: 0.5
+      Restitution: 0
+  - Entity: 6393257465138400864
+    TagComponent:
+      Tag: Plane1
+    TransformComponent:
+      Translation: [-46.3496094, 25.7084541, 0]
+      Rotation: [0, 0, -0.476560354]
+      Scale: [60, 0.249999806, 20]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 18152442800595508283
+    Rigidbody3DComponent:
+      BodyType: Static
+      FixedRotation: false
+    BoxCollider3DComponent:
+      Offset: [0, 0, 0]
+      Size: [60, 0.25, 20]
+      Density: 0.5
+      Friction: 0.5
+      Restitution: 0.5

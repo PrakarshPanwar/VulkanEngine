@@ -22,6 +22,8 @@ namespace VulkanCore {
 		Scene();
 		~Scene();
 
+		static std::shared_ptr<Scene> CopyScene(std::shared_ptr<Scene> other);
+
 		Entity CreateEntity(const std::string& name);
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name);
 
@@ -32,19 +34,39 @@ namespace VulkanCore {
 		DirectionalLightComponent GetDirectionalLightData(int index = 0);
 		void DestroyEntity(Entity entity);
 
-		inline AssetType GetType() const override { return AssetType::Scene; }
-		static AssetType GetStaticType() { return AssetType::Scene; }
+		void OnRuntimeStart();
+		void OnRuntimeStop();
+
+		void OnSimulationStart();
+		void OnSimulationStop();
+
+		void OnUpdateRuntime();
+		void OnUpdateSimulation();
+		//void OnUpdateEditor();
 
 		template<typename... Components>
 		auto GetAllEntitiesWith()
 		{
 			return m_Registry.view<Components...>();
 		}
+
+		bool IsRunning() const { return m_IsRunning; }
+		bool IsPaused() const { return m_IsPaused; }
+
+		void SetPaused(bool paused) { m_IsPaused = paused; }
+		void StepFrames(int frames = 1);
+
+		inline AssetType GetType() const override { return AssetType::Scene; }
+		static AssetType GetStaticType() { return AssetType::Scene; }
 	private:
-		void OnCreatePhysicsWorld();
-		void OnDestroyPhysicsWorld();
+		void OnPhysicsWorldStart();
+		void OnPhysicsWorldStop();
 	private:
 		entt::registry m_Registry;
+		bool m_IsRunning = false;
+		bool m_IsPaused = false;
+		int m_StepFrames = 0;
+
 		std::unique_ptr<PhysicsWorld> m_PhysicsWorld;
 
 		friend class Entity;
