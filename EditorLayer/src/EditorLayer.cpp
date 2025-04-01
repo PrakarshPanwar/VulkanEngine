@@ -90,12 +90,10 @@ namespace VulkanCore {
 		{
 		case SceneState::Edit:
 		{
-			m_EditorCamera.OnUpdate();
 			break;
 		}
 		case SceneState::Simulate:
 		{
-			m_EditorCamera.OnUpdate();
 			m_ActiveScene->OnUpdateSimulation();
 			break;
 		}

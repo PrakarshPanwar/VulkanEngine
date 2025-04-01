@@ -65,3 +65,14 @@ Entities:
       Density: 0.5
       Friction: 0.5
       Restitution: 0.5
+  - Entity: 16176047089726445340
+    TagComponent:
+      Tag: Box
+    TransformComponent:
+      Translation: [12.5597267, -59.5910912, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshComponent:
+      MeshHandle: 13298553466856253940
+      MaterialTable:
+        0: 17021666477382963620

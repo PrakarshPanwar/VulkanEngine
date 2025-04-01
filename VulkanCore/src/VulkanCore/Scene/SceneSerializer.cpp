@@ -296,14 +296,16 @@ namespace VulkanCore {
 		out << YAML::Key << "Scene" << YAML::Value << scenePath.stem().string();
 		out << YAML::Key << "Entities";
 		out << YAML::Value << YAML::BeginSeq;
-		m_Scene->m_Registry.each([&](auto entityID)
+
+		auto view = m_Scene->m_Registry.view<entt::entity>();
+		for (auto entityID : view)
 		{
 			Entity entity = { entityID, m_Scene.get() };
 			if (!entity)
 				return;
 
 			SerializeEntity(out, entity);
-		});
+		}
 
 		out << YAML::EndSeq;
 		out << YAML::EndMap;

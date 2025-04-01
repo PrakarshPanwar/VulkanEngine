@@ -157,9 +157,6 @@ namespace VulkanCore {
 		BodyType Type = BodyType::Static;
 		bool FixedRotation = false;
 
-		// Storage for runtime
-		void* RuntimeBody = nullptr;
-
 		Rigidbody3DComponent() = default;
 		Rigidbody3DComponent(const Rigidbody3DComponent&) = default;
 	};
@@ -192,6 +189,18 @@ namespace VulkanCore {
 
 		SphereColliderComponent() = default;
 		SphereColliderComponent(const SphereColliderComponent&) = default;
+	};
+
+	struct MeshColliderComponent // Convex Hull Body
+	{
+		// TODO: Move into Physics Material in the future maybe
+		float Density = 1.0f;
+		float Friction = 0.5f;
+		float Restitution = 0.0f;
+		//float RestitutionThreshold = 0.5f;
+
+		MeshColliderComponent() = default;
+		MeshColliderComponent(const MeshColliderComponent&) = default;
 	};
 
 	struct UBCamera
@@ -237,6 +246,6 @@ namespace VulkanCore {
 	using AllComponents =
 		ComponentGroup<TransformComponent, MeshComponent,
 		PointLightComponent, SpotLightComponent, DirectionalLightComponent, SkyLightComponent,
-		Rigidbody3DComponent, BoxCollider3DComponent, SphereColliderComponent>;
+		Rigidbody3DComponent, BoxCollider3DComponent, SphereColliderComponent, MeshColliderComponent>;
 
 }

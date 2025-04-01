@@ -96,11 +96,12 @@ namespace VulkanCore {
 
 		if (m_Context)
 		{
-			m_Context->m_Registry.each([&](auto entityID)
+			auto view = m_Context->m_Registry.view<entt::entity>();
+			for (auto entityID : view)
 			{
 				Entity entity{ entityID, m_Context.get() };
 				DrawEntityNode(entity);
-			});
+			}
 
 			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
 				m_SelectionContext = {};
@@ -266,6 +267,7 @@ namespace VulkanCore {
 			DisplayAddComponentEntry<Rigidbody3DComponent>("Rigidbody 3D");
 			DisplayAddComponentEntry<BoxCollider3DComponent>("Box Collider 3D");
 			DisplayAddComponentEntry<SphereColliderComponent>("Sphere Collider 3D");
+			DisplayAddComponentEntry<MeshColliderComponent>("Mesh Collider");
 
 			ImGui::EndPopup();
 		}
@@ -528,6 +530,14 @@ namespace VulkanCore {
 		{
 			ImGui::DragFloat3("Offset", glm::value_ptr(component.Offset));
 			ImGui::DragFloat("Radius", &component.Radius);
+			ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+			//ImGui::DragFloat("Restitution Threshold", &component.RestitutionThreshold, 0.01f, 0.0f);
+		});
+
+		DrawComponent<MeshColliderComponent>("Mesh Collider", entity, [](auto& component)
+		{
 			ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 1.0f);
 			ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f);
 			ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);

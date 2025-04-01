@@ -68,10 +68,10 @@ namespace VulkanCore {
 
 		// Create entities in new scene
 		auto idView = srcSceneRegistry.view<IDComponent>();
-		for (auto e : idView)
+		for (auto entityID : idView)
 		{
-			UUID uuid = srcSceneRegistry.get<IDComponent>(e).ID;
-			const auto& name = srcSceneRegistry.get<TagComponent>(e).Tag;
+			UUID uuid = srcSceneRegistry.get<IDComponent>(entityID).ID;
+			const auto& name = srcSceneRegistry.get<TagComponent>(entityID).Tag;
 			Entity newEntity = newScene->CreateEntityWithUUID(uuid, name);
 			enttMap[uuid] = (entt::entity)newEntity;
 		}
@@ -231,7 +231,8 @@ namespace VulkanCore {
 		if (view.empty())
 			return {};
 
-		return view.get<DirectionalLightComponent>(view[index]);
+		auto ent = *(view.begin() + index);
+		return view.get<DirectionalLightComponent>(ent);
 	}
 
 	void Scene::DestroyEntity(Entity entity)

@@ -68,6 +68,19 @@ namespace VulkanCore {
 		}
 	}
 
+	std::vector<glm::vec3> Mesh::GetMeshVertices() const
+	{
+		std::vector<glm::vec3> meshVertices{ m_MeshSource->m_Indices.size() };
+
+		uint32_t vertexIndex = 0;
+		for (uint32_t index : m_MeshSource->m_Indices)
+		{
+			meshVertices[vertexIndex++] = m_MeshSource->m_Vertices[index].Position;
+		}
+
+		return meshVertices;
+	}
+
 	Mesh::~Mesh()
 	{
 	}
