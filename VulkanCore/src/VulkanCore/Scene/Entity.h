@@ -35,6 +35,12 @@ namespace VulkanCore {
 		}
 
 		template<typename... T>
+		bool HasAllComponent()
+		{
+			return m_Scene->m_Registry.all_of<T...>(m_EntityHandle);
+		}
+
+		template<typename... T>
 		bool HasAnyComponent()
 		{
 			return m_Scene->m_Registry.any_of<T...>(m_EntityHandle);

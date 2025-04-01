@@ -1,6 +1,8 @@
 #include "vulkanpch.h"
 #include "JoltPhysicsWorld.h"
 #include "VulkanCore/Scene/Entity.h"
+#include "VulkanCore/Asset/AssetManager.h"
+#include "VulkanCore/Asset/Asset.h"
 
 // This is the max amount of rigid bodies that you can add to the physics system. If you try to add more you'll get an error.
 // Note: This value is low because this is a simple test. For a real project use something in the order of 65536.
@@ -21,6 +23,16 @@
 #define MAX_CONTACT_CONSTRAINTS 1024
 
 namespace VulkanCore {
+
+	namespace Utils {
+
+		std::vector<glm::vec3> GetMeshVertices(AssetHandle meshHandle)
+		{
+			auto mesh = AssetManager::GetAsset<Mesh>(meshHandle);
+			return mesh->GetMeshVertices();
+		}
+
+	}
 
 	JoltPhysicsWorld::JoltPhysicsWorld()
 	{
@@ -97,10 +109,10 @@ namespace VulkanCore {
 
 		// Update Transform Components
 		auto view = scene->GetAllEntitiesWith<TransformComponent, Rigidbody3DComponent>();
-		for (auto e : view)
+		for (auto ent : view)
 		{
-			auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(e);
-			auto bodyID = JPH::BodyID{ (uint32_t)e };
+			auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(ent);
+			auto bodyID = JPH::BodyID{ (uint32_t)ent };
 
 			// Get Body Position and Rotation
 			JPH::RVec3 bodyPosition = bodyInterface.GetPosition(bodyID);
@@ -127,12 +139,12 @@ namespace VulkanCore {
 		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
 
 		auto view = scene->GetAllEntitiesWith<TransformComponent, Rigidbody3DComponent>();
-		for (auto e : view)
+		for (auto ent : view)
 		{
-			auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(e);
+			auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(ent);
 			auto [motionType, activation, objectLayer, broadPhaseLayer] = Utils::GetBodyType(rb3d.Type);
 
-			Entity entity = { e, scene };
+			Entity entity = { ent, scene };
 			if (entity.HasComponent<BoxCollider3DComponent>())
 			{
 				auto& bc3d = entity.GetComponent<BoxCollider3DComponent>();
@@ -144,9 +156,9 @@ namespace VulkanCore {
 				auto shapeRef = shapeResult.Get();
 
 				// Obtain Transforms
-				glm::quat gquat(transform.Rotation);
+				glm::quat bdQuat(transform.Rotation);
 				auto bodyTransform = JPH::RVec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
-				auto bodyQuaternion = JPH::Quat(gquat.x, gquat.y, gquat.z, gquat.w);
+				auto bodyQuaternion = JPH::Quat(bdQuat.x, bdQuat.y, bdQuat.z, bdQuat.w);
 
 				// Set Body Settings
 				JPH::BodyCreationSettings settings{
@@ -157,13 +169,11 @@ namespace VulkanCore {
 					objectLayer
 				};
 
-				auto bodyPtr = bodyInterface.CreateBodyWithID(JPH::BodyID{ (uint32_t)e }, settings); // Create Body with Entity ID
+				auto bodyPtr = bodyInterface.CreateBodyWithID(JPH::BodyID{ (uint32_t)ent }, settings); // Create Body with Entity ID
 				bodyPtr->SetFriction(bc3d.Friction);
 				bodyPtr->SetRestitution(bc3d.Restitution);
 
 				bodyInterface.AddBody(bodyPtr->GetID(), activation); // Add Body
-
-				rb3d.RuntimeBody = bodyPtr;
 			}
 
 			if (entity.HasComponent<SphereColliderComponent>())
@@ -185,13 +195,50 @@ namespace VulkanCore {
 					objectLayer
 				};
 
-				auto bodyPtr = bodyInterface.CreateBodyWithID(JPH::BodyID{ (uint32_t)e }, settings); // Create Body with Entity ID
+				auto bodyPtr = bodyInterface.CreateBodyWithID(JPH::BodyID{ (uint32_t)ent }, settings); // Create Body with Entity ID
 				bodyPtr->SetFriction(sc3d.Friction);
 				bodyPtr->SetRestitution(sc3d.Restitution);
 
 				bodyInterface.AddBody(bodyPtr->GetID(), activation); // Add Body
+			}
 
-				rb3d.RuntimeBody = bodyPtr;
+			if (entity.HasAllComponent<MeshComponent, MeshColliderComponent>())
+			{
+				auto& mc3d = entity.GetComponent<MeshColliderComponent>();
+				auto& mc = entity.GetComponent<MeshComponent>();
+
+				auto meshVertices = Utils::GetMeshVertices(mc.MeshHandle);
+				JPH::Array<JPH::Vec3> meshPoints{};
+				meshPoints.reserve(meshVertices.size());
+
+				for (auto& meshVertex : meshVertices)
+					meshPoints.emplace_back(meshVertex.x, meshVertex.y, meshVertex.z);
+
+				JPH::ConvexHullShapeSettings convexHullSettings{ meshPoints };
+				convexHullSettings.SetDensity(mc3d.Density);
+
+				auto shapeResult = convexHullSettings.Create();
+				auto shapeRef = shapeResult.Get();
+
+				// Obtain Transforms
+				glm::quat bdQuat(transform.Rotation);
+				auto bodyTransform = JPH::RVec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
+				auto bodyQuaternion = JPH::Quat(bdQuat.x, bdQuat.y, bdQuat.z, bdQuat.w);
+
+				// Set Body Settings
+				JPH::BodyCreationSettings settings{
+					shapeRef,
+					bodyTransform,
+					bodyQuaternion,
+					motionType,
+					objectLayer
+				};
+
+				auto bodyPtr = bodyInterface.CreateBodyWithID(JPH::BodyID{ (uint32_t)ent }, settings); // Create Body with Entity ID
+				bodyPtr->SetFriction(mc3d.Friction);
+				bodyPtr->SetRestitution(mc3d.Restitution);
+
+				bodyInterface.AddBody(bodyPtr->GetID(), activation); // Add Body
 			}
 		}
 
@@ -204,10 +251,10 @@ namespace VulkanCore {
 		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
 
 		auto view = scene->GetAllEntitiesWith<TransformComponent, Rigidbody3DComponent>();
-		for (auto e : view)
+		for (auto ent : view)
 		{
-			auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(e);
-			auto bodyID = JPH::BodyID{ (uint32_t)e };
+			auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(ent);
+			auto bodyID = JPH::BodyID{ (uint32_t)ent };
 
 			bodyInterface.RemoveBody(bodyID);  // Remove Body
 			bodyInterface.DestroyBody(bodyID); // Destroy Body
@@ -220,7 +267,7 @@ namespace VulkanCore {
 		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
 
 		auto view = scene->GetAllEntitiesWith<TransformComponent, BoxCollider3DComponent>();
-		for (auto e : view)
+		for (auto ent : view)
 		{
 			auto [transform, bc3d] = view.get<TransformComponent, BoxCollider3DComponent>(e);
 
