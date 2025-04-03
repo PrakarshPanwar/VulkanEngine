@@ -74,8 +74,6 @@ namespace VulkanCore {
 
 			Input::SetCursorMode(CursorMode::Locked);
 			MouseRotate(delta);
-
-			m_Distance = 0.5f;
 		}
 		else if (Input::IsKeyPressed(Key::LeftAlt))
 		{
@@ -107,6 +105,9 @@ namespace VulkanCore {
 	{
 		m_FlyMode = flyMode;
 		Input::SetCursorMode(flyMode ? CursorMode::Locked : CursorMode::Normal);
+
+		if (flyMode)
+			m_Distance = glm::distance(m_Position, m_FocalPoint);
 	}
 
 	void EditorCamera::SetFocalPoint(const glm::vec3& focalPoint)

@@ -20,11 +20,11 @@ namespace VulkanCore {
 
 	}
 
-	bool MObjectLayerPairFilter::ShouldCollide(JPH::ObjectLayer objLayer1, JPH::ObjectLayer objLayer2) const
+	bool MObjectLayerPairFilter::ShouldCollide(JPH::ObjectLayer objLayerA, JPH::ObjectLayer objLayerB) const
 	{
-		switch (objLayer1)
+		switch (objLayerA)
 		{
-		case Layers::NON_MOVING: return objLayer2 == Layers::MOVING; // Non-Moving only Collides with Moving
+		case Layers::NON_MOVING: return objLayerB == Layers::MOVING; // Non-Moving only Collides with Moving
 		case Layers::MOVING:	 return true; // Moving Collides with Everything
 		default:
 			VK_CORE_ASSERT(false, "Undefined Collision Behaviour!");

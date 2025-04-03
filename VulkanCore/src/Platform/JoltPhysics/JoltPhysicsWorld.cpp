@@ -24,16 +24,6 @@
 
 namespace VulkanCore {
 
-	namespace Utils {
-
-		std::vector<glm::vec3> GetMeshVertices(AssetHandle meshHandle)
-		{
-			auto mesh = AssetManager::GetAsset<Mesh>(meshHandle);
-			return mesh->GetMeshVertices();
-		}
-
-	}
-
 	JoltPhysicsWorld::JoltPhysicsWorld()
 	{
 		// Register allocation hook. In this example we'll just let Jolt use malloc / free but you can override these if you want (see Memory.h).
@@ -96,6 +86,8 @@ namespace VulkanCore {
 		m_PhysicsSystem->Init(MAX_BODIES, NUM_BODY_MUTEXES, MAX_BODY_PAIRS, MAX_CONTACT_CONSTRAINTS, m_BroadPhaseLayerInterface, m_ObjectVsBroadPhaseLayerFilter, m_ObjectVsObjectLayerFilter);
 		m_PhysicsSystem->SetPhysicsSettings(jphSettings);
 		m_PhysicsSystem->SetGravity(JPH::Vec3(0, -9.81f, 0)); // Default Gravity
+
+		VK_CORE_INFO("Initialized Physics System!");
 	}
 
 	void JoltPhysicsWorld::Update(Scene* scene)
@@ -131,6 +123,8 @@ namespace VulkanCore {
 		{
 			delete m_PhysicsSystem;
 			m_PhysicsSystem = nullptr;
+
+			VK_CORE_INFO("Destroyed Physics System!");
 		}
 	}
 
@@ -207,17 +201,32 @@ namespace VulkanCore {
 				auto& mc3d = entity.GetComponent<MeshColliderComponent>();
 				auto& mc = entity.GetComponent<MeshComponent>();
 
-				auto meshVertices = Utils::GetMeshVertices(mc.MeshHandle);
-				JPH::Array<JPH::Vec3> meshPoints{};
-				meshPoints.reserve(meshVertices.size());
+				auto meshAsset = AssetManager::GetAsset<Mesh>(mc.MeshHandle);
+				auto& meshVertexData = meshAsset->GetMeshVertices();
+				auto& meshIndexData = meshAsset->GetMeshIndices();
 
-				for (auto& meshVertex : meshVertices)
-					meshPoints.emplace_back(meshVertex.x, meshVertex.y, meshVertex.z);
+				JPH::VertexList vertices{};
+				JPH::IndexedTriangleList triangleList{};
+				for (int i = 0; i < meshVertexData.size(); ++i)
+				{
+					vertices.emplace_back(
+						meshVertexData[i].Position.x,
+						meshVertexData[i].Position.y,
+						meshVertexData[i].Position.z);
+				}
 
-				JPH::ConvexHullShapeSettings convexHullSettings{ meshPoints };
-				convexHullSettings.SetDensity(mc3d.Density);
+				for (int i = 0; i < meshIndexData.size(); i += 3)
+				{
+					triangleList.emplace_back(
+						meshIndexData[i],
+						meshIndexData[i + 1],
+						meshIndexData[i + 2]);
+				}
 
-				auto shapeResult = convexHullSettings.Create();
+				JPH::MeshShapeSettings meshShapeSettings{ std::move(vertices), std::move(triangleList) };
+				//meshShapeSettings.SetDensity(mc3d.Density);
+
+				auto shapeResult = meshShapeSettings.Create();
 				auto shapeRef = shapeResult.Get();
 
 				// Obtain Transforms

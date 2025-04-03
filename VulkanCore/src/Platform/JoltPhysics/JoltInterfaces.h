@@ -8,7 +8,7 @@
 #include "Jolt/Physics/PhysicsSystem.h"
 #include "Jolt/Physics/Collision/Shape/BoxShape.h"
 #include "Jolt/Physics/Collision/Shape/SphereShape.h"
-#include "Jolt/Physics/Collision/Shape/ConvexHullShape.h"
+#include "Jolt/Physics/Collision/Shape/MeshShape.h"
 #include "Jolt/Physics/Body/BodyCreationSettings.h"
 #include "Jolt/Physics/Body/BodyActivationListener.h"
 
@@ -42,7 +42,7 @@ namespace VulkanCore {
 	class MObjectLayerPairFilter : public JPH::ObjectLayerPairFilter
 	{
 	public:
-		bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override;
+		bool ShouldCollide(JPH::ObjectLayer objLayerA, JPH::ObjectLayer objLayerB) const override;
 	};
 
 	// BroadPhaseLayerInterface Implementation
@@ -58,7 +58,7 @@ namespace VulkanCore {
 		JPH::BroadPhaseLayer m_ObjectToBroadPhase[Layers::NUM_LAYERS];
 	};
 
-	/// Class that determines if an Object layer can collide with a Broadphase layer
+	// Class that determines if an Object layer can collide with a Broadphase layer
 	class MObjectVsBroadPhaseLayerFilter : public JPH::ObjectVsBroadPhaseLayerFilter
 	{
 	public:

@@ -86,20 +86,21 @@ namespace VulkanCore {
 		if ((m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing()) || m_EditorCamera.IsInFly())
 			m_EditorCamera.OnUpdate();
 
+		auto activeScene = m_ActiveScene.load();
 		switch (m_SceneState)
 		{
 		case SceneState::Edit:
 		{
 			break;
 		}
-		case SceneState::Simulate:
-		{
-			m_ActiveScene->OnUpdateSimulation();
-			break;
-		}
 		case SceneState::Play:
 		{
-			m_ActiveScene->OnUpdateRuntime();
+			activeScene->OnUpdateRuntime();
+			break;
+		}
+		case SceneState::Simulate:
+		{
+			activeScene->OnUpdateSimulation();
 			break;
 		}
 		}
@@ -369,7 +370,7 @@ namespace VulkanCore {
 			&& !ImGui::IsKeyDown(ImGuiKey_LeftAlt) && !ImGuizmo::IsOver())
 		{
 			int entityHandle = m_SceneRenderer->GetHoveredEntity();
-			Entity hoveredEntity = entityHandle == -1 ? Entity{} : Entity{ (entt::entity)entityHandle, m_ActiveScene.get() };
+			Entity hoveredEntity = entityHandle == -1 ? Entity{} : Entity{ (entt::entity)entityHandle, m_ActiveScene.load().get() };
 
 			m_SceneHierarchyPanel.SetSelectedEntity(hoveredEntity);
 		}
@@ -607,7 +608,8 @@ namespace VulkanCore {
 
 		ImGui::Begin("##Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-		bool toolbarEnabled = (bool)m_ActiveScene;
+		auto activeScene = m_ActiveScene.load();
+		bool toolbarEnabled = (bool)activeScene;
 
 		ImVec4 tintColor = ImVec4(1, 1, 1, 1);
 		if (!toolbarEnabled)
@@ -648,12 +650,13 @@ namespace VulkanCore {
 		}
 		if (hasPauseButton)
 		{
-			bool isPaused = m_ActiveScene->IsPaused();
+			bool isPaused = activeScene->IsPaused();
 			ImGui::SameLine();
 			{
-				if (ImGui::ImageButton("##PauseState", (ImTextureID)m_PauseIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
+				auto icon = isPaused ? m_PlayIconID : m_PauseIconID;
+				if (ImGui::ImageButton("##PauseState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
 				{
-					m_ActiveScene->SetPaused(!isPaused);
+					activeScene->SetPaused(!isPaused);
 				}
 			}
 
@@ -662,10 +665,10 @@ namespace VulkanCore {
 			{
 				ImGui::SameLine();
 				{
-					bool isPaused = m_ActiveScene->IsPaused();
+					bool isPaused = activeScene->IsPaused();
 					if (ImGui::ImageButton("##StepState", (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
 					{
-						m_ActiveScene->StepFrames();
+						activeScene->StepFrames();
 					}
 				}
 			}
@@ -740,7 +743,9 @@ namespace VulkanCore {
 		m_SceneState = SceneState::Play;
 
 		m_ActiveScene = Scene::CopyScene(m_EditorScene);
-		m_ActiveScene->OnRuntimeStart();
+
+		auto activeScene = m_ActiveScene.load();
+		activeScene->OnRuntimeStart();
 
 		m_SceneRenderer->SetActiveScene(m_ActiveScene);
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
@@ -754,7 +759,9 @@ namespace VulkanCore {
 		m_SceneState = SceneState::Simulate;
 
 		m_ActiveScene = Scene::CopyScene(m_EditorScene);
-		m_ActiveScene->OnSimulationStart();
+
+		auto activeScene = m_ActiveScene.load();
+		activeScene->OnSimulationStart();
 
 		m_SceneRenderer->SetActiveScene(m_ActiveScene);
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
@@ -764,10 +771,11 @@ namespace VulkanCore {
 	{
 		VK_CORE_ASSERT(m_SceneState == SceneState::Play || m_SceneState == SceneState::Simulate, "Invalid Scene State!");
 
+		auto activeScene = m_ActiveScene.load();
 		if (m_SceneState == SceneState::Play)
-			m_ActiveScene->OnRuntimeStop();
+			activeScene->OnRuntimeStop();
 		else if (m_SceneState == SceneState::Simulate)
-			m_ActiveScene->OnSimulationStop();
+			activeScene->OnSimulationStop();
 
 		m_SceneState = SceneState::Edit;
 
@@ -782,7 +790,7 @@ namespace VulkanCore {
 		if (m_SceneState == SceneState::Edit)
 			return;
 
-		m_ActiveScene->SetPaused(true);
+		m_ActiveScene.load()->SetPaused(true);
 	}
 
 	void EditorLayer::SerializeScene(std::shared_ptr<Scene> scene, const std::filesystem::path& scenePath)

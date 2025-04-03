@@ -302,7 +302,7 @@ namespace VulkanCore {
 		{
 			Entity entity = { entityID, m_Scene.get() };
 			if (!entity)
-				return;
+				continue;
 
 			SerializeEntity(out, entity);
 		}

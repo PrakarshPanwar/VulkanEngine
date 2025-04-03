@@ -325,7 +325,6 @@ namespace VulkanCore {
 		DrawComponent<SkyLightComponent>("Skybox", entity, [](auto& component)
 		{
 			auto skyboxAsset = AssetManager::GetAsset<Texture2D>(component.TextureHandle);
-
 			if (skyboxAsset)
 			{
 				ImTextureID iconID = SceneRenderer::GetTextureCubeID();
