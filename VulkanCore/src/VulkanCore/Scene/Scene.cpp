@@ -164,8 +164,8 @@ namespace VulkanCore {
 		// Point Lights
 		{
 			auto view = m_Registry.view<TransformComponent, PointLightComponent>();
-
 			int lightIndex = 0;
+
 			for (auto ent : view)
 			{
 				auto [transform, lightComponent] = view.get<TransformComponent, PointLightComponent>(ent);

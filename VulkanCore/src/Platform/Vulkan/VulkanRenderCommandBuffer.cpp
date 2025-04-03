@@ -175,6 +175,8 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([]
 		{
+			VK_CORE_PROFILE_FN("VulkanRenderer::SubmitCommandBuffersToQueue");
+
 			uint32_t frameIndex = Renderer::RT_GetCurrentFrameIndex();
 		
 			std::vector<VkCommandBuffer> cmdBuffers;

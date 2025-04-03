@@ -95,7 +95,8 @@ namespace VulkanCore {
 		void InvalidateSubmeshes();
 		inline std::shared_ptr<MeshSource> GetMeshSource() const { return m_MeshSource; }
 		inline const std::vector<uint32_t>& GetSubmeshes() const { return m_Submeshes; }
-		std::vector<glm::vec3> GetMeshVertices() const;
+		inline const std::vector<Vertex>& GetMeshVertices() const { return m_MeshSource->m_Vertices; }
+		inline const std::vector<uint32_t>& GetMeshIndices() const { return m_MeshSource->m_Indices; }
 
 		inline AssetType GetType() const override { return AssetType::Mesh; }
 		static AssetType GetStaticType() { return AssetType::Mesh; }

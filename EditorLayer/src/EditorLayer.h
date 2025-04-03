@@ -12,6 +12,7 @@
 #include <imgui.h>
 #include <memory>
 #include <filesystem>
+#include <atomic>
 #include <vector>
 
 #include "Panels/SceneHierarchyPanel.h"
@@ -55,7 +56,8 @@ namespace VulkanCore {
 			Edit = 0, Play = 1, Simulate = 2
 		} m_SceneState = SceneState::Edit;
 	private:
-		std::shared_ptr<Scene> m_ActiveScene, m_EditorScene;
+		std::atomic<std::shared_ptr<Scene>> m_ActiveScene;
+		std::shared_ptr<Scene> m_EditorScene;
 		std::shared_ptr<SceneRenderer> m_SceneRenderer;
 		std::filesystem::path m_EditorScenePath;
 		EditorCamera m_EditorCamera;
