@@ -23,7 +23,6 @@ namespace VulkanCore {
 		m_RenderThread = std::jthread(std::bind(&RenderThread::ThreadEntryPoint));
 
 		auto threadHandle = m_RenderThread.native_handle();
-
 		SetThreadDescription(threadHandle, L"Render Thread");
 	}
 
