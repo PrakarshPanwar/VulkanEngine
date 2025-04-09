@@ -5,41 +5,16 @@
 #include "Platform/Vulkan/VulkanMaterial.h"
 #include "Platform/Vulkan/VulkanRenderer.h"
 #include "Platform/Vulkan/VulkanShader.h"
+#include "Platform/Vulkan/VulkanSlangShader.h"
+
+#define VK_CREATE_SHADER(name) m_Shaders[name] = std::make_shared<VulkanShader>(name)
+#define VK_CREATE_SLANG_SHADER(name) m_Shaders[name] = std::make_shared<VulkanSlangShader>(name) 
 
 namespace VulkanCore {
 
 	std::unordered_map<std::string, std::shared_ptr<Shader>> Renderer::m_Shaders;
 	VulkanRenderer* Renderer::s_Renderer = nullptr;
 	RendererConfig Renderer::s_RendererConfig = {};
-
-	namespace Utils {
-
-		std::shared_ptr<Shader> MakeShader(const std::string& path)
-		{
-			const std::filesystem::path shaderDirectory = "shaders";
-			std::filesystem::path shaderPath = shaderDirectory / path;
-
-			auto vertexShaderPath = shaderPath.replace_extension(".vert");
-			auto fragmentShaderPath = shaderPath.replace_extension(".frag");
-			auto tessellationControlShaderPath = shaderPath.replace_extension(".tesc");
-			auto tessellationEvaluationShaderPath = shaderPath.replace_extension(".tese");
-			auto geometryShaderPath = shaderPath.replace_extension(".geom");
-			auto computeShaderPath = shaderPath.replace_extension(".comp");
-
-			if (std::filesystem::exists(computeShaderPath))
-				return std::make_shared<VulkanShader>(computeShaderPath.string());
-
-			if (std::filesystem::exists(tessellationControlShaderPath) && std::filesystem::exists(tessellationEvaluationShaderPath))
-				return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string(), "",
-					tessellationControlShaderPath.string(), tessellationEvaluationShaderPath.string());
-
-			if (std::filesystem::exists(geometryShaderPath))
-				return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string(), geometryShaderPath.string());
-
-			return std::make_shared<VulkanShader>(vertexShaderPath.string(), fragmentShaderPath.string());
-		}
-
-	}
 
 	void Renderer::SetRendererAPI(VulkanRenderer* vkRenderer)
 	{
@@ -78,20 +53,22 @@ namespace VulkanCore {
 
 	void Renderer::BuildShaders()
 	{
-		m_Shaders["CorePBR"] = Utils::MakeShader("CorePBR");
-		m_Shaders["CorePBR_Tess"] = Utils::MakeShader("CorePBR_Tess");
-		m_Shaders["ShadowDepth"] = Utils::MakeShader("ShadowDepth");
-		m_Shaders["CoreEditor"] = Utils::MakeShader("CoreEditor");
-		m_Shaders["LightShader"] = Utils::MakeShader("LightShader");
-		m_Shaders["LightEditor"] = Utils::MakeShader("LightEditor");
-		m_Shaders["SceneComposite"] = Utils::MakeShader("SceneComposite");
-		m_Shaders["Bloom"] = Utils::MakeShader("Bloom");
-		m_Shaders["Skybox"] = Utils::MakeShader("Skybox");
-		m_Shaders["EquirectangularToCubeMap"] = Utils::MakeShader("EquirectangularToCubeMap");
-		m_Shaders["EnvironmentMipFilter"] = Utils::MakeShader("EnvironmentMipFilter");
-		m_Shaders["EnvironmentIrradiance"] = Utils::MakeShader("EnvironmentIrradiance");
-		m_Shaders["GenerateBRDF"] = Utils::MakeShader("GenerateBRDF");
-		m_Shaders["GTAO"] = Utils::MakeShader("GTAO");
+		VulkanSlangShader::CreateGlobalSession();
+
+		VK_CREATE_SLANG_SHADER("CorePBR");
+		VK_CREATE_SHADER("CorePBR_Tess");
+		VK_CREATE_SHADER("ShadowDepth");
+		VK_CREATE_SHADER("CoreEditor");
+		VK_CREATE_SHADER("LightShader");
+		VK_CREATE_SHADER("LightEditor");
+		VK_CREATE_SHADER("SceneComposite");
+		VK_CREATE_SHADER("Bloom");
+		VK_CREATE_SHADER("Skybox");
+		VK_CREATE_SHADER("EquirectangularToCubeMap");
+		VK_CREATE_SHADER("EnvironmentMipFilter");
+		VK_CREATE_SHADER("EnvironmentIrradiance");
+		VK_CREATE_SHADER("GenerateBRDF");
+		VK_CREATE_SHADER("GTAO");
 	}
 
 	void Renderer::ShutDown()

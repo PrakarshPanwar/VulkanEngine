@@ -23,6 +23,7 @@ project "VulkanCore"
 		"assets/shaders/*.comp",
 		"assets/shaders/*.tesc",
 		"assets/shaders/*.tese",
+		"assets/shaders/**.slang",
 		"assets/shaders/**.glslh"
 	}
 
@@ -52,7 +53,7 @@ project "VulkanCore"
 
 	filter "configurations:Debug"
 		defines { "VK_DEBUG" }
-		links { "%{Library.ShaderC_Debug}", "%{Library.SPIRV_Cross_Debug}", "%{Library.SPIRV_Cross_GLSL_Debug}", "%{Library.AssimpLibDebug}" }
+		links { "%{Library.ShaderC_Debug}", "%{Library.SPIRV_Cross_Debug}", "%{Library.SPIRV_Cross_GLSL_Debug}", "%{Library.Slang_Debug}", "%{Library.AssimpLibDebug}" }
 		symbols "On"
 
 		postbuildcommands { "{COPY} %{Library.AssimpDLLDebug} ../bin/" .. outputdir .. "/%{prj.name}" }
@@ -60,7 +61,7 @@ project "VulkanCore"
 
 	filter "configurations:Release"
 		defines { "VK_RELEASE" }
-		links { "%{Library.ShaderC_Release}", "%{Library.SPIRV_Cross_Release}", "%{Library.SPIRV_Cross_GLSL_Release}", "%{Library.AssimpLibRelease}" }
+		links { "%{Library.ShaderC_Release}", "%{Library.SPIRV_Cross_Release}", "%{Library.SPIRV_Cross_GLSL_Release}", "%{Library.Slang_Release}", "%{Library.AssimpLibRelease}" }
 		optimize "On"
 
 		postbuildcommands { "{COPY} %{Library.AssimpDLLRelease} ../bin/" .. outputdir .. "/%{prj.name}" }
