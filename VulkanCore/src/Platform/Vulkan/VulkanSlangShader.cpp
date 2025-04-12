@@ -2,6 +2,7 @@
 #include "VulkanSlangShader.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Core/Timer.h"
 
 #include <slang/slang-com-helper.h>
 #include <spirv_cross/spirv_cross.hpp>
@@ -70,6 +71,8 @@ namespace VulkanCore {
 
 	void VulkanSlangShader::CompileOrGetSlangBinaries()
 	{
+		Timer timer("Slang Shader Compilation");
+
 		const char* shaderPaths[] = { "shaders", "shaders/Utils" };
 
 		// Compiler Options
@@ -113,7 +116,7 @@ namespace VulkanCore {
 			if (slangModule)
 				componentTypes.push_back(slangModule);
 			else
-				VK_CORE_ASSERT(!diagnosticsBlob, "Compilation Error: {}", (const char*)diagnosticsBlob->getBufferPointer());
+				VK_CORE_ASSERT(!diagnosticsBlob, "{0} Shader Compilation Error: {1}", m_ShaderName, (const char*)diagnosticsBlob->getBufferPointer());
 		}
 
 		// Query Entry Points
@@ -135,7 +138,7 @@ namespace VulkanCore {
 			if (entryPoint)
 				componentTypes.push_back(entryPoint);
 			else
-				VK_CORE_ASSERT(!diagnosticsBlob, "Entry Point not found: {}", (const char*)diagnosticsBlob->getBufferPointer());
+				VK_CORE_ASSERT(!diagnosticsBlob, "{0} Entry Point not found: {1}", m_ShaderName, (const char*)diagnosticsBlob->getBufferPointer());
 		}
 
 		// Compose Program
