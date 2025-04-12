@@ -105,10 +105,10 @@ VertexStageOutput VSMain(VertexInput vertexInput)
     VertexStageOutput output;
 
     float4x4 transform = float4x4(
-		float4(vertexInput.MRow0.x, vertexInput.MRow1.x, vertexInput.MRow2.x, 0.0f),
-		float4(vertexInput.MRow0.y, vertexInput.MRow1.y, vertexInput.MRow2.y, 0.0f),
-        float4(vertexInput.MRow0.z, vertexInput.MRow1.z, vertexInput.MRow2.z, 0.0f),
-		float4(vertexInput.MRow0.w, vertexInput.MRow1.w, vertexInput.MRow2.w, 1.0f)
+		vertexInput.MRow0.x, vertexInput.MRow1.x, vertexInput.MRow2.x, 0.0f,
+		vertexInput.MRow0.y, vertexInput.MRow1.y, vertexInput.MRow2.y, 0.0f,
+        vertexInput.MRow0.z, vertexInput.MRow1.z, vertexInput.MRow2.z, 0.0f,
+		vertexInput.MRow0.w, vertexInput.MRow1.w, vertexInput.MRow2.w, 1.0f
 	);
 
     float4 worldPosition = mul(float4(vertexInput.Position, 1.0f), transform);
@@ -140,6 +140,9 @@ VertexStageOutput VSMain(VertexInput vertexInput)
 [[vk::binding(8, 0)]] SamplerCube c_PrefilteredMap;
 //[[vk::binding(9, 0)]] Sampler2DArray c_ShadowMap;
 
+import PBR;
+import Math;
+
 struct PBRParams
 {
     float3 View;
@@ -156,71 +159,11 @@ static PBRParams m_Params; // Thread-Local variable
 static VertexOutput Input;
 
 static const float3 Fdielectric = float3(0.04, 0.04, 0.04);
-static const float PI = 3.14159265358979323846;
 
 float3 GetNormalsFromMap()
 {
     float3 tangentNormal = normalize(c_NormalTexture.Sample(Input.TexCoord).xyz * 2.0f - 1.0f);
     return normalize(mul(tangentNormal, Input.WorldNormals));
-}
-
-float3 Mix(float3 a, float3 b, float t)
-{
-    return a * (1.0f - t) + b * t;
-}
-
-float DistributionGGX(float3 N, float3 H, float roughness)
-{
-    float a = roughness * roughness;
-    float a2 = a * a;
-    float dotNH = max(dot(N, H), 0.0f);
-    float dotNH2 = dotNH * dotNH;
-
-    float nom = a2;
-    float denom = (dotNH2 * (a2 - 1.0f) + 1.0f);
-    denom = PI * denom * denom;
-
-    return nom / max(denom, 1e-5);
-}
-
-float GeometrySchlickGGX(float dotNV, float roughness)
-{
-    float r = (roughness + 1.0f);
-    float k = (r * r) / 8.0f;
-
-    float nom = dotNV;
-    float denom = dotNV * (1.0f - k) + k;
-
-    return nom / max(denom, 1e-5);
-}
-
-float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
-{
-    float dotNV = max(dot(N, V), 0.0f);
-    float dotNL = max(dot(N, L), 0.0f);
-    float ggx2 = GeometrySchlickGGX(dotNV, roughness);
-    float ggx1 = GeometrySchlickGGX(dotNL, roughness);
-
-    return ggx1 * ggx2;
-}
-
-float GeometrySchlickSmithGGX(float dotNL, float dotNV, float roughness)
-{
-    float r = (roughness + 1.0f);
-    float k = (r * r) / 8.0f;
-    float GL = dotNL / (dotNL * (1.0f - k) + k);
-    float GV = dotNV / (dotNV * (1.0f - k) + k);
-    return GL * GV;
-}
-
-float3 FresnelSchlick(float cosTheta, float3 F0)
-{
-    return F0 + (1.0f - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
-}
-
-float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
-{
-    return F0 + (max(float3(1.0f - roughness), F0) - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
 }
 
 float3 Lighting(float3 F0)
