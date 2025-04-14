@@ -56,14 +56,14 @@ namespace VulkanCore {
 		VulkanSlangShader::CreateGlobalSession();
 
 		VK_CREATE_SLANG_SHADER("CorePBR");
-		VK_CREATE_SHADER("CorePBR_Tess");
-		VK_CREATE_SHADER("ShadowDepth");
+		VK_CREATE_SHADER("CorePBR_Tess"); // TODO: Future support required for Vulkan Tessellation in Slang
+		VK_CREATE_SLANG_SHADER("ShadowDepth");
 		VK_CREATE_SHADER("CoreEditor");
 		VK_CREATE_SHADER("LightShader");
 		VK_CREATE_SHADER("LightEditor");
 		VK_CREATE_SLANG_SHADER("SceneComposite");
 		VK_CREATE_SLANG_SHADER("Bloom");
-		VK_CREATE_SHADER("Skybox");
+		VK_CREATE_SLANG_SHADER("Skybox");
 		VK_CREATE_SHADER("EquirectangularToCubeMap");
 		VK_CREATE_SHADER("EnvironmentMipFilter");
 		VK_CREATE_SHADER("EnvironmentIrradiance");
