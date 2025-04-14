@@ -28,7 +28,23 @@ namespace VulkanCore {
 			return {};
 		}
 
-		static const char* GetEntryPointFromType(ShaderType stage)
+		static ShaderType SlangShaderTypeToGLShaderType(SlangStage slangType)
+		{
+			switch (slangType)
+			{
+			case SLANG_STAGE_VERTEX:   return ShaderType::Vertex;
+			case SLANG_STAGE_FRAGMENT: return ShaderType::Fragment;
+			case SLANG_STAGE_HULL:	   return ShaderType::TessellationControl;
+			case SLANG_STAGE_DOMAIN:   return ShaderType::TessellationEvaluation;
+			case SLANG_STAGE_GEOMETRY: return ShaderType::Geometry;
+			case SLANG_STAGE_COMPUTE:  return ShaderType::Compute;
+			}
+
+			VK_CORE_ASSERT(false, "Cannot find Shader Type!")
+			return (ShaderType)0;
+		}
+
+		static const char* GetSlangEntryPointFromType(ShaderType stage)
 		{
 			switch (stage)
 			{
@@ -44,6 +60,18 @@ namespace VulkanCore {
 			return "";
 		}
 
+		static const char* GetCacheDirectory()
+		{
+			return "cache\\slang";
+		}
+
+		static void CreateCacheDirectoryIfRequired()
+		{
+			std::string cacheDirectory = GetCacheDirectory();
+			if (!std::filesystem::exists(cacheDirectory))
+				std::filesystem::create_directories(cacheDirectory);
+		}
+
 	}
 
 	Slang::ComPtr<slang::IGlobalSession> VulkanSlangShader::s_GlobalSession{};
@@ -51,6 +79,8 @@ namespace VulkanCore {
 	VulkanSlangShader::VulkanSlangShader(const std::string& shaderName)
 	{
 		m_ShaderName = shaderName;
+
+		Utils::CreateCacheDirectoryIfRequired();
 
 		CompileOrGetSlangBinaries();
 		ReflectShaderData();
@@ -69,16 +99,18 @@ namespace VulkanCore {
 	{
 	}
 
+	// For GLSL to HLSL/Slang Mapping
+	// https://anteru.net/blog/2016/mapping-between-HLSL-and-GLSL/
 	void VulkanSlangShader::CompileOrGetSlangBinaries()
 	{
 		Timer timer("Slang Shader Compilation");
 
-		const char* shaderPaths[] = { "shaders", "shaders/Utils" };
+		const char* shaderPaths[] = { "cache/slang", "shaders", "shaders/Utils" };
 
 		// Compiler Options
 		std::array<slang::CompilerOptionEntry, 1> options = {
 			{
-				slang::CompilerOptionName::EmitSpirvDirectly,
+				slang::CompilerOptionName::UseUpToDateBinaryModule,
 				{ slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr }
 			}
 		};
@@ -91,7 +123,7 @@ namespace VulkanCore {
 		// Session Description
 		slang::SessionDesc sessionDesc{};
 		sessionDesc.searchPaths = shaderPaths;
-		sessionDesc.searchPathCount = 2;
+		sessionDesc.searchPathCount = 3;
 		sessionDesc.targets = &targetDesc;
 		sessionDesc.targetCount = 1;
 #if 0
@@ -101,25 +133,7 @@ namespace VulkanCore {
 		sessionDesc.compilerOptionEntries = options.data();
 		sessionDesc.compilerOptionEntryCount = options.size();
 
-		// Create Session
-		Slang::ComPtr<slang::ISession> session{};
-		s_GlobalSession->createSession(sessionDesc, session.writeRef());
-
-		std::vector<slang::IComponentType*> componentTypes{}; // Store Modules and Entry Points
-
-		// Create Slang Module
-		Slang::ComPtr<slang::IModule> slangModule{};
-		{
-			Slang::ComPtr<slang::IBlob> diagnosticsBlob{};
-			slangModule = session->loadModule(m_ShaderName.c_str(), diagnosticsBlob.writeRef());
-
-			if (slangModule)
-				componentTypes.push_back(slangModule);
-			else
-				VK_CORE_ASSERT(!diagnosticsBlob, "{0} Shader Compilation Error: {1}", m_ShaderName, (const char*)diagnosticsBlob->getBufferPointer());
-		}
-
-		// Query Entry Points
+		// All Shader Types
 		constexpr std::array<ShaderType, 6> shaderTypes = {
 			ShaderType::Vertex,
 			ShaderType::Fragment,
@@ -129,40 +143,81 @@ namespace VulkanCore {
 			ShaderType::Compute
 		};
 
+		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
+		const std::string slangModuleExtension = ".slang-module";
+
+		Slang::ComPtr<slang::IBlob> moduleDiagnostics{}; // Diagnostics Blob(For Error Messaging)
+		std::vector<slang::IComponentType*> componentsData{}; // Store Modules and Entry Points
+		componentsData.reserve(6);
+
+		// Create Session
+		if (!m_SlangSession)
+			s_GlobalSession->createSession(sessionDesc, m_SlangSession.writeRef());
+
+		m_SlangModule = m_SlangSession->loadModule(m_ShaderName.c_str(), moduleDiagnostics.writeRef());
+
+		// Cache Loaded Modules to disk(if module doesn't exist)
+		for (int i = 0; i < m_SlangSession->getLoadedModuleCount(); ++i)
+		{
+			auto module = m_SlangSession->getLoadedModule(i);
+			auto name = module->getName();
+
+			std::filesystem::path cachedPath = cacheDirectory / (name + slangModuleExtension);
+			if (!std::filesystem::exists(cachedPath))
+			{
+				Slang::ComPtr<slang::IBlob> moduleBlob{};
+				module->serialize(moduleBlob.writeRef());
+
+				std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
+				if (out.is_open())
+				{
+					out.write((char*)moduleBlob->getBufferPointer(), moduleBlob->getBufferSize());
+					out.flush();
+					out.close();
+				}
+			}
+		}
+
+		if (m_SlangModule)
+			componentsData.push_back(m_SlangModule);
+		else
+		{
+			VK_CORE_ASSERT(!moduleDiagnostics, "{0} Shader Compilation Error: {1}", m_ShaderName, (const char*)moduleDiagnostics->getBufferPointer());
+			moduleDiagnostics->release();
+		}
+
 		for (auto shaderType : shaderTypes)
 		{
 			Slang::ComPtr<slang::IEntryPoint> entryPoint{};
-			Slang::ComPtr<slang::IBlob> diagnosticsBlob{};
-			slangModule->findEntryPointByName(Utils::GetEntryPointFromType(shaderType), entryPoint.writeRef());
+			m_SlangModule->findEntryPointByName(Utils::GetSlangEntryPointFromType(shaderType), entryPoint.writeRef());
 
 			if (entryPoint)
-				componentTypes.push_back(entryPoint);
-			else
-				VK_CORE_ASSERT(!diagnosticsBlob, "{0} Entry Point not found: {1}", m_ShaderName, (const char*)diagnosticsBlob->getBufferPointer());
+				componentsData.emplace_back(entryPoint);
 		}
 
 		// Compose Program
 		Slang::ComPtr<slang::IComponentType> composedProgram{};
-		{
-			Slang::ComPtr<slang::IBlob> diagnosticsBlob{};
-			SlangResult result = session->createCompositeComponentType(
-				componentTypes.data(), componentTypes.size(),
-				composedProgram.writeRef(), diagnosticsBlob.writeRef());
+		Slang::ComPtr<slang::IBlob> programDiagnostics{}; // Diagnostics Blob(For Error Messaging)
 
-			SLANG_RETURN_VOID_ON_FAIL(result);
-		}
+		SlangResult result = m_SlangSession->createCompositeComponentType(
+			componentsData.data(), componentsData.size(),
+			composedProgram.writeRef(), programDiagnostics.writeRef());
+
+		VK_CORE_ASSERT(result == SLANG_OK, "{0} Shader Compose Error: {1}", m_ShaderName, (const char*)programDiagnostics->getBufferPointer());
 
 		// Link Program
 		Slang::ComPtr<slang::IComponentType> linkedProgram{};
-		{
-			Slang::ComPtr<slang::IBlob> diagnosticsBlob{};
-			SlangResult result = composedProgram->link(linkedProgram.writeRef(), diagnosticsBlob.writeRef());
+		result = composedProgram->link(linkedProgram.writeRef(), programDiagnostics.writeRef());
 
-			SLANG_RETURN_VOID_ON_FAIL(result);
-		}
+		VK_CORE_ASSERT(result == SLANG_OK, "{0} Shader Linking Error: {1}", m_ShaderName, (const char*)programDiagnostics->getBufferPointer());
 
-		for (uint32_t i = 0; i < componentTypes.size() - 1; ++i)
+		// Shader Reflection
+		auto programLayout = linkedProgram->getLayout(0);
+		for (int i = 0; i < programLayout->getEntryPointCount(); ++i)
 		{
+			auto entryPointRefl = programLayout->getEntryPointByIndex(i);
+			auto shaderType = Utils::SlangShaderTypeToGLShaderType(entryPointRefl->getStage());
+
 			// Get Target Code(SPIR-V Code)
 			Slang::ComPtr<slang::IBlob> spirvCode{};
 			Slang::ComPtr<slang::IBlob> diagnosticsBlob{};
@@ -171,14 +226,10 @@ namespace VulkanCore {
 			VK_CORE_ASSERT(result == SLANG_OK, "Failed to find SPIR-V Code: {}", (const char*)diagnosticsBlob->getBufferPointer());
 
 			auto bufferPtr = reinterpret_cast<const uint32_t*>(spirvCode->getBufferPointer());
-			auto bufferSize = spirvCode->getBufferSize();
+			uint32_t spirvCodeSize = spirvCode->getBufferSize() / sizeof(uint32_t);
 
 			// Copy SPIR-V Code to Vulkan Binary
-			std::vector<uint32_t> spirvBinary{};
-			uint32_t spirvCodeSize = spirvCode->getBufferSize() / sizeof(uint32_t);
-			spirvBinary.insert(spirvBinary.end(), &bufferPtr[0], &bufferPtr[spirvCodeSize]);
-
-			m_VulkanSPIRV[(uint32_t)shaderTypes[i]] = spirvBinary;
+			m_VulkanSPIRV[(uint32_t)shaderType] = { &bufferPtr[0], &bufferPtr[spirvCodeSize] };
 		}
 	}
 

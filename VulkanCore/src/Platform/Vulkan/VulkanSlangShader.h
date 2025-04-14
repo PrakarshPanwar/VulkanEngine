@@ -21,6 +21,9 @@ namespace VulkanCore {
 		void ReflectShaderData();
 
 		static Slang::ComPtr<slang::IGlobalSession> s_GlobalSession;
+	private:
+		Slang::ComPtr<slang::ISession> m_SlangSession;
+		Slang::ComPtr<slang::IModule> m_SlangModule;
 	};
 
 }

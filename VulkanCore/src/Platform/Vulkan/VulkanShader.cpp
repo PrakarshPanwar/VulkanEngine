@@ -474,7 +474,6 @@ namespace VulkanCore {
 			Timer timer(Utils::GLShaderTypeToString(stage) + " Shader Creation");
 
 			shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, Utils::GLShaderStageToShaderC(stage), shaderFilePath.string().c_str(), options);
-
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 			{
 				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
@@ -506,7 +505,6 @@ namespace VulkanCore {
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(shaderType));
 
 			std::ifstream in(cachedPath, std::ios::in | std::ios::binary);
-
 			if (in.is_open())
 			{
 				in.seekg(0, std::ios::end);

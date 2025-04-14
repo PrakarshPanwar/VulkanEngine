@@ -61,8 +61,8 @@ namespace VulkanCore {
 		VK_CREATE_SHADER("CoreEditor");
 		VK_CREATE_SHADER("LightShader");
 		VK_CREATE_SHADER("LightEditor");
-		VK_CREATE_SHADER("SceneComposite");
-		VK_CREATE_SHADER("Bloom");
+		VK_CREATE_SLANG_SHADER("SceneComposite");
+		VK_CREATE_SLANG_SHADER("Bloom");
 		VK_CREATE_SHADER("Skybox");
 		VK_CREATE_SHADER("EquirectangularToCubeMap");
 		VK_CREATE_SHADER("EnvironmentMipFilter");
