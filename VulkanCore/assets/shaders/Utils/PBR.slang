@@ -49,10 +49,10 @@ public float GeometrySchlickSmithGGX(float dotNL, float dotNV, float roughness)
 
 public float3 FresnelSchlick(float cosTheta, float3 F0)
 {
-    return F0 + (1.0f - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
+    return F0 + (1.0f - F0) * pow(saturate(1.0f - cosTheta), 5.0f);
 }
 
 public float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
 {
-    return F0 + (max(float3(1.0f - roughness), F0) - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
+    return F0 + (max(float3(1.0f - roughness), F0) - F0) * pow(saturate(1.0f - cosTheta), 5.0f);
 }

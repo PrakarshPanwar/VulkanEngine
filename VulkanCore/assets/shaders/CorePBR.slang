@@ -1,56 +1,6 @@
 // Shader File: "CorePBR.slang"
 
-struct Camera
-{
-    float4x4 Projection;
-    float4x4 View;
-    float4x4 InverseView;
-    float2 DepthUnpackConsts;
-};
-
-struct PointLight
-{
-    float4 Position;
-    float4 Color;
-    float Radius;
-    float Falloff;
-};
-
-struct SpotLight
-{
-    float4 Position;
-    float4 Color;
-    float3 Direction;
-    float InnerCutoff; // Cutoff Threshold
-    float OuterCutoff; // Final Cutoff
-    float Radius;
-    float Falloff;
-};
-
-struct DirectionalLight
-{
-    float4 Color;
-    float3 Direction;
-    float Falloff;
-};
-
-struct PointLightData
-{
-    int Count;
-    PointLight PointLights[10];
-};
-
-struct SpotLightData
-{
-    int Count;
-    SpotLight SpotLights[10];
-};
-
-struct DirectionalLightData
-{
-    int Count;
-    DirectionalLight DirectionLights[2];
-};
+import Buffers;
 
 struct Material
 {
@@ -59,6 +9,12 @@ struct Material
     float Roughness;
     float Metallic;
     uint UseNormalMap;
+};
+
+struct CascadeData
+{
+    float4 CascadeSplitLevels;
+    float4x4 LightSpaceMatrices[4];
 };
 
 struct VertexInput
@@ -98,6 +54,7 @@ struct VertexStageOutput
 [[vk::binding(1, 0)]] ConstantBuffer<PointLightData> c_PointLightData;
 [[vk::binding(2, 0)]] ConstantBuffer<SpotLightData> c_SpotLightData;
 [[vk::binding(3, 0)]] ConstantBuffer<DirectionalLightData> c_DirectionalLightData;
+[[vk::binding(4, 0)]] ConstantBuffer<CascadeData> c_CascadeData;
 
 [shader("vertex")]
 VertexStageOutput VSMain(VertexInput vertexInput)
@@ -130,15 +87,15 @@ VertexStageOutput VSMain(VertexInput vertexInput)
 } // End of Vertex Stage
 
 // Material Set
-[[vk::binding(0, 1)]] Sampler2D c_AlbedoTexture;
-[[vk::binding(1, 1)]] Sampler2D c_NormalTexture;
-[[vk::binding(2, 1)]] Sampler2D c_ARMTexture;
+[[vk::binding(0, 1)]] Sampler2D r_AlbedoTexture;
+[[vk::binding(1, 1)]] Sampler2D r_NormalTexture;
+[[vk::binding(2, 1)]] Sampler2D r_ARMTexture;
 
 // IBL
-[[vk::binding(6, 0)]] SamplerCube c_IrradianceMap;
-[[vk::binding(7, 0)]] Sampler2D c_BRDFLUT;
-[[vk::binding(8, 0)]] SamplerCube c_PrefilteredMap;
-//[[vk::binding(9, 0)]] Sampler2DArray c_ShadowMap;
+[[vk::binding(6, 0)]] SamplerCube r_IrradianceMap;
+[[vk::binding(7, 0)]] Sampler2D r_BRDFLUT;
+[[vk::binding(8, 0)]] SamplerCube r_PrefilteredMap;
+[[vk::binding(9, 0)]] Sampler2DArray r_ShadowMap;
 
 import PBR;
 import Math;
@@ -162,7 +119,7 @@ static const float3 Fdielectric = float3(0.04, 0.04, 0.04);
 
 float3 GetNormalsFromMap()
 {
-    float3 tangentNormal = normalize(c_NormalTexture.Sample(Input.TexCoord).xyz * 2.0f - 1.0f);
+    float3 tangentNormal = normalize(r_NormalTexture.Sample(Input.TexCoord).xyz * 2.0f - 1.0f);
     return normalize(mul(tangentNormal, Input.WorldNormals));
 }
 
@@ -217,7 +174,7 @@ float3 Lighting(float3 F0)
 
         float theta = dot(L, normalize(-spotLight.Direction));
         float epsilon = spotLight.OuterCutoff - spotLight.InnerCutoff;
-        float intensity = clamp((theta - spotLight.InnerCutoff) / epsilon, 0.0f, 1.0f);
+        float intensity = saturate((theta - spotLight.InnerCutoff) / epsilon);
 
         // Calculating Attentuation
         float attenuation = 1.0f / (dist * (spotLight.Falloff + dist));
@@ -296,14 +253,14 @@ float3 IBL(float3 F0, float3 Lr)
     float3 kD = 1.0f - kS;
     kD *= 1.0f - m_Params.Metallic;
 
-    float3 irradiance = c_IrradianceMap.Sample(m_Params.Normal).rgb;
+    float3 irradiance = r_IrradianceMap.Sample(m_Params.Normal).rgb;
     float3 diffuse = irradiance * m_Params.Albedo;
 
     // Sample both the Pre-Filter map and the BRDF LUT and combine them together as per the Split-Sum approximation to get the IBL Specular part
     const float MAX_REFLECTION_LOD = 4.0f;
-    float3 prefilteredColor = c_PrefilteredMap.SampleLevel(Lr, m_Params.Roughness * MAX_REFLECTION_LOD).rgb;
+    float3 prefilteredColor = r_PrefilteredMap.SampleLevel(Lr, m_Params.Roughness * MAX_REFLECTION_LOD).rgb;
 
-    float2 brdf = c_BRDFLUT.Sample(float2(m_Params.NdotV, m_Params.Roughness)).rg;
+    float2 brdf = r_BRDFLUT.Sample(float2(m_Params.NdotV, m_Params.Roughness)).rg;
     float3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 
     float3 ambient = (kD * diffuse + specular) * m_Params.Occlusion;
@@ -311,16 +268,89 @@ float3 IBL(float3 F0, float3 Lr)
     return ambient;
 }
 
+static const float4x4 BIAS_MATRIX = float4x4(
+	0.5f, 0.0f, 0.0f, 0.0f,
+	0.0f, 0.5f, 0.0f, 0.0f,
+	0.0f, 0.0f, 1.0f, 0.0f,
+	0.5f, 0.5f, 0.0f, 1.0f
+);
+
+float LinearizeDepth(const float screenDepth)
+{
+    float depthLinearizeMul = c_Camera.DepthUnpackConsts.x;
+    float depthLinearizeAdd = c_Camera.DepthUnpackConsts.y;
+    return depthLinearizeMul / (depthLinearizeAdd - screenDepth);
+}
+
+float ShadowTextureProjection(float4 coords, float2 offset, uint index)
+{
+    float shadow = 1.0f;
+    float bias = 0.005f;
+
+    if (coords.z > -1.0f && coords.z < 1.0f)
+    {
+        float dist = r_ShadowMap.Sample(float3(coords.xy + offset, index)).r;
+        if (coords.w > 0 && dist < coords.z - bias)
+            shadow = 0.1f; // Ambient Value
+    }
+
+    return shadow;
+}
+
+float FilterPCF(float4 coords, uint index)
+{
+    float texWidth, texHeight, texElements;
+    r_ShadowMap.GetDimensions(texWidth, texHeight, texElements);
+
+    float scale = 0.75f;
+    float dx = scale / texWidth;
+    float dy = scale / texHeight;
+
+    int count = 0;
+    int range = 1;
+
+    float shadowFactor = 0.0f;
+    for (int x = -range; x <= range; x++)
+    {
+        for (int y = -range; y <= range; y++)
+        {
+            shadowFactor += ShadowTextureProjection(coords, float2(dx * x, dy * y), index);
+            count++;
+        }
+    }
+
+    return shadowFactor / count;
+}
+
+float CalculateShadow()
+{
+    uint cascadeIndex = 0;
+    for (uint i = 0; i < 3; ++i)
+    {
+        if (Input.ViewPosition.z < c_CascadeData.CascadeSplitLevels[i])
+            cascadeIndex = i + 1;
+    }
+
+    // Depth Compare for Shadowing
+    float4 shadowCoord = mul(float4(Input.WorldPosition, 1.0f), mul(c_CascadeData.LightSpaceMatrices[cascadeIndex], BIAS_MATRIX));
+    shadowCoord = shadowCoord / shadowCoord.w;
+
+    float shadow = FilterPCF(shadowCoord, cascadeIndex);
+    //float shadow = ShadowTextureProjection(shadowCoord / shadowCoord.w, float2(0.0), cascadeIndex);
+
+    return shadow;
+}
+
 [shader("fragment")]
-void FSMain(VertexOutput vertexOutput : VertexOutput, out float4 oColor : SV_Target)
+void FSMain(VertexOutput vertexOutput : VertexOutput, out float4 o_Color : SV_Target)
 {
     Input = vertexOutput;
 
-    float4 diffuse = c_AlbedoTexture.Sample(vertexOutput.TexCoord);
+    float4 diffuse = r_AlbedoTexture.Sample(vertexOutput.TexCoord);
     m_Params.Albedo = diffuse.rgb * c_MaterialData.Albedo.rgb * c_MaterialData.Emission;
 
     // R->Ambient Occlusion, G->Roughness, B->Metallic
-    float3 aorm = c_ARMTexture.Sample(vertexOutput.TexCoord).rgb;
+    float3 aorm = r_ARMTexture.Sample(vertexOutput.TexCoord).rgb;
     m_Params.Occlusion = aorm.r;
     m_Params.Roughness = aorm.g * c_MaterialData.Roughness;
     m_Params.Metallic = aorm.b * c_MaterialData.Metallic;
@@ -334,11 +364,14 @@ void FSMain(VertexOutput vertexOutput : VertexOutput, out float4 oColor : SV_Tar
 
     // Calculate Reflectance at Normal Incidence; if Di-Electric (like Plastic) use F0
     // of 0.04 and if it's a Metal, use the Albedo color as F0 (Metallic Workflow)
-    float3 F0 = Mix(Fdielectric, m_Params.Albedo, m_Params.Metallic);
+    float3 F0 = lerp(Fdielectric, m_Params.Albedo, m_Params.Metallic);
 
-    float3 lightingContribution = Lighting(F0);
+    // Shadow
+    float shadow = CalculateShadow();
+
+    float3 lightingContribution = Lighting(F0) * shadow;
     float3 iblContribution = IBL(F0, Lr);
 
     float3 color = iblContribution + lightingContribution;
-    oColor = float4(color, 1.0f);
+    o_Color = float4(color, c_MaterialData.Albedo.a);
 } // End of Fragment Stage
