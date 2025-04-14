@@ -179,10 +179,10 @@ namespace VulkanCore {
 		}
 
 		if (m_SlangModule)
-			componentsData.push_back(m_SlangModule);
+			componentsData.emplace_back(m_SlangModule);
 		else
 		{
-			VK_CORE_ASSERT(!moduleDiagnostics, "{0} Shader Compilation Error: {1}", m_ShaderName, (const char*)moduleDiagnostics->getBufferPointer());
+			VK_SLANG_ASSERT(1, moduleDiagnostics, "{0} Shader Compilation Error: {1}", m_ShaderName, (const char*)moduleDiagnostics->getBufferPointer());
 			moduleDiagnostics->release();
 		}
 
@@ -203,16 +203,17 @@ namespace VulkanCore {
 			componentsData.data(), componentsData.size(),
 			composedProgram.writeRef(), programDiagnostics.writeRef());
 
-		VK_CORE_ASSERT(result == SLANG_OK, "{0} Shader Compose Error: {1}", m_ShaderName, (const char*)programDiagnostics->getBufferPointer());
+		VK_SLANG_ASSERT(result, programDiagnostics, "{0} Shader Compose Error: {1}", m_ShaderName, (const char*)programDiagnostics->getBufferPointer());
 
 		// Link Program
 		Slang::ComPtr<slang::IComponentType> linkedProgram{};
 		result = composedProgram->link(linkedProgram.writeRef(), programDiagnostics.writeRef());
-
-		VK_CORE_ASSERT(result == SLANG_OK, "{0} Shader Linking Error: {1}", m_ShaderName, (const char*)programDiagnostics->getBufferPointer());
+		VK_SLANG_ASSERT(result, programDiagnostics, "{0} Shader Linking Error: {1}", m_ShaderName, (const char*)programDiagnostics->getBufferPointer());
 
 		// Shader Reflection
-		auto programLayout = linkedProgram->getLayout(0);
+		auto programLayout = linkedProgram->getLayout(0, programDiagnostics.writeRef());
+		VK_SLANG_ASSERT(1, programDiagnostics, "{0} Shader Reflection Error: {1}", m_ShaderName, (const char*)programDiagnostics->getBufferPointer());
+
 		for (int i = 0; i < programLayout->getEntryPointCount(); ++i)
 		{
 			auto entryPointRefl = programLayout->getEntryPointByIndex(i);
@@ -223,7 +224,7 @@ namespace VulkanCore {
 			Slang::ComPtr<slang::IBlob> diagnosticsBlob{};
 			SlangResult result = linkedProgram->getEntryPointCode(i, 0, spirvCode.writeRef(), diagnosticsBlob.writeRef());
 
-			VK_CORE_ASSERT(result == SLANG_OK, "Failed to find SPIR-V Code: {}", (const char*)diagnosticsBlob->getBufferPointer());
+			VK_SLANG_ASSERT(result, diagnosticsBlob, "Failed to find SPIR-V Code({0}): {1}", Utils::GLShaderTypeToString(shaderType), (const char*)diagnosticsBlob->getBufferPointer());
 
 			auto bufferPtr = reinterpret_cast<const uint32_t*>(spirvCode->getBufferPointer());
 			uint32_t spirvCodeSize = spirvCode->getBufferSize() / sizeof(uint32_t);
