@@ -147,7 +147,7 @@ namespace VulkanCore {
 				boxSettings.SetDensity(bc3d.Density);
 
 				auto shapeResult = boxSettings.Create();
-				auto shapeRef = shapeResult.Get();
+				const auto& shapeRef = shapeResult.Get();
 
 				// Obtain Transforms
 				glm::quat bdQuat(transform.Rotation);
@@ -178,7 +178,7 @@ namespace VulkanCore {
 				sphereSettings.SetDensity(sc3d.Density);
 
 				auto shapeResult = sphereSettings.Create();
-				auto shapeRef = shapeResult.Get();
+				const auto& shapeRef = shapeResult.Get();
 
 				// Set Body Settings
 				JPH::BodyCreationSettings settings{
@@ -210,9 +210,9 @@ namespace VulkanCore {
 				for (int i = 0; i < meshVertexData.size(); ++i)
 				{
 					vertices.emplace_back(
-						meshVertexData[i].Position.x,
-						meshVertexData[i].Position.y,
-						meshVertexData[i].Position.z);
+						meshVertexData[i].Position.x * transform.Scale.x,
+						meshVertexData[i].Position.y * transform.Scale.y,
+						meshVertexData[i].Position.z * transform.Scale.z);
 				}
 
 				for (int i = 0; i < meshIndexData.size(); i += 3)
@@ -227,7 +227,7 @@ namespace VulkanCore {
 				//meshShapeSettings.SetDensity(mc3d.Density);
 
 				auto shapeResult = meshShapeSettings.Create();
-				auto shapeRef = shapeResult.Get();
+				const auto& shapeRef = shapeResult.Get();
 
 				// Obtain Transforms
 				glm::quat bdQuat(transform.Rotation);

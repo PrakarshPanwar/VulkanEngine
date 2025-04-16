@@ -44,7 +44,7 @@ project "VulkanCore"
 		"%{IncludeDir.Jolt}"
 	}
 
-	defines { "IMGUI_DEFINE_MATH_OPERATORS", "SPDLOG_USE_STD_FORMAT", "GLM_FORCE_DEPTH_ZERO_TO_ONE" }
+	defines { "IMGUI_DEFINE_MATH_OPERATORS", "SPDLOG_USE_STD_FORMAT", "GLM_FORCE_DEPTH_ZERO_TO_ONE", "JPH_DEBUG_RENDERER" }
 	links { "GLFW", "%{Library.Vulkan}", "ImGui", "yaml-cpp", "JoltPhysics", "%{Library.optick_Release}" }
 
 	filter "system:windows"
