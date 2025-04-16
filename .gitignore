@@ -15,6 +15,7 @@
 /VulkanCore/vendor/tinyobjloader
 /VulkanCore/dna.txt
 /VulkanCore/assets/imgui.ini
+/VulkanCore/assets/slangdconfig.json
 /EditorLayer/VulkanEngine.log
 /VulkanCore/assets/fonts/SourceCodePro
 /VulkanProfiler

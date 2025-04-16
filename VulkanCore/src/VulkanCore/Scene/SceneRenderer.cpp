@@ -100,6 +100,7 @@ namespace VulkanCore {
 			PipelineSpecification geomTessellatedPipelineSpec;
 			geomTessellatedPipelineSpec.DebugName = "Geometry Tessellated Pipeline";
 			geomTessellatedPipelineSpec.pShader = Renderer::GetShader("CorePBR_Tess");
+			geomTessellatedPipelineSpec.Topology = PrimitiveTopology::PatchList;
 			geomTessellatedPipelineSpec.PatchControlPoints = 3; // Triangles
 			geomTessellatedPipelineSpec.pRenderPass = geomPipelineSpec.pRenderPass;
 			geomTessellatedPipelineSpec.Layout = vertexLayout;
@@ -721,32 +722,12 @@ namespace VulkanCore {
 		m_SceneImages.resize(framesInFlight);
 		m_ShadowDepthPassImages.resize(framesInFlight);
 
-		for (uint32_t i = 0; i < framesInFlight; ++i)
-		{
-			std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
-			m_SceneImages[i] = ImGuiLayer::AddTexture(*finalPassImage);
-
-			auto shadowMapImage = m_ShadowMapPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[i];
-			m_ShadowDepthPassImages[i] = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanImage>(shadowMapImage), 0);
-		}
-
 		m_UBCamera.reserve(framesInFlight);
 		m_UBPointLight.reserve(framesInFlight);
 		m_UBSpotLight.reserve(framesInFlight);
 		m_UBDirectionalLight.reserve(framesInFlight);
 		m_UBCascadeLightMatrices.reserve(framesInFlight);
 		m_ImageBuffer.reserve(framesInFlight);
-
-		// Uniform Buffers
-		for (uint32_t i = 0; i < framesInFlight; ++i)
-		{
-			m_UBCamera.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBCamera)));
-			m_UBPointLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBPointLights)));
-			m_UBSpotLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBSpotLights)));
-			m_UBDirectionalLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBDirectionalLights)));
-			m_UBCascadeLightMatrices.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(CascadeMapData)));
-			m_ImageBuffer.emplace_back(std::make_shared<VulkanIndexBuffer>(m_ViewportSize.x * m_ViewportSize.y * sizeof(int)));
-		}
 
 		m_BloomMipSize = (glm::uvec2(m_ViewportSize.x, m_ViewportSize.y) + 1u) / 2u;
 		m_BloomMipSize += 16u - m_BloomMipSize % 16u;
@@ -760,6 +741,21 @@ namespace VulkanCore {
 
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
+			// ImGui Images
+			std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
+			m_SceneImages[i] = ImGuiLayer::AddTexture(*finalPassImage);
+
+			auto shadowMapImage = m_ShadowMapPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[i];
+			m_ShadowDepthPassImages[i] = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanImage>(shadowMapImage), 0);
+
+			// Uniform Buffers
+			m_UBCamera.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBCamera)));
+			m_UBPointLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBPointLights)));
+			m_UBSpotLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBSpotLights)));
+			m_UBDirectionalLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBDirectionalLights)));
+			m_UBCascadeLightMatrices.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(CascadeMapData)));
+			m_ImageBuffer.emplace_back(std::make_shared<VulkanIndexBuffer>(m_ViewportSize.x * m_ViewportSize.y * sizeof(int)));
+
 			// Bloom Compute Textures
 			ImageSpecification bloomRTSpec{};
 			bloomRTSpec.DebugName = std::format("Bloom Compute Texture {}", i);
@@ -819,7 +815,6 @@ namespace VulkanCore {
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
-
 		}
 
 		device->FlushCommandBuffer(barrierCmd);
@@ -861,50 +856,35 @@ namespace VulkanCore {
 
 			VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
-			for (auto& BloomTexture : m_BloomTextures)
-			{
-				auto vulkanBloomTexture = std::dynamic_pointer_cast<VulkanImage>(BloomTexture);
-				vulkanBloomTexture->Resize(m_BloomMipSize.x, m_BloomMipSize.y, Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2);
-			}
-
-			for (auto& AOTexture : m_AOTextures)
-			{
-				auto vulkanAOTexture = std::dynamic_pointer_cast<VulkanImage>(AOTexture);
-				vulkanAOTexture->Resize(m_ViewportSize.x, m_ViewportSize.y);
-			}
-
-			for (auto& SceneRenderTexture : m_SceneRenderTextures)
-			{
-				auto vulkanSceneTexture = std::dynamic_pointer_cast<VulkanImage>(SceneRenderTexture);
-				vulkanSceneTexture->Resize(m_ViewportSize.x, m_ViewportSize.y, Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y));
-
-				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanSceneTexture->GetVulkanImageInfo().Image,
-					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
-					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneRenderTexture->GetSpecification().MipLevels, 0, 1 });
-			}
-
-			for (auto& SceneDepthTexture : m_SceneDepthTextures)
-			{
-				auto vulkanSceneTexture = std::dynamic_pointer_cast<VulkanImage>(SceneDepthTexture);
-				vulkanSceneTexture->Resize(m_ViewportSize.x, m_ViewportSize.y, Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y));
-
-				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanSceneTexture->GetVulkanImageInfo().Image,
-					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
-					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-					VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, SceneDepthTexture->GetSpecification().MipLevels, 0, 1 });
-			}
-
-			device->FlushCommandBuffer(barrierCmd);
-
-			// Update ImGui Viewport Image
 			for (uint32_t i = 0; i < framesInFlight; ++i)
 			{
+				// General Textures
+				m_BloomTextures[i]->Resize(m_BloomMipSize.x, m_BloomMipSize.y, Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2);
+				m_AOTextures[i]->Resize(m_ViewportSize.x, m_ViewportSize.y);
+
+				auto vulkanSceneTexture = std::dynamic_pointer_cast<VulkanImage>(m_SceneRenderTextures[i]);
+				auto vulkanDepthTexture = std::dynamic_pointer_cast<VulkanImage>(m_SceneDepthTextures[i]);
+				vulkanSceneTexture->Resize(m_ViewportSize.x, m_ViewportSize.y, Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y));
+				vulkanDepthTexture->Resize(m_ViewportSize.x, m_ViewportSize.y, Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y));
+
+				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanSceneTexture->GetVulkanImageInfo().Image,
+					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, vulkanSceneTexture->GetSpecification().MipLevels, 0, 1 });
+
+				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanDepthTexture->GetVulkanImageInfo().Image,
+					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
+					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, vulkanDepthTexture->GetSpecification().MipLevels, 0, 1 });
+
+				// Update ImGui Viewport Image
 				std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
 				ImGuiLayer::UpdateDescriptor(m_SceneImages[i], *finalPassImage);
 			}
+
+			device->FlushCommandBuffer(barrierCmd);
 		}
 
 		// Recreate Shader Materials
@@ -1064,7 +1044,7 @@ namespace VulkanCore {
 
 		ShadowPass();
 		GeometryPass();
-		GTAOCompute();
+		//GTAOCompute();
 		BloomCompute();
 		CompositePass();
 

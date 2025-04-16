@@ -46,8 +46,7 @@ namespace VulkanCore {
 
 		VkPipeline m_GraphicsPipeline = nullptr;
 		VkPipelineLayout m_PipelineLayout = nullptr;
-		VkShaderModule m_VertexShaderModule, m_FragmentShaderModule, m_GeometryShaderModule = nullptr,
-			m_TessellationControlShaderModule = nullptr, m_TessellationEvaluationShaderModule = nullptr;
+		std::map<ShaderType, VkShaderModule> m_ShaderModules;
 
 		std::shared_ptr<Shader> m_Shader;
 		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> m_DescriptorSetLayout;

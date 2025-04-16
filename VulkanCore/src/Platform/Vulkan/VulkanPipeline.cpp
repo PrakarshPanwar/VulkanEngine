@@ -75,6 +75,19 @@ namespace VulkanCore {
 			return pipelineLayout;
 		}
 
+		static VkPrimitiveTopology VulkanPrimitiveTopology(PrimitiveTopology primitiveTopology)
+		{
+			switch (primitiveTopology)
+			{
+			case PrimitiveTopology::LineList:	  return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+			case PrimitiveTopology::TriangleList: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			case PrimitiveTopology::PatchList:	  return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+			default:
+				VK_CORE_ASSERT(false, "Primitive Topology not supported!");
+				return VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+			}
+		}
+
 		static VkCompareOp VulkanCompareOp(CompareOp compareOp)
 		{
 			switch (compareOp)
@@ -107,7 +120,7 @@ namespace VulkanCore {
 			PipelineConfiguration pipelineConfig{};
 
 			pipelineConfig.InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-			pipelineConfig.InputAssemblyInfo.topology = spec.PatchControlPoints > 0 ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			pipelineConfig.InputAssemblyInfo.topology = Utils::VulkanPrimitiveTopology(spec.Topology);
 			pipelineConfig.InputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
 
 			pipelineConfig.ViewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -299,8 +312,8 @@ namespace VulkanCore {
 		auto shader = std::static_pointer_cast<VulkanShader>(m_Specification.pShader);
 		auto& shaderSources = shader->GetShaderModules();
 
-		m_VertexShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Vertex]);
-		m_FragmentShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Fragment]);
+		m_ShaderModules[ShaderType::Vertex] = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Vertex]);
+		m_ShaderModules[ShaderType::Fragment] = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Fragment]);
 
 		uint32_t shaderStageCount = 2;
 		if (shader->HasTessellationShaders())
@@ -312,7 +325,7 @@ namespace VulkanCore {
 
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		shaderStages[0].module = m_VertexShaderModule;
+		shaderStages[0].module = m_ShaderModules[ShaderType::Vertex];
 		shaderStages[0].pName = "main";
 		shaderStages[0].flags = 0;
 		shaderStages[0].pNext = nullptr;
@@ -320,7 +333,7 @@ namespace VulkanCore {
 
 		shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		shaderStages[1].module = m_FragmentShaderModule;
+		shaderStages[1].module = m_ShaderModules[ShaderType::Fragment];
 		shaderStages[1].pName = "main";
 		shaderStages[1].flags = 0;
 		shaderStages[1].pNext = nullptr;
@@ -328,11 +341,11 @@ namespace VulkanCore {
 
 		if (shader->HasGeometryShader())
 		{
-			m_GeometryShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Geometry]);
+			m_ShaderModules[ShaderType::Geometry] = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::Geometry]);
 
 			shaderStages[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 			shaderStages[2].stage = VK_SHADER_STAGE_GEOMETRY_BIT;
-			shaderStages[2].module = m_GeometryShaderModule;
+			shaderStages[2].module = m_ShaderModules[ShaderType::Geometry];
 			shaderStages[2].pName = "main";
 			shaderStages[2].flags = 0;
 			shaderStages[2].pNext = nullptr;
@@ -341,21 +354,21 @@ namespace VulkanCore {
 
 		if (shader->HasTessellationShaders())
 		{
-			m_TessellationControlShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::TessellationControl]);
+			m_ShaderModules[ShaderType::TessellationControl] = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::TessellationControl]);
 
 			shaderStages[2].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 			shaderStages[2].stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-			shaderStages[2].module = m_TessellationControlShaderModule;
+			shaderStages[2].module = m_ShaderModules[ShaderType::TessellationControl];
 			shaderStages[2].pName = "main";
 			shaderStages[2].flags = 0;
 			shaderStages[2].pNext = nullptr;
 			shaderStages[2].pSpecializationInfo = nullptr;
 
-			m_TessellationEvaluationShaderModule = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::TessellationEvaluation]);
+			m_ShaderModules[ShaderType::TessellationEvaluation] = Utils::CreateShaderModule(shaderSources[(uint32_t)ShaderType::TessellationEvaluation]);
 
 			shaderStages[3].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 			shaderStages[3].stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-			shaderStages[3].module = m_TessellationEvaluationShaderModule;
+			shaderStages[3].module = m_ShaderModules[ShaderType::TessellationEvaluation];
 			shaderStages[3].pName = "main";
 			shaderStages[3].flags = 0;
 			shaderStages[3].pNext = nullptr;
@@ -420,23 +433,12 @@ namespace VulkanCore {
 
 	void VulkanPipeline::Release()
 	{
-		Renderer::SubmitResourceFree([pipeline = m_GraphicsPipeline, layout = m_PipelineLayout,
-			vertexShaderModule = m_VertexShaderModule, fragmentShaderModule = m_FragmentShaderModule, geometryShaderModule = m_GeometryShaderModule,
-			tessellationControlShaderModule = m_TessellationControlShaderModule, tessellationEvaluationShaderModule = m_TessellationEvaluationShaderModule]
+		Renderer::SubmitResourceFree([pipeline = m_GraphicsPipeline, layout = m_PipelineLayout, shaderModules = m_ShaderModules]
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 
-			vkDestroyShaderModule(device->GetVulkanDevice(), vertexShaderModule, nullptr);
-			vkDestroyShaderModule(device->GetVulkanDevice(), fragmentShaderModule, nullptr);
-
-			if (geometryShaderModule)
-				vkDestroyShaderModule(device->GetVulkanDevice(), geometryShaderModule, nullptr);
-
-			if (tessellationControlShaderModule && tessellationEvaluationShaderModule)
-			{
-				vkDestroyShaderModule(device->GetVulkanDevice(), tessellationControlShaderModule, nullptr);
-				vkDestroyShaderModule(device->GetVulkanDevice(), tessellationEvaluationShaderModule, nullptr);
-			}
+			for (auto&& [stage, module] : shaderModules)
+				vkDestroyShaderModule(device->GetVulkanDevice(), module, nullptr);
 
 			if (layout)
 				vkDestroyPipelineLayout(device->GetVulkanDevice(), layout, nullptr);

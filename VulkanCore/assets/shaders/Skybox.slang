@@ -3,47 +3,47 @@
 import Buffers;
 
 static const float3 verticesData[36] = float3[](       
-  float3(-1.0f,  1.0f, -1.0f),
-  float3(-1.0f, -1.0f, -1.0f),
-  float3( 1.0f, -1.0f, -1.0f),
-  float3( 1.0f, -1.0f, -1.0f),
-  float3( 1.0f,  1.0f, -1.0f),
-  float3(-1.0f,  1.0f, -1.0f),
-  
-  float3(-1.0f, -1.0f,  1.0f),
-  float3(-1.0f, -1.0f, -1.0f),
-  float3(-1.0f,  1.0f, -1.0f),
-  float3(-1.0f,  1.0f, -1.0f),
-  float3(-1.0f,  1.0f,  1.0f),
-  float3(-1.0f, -1.0f,  1.0f),
-  
-  float3( 1.0f, -1.0f, -1.0f),
-  float3( 1.0f, -1.0f,  1.0f),
-  float3( 1.0f,  1.0f,  1.0f),
-  float3( 1.0f,  1.0f,  1.0f),
-  float3( 1.0f,  1.0f, -1.0f),
-  float3( 1.0f, -1.0f, -1.0f),
-  
-  float3(-1.0f, -1.0f,  1.0f),
-  float3(-1.0f,  1.0f,  1.0f),
-  float3( 1.0f,  1.0f,  1.0f),
-  float3( 1.0f,  1.0f,  1.0f),
-  float3( 1.0f, -1.0f,  1.0f),
-  float3(-1.0f, -1.0f,  1.0f),
-  
-  float3(-1.0f,  1.0f, -1.0f),
-  float3( 1.0f,  1.0f, -1.0f),
-  float3( 1.0f,  1.0f,  1.0f),
-  float3( 1.0f,  1.0f,  1.0f),
-  float3(-1.0f,  1.0f,  1.0f),
-  float3(-1.0f,  1.0f, -1.0f),
-  
-  float3(-1.0f, -1.0f, -1.0f),
-  float3(-1.0f, -1.0f,  1.0f),
-  float3( 1.0f, -1.0f, -1.0f),
-  float3( 1.0f, -1.0f, -1.0f),
-  float3(-1.0f, -1.0f,  1.0f),
-  float3( 1.0f, -1.0f,  1.0f)
+	float3(-1.0f,  1.0f, -1.0f),
+	float3(-1.0f, -1.0f, -1.0f),
+	float3( 1.0f, -1.0f, -1.0f),
+	float3( 1.0f, -1.0f, -1.0f),
+	float3( 1.0f,  1.0f, -1.0f),
+	float3(-1.0f,  1.0f, -1.0f),
+	
+	float3(-1.0f, -1.0f,  1.0f),
+	float3(-1.0f, -1.0f, -1.0f),
+	float3(-1.0f,  1.0f, -1.0f),
+	float3(-1.0f,  1.0f, -1.0f),
+	float3(-1.0f,  1.0f,  1.0f),
+	float3(-1.0f, -1.0f,  1.0f),
+	
+	float3( 1.0f, -1.0f, -1.0f),
+	float3( 1.0f, -1.0f,  1.0f),
+	float3( 1.0f,  1.0f,  1.0f),
+	float3( 1.0f,  1.0f,  1.0f),
+	float3( 1.0f,  1.0f, -1.0f),
+	float3( 1.0f, -1.0f, -1.0f),
+	
+	float3(-1.0f, -1.0f,  1.0f),
+	float3(-1.0f,  1.0f,  1.0f),
+	float3( 1.0f,  1.0f,  1.0f),
+	float3( 1.0f,  1.0f,  1.0f),
+	float3( 1.0f, -1.0f,  1.0f),
+	float3(-1.0f, -1.0f,  1.0f),
+	
+	float3(-1.0f,  1.0f, -1.0f),
+	float3( 1.0f,  1.0f, -1.0f),
+	float3( 1.0f,  1.0f,  1.0f),
+	float3( 1.0f,  1.0f,  1.0f),
+	float3(-1.0f,  1.0f,  1.0f),
+	float3(-1.0f,  1.0f, -1.0f),
+
+	float3(-1.0f, -1.0f, -1.0f),
+	float3(-1.0f, -1.0f,  1.0f),
+	float3( 1.0f, -1.0f, -1.0f),
+	float3( 1.0f, -1.0f, -1.0f),
+	float3(-1.0f, -1.0f,  1.0f),
+	float3( 1.0f, -1.0f,  1.0f)
 );
 
 [[vk::binding(0, 0)]] ConstantBuffer<Camera> c_Camera;

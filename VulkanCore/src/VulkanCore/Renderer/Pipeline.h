@@ -5,6 +5,14 @@
 
 namespace VulkanCore {
 
+	enum class PrimitiveTopology
+	{
+		None,
+		LineList,
+		TriangleList,
+		PatchList
+	};
+
 	enum class CompareOp
 	{
 		None,
@@ -27,11 +35,9 @@ namespace VulkanCore {
 		std::string DebugName;
 		std::shared_ptr<Shader> pShader;
 		std::shared_ptr<RenderPass> pRenderPass;
+		PrimitiveTopology Topology = PrimitiveTopology::TriangleList;
 		CullMode CullingMode = CullMode::None;
-		bool DepthTest = true;
-		bool DepthWrite = true;
-		bool DepthClamp = false;
-		bool Blend = false;
+		bool DepthTest = true, DepthWrite = true, DepthClamp = false, Blend = false;
 		CompareOp DepthCompareOp = CompareOp::Less;
 		uint32_t PatchControlPoints = 0;
 
