@@ -1,5 +1,6 @@
 #pragma once
 #include "VulkanCore/Core/Components.h"
+#include "PhysicsDebugRenderer.h"
 
 namespace VulkanCore {
 
@@ -17,6 +18,7 @@ namespace VulkanCore {
 
 		virtual void CreateBodies(Scene* scene) = 0;
 		virtual void RemoveAndDestroyBodies(Scene* scene) = 0;
+		virtual void DrawPhysicsBodies(std::shared_ptr<PhysicsDebugRenderer> debugRenderer) = 0;
 
 		static std::unique_ptr<PhysicsWorld> Create();
 // 	protected:

@@ -49,6 +49,7 @@ namespace VulkanCore {
 	{
 	public:
 		MeshSource(const std::string& filepath);
+		MeshSource(const std::string& meshName, const std::vector<Vertex>& verticesData, const std::vector<uint32_t>& indicesData);
 		~MeshSource();
 
 		const aiScene* GetAssimpScene() const { return m_Scene; }
@@ -68,11 +69,11 @@ namespace VulkanCore {
 	private:
 		aiScene* m_Scene;
 
-		std::vector<Submesh> m_Submeshes{};
-		std::vector<MeshNode> m_Nodes{};
+		std::vector<Submesh> m_Submeshes;
+		std::vector<MeshNode> m_Nodes;
 
-		std::vector<Vertex> m_Vertices{};
-		std::vector<uint32_t> m_Indices{};
+		std::vector<Vertex> m_Vertices;
+		std::vector<uint32_t> m_Indices;
 
 		std::shared_ptr<MaterialAsset> m_BaseMaterial;
 

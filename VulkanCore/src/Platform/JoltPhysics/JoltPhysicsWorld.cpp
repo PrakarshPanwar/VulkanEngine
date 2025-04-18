@@ -1,5 +1,6 @@
 #include "vulkanpch.h"
 #include "JoltPhysicsWorld.h"
+#include "JoltDebugRenderer.h"
 #include "VulkanCore/Scene/Entity.h"
 #include "VulkanCore/Asset/AssetManager.h"
 #include "VulkanCore/Asset/Asset.h"
@@ -92,28 +93,31 @@ namespace VulkanCore {
 
 	void JoltPhysicsWorld::Update(Scene* scene)
 	{
-		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
-
-		constexpr uint32_t collisionSteps = 1;
-		constexpr float deltaTime = 1.0f / 60.0f; // It's kept at 60 FPS shouldn't be variable to Timestep
-
-		m_PhysicsSystem->Update(deltaTime, collisionSteps, m_TempAllocator, m_JobSystem);
-
-		// Update Transform Components
-		auto view = scene->GetAllEntitiesWith<TransformComponent, Rigidbody3DComponent>();
-		for (auto ent : view)
+		if (m_PhysicsSystem)
 		{
-			auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(ent);
-			auto bodyID = JPH::BodyID{ (uint32_t)ent };
+			JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
 
-			// Get Body Position and Rotation
-			JPH::RVec3 bodyPosition = bodyInterface.GetPosition(bodyID);
-			JPH::Quat bodyQuaternion = bodyInterface.GetRotation(bodyID);
-			JPH::Vec3 bodyRotation = bodyQuaternion.GetEulerAngles();
+			constexpr uint32_t collisionSteps = 1;
+			constexpr float deltaTime = 1.0f / 60.0f; // It's kept at 60 FPS shouldn't be variable to Timestep
 
-			// Update Transform
-			transform.Translation = { bodyPosition.GetX(), bodyPosition.GetY(), bodyPosition.GetZ() };
-			transform.Rotation = { bodyRotation.GetX(), bodyRotation.GetY(), bodyRotation.GetZ() };
+			m_PhysicsSystem->Update(deltaTime, collisionSteps, m_TempAllocator, m_JobSystem);
+
+			// Update Transform Components
+			auto view = scene->GetAllEntitiesWith<TransformComponent, Rigidbody3DComponent>();
+			for (auto ent : view)
+			{
+				auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(ent);
+				auto bodyID = JPH::BodyID{ (uint32_t)ent };
+
+				// Get Body Position and Rotation
+				JPH::RVec3 bodyPosition = bodyInterface.GetPosition(bodyID);
+				JPH::Quat bodyQuaternion = bodyInterface.GetRotation(bodyID);
+				JPH::Vec3 bodyRotation = bodyQuaternion.GetEulerAngles();
+
+				// Update Transform
+				transform.Translation = { bodyPosition.GetX(), bodyPosition.GetY(), bodyPosition.GetZ() };
+				transform.Rotation = { bodyRotation.GetX(), bodyRotation.GetY(), bodyRotation.GetZ() };
+			}
 		}
 	}
 
@@ -268,6 +272,19 @@ namespace VulkanCore {
 			bodyInterface.RemoveBody(bodyID);  // Remove Body
 			bodyInterface.DestroyBody(bodyID); // Destroy Body
 		}
+	}
+
+	void JoltPhysicsWorld::DrawPhysicsBodies(std::shared_ptr<PhysicsDebugRenderer> debugRenderer)
+	{
+		auto joltDebugRenderer = std::dynamic_pointer_cast<JPH::DebugRenderer>(debugRenderer);
+
+		JPH::BodyManager::DrawSettings drawSettings{};
+		drawSettings.mDrawShape = true;
+		drawSettings.mDrawShapeWireframe = true;
+		drawSettings.mDrawBoundingBox = true;
+		drawSettings.mDrawVelocity = true;
+
+		m_PhysicsSystem->DrawBodies(drawSettings, joltDebugRenderer.get());
 	}
 
 #if 0

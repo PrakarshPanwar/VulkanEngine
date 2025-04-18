@@ -683,6 +683,23 @@ namespace VulkanCore {
 		});
 	}
 
+	void VulkanRenderer::RenderLines(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VertexBuffer>& linesData, uint32_t drawCount)
+	{
+		Renderer::Submit([cmdBuffer, linesData, drawCount]
+		{
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderLines");
+
+			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+
+			auto vulkanLinesVB = std::static_pointer_cast<VulkanVertexBuffer>(linesData);
+			VkBuffer buffers[] = { vulkanLinesVB->GetVulkanBuffer() };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(drawCmd, 0, 1, buffers, offsets);
+
+			vkCmdDraw(drawCmd, drawCount, 1, 0, 0);
+		});
+	}
+
 	void VulkanRenderer::RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 

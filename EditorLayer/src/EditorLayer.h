@@ -64,9 +64,9 @@ namespace VulkanCore {
 
 		std::shared_ptr<AssetManagerBase> m_AssetManagerBase;
 
-		bool m_ImGuiShowWindow = true, m_ViewportHovered = false,
-			m_ViewportFocused = false, m_WindowResized = false,
-			m_ShowApplicationStats = false, m_ShowCameraData = true, m_EnableSnap = false;
+		bool m_ImGuiShowWindow = true, m_EnableSnap = false,
+			m_ViewportHovered = false, m_ViewportFocused = false, m_WindowResized = false, 
+			m_ShowApplicationStats = false, m_ShowCameraData = true, m_ShowPhysicsCollider = false;
 
 		ImVec2 m_ViewportSize;
 		glm::vec2 m_ViewportBounds[2];

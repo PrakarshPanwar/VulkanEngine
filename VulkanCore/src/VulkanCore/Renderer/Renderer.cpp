@@ -57,6 +57,7 @@ namespace VulkanCore {
 
 		VK_CREATE_SLANG_SHADER("CorePBR");
 		VK_CREATE_SHADER("CorePBR_Tess"); // TODO: Future support required for Vulkan Tessellation in Slang
+		VK_CREATE_SLANG_SHADER("Lines");
 		VK_CREATE_SLANG_SHADER("ShadowDepth");
 		VK_CREATE_SHADER("CoreEditor");
 		VK_CREATE_SHADER("LightShader");
@@ -135,6 +136,11 @@ namespace VulkanCore {
 	void Renderer::RenderMeshWithoutMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, uint32_t submeshIndex, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 		s_Renderer->RenderMeshWithoutMaterial(cmdBuffer, mesh, submeshIndex, transformBuffer, transformData, instanceCount);
+	}
+
+	void Renderer::RenderLines(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<VertexBuffer>& linesData, uint32_t drawCount)
+	{
+		s_Renderer->RenderLines(cmdBuffer, linesData, drawCount);
 	}
 
 	void Renderer::RenderLight(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const LightSelectData& lightData)

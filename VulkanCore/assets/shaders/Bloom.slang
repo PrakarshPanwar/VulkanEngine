@@ -14,10 +14,13 @@ struct BloomParams
 
 [[vk::push_constant]] ConstantBuffer<BloomParams> c_Params;
 
-#define BLOOM_MODE_PREFILTER 0
-#define BLOOM_MODE_DOWNSAMPLE 1
-#define BLOOM_MODE_UPSAMPLE_FIRST 2
-#define BLOOM_MODE_UPSAMPLE 3
+enum BloomMode
+{
+    Prefilter = 0,
+    Downsample,
+    UpsampleFirst,
+    Upsample
+};
 
 static const float Epsilon = 1.0e-4;
 
@@ -118,13 +121,19 @@ void CSMain(uint3 threadID : SV_DispatchThreadID)
     float2 texSize = float2(texWidth, texHeight);
 
     float4 color = float4(1.0f, 0.0f, 1.0f, 1.0f);
-    if (uint(c_Params.LodAndMode.y) == BLOOM_MODE_PREFILTER)
+    BloomMode bloomMode = (BloomMode)c_Params.LodAndMode.y;
+
+    switch (bloomMode)
+    {
+    case BloomMode::Prefilter:
     {
         color.rgb = DownsampleBox13(r_Texture, 0, texCoords, 1.0f / texSize);
         color = Prefilter(color, texCoords);
         color.a = 1.0f;
+
+        break;
     }
-    else if (uint(c_Params.LodAndMode.y) == BLOOM_MODE_UPSAMPLE_FIRST)
+    case BloomMode::UpsampleFirst:
     {
         float bloomTexWidth, bloomTexHeight, bloomMips;
         r_Texture.GetDimensions(int(c_Params.LodAndMode.x + 1.0f), bloomTexWidth, bloomTexHeight, bloomMips);
@@ -135,8 +144,10 @@ void CSMain(uint3 threadID : SV_DispatchThreadID)
 
         float3 existing = r_Texture.SampleLevel(texCoords, c_Params.LodAndMode.x).rgb;
         color.rgb = existing + upsampledTexture;
+
+        break;
     }
-    else if (uint(c_Params.LodAndMode.y) == BLOOM_MODE_UPSAMPLE)
+    case BloomMode::Upsample:
     {
         float bloomTexWidth, bloomTexHeight, bloomMips;
         r_BloomTexture.GetDimensions(int(c_Params.LodAndMode.x + 1.0f), bloomTexWidth, bloomTexHeight, bloomMips);
@@ -147,10 +158,15 @@ void CSMain(uint3 threadID : SV_DispatchThreadID)
 
         float3 existing = r_Texture.SampleLevel(texCoords, c_Params.LodAndMode.x).rgb;
         color.rgb = existing + upsampledTexture;
+
+        break;
     }
-    else if (uint(c_Params.LodAndMode.y) == BLOOM_MODE_DOWNSAMPLE)
+    case BloomMode::Downsample:
     {
         color.rgb = DownsampleBox13(r_Texture, c_Params.LodAndMode.x, texCoords, 1.0f / texSize);
+    }
+    default:
+        break;
     }
 
     o_Image[threadID.xy] = color;

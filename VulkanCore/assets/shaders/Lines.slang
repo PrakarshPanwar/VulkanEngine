@@ -14,10 +14,11 @@ struct VertexInput
 void VSMain(VertexInput vertexInput, out float4 position : SV_Position, out float4 color : COLOR0)
 {
     position = mul(mul(float4(vertexInput.Position, 1.0f), c_Camera.View), c_Camera.Projection);
+    color = vertexInput.Color;
 } // End of Vertex Stage
 
 [shader("fragment")]
-void FSMain(in float4 color : COLOR0, out float4 o_Color : SV_Target)
+void FSMain(float4 color : COLOR0, out float4 o_Color : SV_Target)
 {
     o_Color = float4(color.rgb, 1.0f);
 } // End of Fragment Stage

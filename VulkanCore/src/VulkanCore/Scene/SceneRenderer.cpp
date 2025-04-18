@@ -152,6 +152,21 @@ namespace VulkanCore {
 			m_LightSelectPipeline = std::make_shared<VulkanPipeline>(lightSelectPipelineSpec);
 		}
 
+		// Lines Pipeline
+		{
+			PipelineSpecification linesPipelineSpec;
+			linesPipelineSpec.DebugName = "Lines Pipeline";
+			linesPipelineSpec.pShader = Renderer::GetShader("Lines");
+			linesPipelineSpec.Topology = PrimitiveTopology::LineList;
+			linesPipelineSpec.pRenderPass = m_GeometryPipeline->GetSpecification().pRenderPass;
+			linesPipelineSpec.Layout = {
+				{ ShaderDataType::Float3, "a_Position" },
+				{ ShaderDataType::Float4, "a_Color" }
+			};
+
+			m_LinesPipeline = std::make_shared<VulkanPipeline>(linesPipelineSpec);
+		}
+
 		// Shadow Map Pipeline(NOTE: Currently not working properly)
 		{
 			FramebufferSpecification shadowMapFramebufferSpec;
@@ -246,6 +261,14 @@ namespace VulkanCore {
 
 			m_GeometrySelectMaterial->SetBuffers(0, m_UBCamera);
 			m_GeometrySelectMaterial->PrepareShaderMaterial();
+		}
+
+		// Lines Material
+		{
+			m_LinesMaterial = std::make_shared<VulkanMaterial>(m_LinesPipeline->GetSpecification().pShader, "Lines Material");
+
+			m_LinesMaterial->SetBuffers(0, m_UBCamera);
+			m_LinesMaterial->PrepareShaderMaterial();
 		}
 
 		// Light Materials
@@ -719,6 +742,9 @@ namespace VulkanCore {
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		Renderer::WaitAndExecute();
 
+		// Create Physics Debug Renderer
+		m_PhysicsDebugRenderer = PhysicsDebugRenderer::Create();
+
 		m_SceneImages.resize(framesInFlight);
 		m_ShadowDepthPassImages.resize(framesInFlight);
 
@@ -1158,6 +1184,42 @@ namespace VulkanCore {
 
 	}
 
+	void SceneRenderer::SubmitPhysicsMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform)
+	{
+		VK_CORE_PROFILE();
+
+		if (!mesh || !materialAsset)
+			return;
+
+		auto meshSource = mesh->GetMeshSource();
+		auto& submeshData = meshSource->GetSubmeshes();
+		uint64_t meshHandle = mesh->Handle;
+
+		if (meshSource->GetVertexCount() < 1)
+			return;
+
+		for (uint32_t submeshIndex : mesh->GetSubmeshes())
+		{
+			int materialIndex = submeshData[submeshIndex].MaterialIndex;
+			uint64_t materialHandle = materialAsset->Handle;
+
+			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
+			auto& transformBuffer = m_PhysicsDebugMeshTransformMap[meshKey].Transforms.emplace_back();
+
+			glm::mat4 submeshTransform = transform * submeshData[submeshIndex].LocalTransform;
+			transformBuffer.MRow[0] = { submeshTransform[0][0], submeshTransform[1][0], submeshTransform[2][0], submeshTransform[3][0] };
+			transformBuffer.MRow[1] = { submeshTransform[0][1], submeshTransform[1][1], submeshTransform[2][1], submeshTransform[3][1] };
+			transformBuffer.MRow[2] = { submeshTransform[0][2], submeshTransform[1][2], submeshTransform[2][2], submeshTransform[3][2] };
+
+			auto& dc = m_PhysicsDebugMeshDrawList[meshKey];
+			dc.MeshInstance = mesh;
+			dc.MaterialInstance = materialAsset->GetMaterial();
+			dc.SubmeshIndex = submeshIndex;
+			dc.TransformBuffer = m_PhysicsDebugMeshTransformMap[meshKey].TransformBuffer;
+			dc.InstanceCount++;
+		}
+	}
+
 	void SceneRenderer::UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialTable> materialTable)
 	{
 		auto meshSource = mesh->GetMeshSource();
@@ -1235,6 +1297,14 @@ namespace VulkanCore {
 		m_Scene->OnUpdateGeometry(this);
 		m_Scene->OnUpdateLights(m_PointLightPositions, m_SpotLightPositions, m_LightHandles);
 
+		// This method will call inherited Jolt Renderer methods
+		// Then Submit and Flush to Vertex Buffers
+		if (m_SceneEditorData.ShowPhysicsCollider)
+		{
+			m_Scene->DrawPhysicsBodies(m_PhysicsDebugRenderer);
+			m_PhysicsDebugRenderer->FlushData();
+		}
+
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_ShadowMapPipeline->GetSpecification().pRenderPass);
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "ShadowPass", DebugLabelColor::Aqua);
 		Renderer::BindPipeline(m_SceneCommandBuffer, m_ShadowMapPipeline, m_ShadowMapMaterial);
@@ -1253,6 +1323,12 @@ namespace VulkanCore {
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().pRenderPass);
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
+		if (m_SceneEditorData.ShowPhysicsCollider)
+		{
+			Renderer::BindPipeline(m_SceneCommandBuffer, m_LinesPipeline, m_LinesMaterial);
+			m_PhysicsDebugRenderer->Draw(m_SceneCommandBuffer);
+		}
+
 		// Rendering Skybox
 		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxMaterial, &m_SkyboxSettings);
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
@@ -1262,11 +1338,18 @@ namespace VulkanCore {
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Geometry-Pass", DebugLabelColor::Gold);
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
-		// Standard Geometry
 		Renderer::BindPipeline(m_SceneCommandBuffer, m_GeometryPipeline, m_GeometryMaterial);
 
+		// Static Geometry
 		for (auto& [mk, dc] : m_MeshDrawList)
 			Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk].Transforms, dc.InstanceCount);
+
+		if (m_SceneEditorData.ShowPhysicsCollider)
+		{
+			// Physics Debug Geometry
+			for (auto& [mk, dc] : m_PhysicsDebugMeshDrawList)
+				Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_PhysicsDebugMeshTransformMap[mk].Transforms, dc.InstanceCount);
+		}
 
 		// Tessellated Geometry(i.e. Displacement Maps, Dynamic LOD)
 		Renderer::BindPipeline(m_SceneCommandBuffer, m_GeometryTessellatedPipeline, m_GeometryMaterial);
@@ -1466,6 +1549,15 @@ namespace VulkanCore {
 			m_SelectedMeshTransformMap[mk].Transforms.clear();
 			dc.InstanceCount = 0;
 		}
+
+		for (auto& [mk, dc] : m_PhysicsDebugMeshDrawList)
+		{
+			m_PhysicsDebugMeshTransformMap[mk].Transforms.clear();
+			dc.InstanceCount = 0;
+		}
+
+		if (m_SceneEditorData.ShowPhysicsCollider)
+			m_PhysicsDebugRenderer->ClearData();
 
 		m_PointLightPositions.clear();
 		m_SpotLightPositions.clear();

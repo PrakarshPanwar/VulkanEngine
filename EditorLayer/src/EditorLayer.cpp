@@ -116,6 +116,7 @@ namespace VulkanCore {
 		sceneEditorData.CameraData = m_EditorCamera;
 		sceneEditorData.ViewportMousePos = glm::max(glm::ivec2{ mouseX, mouseY }, 0);
 		sceneEditorData.ViewportHovered = m_ViewportHovered;
+		sceneEditorData.ShowPhysicsCollider = m_ShowPhysicsCollider && activeScene->IsRunning();
 		m_SceneRenderer->SetSceneEditorData(sceneEditorData);
 
 		m_SceneRenderer->RenderScene();
@@ -362,6 +363,7 @@ namespace VulkanCore {
 			ImGui::DragFloat("Translation", &m_TranslationSnapValue, 0.01f, 0.01f);
 			ImGui::DragFloat("Rotation", &m_RotationSnapValue);
 			ImGui::DragFloat("Scale", &m_ScaleSnapValue, 0.2f);
+			ImGui::Checkbox("Show Physics Collider", &m_ShowPhysicsCollider);
 
 			ImGui::EndPopup();
 		}

@@ -1,34 +1,19 @@
 #include "vulkanpch.h"
 #include "Mesh.h"
 
-#include "VulkanCore/Core/HashCombine.h"
-
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/Timer.h"
 #include "VulkanCore/Core/Components.h"
 #include "VulkanCore/Asset/AssetManager.h"
-#include "Platform/Vulkan/VulkanMaterial.h"
+
+#include "Platform/Vulkan/VulkanVertexBuffer.h"
+#include "Platform/Vulkan/VulkanIndexBuffer.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tinyobjloader.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
-
-namespace std {
-
-	template<>
-	struct hash<VulkanCore::Vertex>
-	{
-		size_t operator()(const VulkanCore::Vertex& vertex) const
-		{
-			size_t seed = 0;
-			VulkanCore::HashCombine(seed, vertex.Position, vertex.Normal, vertex.TexCoord);
-			return seed;
-		}
-	};
-
-}
 
 namespace VulkanCore {
 
@@ -128,6 +113,32 @@ namespace VulkanCore {
 
 		// Allocating Root Node
 		m_Nodes.emplace_back();
+	}
+
+	MeshSource::MeshSource(const std::string& meshName, const std::vector<Vertex>& verticesData, const std::vector<uint32_t>& indicesData)
+	{
+		VK_CORE_INFO("Creating Custom Mesh!");
+
+		Submesh& submesh = m_Submeshes.emplace_back();
+		submesh.BaseVertex = 0;
+		submesh.BaseIndex = 0;
+		submesh.VertexCount = verticesData.size();
+		submesh.IndexCount = indicesData.size();
+		submesh.MeshName = std::format("Custom Mesh: {}", meshName);
+		submesh.MaterialIndex = 0;
+		submesh.LocalTransform = glm::mat4(1.0f);
+
+		MeshNode& meshNode = m_Nodes.emplace_back();
+		meshNode.Name = std::format("Root: {}", meshName);
+		meshNode.Submeshes = { 0 };
+		meshNode.LocalTransform = glm::mat4(1.0f);
+
+		m_Vertices = verticesData;
+		m_Indices = indicesData;
+
+		// TODO: Move this elsewhere(i.e. MeshImporter)
+		m_VertexBuffer = std::make_shared<VulkanVertexBuffer>(m_Vertices.data(), (uint32_t)(m_Vertices.size() * sizeof(Vertex)));
+		m_IndexBuffer = std::make_shared<VulkanIndexBuffer>(m_Indices.data(), (uint32_t)(m_Indices.size() * 4));
 	}
 
 	MeshSource::~MeshSource()
