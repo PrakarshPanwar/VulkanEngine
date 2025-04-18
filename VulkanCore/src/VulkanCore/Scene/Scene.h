@@ -13,7 +13,7 @@ namespace VulkanCore {
 	{
 		EditorCamera CameraData;
 		glm::ivec2 ViewportMousePos;
-		bool ViewportHovered;
+		bool ViewportHovered, ShowPhysicsCollider;
 	};
 
 	class Scene : public Asset
@@ -29,6 +29,7 @@ namespace VulkanCore {
 
 		void OnUpdateGeometry(SceneRenderer* renderer);
 		void OnSelectGeometry(SceneRenderer* renderer);
+		void DrawPhysicsBodies(std::shared_ptr<PhysicsDebugRenderer> debugRenderer);
 		void OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions, std::vector<uint32_t>& lightHandles);
 		void UpdateLightsBuffer(UBPointLights& pointLights, UBSpotLights& spotLights, UBDirectionalLights& directionalLights);
 		DirectionalLightComponent GetDirectionalLightData(int index = 0);

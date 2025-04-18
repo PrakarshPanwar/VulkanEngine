@@ -16,6 +16,7 @@ namespace VulkanCore {
 
 		void CreateBodies(Scene* scene) override;
 		void RemoveAndDestroyBodies(Scene* scene) override;
+		void DrawPhysicsBodies(std::shared_ptr<PhysicsDebugRenderer> debugRenderer) override;
 	//protected:
 		//void CreateBoxShape(Scene* scene) override;
 		//void CreateSphereShape(Scene* scene) override;
@@ -27,7 +28,7 @@ namespace VulkanCore {
 		// Create mapping table from object layer to broadphase layer
 		// Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!
 		// Also have a look at BroadPhaseLayerInterfaceTable or BroadPhaseLayerInterfaceMask for a simpler interface.
-		MBroadPhaseLayerInterface m_BroadPhaseLayerInterface{};
+		MBroadPhaseLayerInterface m_BroadPhaseLayerInterface;
 
 		// Create class that filters object vs broadphase layers
 		// Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!

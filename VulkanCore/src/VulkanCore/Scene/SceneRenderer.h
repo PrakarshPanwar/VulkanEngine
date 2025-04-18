@@ -7,6 +7,7 @@
 
 #include <glm/glm.hpp>
 #include "Scene.h"
+#include "PhysicsDebugRenderer.h"
 
 namespace VulkanCore {
 
@@ -26,22 +27,24 @@ namespace VulkanCore {
 		void RenderScene();
 		void RenderLights();
 		void SelectionPass();
-		void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialTable>& materialAsset, const glm::mat4& transform);
+		void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialTable>& materialTable, const glm::mat4& transform);
 		void SubmitSelectedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialTable>& materialTable , const glm::mat4& transform, uint32_t entityID);
 		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialTable>& materialTable, const glm::mat4& transform);
+		void SubmitPhysicsMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialTable> materialTable);
 		void UpdateSkybox(AssetHandle skyTextureHandle);
+
+		inline int GetHoveredEntity() const { return m_HoveredEntity; }
+		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
+		std::shared_ptr<Image2D> GetFinalPassImage(uint32_t index) const;
+		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
+		inline const EditorCamera& GetEditorCamera() const { return m_SceneEditorData.CameraData; }
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
 		static inline VkDescriptorSet GetTextureCubeID() { return s_Instance->m_SkyboxTextureID; }
 		static std::shared_ptr<RenderCommandBuffer> GetRenderCommandBuffer() { return s_Instance->m_SceneCommandBuffer; }
 		static void SetSkybox(AssetHandle skyTextureHandle);
 		void SetSceneEditorData(const SceneEditorData& sceneEditorData) { m_SceneEditorData = sceneEditorData; }
-
-		inline int GetHoveredEntity() const { return m_HoveredEntity; }
-		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
-		std::shared_ptr<Image2D> GetFinalPassImage(uint32_t index) const;
-		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
 
 		struct MeshKey
 		{
@@ -181,11 +184,13 @@ namespace VulkanCore {
 		std::shared_ptr<Framebuffer> m_SceneFramebuffer;
 		std::vector<VkDescriptorSet> m_SceneImages;
 		std::vector<VkDescriptorSet> m_ShadowDepthPassImages;
+		std::shared_ptr<PhysicsDebugRenderer> m_PhysicsDebugRenderer;
 
 		// Pipelines
 		std::shared_ptr<Pipeline> m_GeometryPipeline;
 		std::shared_ptr<Pipeline> m_GeometryTessellatedPipeline;
 		std::shared_ptr<Pipeline> m_GeometrySelectPipeline;
+		std::shared_ptr<Pipeline> m_LinesPipeline;
 		std::shared_ptr<Pipeline> m_ShadowMapPipeline;
 		std::shared_ptr<Pipeline> m_LightPipeline;
 		std::shared_ptr<Pipeline> m_LightSelectPipeline;
@@ -198,6 +203,7 @@ namespace VulkanCore {
 		// Material per Shader set
 		std::shared_ptr<Material> m_GeometryMaterial;
 		std::shared_ptr<Material> m_GeometrySelectMaterial;
+		std::shared_ptr<Material> m_LinesMaterial;
 		std::shared_ptr<Material> m_ShadowMapMaterial;
 		std::shared_ptr<Material> m_PointLightShaderMaterial;
 		std::shared_ptr<Material> m_SpotLightShaderMaterial;
@@ -247,6 +253,8 @@ namespace VulkanCore {
 		std::map<MeshKey, MeshTransform> m_ShadowMeshTransformMap;
 		std::map<MeshKey, DrawSelectCommand> m_SelectedMeshDrawList;
 		std::map<MeshKey, MeshSelectTransform> m_SelectedMeshTransformMap;
+		std::map<MeshKey, DrawCommand> m_PhysicsDebugMeshDrawList;
+		std::map<MeshKey, MeshTransform> m_PhysicsDebugMeshTransformMap;
 
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
