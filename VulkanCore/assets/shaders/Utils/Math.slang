@@ -2,7 +2,7 @@
 
 module Math;
 
-public static const float PI = 3.14159265358979323846;
+public static const float PI = 3.14159265358979323846f;
 
 public float3 Mix(float3 a, float3 b, float t)
 {

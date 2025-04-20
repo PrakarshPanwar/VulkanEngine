@@ -52,10 +52,8 @@ namespace VulkanCore {
 		allocInfo.preferredFlags = Utils::VulkanMemoryFlags(usage);
 
 		VmaAllocation vmaAllocation;
-		VK_CHECK_RESULT(vmaCreateBuffer(m_VkMemoryAllocator, &bufInfo, &allocInfo, &buffer, &vmaAllocation, nullptr), "{0}: Failed to Allocate Buffer!", m_DebugName);
-		
 		VmaAllocationInfo vmaAllocInfo = {};
-		vmaGetAllocationInfo(m_VkMemoryAllocator, vmaAllocation, &vmaAllocInfo);
+		VK_CHECK_RESULT(vmaCreateBuffer(m_VkMemoryAllocator, &bufInfo, &allocInfo, &buffer, &vmaAllocation, &vmaAllocInfo), "{0}: Failed to Allocate Buffer!", m_DebugName);
 
 		VK_CORE_TRACE("Buffer Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
 		
@@ -69,10 +67,8 @@ namespace VulkanCore {
 		allocInfo.preferredFlags = Utils::VulkanMemoryFlags(usage);
 
 		VmaAllocation vmaAllocation;
-		VK_CHECK_RESULT(vmaCreateImage(m_VkMemoryAllocator, &imgInfo, &allocInfo, &image, &vmaAllocation, nullptr), "{0}: Failed to Allocate Image!", m_DebugName);
-		
 		VmaAllocationInfo vmaAllocInfo = {};
-		vmaGetAllocationInfo(m_VkMemoryAllocator, vmaAllocation, &vmaAllocInfo);
+		VK_CHECK_RESULT(vmaCreateImage(m_VkMemoryAllocator, &imgInfo, &allocInfo, &image, &vmaAllocation, &vmaAllocInfo), "{0}: Failed to Allocate Image!", m_DebugName);
 
 		VK_CORE_TRACE("Image Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
 		

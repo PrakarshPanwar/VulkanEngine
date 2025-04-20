@@ -20,6 +20,9 @@ namespace VulkanCore {
 		virtual void RemoveAndDestroyBodies(Scene* scene) = 0;
 		virtual void DrawPhysicsBodies(std::shared_ptr<PhysicsDebugRenderer> debugRenderer) = 0;
 
+		//	To check if System is initialized
+		virtual bool IsValid() = 0;
+
 		static std::unique_ptr<PhysicsWorld> Create();
 // 	protected:
 // 		virtual void CreateBoxShape(Scene* scene) = 0;

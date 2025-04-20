@@ -90,9 +90,7 @@ namespace VulkanCore {
 		switch (m_SceneState)
 		{
 		case SceneState::Edit:
-		{
 			break;
-		}
 		case SceneState::Play:
 		{
 			activeScene->OnUpdateRuntime();
@@ -668,7 +666,7 @@ namespace VulkanCore {
 				ImGui::SameLine();
 				{
 					bool isPaused = activeScene->IsPaused();
-					if (ImGui::ImageButton("##StepState", (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
+					if (ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor, ImGuiButtonFlags_Repeat) && toolbarEnabled)
 					{
 						activeScene->StepFrames();
 					}
