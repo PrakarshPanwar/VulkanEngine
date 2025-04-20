@@ -93,31 +93,28 @@ namespace VulkanCore {
 
 	void JoltPhysicsWorld::Update(Scene* scene)
 	{
-		if (m_PhysicsSystem)
+		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
+
+		constexpr uint32_t collisionSteps = 1;
+		constexpr float deltaTime = 1.0f / 60.0f; // It's kept at 60 FPS shouldn't be variable to Timestep
+
+		m_PhysicsSystem->Update(deltaTime, collisionSteps, m_TempAllocator, m_JobSystem);
+
+		// Update Transform Components
+		auto view = scene->GetAllEntitiesWith<TransformComponent, Rigidbody3DComponent>();
+		for (auto ent : view)
 		{
-			JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
+			auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(ent);
+			auto bodyID = JPH::BodyID{ (uint32_t)ent };
 
-			constexpr uint32_t collisionSteps = 1;
-			constexpr float deltaTime = 1.0f / 60.0f; // It's kept at 60 FPS shouldn't be variable to Timestep
+			// Get Body Position and Rotation
+			JPH::RVec3 bodyPosition = bodyInterface.GetPosition(bodyID);
+			JPH::Quat bodyQuaternion = bodyInterface.GetRotation(bodyID);
+			JPH::Vec3 bodyRotation = bodyQuaternion.GetEulerAngles();
 
-			m_PhysicsSystem->Update(deltaTime, collisionSteps, m_TempAllocator, m_JobSystem);
-
-			// Update Transform Components
-			auto view = scene->GetAllEntitiesWith<TransformComponent, Rigidbody3DComponent>();
-			for (auto ent : view)
-			{
-				auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(ent);
-				auto bodyID = JPH::BodyID{ (uint32_t)ent };
-
-				// Get Body Position and Rotation
-				JPH::RVec3 bodyPosition = bodyInterface.GetPosition(bodyID);
-				JPH::Quat bodyQuaternion = bodyInterface.GetRotation(bodyID);
-				JPH::Vec3 bodyRotation = bodyQuaternion.GetEulerAngles();
-
-				// Update Transform
-				transform.Translation = { bodyPosition.GetX(), bodyPosition.GetY(), bodyPosition.GetZ() };
-				transform.Rotation = { bodyRotation.GetX(), bodyRotation.GetY(), bodyRotation.GetZ() };
-			}
+			// Update Transform
+			transform.Translation = { bodyPosition.GetX(), bodyPosition.GetY(), bodyPosition.GetZ() };
+			transform.Rotation = { bodyRotation.GetX(), bodyRotation.GetY(), bodyRotation.GetZ() };
 		}
 	}
 
@@ -285,6 +282,11 @@ namespace VulkanCore {
 		drawSettings.mDrawVelocity = true;
 
 		m_PhysicsSystem->DrawBodies(drawSettings, joltDebugRenderer.get());
+	}
+
+	bool JoltPhysicsWorld::IsValid()
+	{
+		return m_PhysicsSystem;
 	}
 
 #if 0

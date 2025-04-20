@@ -269,7 +269,7 @@ namespace VulkanCore {
 
 	void Scene::OnUpdateRuntime()
 	{
-		if (!m_IsPaused || m_StepFrames-- > 0)
+		if (m_PhysicsWorld->IsValid() && !m_IsPaused || m_StepFrames-- > 0)
 		{
 			m_PhysicsWorld->Update(this);
 		}
@@ -277,7 +277,7 @@ namespace VulkanCore {
 
 	void Scene::OnUpdateSimulation()
 	{
-		if (!m_IsPaused || m_StepFrames-- > 0)
+		if (m_PhysicsWorld->IsValid() && !m_IsPaused || m_StepFrames-- > 0)
 		{
 			m_PhysicsWorld->Update(this);
 		}

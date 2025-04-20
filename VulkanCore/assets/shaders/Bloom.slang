@@ -164,6 +164,8 @@ void CSMain(uint3 threadID : SV_DispatchThreadID)
     case BloomMode::Downsample:
     {
         color.rgb = DownsampleBox13(r_Texture, c_Params.LodAndMode.x, texCoords, 1.0f / texSize);
+
+        break;
     }
     default:
         break;

@@ -17,6 +17,8 @@ namespace VulkanCore {
 		void CreateBodies(Scene* scene) override;
 		void RemoveAndDestroyBodies(Scene* scene) override;
 		void DrawPhysicsBodies(std::shared_ptr<PhysicsDebugRenderer> debugRenderer) override;
+
+		bool IsValid() override;
 	//protected:
 		//void CreateBoxShape(Scene* scene) override;
 		//void CreateSphereShape(Scene* scene) override;
