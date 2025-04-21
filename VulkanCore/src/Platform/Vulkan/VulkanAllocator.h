@@ -23,7 +23,6 @@ namespace VulkanCore {
 		}
 
 		void UnmapMemory(VmaAllocation allocation);
-
 		void DestroyBuffer(VkBuffer& buffer, VmaAllocation allocation);
 		void DestroyImage(VkImage& image, VmaAllocation allocation);
 	private:

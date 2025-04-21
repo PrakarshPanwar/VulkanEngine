@@ -9,12 +9,12 @@ namespace VulkanCore {
 		{
 			switch (bodyType)
 			{
-			case Rigidbody3DComponent::BodyType::Static:	return { JPH::EMotionType::Static, JPH::EActivation::DontActivate, Layers::NON_MOVING, BroadPhaseLayers::NON_MOVING };
-			case Rigidbody3DComponent::BodyType::Dynamic:	return { JPH::EMotionType::Dynamic, JPH::EActivation::Activate, Layers::MOVING, BroadPhaseLayers::MOVING };
-			case Rigidbody3DComponent::BodyType::Kinematic: return { JPH::EMotionType::Kinematic, JPH::EActivation::Activate, Layers::MOVING, BroadPhaseLayers::MOVING };
+			case Rigidbody3DComponent::BodyType::Static:	return { JPH::EMotionType::Static, JPH::EActivation::DontActivate, JoltLayers::NON_MOVING, JoltBroadPhaseLayers::NON_MOVING };
+			case Rigidbody3DComponent::BodyType::Dynamic:	return { JPH::EMotionType::Dynamic, JPH::EActivation::Activate, JoltLayers::MOVING, JoltBroadPhaseLayers::MOVING };
+			case Rigidbody3DComponent::BodyType::Kinematic: return { JPH::EMotionType::Kinematic, JPH::EActivation::Activate, JoltLayers::MOVING, JoltBroadPhaseLayers::MOVING };
 			default:
 				VK_CORE_ASSERT(false, "Unsupported Rigid Body!");
-				return { JPH::EMotionType::Static, JPH::EActivation::DontActivate, Layers::NON_MOVING, BroadPhaseLayers::NON_MOVING };
+				return { JPH::EMotionType::Static, JPH::EActivation::DontActivate, JoltLayers::NON_MOVING, JoltBroadPhaseLayers::NON_MOVING };
 			};
 		}
 
@@ -24,8 +24,8 @@ namespace VulkanCore {
 	{
 		switch (objLayerA)
 		{
-		case Layers::NON_MOVING: return objLayerB == Layers::MOVING; // Non-Moving only Collides with Moving
-		case Layers::MOVING:	 return true; // Moving Collides with Everything
+		case JoltLayers::NON_MOVING: return objLayerB == JoltLayers::MOVING; // Non-Moving only Collides with Moving
+		case JoltLayers::MOVING:	 return true; // Moving Collides with Everything
 		default:
 			VK_CORE_ASSERT(false, "Undefined Collision Behaviour!");
 			return false;
@@ -35,18 +35,18 @@ namespace VulkanCore {
 	MBroadPhaseLayerInterface::MBroadPhaseLayerInterface()
 	{
 		// Create a Mapping table from Object to Broad Phase layer
-		m_ObjectToBroadPhase[Layers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
-		m_ObjectToBroadPhase[Layers::MOVING] = BroadPhaseLayers::MOVING;
+		m_ObjectToBroadPhase[JoltLayers::NON_MOVING] = JoltBroadPhaseLayers::NON_MOVING;
+		m_ObjectToBroadPhase[JoltLayers::MOVING] = JoltBroadPhaseLayers::MOVING;
 	}
 
 	uint32_t MBroadPhaseLayerInterface::GetNumBroadPhaseLayers() const
 	{
-		return BroadPhaseLayers::NUM_LAYERS;
+		return JoltBroadPhaseLayers::NUM_LAYERS;
 	}
 
 	JPH::BroadPhaseLayer MBroadPhaseLayerInterface::GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const
 	{
-		VK_CORE_ASSERT(inLayer < Layers::NUM_LAYERS, "Layer Index should be less than Total Layers!");
+		VK_CORE_ASSERT(inLayer < JoltLayers::NUM_LAYERS, "Layer Index should be less than Total Layers!");
 		return m_ObjectToBroadPhase[inLayer];
 	}
 
@@ -54,8 +54,8 @@ namespace VulkanCore {
 	{
 		switch (objLayer)
 		{
-		case Layers::NON_MOVING: return bpLayer == BroadPhaseLayers::MOVING;
-		case Layers::MOVING:	 return true;
+		case JoltLayers::NON_MOVING: return bpLayer == JoltBroadPhaseLayers::MOVING;
+		case JoltLayers::MOVING:	 return true;
 		default:
 			VK_CORE_ASSERT(false, "Undefined Collision Behaviour!");
 			return false;

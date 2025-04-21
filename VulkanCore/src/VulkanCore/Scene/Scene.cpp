@@ -40,7 +40,6 @@ namespace VulkanCore {
 		CopyComponent<Component...>(dst, src, enttMap);
 	}
 
-#if 0
 	template<typename... Component>
 	static void CopyComponentIfExists(Entity dst, Entity src)
 	{
@@ -56,7 +55,6 @@ namespace VulkanCore {
 	{
 		CopyComponentIfExists<Component...>(dst, src);
 	}
-#endif
 
 	std::shared_ptr<Scene> Scene::CopyScene(std::shared_ptr<Scene> other)
 	{
@@ -97,6 +95,25 @@ namespace VulkanCore {
 		entity.AddComponent<TagComponent>(name);
 
 		return entity;
+	}
+
+	Entity Scene::DuplicateEntity(Entity entity)
+	{
+		// Find existing entity name and duplication count for that particular name
+		std::string tag = entity.GetComponent<TagComponent>().Tag;
+		std::string entityName = tag.substr(0, tag.find_last_of('_'));
+
+		uint32_t count = m_EntityDuplicateMap[entityName]++; // Increment after assignment
+		std::string name = entityName + '_' + std::to_string(count);
+
+		Entity newEntity = CreateEntity(name);
+		CopyComponentIfExists(AllComponents{}, newEntity, entity);
+		return newEntity;
+	}
+
+	void Scene::DestroyEntity(Entity entity)
+	{
+		m_Registry.destroy(entity);
 	}
 
 	void Scene::OnUpdateGeometry(SceneRenderer* renderer)
@@ -238,11 +255,6 @@ namespace VulkanCore {
 
 		auto ent = *(view.begin() + index);
 		return view.get<DirectionalLightComponent>(ent);
-	}
-
-	void Scene::DestroyEntity(Entity entity)
-	{
-		m_Registry.destroy(entity);
 	}
 
 	void Scene::OnRuntimeStart()

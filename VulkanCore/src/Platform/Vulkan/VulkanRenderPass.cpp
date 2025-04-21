@@ -73,6 +73,7 @@ namespace VulkanCore {
 				colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 				colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 				colorAttachmentResolve.flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
+
 				attachmentDescriptions.push_back(colorAttachmentResolve);
 			}
 		}

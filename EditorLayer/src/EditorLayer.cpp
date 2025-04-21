@@ -780,7 +780,6 @@ namespace VulkanCore {
 		m_SceneState = SceneState::Edit;
 
 		m_ActiveScene = m_EditorScene;
-
 		m_SceneRenderer->SetActiveScene(m_ActiveScene);
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 	}

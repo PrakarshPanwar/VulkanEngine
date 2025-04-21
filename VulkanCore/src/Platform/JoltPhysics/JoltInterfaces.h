@@ -16,7 +16,7 @@
 
 namespace VulkanCore {
 
-	namespace Layers {
+	namespace JoltLayers {
 
 		static constexpr JPH::ObjectLayer NON_MOVING = 0;
 		static constexpr JPH::ObjectLayer MOVING = 1;
@@ -24,7 +24,7 @@ namespace VulkanCore {
 
 	}
 
-	namespace BroadPhaseLayers {
+	namespace JoltBroadPhaseLayers {
 		
 		static constexpr JPH::BroadPhaseLayer NON_MOVING(0);
 		static constexpr JPH::BroadPhaseLayer MOVING(1);
@@ -55,7 +55,7 @@ namespace VulkanCore {
 		uint32_t GetNumBroadPhaseLayers() const override;
 		JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override;
 	private:
-		JPH::BroadPhaseLayer m_ObjectToBroadPhase[Layers::NUM_LAYERS];
+		JPH::BroadPhaseLayer m_ObjectToBroadPhase[JoltLayers::NUM_LAYERS];
 	};
 
 	// Class that determines if an Object layer can collide with a Broadphase layer

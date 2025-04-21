@@ -152,6 +152,9 @@ namespace VulkanCore {
 		bool entityDeleted = false;
 		if (ImGui::BeginPopupContextItem())
 		{
+			if (ImGui::MenuItem("Duplicate Entity"))
+				m_SelectionContext = m_Context->DuplicateEntity(entity);
+
 			if (ImGui::MenuItem("Delete Entity"))
 				entityDeleted = true;
 
@@ -339,7 +342,6 @@ namespace VulkanCore {
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
 						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
-
 						std::string filepath = assetPath.generic_string();
 
 						auto newSkybox = AssetManager::GetAsset<Texture2D>(filepath);
@@ -365,7 +367,6 @@ namespace VulkanCore {
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
 						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
-
 						std::string filepath = assetPath.generic_string();
 
 						auto newSkybox = AssetManager::GetAsset<Texture2D>(filepath);
