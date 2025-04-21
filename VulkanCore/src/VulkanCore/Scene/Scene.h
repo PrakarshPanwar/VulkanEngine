@@ -26,6 +26,8 @@ namespace VulkanCore {
 
 		Entity CreateEntity(const std::string& name);
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name);
+		Entity DuplicateEntity(Entity entity);
+		void DestroyEntity(Entity entity);
 
 		void OnUpdateGeometry(SceneRenderer* renderer);
 		void OnSelectGeometry(SceneRenderer* renderer);
@@ -33,7 +35,6 @@ namespace VulkanCore {
 		void OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions, std::vector<uint32_t>& lightHandles);
 		void UpdateLightsBuffer(UBPointLights& pointLights, UBSpotLights& spotLights, UBDirectionalLights& directionalLights);
 		DirectionalLightComponent GetDirectionalLightData(int index = 0);
-		void DestroyEntity(Entity entity);
 
 		void OnRuntimeStart();
 		void OnRuntimeStop();
@@ -64,11 +65,11 @@ namespace VulkanCore {
 		void OnPhysicsWorldStop();
 	private:
 		entt::registry m_Registry;
-		bool m_IsRunning = false;
-		bool m_IsPaused = false;
+		bool m_IsRunning = false, m_IsPaused = false;
 		int m_StepFrames = 0;
 
 		std::unique_ptr<PhysicsWorld> m_PhysicsWorld;
+		std::map<std::string, uint32_t> m_EntityDuplicateMap;
 
 		friend class Entity;
 		friend class SceneHierarchyPanel;

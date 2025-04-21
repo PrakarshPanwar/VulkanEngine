@@ -40,8 +40,8 @@ namespace VulkanCore {
 	const std::vector<std::shared_ptr<Image2D>>& VulkanFramebuffer::GetAttachment(uint32_t index) const
 	{
 		bool multisampled = Utils::IsMultisampled(m_Specification);
-		uint32_t attachmentSize = static_cast<uint32_t>(m_ColorAttachmentSpecifications.size());
-		return m_ColorAttachments[multisampled ? attachmentSize + index : index];
+		uint32_t specificationSize = static_cast<uint32_t>(m_ColorAttachmentSpecifications.size());
+		return m_ColorAttachments[multisampled ? specificationSize + index : index];
 	}
 
 	const std::vector<std::shared_ptr<Image2D>>& VulkanFramebuffer::GetDepthAttachment() const

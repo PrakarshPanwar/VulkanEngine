@@ -245,7 +245,7 @@ namespace VulkanCore {
 
 	using AllComponents =
 		ComponentGroup<TransformComponent, MeshComponent,
-		PointLightComponent, SpotLightComponent, DirectionalLightComponent, SkyLightComponent,
-		Rigidbody3DComponent, BoxCollider3DComponent, SphereColliderComponent, MeshColliderComponent>;
+			PointLightComponent, SpotLightComponent, DirectionalLightComponent, SkyLightComponent,
+			Rigidbody3DComponent, BoxCollider3DComponent, SphereColliderComponent, MeshColliderComponent>;
 
 }

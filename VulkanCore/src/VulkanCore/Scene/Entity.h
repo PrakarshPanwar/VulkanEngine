@@ -21,6 +21,13 @@ namespace VulkanCore {
 			return component;
 		}
 
+		template<typename T, typename... Args>
+		T& AddOrReplaceComponent(Args&&... args)
+		{
+			T& component = m_Scene->m_Registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
+			return component;
+		}
+
 		template<typename T>
 		T& GetComponent()
 		{
