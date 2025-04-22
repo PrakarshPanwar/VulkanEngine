@@ -25,6 +25,16 @@
 
 namespace VulkanCore {
 
+	namespace Utils {
+
+		static JPH::Quat JoltQuaternionFromEulerAngles(glm::vec3 rotation)
+		{
+			glm::quat quaternion(rotation);
+			return { quaternion.x, quaternion.y, quaternion.z, quaternion.w };
+		}
+
+	}
+
 	JoltPhysicsWorld::JoltPhysicsWorld()
 	{
 		// Register allocation hook. In this example we'll just let Jolt use malloc / free but you can override these if you want (see Memory.h).
@@ -151,9 +161,8 @@ namespace VulkanCore {
 				const auto& shapeRef = shapeResult.Get();
 
 				// Obtain Transforms
-				glm::quat bdQuat(transform.Rotation);
 				auto bodyTransform = JPH::RVec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
-				auto bodyQuaternion = JPH::Quat(bdQuat.x, bdQuat.y, bdQuat.z, bdQuat.w);
+				auto bodyQuaternion = Utils::JoltQuaternionFromEulerAngles(transform.Rotation);
 
 				// Set Body Settings
 				JPH::BodyCreationSettings settings{
@@ -231,9 +240,8 @@ namespace VulkanCore {
 				const auto& shapeRef = shapeResult.Get();
 
 				// Obtain Transforms
-				glm::quat bdQuat(transform.Rotation);
 				auto bodyTransform = JPH::RVec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
-				auto bodyQuaternion = JPH::Quat(bdQuat.x, bdQuat.y, bdQuat.z, bdQuat.w);
+				auto bodyQuaternion = Utils::JoltQuaternionFromEulerAngles(transform.Rotation);
 
 				// Set Body Settings
 				JPH::BodyCreationSettings settings{
