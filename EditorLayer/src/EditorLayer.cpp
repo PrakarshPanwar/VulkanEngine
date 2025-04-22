@@ -366,7 +366,7 @@ namespace VulkanCore {
 			ImGui::EndPopup();
 		}
 
-		if (m_ViewportHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)
+		if (m_ViewportHovered && (m_SceneState == SceneState::Edit) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)
 			&& !ImGui::IsKeyDown(ImGuiKey_LeftAlt) && !ImGuizmo::IsOver())
 		{
 			int entityHandle = m_SceneRenderer->GetHoveredEntity();

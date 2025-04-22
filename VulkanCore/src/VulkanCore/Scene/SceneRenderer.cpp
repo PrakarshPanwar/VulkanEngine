@@ -84,7 +84,7 @@ namespace VulkanCore {
 			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::DEPTH32F };
 			geomFramebufferSpec.ReadDepthTexture = true;
 			geomFramebufferSpec.Transfer = true;
-			geomFramebufferSpec.Samples = 8;
+			geomFramebufferSpec.Samples = 4;
 
 			RenderPassSpecification geomRenderPassSpec;
 			geomRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(geomFramebufferSpec);
