@@ -741,6 +741,7 @@ namespace VulkanCore {
 			OnSceneStop();
 
 		m_SceneState = SceneState::Play;
+		m_GizmoType = -1; // Disable Gizmo
 
 		m_ActiveScene = Scene::CopyScene(m_EditorScene);
 
@@ -757,6 +758,7 @@ namespace VulkanCore {
 			OnSceneStop();
 
 		m_SceneState = SceneState::Simulate;
+		m_GizmoType = -1; // Disable Gizmo
 
 		m_ActiveScene = Scene::CopyScene(m_EditorScene);
 

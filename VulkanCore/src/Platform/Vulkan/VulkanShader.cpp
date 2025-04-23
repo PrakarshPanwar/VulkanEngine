@@ -59,7 +59,7 @@ namespace VulkanCore {
 			return {};
 		}
 
-		static const char* GetCacheDirectory()
+		static consteval const char* GetCacheDirectory()
 		{
 			return "cache";
 		}
@@ -92,7 +92,7 @@ namespace VulkanCore {
 	VulkanShader::VulkanShader(const std::string& shaderName)
 		: m_ShaderName(shaderName)
 	{
-		const std::string shaderDirectory = "shaders/";
+		constexpr const char* shaderDirectory = "shaders/";
 
 		auto vertexPath = shaderDirectory + shaderName + ".vert";
 		auto fragmentPath = shaderDirectory + shaderName + ".frag";
@@ -343,7 +343,7 @@ namespace VulkanCore {
 
 	std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>> VulkanShader::ParseShaders()
 	{
-		const std::string shaderDirectory = "shaders/";
+		constexpr const char* shaderDirectory = "shaders/";
 
 		std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>> Sources;
 
@@ -409,7 +409,7 @@ namespace VulkanCore {
 	// NOTE: It currently supports single depth headers(i.e. no header within header)
 	std::string VulkanShader::ParsePreprocessIncludes(std::stringstream& sourceCode)
 	{
-		const std::filesystem::path shaderPath = "shaders";
+		constexpr const char* shaderPath = "shaders";
 
 		std::string sourceStr = sourceCode.str();
 		std::regex includeRegex("^[ ]*#[ ]*include[ ]+[\"<](.*)[\">].*");

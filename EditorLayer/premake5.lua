@@ -27,7 +27,7 @@ project "EditorLayer"
 		"%{IncludeDir.ImGuizmo}"
 	}
 
-	defines { "_CRT_SECURE_NO_WARNINGS", "SPDLOG_USE_STD_FORMAT" }
+	defines { "SPDLOG_USE_STD_FORMAT" }
 	links { "VulkanCore" }
 
 	filter "system:windows"

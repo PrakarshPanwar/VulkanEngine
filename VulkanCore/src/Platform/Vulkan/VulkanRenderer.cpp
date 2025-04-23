@@ -163,7 +163,7 @@ namespace VulkanCore {
 		auto equirectangularConversionShader = Renderer::GetShader("EquirectangularToCubeMap");
 		std::shared_ptr<VulkanComputePipeline> equirectangularConversionPipeline = std::make_shared<VulkanComputePipeline>(equirectangularConversionShader);
 
-		Renderer::Submit([equirectangularConversionPipeline, envEquirect, envUnfiltered]()
+		Renderer::Submit([equirectangularConversionPipeline, envEquirect, envUnfiltered]
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 			auto vulkanDescriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
