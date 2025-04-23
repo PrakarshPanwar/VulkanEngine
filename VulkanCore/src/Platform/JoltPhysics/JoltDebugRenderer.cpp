@@ -45,7 +45,7 @@ namespace VulkanCore {
 	{
 		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 		auto& camera = sceneRenderer->GetEditorCamera();
-		auto cameraPosition = camera.GetPosition();
+		auto& cameraPosition = camera.GetPosition();
 
 		glm::mat4 transform = {
 			transformMat.GetColumn4(0).GetX(), transformMat.GetColumn4(0).GetY(), transformMat.GetColumn4(0).GetZ(), transformMat.GetColumn4(0).GetW(),

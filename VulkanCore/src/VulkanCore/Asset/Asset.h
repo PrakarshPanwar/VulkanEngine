@@ -35,6 +35,6 @@ namespace VulkanCore {
 	concept AssetConcept = requires
 	{
 		T::GetStaticType();
-	};
+	} && std::derived_from<T, Asset>;
 
 }

@@ -60,7 +60,7 @@ namespace VulkanCore {
 			return "";
 		}
 
-		static const char* GetCacheDirectory()
+		static consteval const char* GetCacheDirectory()
 		{
 			return "cache\\slang";
 		}
@@ -105,7 +105,7 @@ namespace VulkanCore {
 	{
 		Timer timer("Slang Shader Compilation");
 
-		const char* shaderPaths[] = { "cache/slang", "shaders", "shaders/Utils" };
+		constexpr const char* shaderPaths[] = { "cache/slang", "shaders", "shaders/Utils" };
 
 		// Compiler Options
 		std::array<slang::CompilerOptionEntry, 1> options = {
@@ -144,7 +144,7 @@ namespace VulkanCore {
 		};
 
 		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
-		const std::string slangModuleExtension = ".slang-module";
+		constexpr const char* slangModuleExtension = ".slang-module";
 
 		Slang::ComPtr<slang::IBlob> moduleDiagnostics{}; // Diagnostics Blob(For Error Messaging)
 		std::vector<slang::IComponentType*> componentsData{}; // Store Modules and Entry Points
@@ -161,8 +161,9 @@ namespace VulkanCore {
 		{
 			auto module = m_SlangSession->getLoadedModule(i);
 			auto name = module->getName();
+			std::string fileName = name + (std::string)slangModuleExtension;
 
-			std::filesystem::path cachedPath = cacheDirectory / (name + slangModuleExtension);
+			std::filesystem::path cachedPath = cacheDirectory / fileName;
 			if (!std::filesystem::exists(cachedPath))
 			{
 				Slang::ComPtr<slang::IBlob> moduleBlob{};
