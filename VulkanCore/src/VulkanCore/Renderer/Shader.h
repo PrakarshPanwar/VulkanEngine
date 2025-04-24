@@ -1,6 +1,8 @@
 #pragma once
 #include "Resource.h"
 
+#include <bitset>
+
 namespace VulkanCore {
 
 	// Based on OpenGL Macros
@@ -26,6 +28,7 @@ namespace VulkanCore {
 		virtual bool GetReloadFlag() { return m_ReloadFlag; }
 	protected:
 		bool m_ReloadFlag = false;
+		std::bitset<12> m_LoadShaderFlag = 0; // 6 divisions of 2 bits, Low = Shader, High = Cache
 	};
 
 }

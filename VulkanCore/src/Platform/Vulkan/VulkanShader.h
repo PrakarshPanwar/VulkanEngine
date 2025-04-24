@@ -26,8 +26,7 @@ namespace VulkanCore {
 		bool HasGeometryShader() const override;
 		bool HasTessellationShaders() const override;
 	private:
-		std::tuple<std::string, std::string> ParseShader(const std::string& vertexPath, const std::string& fragmentPath);
-		std::string ParseShader(const std::string& shaderPath);
+		void CheckRequiredStagesForCompilation();
 		std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>> ParseShaders();
 		std::string ParsePreprocessIncludes(std::stringstream& sourceCode);
 		void CompileOrGetVulkanBinaries(std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>>& shaderSources);
