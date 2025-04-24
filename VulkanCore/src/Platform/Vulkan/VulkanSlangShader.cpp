@@ -12,6 +12,15 @@ namespace VulkanCore {
 
 	namespace Utils {
 
+		static constexpr std::array<ShaderType, 6> s_ShaderTypes = {
+			ShaderType::Vertex,
+			ShaderType::Fragment,
+			ShaderType::TessellationControl,
+			ShaderType::TessellationEvaluation,
+			ShaderType::Geometry,
+			ShaderType::Compute
+		};
+
 		static std::string GLShaderTypeToString(ShaderType stage)
 		{
 			switch (stage)
@@ -133,16 +142,6 @@ namespace VulkanCore {
 		sessionDesc.compilerOptionEntries = options.data();
 		sessionDesc.compilerOptionEntryCount = options.size();
 
-		// All Shader Types
-		constexpr std::array<ShaderType, 6> shaderTypes = {
-			ShaderType::Vertex,
-			ShaderType::Fragment,
-			ShaderType::TessellationControl,
-			ShaderType::TessellationEvaluation,
-			ShaderType::Geometry,
-			ShaderType::Compute
-		};
-
 		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
 		constexpr const char* slangModuleExtension = ".slang-module";
 
@@ -187,7 +186,7 @@ namespace VulkanCore {
 			moduleDiagnostics->release();
 		}
 
-		for (auto shaderType : shaderTypes)
+		for (auto shaderType : Utils::s_ShaderTypes)
 		{
 			Slang::ComPtr<slang::IEntryPoint> entryPoint{};
 			m_SlangModule->findEntryPointByName(Utils::GetSlangEntryPointFromType(shaderType), entryPoint.writeRef());
