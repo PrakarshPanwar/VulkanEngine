@@ -3,6 +3,12 @@
 
 namespace VulkanCore {
 
+	struct AllocationStats
+	{
+		uint32_t AllocatedBytes = 0;
+		uint32_t AllocationCount = 0;
+	};
+
 	class VulkanAllocator
 	{
 	public:
@@ -25,9 +31,13 @@ namespace VulkanCore {
 		void UnmapMemory(VmaAllocation allocation);
 		void DestroyBuffer(VkBuffer& buffer, VmaAllocation allocation);
 		void DestroyImage(VkImage& image, VmaAllocation allocation);
+
+		static inline const AllocationStats& GetAllocationStats() { return s_Data; }
 	private:
 		const VmaAllocator m_VkMemoryAllocator = VulkanContext::GetVulkanMemoryAllocator();
 		std::string_view m_DebugName;
+
+		static AllocationStats s_Data;
 	};
 
 }

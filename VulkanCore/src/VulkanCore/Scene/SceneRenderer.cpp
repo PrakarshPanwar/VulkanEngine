@@ -81,7 +81,7 @@ namespace VulkanCore {
 			FramebufferSpecification geomFramebufferSpec;
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
-			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::DEPTH32F };
+			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::RGBA8_UNORM, ImageFormat::RGBA8_SRGB, ImageFormat::DEPTH32F };
 			geomFramebufferSpec.ReadDepthTexture = true;
 			geomFramebufferSpec.Transfer = true;
 			geomFramebufferSpec.Samples = 4;
@@ -384,8 +384,12 @@ namespace VulkanCore {
 		{
 			m_GTAOMaterial = std::make_shared<VulkanMaterial>(m_GTAOPipeline->GetShader(), "GTAO Material");
 
+			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
 			m_GTAOMaterial->SetImages(0, m_AOTextures);
-			m_GTAOMaterial->SetImages(1, m_SceneDepthTextures);
+			m_GTAOMaterial->SetBuffers(1, m_UBCamera);
+			m_GTAOMaterial->SetImages(2, geomFB->GetDepthAttachment());
+			m_GTAOMaterial->SetImages(3, geomFB->GetAttachment(1));
+			m_GTAOMaterial->SetImages(4, geomFB->GetAttachment(2));
 			m_GTAOMaterial->PrepareShaderMaterial();
 		}
 
@@ -523,8 +527,13 @@ namespace VulkanCore {
 
 		// AO Material
 		{
+			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
+
 			m_GTAOMaterial->SetImages(0, m_AOTextures);
-			m_GTAOMaterial->SetImages(1, m_SceneDepthTextures);
+			m_GTAOMaterial->SetBuffers(1, m_UBCamera);
+			m_GTAOMaterial->SetImages(2, geomFB->GetDepthAttachment());
+			m_GTAOMaterial->SetImages(3, geomFB->GetAttachment(1));
+			m_GTAOMaterial->SetImages(4, geomFB->GetAttachment(2));
 			m_GTAOMaterial->PrepareShaderMaterial();
 		}
 
@@ -761,7 +770,9 @@ namespace VulkanCore {
 		m_BloomTextures.reserve(framesInFlight);
 		m_AOTextures.reserve(framesInFlight);
 		m_SceneRenderTextures.reserve(framesInFlight);
+#if VK_FEATURE_GTAO
 		m_SceneDepthTextures.reserve(framesInFlight);
+#endif
 
 		VkCommandBuffer barrierCmd = device->GetCommandBuffer();
 
@@ -823,6 +834,7 @@ namespace VulkanCore {
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, SceneTexture->GetSpecification().MipLevels, 0, 1 });
 
+#if VK_FEATURE_GTAO
 			// Scene Depth Textures
 			ImageSpecification sceneDepthSpec = {};
 			sceneDepthSpec.DebugName = std::format("Scene Depth Texture {}", i);
@@ -841,6 +853,7 @@ namespace VulkanCore {
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 });
+#endif
 		}
 
 		device->FlushCommandBuffer(barrierCmd);
@@ -889,9 +902,11 @@ namespace VulkanCore {
 				m_AOTextures[i]->Resize(m_ViewportSize.x, m_ViewportSize.y);
 
 				auto vulkanSceneTexture = std::dynamic_pointer_cast<VulkanImage>(m_SceneRenderTextures[i]);
-				auto vulkanDepthTexture = std::dynamic_pointer_cast<VulkanImage>(m_SceneDepthTextures[i]);
 				vulkanSceneTexture->Resize(m_ViewportSize.x, m_ViewportSize.y, Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y));
+#if VK_FEATURE_GTAO
+				auto vulkanDepthTexture = std::dynamic_pointer_cast<VulkanImage>(m_SceneDepthTextures[i]);
 				vulkanDepthTexture->Resize(m_ViewportSize.x, m_ViewportSize.y, Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y));
+#endif
 
 				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanSceneTexture->GetVulkanImageInfo().Image,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
@@ -899,11 +914,13 @@ namespace VulkanCore {
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, vulkanSceneTexture->GetSpecification().MipLevels, 0, 1 });
 
+#if VK_FEATURE_GTAO
 				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanDepthTexture->GetVulkanImageInfo().Image,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 					VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, vulkanDepthTexture->GetSpecification().MipLevels, 0, 1 });
+#endif
 
 				// Update ImGui Viewport Image
 				std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
@@ -1003,13 +1020,15 @@ namespace VulkanCore {
 			ImGui::TreePop();
 		}
 
-		if (ImGui::TreeNodeEx("Scene Draw Stats", treeFlags))
+		if (ImGui::TreeNodeEx("Scene Draw/Allocation Stats", treeFlags))
 		{
 			auto renderStats = VulkanRenderer::GetRendererStats();
 
 			ImGui::Text("Draw Calls: %u", renderStats.DrawCalls);
 			ImGui::Text("Instance Count: %u", renderStats.InstanceCount);
 			ImGui::Text("Draw Calls Saved: %u", renderStats.InstanceCount - renderStats.DrawCalls);
+			ImGui::Text("Total Allocated Bytes: %u", VulkanAllocator::GetAllocationStats().AllocatedBytes);
+			ImGui::Text("Total Allocation Count: %u", VulkanAllocator::GetAllocationStats().AllocationCount);
 			ImGui::TreePop();
 		}
 
@@ -1070,7 +1089,7 @@ namespace VulkanCore {
 
 		ShadowPass();
 		GeometryPass();
-		//GTAOCompute();
+		GTAOCompute();
 		BloomCompute();
 		CompositePass();
 
@@ -1382,12 +1401,14 @@ namespace VulkanCore {
 			m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetAttachment()[frameIndex],
 			m_SceneRenderTextures[frameIndex]);
 
+		Renderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
+#if VK_FEATURE_GTAO
 		Renderer::CopyVulkanImage(m_SceneCommandBuffer,
 			m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[frameIndex],
 			m_SceneDepthTextures[frameIndex]);
 
-		Renderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
 		Renderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneDepthTextures[frameIndex]);
+#endif
 
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 	}
