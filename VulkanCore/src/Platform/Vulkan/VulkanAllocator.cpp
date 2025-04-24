@@ -35,6 +35,8 @@ namespace VulkanCore {
 
 	}
 
+	AllocationStats VulkanAllocator::s_Data;
+
 	VulkanAllocator::VulkanAllocator(const char* debugName)
 		: m_DebugName(debugName)
 	{
@@ -55,6 +57,10 @@ namespace VulkanCore {
 		VmaAllocationInfo vmaAllocInfo = {};
 		VK_CHECK_RESULT(vmaCreateBuffer(m_VkMemoryAllocator, &bufInfo, &allocInfo, &buffer, &vmaAllocation, &vmaAllocInfo), "{0}: Failed to Allocate Buffer!", m_DebugName);
 
+		// Update Stats
+		s_Data.AllocatedBytes += vmaAllocInfo.size;
+		s_Data.AllocationCount += 1;
+
 		VK_CORE_TRACE("Buffer Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
 		
 		return vmaAllocation;
@@ -69,6 +75,10 @@ namespace VulkanCore {
 		VmaAllocation vmaAllocation;
 		VmaAllocationInfo vmaAllocInfo = {};
 		VK_CHECK_RESULT(vmaCreateImage(m_VkMemoryAllocator, &imgInfo, &allocInfo, &image, &vmaAllocation, &vmaAllocInfo), "{0}: Failed to Allocate Image!", m_DebugName);
+
+		// Update Stats
+		s_Data.AllocatedBytes += vmaAllocInfo.size;
+		s_Data.AllocationCount += 1;
 
 		VK_CORE_TRACE("Image Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
 		

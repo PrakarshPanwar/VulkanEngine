@@ -19,12 +19,12 @@ namespace VulkanCore {
 	namespace Utils {
 
 		static constexpr std::array<ShaderType, 6> s_ShaderTypes = {
+			ShaderType::Compute,
 			ShaderType::Vertex,
 			ShaderType::Fragment,
 			ShaderType::TessellationControl,
 			ShaderType::TessellationEvaluation,
-			ShaderType::Geometry,
-			ShaderType::Compute
+			ShaderType::Geometry
 		};
 
 		static std::map<std::filesystem::path, ShaderType> s_ShaderExtensionMap = {
@@ -102,6 +102,9 @@ namespace VulkanCore {
 		: m_ShaderName(shaderName)
 	{
 		Utils::CreateCacheDirectoryIfRequired();
+
+		Timer timer("GLSL Shader Creation");
+
 		CheckRequiredStagesForCompilation();
 
 		std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>> Sources = ParseShaders();
@@ -270,12 +273,12 @@ namespace VulkanCore {
 		constexpr const char* cacheDirectory = "cache/", *shaderDirectory = "shaders/";
 
 		const std::array<std::pair<std::string, std::string>, 6> shaderPaths = {
+			std::make_pair(shaderDirectory + m_ShaderName + ".comp", cacheDirectory + m_ShaderName + ".comp.spv"),
 			std::make_pair(shaderDirectory + m_ShaderName + ".vert", cacheDirectory + m_ShaderName + ".vert.spv"),
 			std::make_pair(shaderDirectory + m_ShaderName + ".frag", cacheDirectory + m_ShaderName + ".frag.spv"),
 			std::make_pair(shaderDirectory + m_ShaderName + ".tesc", cacheDirectory + m_ShaderName + ".tesc.spv"),
 			std::make_pair(shaderDirectory + m_ShaderName + ".tese", cacheDirectory + m_ShaderName + ".tese.spv"),
-			std::make_pair(shaderDirectory + m_ShaderName + ".geom", cacheDirectory + m_ShaderName + ".geom.spv"),
-			std::make_pair(shaderDirectory + m_ShaderName + ".comp", cacheDirectory + m_ShaderName + ".comp.spv")
+			std::make_pair(shaderDirectory + m_ShaderName + ".geom", cacheDirectory + m_ShaderName + ".geom.spv")
 		};
 
 		for (uint32_t i = 0; auto&& [shaderPath, cachePath] : shaderPaths)
@@ -296,12 +299,12 @@ namespace VulkanCore {
 		std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>> Sources;
 
 		const std::array<std::pair<ShaderType, std::string>, 6> shaderPaths = {
+			std::make_pair(ShaderType::Compute,				   shaderDirectory + m_ShaderName + ".comp"),
 			std::make_pair(ShaderType::Vertex,				   shaderDirectory + m_ShaderName + ".vert"),
 			std::make_pair(ShaderType::Fragment,			   shaderDirectory + m_ShaderName + ".frag"),
 			std::make_pair(ShaderType::TessellationControl,	   shaderDirectory + m_ShaderName + ".tesc"),
 			std::make_pair(ShaderType::TessellationEvaluation, shaderDirectory + m_ShaderName + ".tese"),
-			std::make_pair(ShaderType::Geometry,			   shaderDirectory + m_ShaderName + ".geom"),
-			std::make_pair(ShaderType::Compute,				   shaderDirectory + m_ShaderName + ".comp")
+			std::make_pair(ShaderType::Geometry,			   shaderDirectory + m_ShaderName + ".geom")
 		};
 
 		for (uint32_t i = 0; auto&& [stage, shaderPath] : shaderPaths)
@@ -414,8 +417,6 @@ namespace VulkanCore {
 			}
 		};
 
-		Timer timer("Whole Shader Creation Process");
-
 		for (uint32_t i = 0; auto stage : Utils::s_ShaderTypes)
 		{
 			uint8_t lowB = m_LoadShaderFlag.test(i), highB = m_LoadShaderFlag.test(i + 1);
@@ -473,6 +474,9 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
+		Timer timer("Shader Recreation Process");
+
+		// Check Valid Shader Types and reset Load flag
 		for (uint32_t i = 0; auto stage : Utils::s_ShaderTypes)
 		{
 			if (m_LoadShaderFlag.test(i) || m_LoadShaderFlag.test(i + 1))
@@ -535,8 +539,6 @@ namespace VulkanCore {
 				out.close();
 			}
 		};
-
-		Timer timer("Shader Recreation Process");
 
 		for (auto&& [stage, source] : shaderSources)
 		{

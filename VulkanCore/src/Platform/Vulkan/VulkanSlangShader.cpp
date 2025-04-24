@@ -13,12 +13,12 @@ namespace VulkanCore {
 	namespace Utils {
 
 		static constexpr std::array<ShaderType, 6> s_ShaderTypes = {
+			ShaderType::Compute,
 			ShaderType::Vertex,
 			ShaderType::Fragment,
 			ShaderType::TessellationControl,
 			ShaderType::TessellationEvaluation,
-			ShaderType::Geometry,
-			ShaderType::Compute
+			ShaderType::Geometry
 		};
 
 		static std::string GLShaderTypeToString(ShaderType stage)
@@ -89,6 +89,8 @@ namespace VulkanCore {
 	{
 		m_ShaderName = shaderName;
 
+		Timer timer("Slang Shader Creation");
+
 		Utils::CreateCacheDirectoryIfRequired();
 
 		CompileOrGetSlangBinaries();
@@ -112,15 +114,17 @@ namespace VulkanCore {
 	// https://anteru.net/blog/2016/mapping-between-HLSL-and-GLSL/
 	void VulkanSlangShader::CompileOrGetSlangBinaries()
 	{
-		Timer timer("Slang Shader Compilation");
-
 		constexpr const char* shaderPaths[] = { "cache/slang", "shaders", "shaders/Utils" };
 
 		// Compiler Options
-		std::array<slang::CompilerOptionEntry, 1> options = {
-			{
+		std::array<slang::CompilerOptionEntry, 2> options = {
+			slang::CompilerOptionEntry{
 				slang::CompilerOptionName::UseUpToDateBinaryModule,
 				{ slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr }
+			},
+			slang::CompilerOptionEntry{
+				slang::CompilerOptionName::Optimization,
+				{ slang::CompilerOptionValueKind::Int, SLANG_OPTIMIZATION_LEVEL_HIGH, 0, nullptr, nullptr }
 			}
 		};
 

@@ -9,6 +9,8 @@
 #include "Scene.h"
 #include "PhysicsDebugRenderer.h"
 
+#define VK_FEATURE_GTAO 0
+
 namespace VulkanCore {
 
 	class SceneRenderer
@@ -235,7 +237,9 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<Image2D>> m_BloomTextures;
 		std::vector<std::shared_ptr<Image2D>> m_AOTextures;
 		std::vector<std::shared_ptr<Image2D>> m_SceneRenderTextures; // For Bloom
+#if VK_FEATURE_GTAO
 		std::vector<std::shared_ptr<Image2D>> m_SceneDepthTextures; // For AO
+#endif
 
 		std::shared_ptr<Texture2D> m_BloomDirtTexture;
 		std::shared_ptr<Texture2D> m_PointLightTextureIcon, m_SpotLightTextureIcon;

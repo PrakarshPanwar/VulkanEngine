@@ -338,7 +338,10 @@ float CalculateShadow()
 }
 
 [shader("fragment")]
-void FSMain(VertexOutput vertexOutput : VERTEX_OUT, out float4 o_Color : SV_Target)
+void FSMain(VertexOutput vertexOutput : VERTEX_OUT,
+    out float4 o_Color : SV_Target0,
+    out float4 o_ViewNormalsTexture : SV_Target1,
+    out float4 o_LightsDataTexture : SV_Target2)
 {
     Input = vertexOutput;
 
@@ -354,6 +357,7 @@ void FSMain(VertexOutput vertexOutput : VERTEX_OUT, out float4 o_Color : SV_Targ
     float3 cameraPosition = c_Camera.InverseView[3].xyz;
     m_Params.View = normalize(cameraPosition - vertexOutput.WorldPosition);
     m_Params.Normal = c_MaterialData.UseNormalMap == 0 ? normalize(vertexOutput.Normal) : GetNormalsFromMap();
+    o_ViewNormalsTexture = mul(float4(m_Params.View, 1.0f), c_Camera.View); // View Normals Texture
 
     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0f);
     float3 Lr = 2.0f * m_Params.NdotV * m_Params.Normal - m_Params.View;
@@ -365,9 +369,12 @@ void FSMain(VertexOutput vertexOutput : VERTEX_OUT, out float4 o_Color : SV_Targ
     // Shadow
     float shadow = CalculateShadow();
 
-    float3 lightingContribution = Lighting(F0) * shadow;
+    float3 lightingContribution = Lighting(F0);
     float3 iblContribution = IBL(F0, Lr);
 
+    o_LightsDataTexture = float4(lightingContribution, 1.0f); // Lights Data Texture
+    lightingContribution *= shadow; // Apply Shadow
+
     float3 color = iblContribution + lightingContribution;
-    o_Color = float4(color, c_MaterialData.Albedo.a);
+    o_Color = float4(color, c_MaterialData.Albedo.a); // Final Color
 } // End of Fragment Stage
