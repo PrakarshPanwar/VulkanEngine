@@ -92,7 +92,23 @@ namespace VulkanCore {
 	{
 		Entity entity = { m_Registry.create(), this };
 		entity.AddComponent<IDComponent>(uuid);
-		entity.AddComponent<TagComponent>(name);
+
+		std::string_view tag = entity.AddComponent<TagComponent>(name).Tag;
+		std::string_view entityNameView = tag.substr(0, tag.find_last_of('.'));
+		std::string_view entityCount = tag.substr(tag.find_last_of('.') + 1);
+		std::string entityName{ entityNameView };
+
+		uint32_t count = 0;
+		const auto charsResult = std::from_chars(entityCount.data(), entityCount.data() + entityCount.size(), count);
+		if (charsResult.ec == std::errc())
+		{
+			if (m_TagDuplicateMap.contains(entityName))
+				m_TagDuplicateMap[entityName] = std::max(count, m_TagDuplicateMap.at(entityName));
+			else
+				m_TagDuplicateMap[entityName] = count;
+		}
+		else if (!m_TagDuplicateMap.contains(entityName))
+			m_TagDuplicateMap[entityName] = 0;
 
 		return entity;
 	}
@@ -100,11 +116,11 @@ namespace VulkanCore {
 	Entity Scene::DuplicateEntity(Entity entity)
 	{
 		// Find existing entity name and duplication count for that particular name
-		std::string tag = entity.GetComponent<TagComponent>().Tag;
-		std::string entityName = tag.substr(0, tag.find_last_of('_'));
+		const auto& tag = entity.GetComponent<TagComponent>().Tag;
+		std::string entityName = tag.substr(0, tag.find_last_of('.'));
 
-		uint32_t count = m_EntityDuplicateMap[entityName]++; // Increment after assignment
-		std::string name = entityName + '_' + std::to_string(count);
+		uint32_t count = ++m_TagDuplicateMap[entityName]; // Increment before assignment
+		std::string name = entityName + '.' + std::to_string(count);
 
 		Entity newEntity = CreateEntity(name);
 		CopyComponentIfExists(AllComponents{}, newEntity, entity);

@@ -482,6 +482,17 @@ namespace VulkanCore {
 
 			break;
 		}
+		case Key::D:
+		{
+			if (shiftKey)
+			{
+				auto duplicateEntity = m_EditorScene->DuplicateEntity(m_SceneHierarchyPanel.GetSelectedEntity());
+				if (duplicateEntity)
+					m_SceneHierarchyPanel.SetSelectedEntity(duplicateEntity);
+			}
+
+			break;
+		}
 		case Key::Period:
 		{
 			Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
