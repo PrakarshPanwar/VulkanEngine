@@ -69,7 +69,7 @@ namespace VulkanCore {
 		int m_StepFrames = 0;
 
 		std::unique_ptr<PhysicsWorld> m_PhysicsWorld;
-		std::map<std::string, uint32_t> m_EntityDuplicateMap;
+		std::map<std::string, uint32_t> m_TagDuplicateMap;
 
 		friend class Entity;
 		friend class SceneHierarchyPanel;
