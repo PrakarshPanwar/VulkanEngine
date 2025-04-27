@@ -19,7 +19,7 @@ namespace VulkanCore {
 		bufferCreateInfo.usage = m_UsageFlags;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		m_MemoryAllocation = allocator.AllocateBuffer(bufferCreateInfo, m_MemoryUsageFlag, m_VulkanBuffer);
+		m_MemoryAllocation = allocator.AllocateBuffer(VulkanMemoryType::None, bufferCreateInfo, m_MemoryUsageFlag, m_VulkanBuffer);
 	}
 
 	VulkanBuffer::~VulkanBuffer()

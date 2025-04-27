@@ -3,6 +3,15 @@
 
 namespace VulkanCore {
 
+	enum class VulkanMemoryType
+	{
+		None = 0,
+		DeviceLocal, // GPU VRAM, fastest for GPU access
+		HostLocal, // CPU RAM
+		HostCached, // CPU Cached for faster reads
+		SharedHeap // Shared memory between CPU and GPU(Ideal use Uniform, Storage Buffers)
+	};
+
 	struct AllocationStats
 	{
 		uint32_t AllocatedBytes = 0;
@@ -15,7 +24,7 @@ namespace VulkanCore {
 		VulkanAllocator(const char* debugName);
 		~VulkanAllocator();
 
-		VmaAllocation AllocateBuffer(const VkBufferCreateInfo& bufInfo, VmaMemoryUsage usage, VkBuffer& buffer);
+		VmaAllocation AllocateBuffer(VulkanMemoryType memoryType, const VkBufferCreateInfo& bufInfo, VmaMemoryUsage usage, VkBuffer& buffer);
 		VmaAllocation AllocateImage(const VkImageCreateInfo& imgInfo, VmaMemoryUsage usage, VkImage& image);
 
 		template<typename T>
