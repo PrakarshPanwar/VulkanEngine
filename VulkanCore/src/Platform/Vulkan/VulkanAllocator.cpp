@@ -20,13 +20,30 @@ namespace VulkanCore {
 			}
 		}
 
-		static VmaAllocationCreateFlags VulkanAllocationFlags(VmaMemoryUsage usage)
+		static VkMemoryPropertyFlags VulkanMemoryFlags(VulkanMemoryType memoryType)
 		{
-			switch (usage)
+			switch (memoryType)
 			{
-			case VMA_MEMORY_USAGE_AUTO:               return 0;
-			case VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE: return 0;
-			case VMA_MEMORY_USAGE_AUTO_PREFER_HOST:   return VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			case VulkanMemoryType::None:		return 0;
+			case VulkanMemoryType::DeviceLocal: return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+			case VulkanMemoryType::HostLocal:	return VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+			case VulkanMemoryType::HostCached:  return VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+			case VulkanMemoryType::SharedHeap:  return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+			default:
+				VK_CORE_ASSERT(false, "Could not find necessary Format!");
+				return 0;
+			}
+		}
+
+		static VmaAllocationCreateFlags VulkanAllocationFlags(VulkanMemoryType memoryType)
+		{
+			switch (memoryType)
+			{
+			case VulkanMemoryType::None:        return 0;
+			case VulkanMemoryType::DeviceLocal: return 0;
+			case VulkanMemoryType::HostLocal:   return VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			case VulkanMemoryType::HostCached:  return VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			case VulkanMemoryType::SharedHeap:  return VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
 			default:
 				VK_CORE_ASSERT(false, "Could not find necessary Format!");
 				return 0;
@@ -46,12 +63,12 @@ namespace VulkanCore {
 	{
 	}
 
-	VmaAllocation VulkanAllocator::AllocateBuffer(const VkBufferCreateInfo& bufInfo, VmaMemoryUsage usage, VkBuffer& buffer)
+	VmaAllocation VulkanAllocator::AllocateBuffer(VulkanMemoryType memoryType, const VkBufferCreateInfo& bufInfo, VmaMemoryUsage usage, VkBuffer& buffer)
 	{
 		VmaAllocationCreateInfo allocInfo{};
 		allocInfo.usage = usage;
-		allocInfo.flags = Utils::VulkanAllocationFlags(usage);
-		allocInfo.preferredFlags = Utils::VulkanMemoryFlags(usage);
+		allocInfo.flags = Utils::VulkanAllocationFlags(memoryType);
+		allocInfo.preferredFlags = Utils::VulkanMemoryFlags(memoryType);
 
 		VmaAllocation vmaAllocation;
 		VmaAllocationInfo vmaAllocInfo = {};
