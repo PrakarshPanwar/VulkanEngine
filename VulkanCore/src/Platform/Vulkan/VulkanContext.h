@@ -8,9 +8,10 @@ namespace VulkanCore {
 		void SetDebugUtilsObjectName(VkDevice device, VkObjectType objectType, const std::string& debugName, void* object);
 		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName, float labelColor[]);
 		void EndCommandBufferLabel(VkCommandBuffer cmdBuffer);
+		void SetQueueLabel(VkQueue queue, const char* labelName, float labelColor[]);
+		void EndQueueLabel(VkQueue queue);
 	}
 
-	VkResult CreateDebugMarkerEXT(VkDevice device);
 	VkResult CreateDebugUtilsEXT(VkInstance instance);
 
 	class VulkanContext

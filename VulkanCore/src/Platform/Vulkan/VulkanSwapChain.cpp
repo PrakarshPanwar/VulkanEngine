@@ -153,7 +153,12 @@ namespace VulkanCore {
 
 		vkResetFences(device->GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame]);
 
+		glm::vec4 queueLabelColor = { 0.1f, 0.3f, 0.5f, 1.0f };
+		VKUtils::SetQueueLabel(device->GetGraphicsQueue(), "Graphics-Queue", &queueLabelColor.x);
+
 		VK_CHECK_RESULT(vkQueueSubmit(device->GetGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFrame]), "Failed to Submit Draw Command Buffer!");
+
+		VKUtils::EndQueueLabel(device->GetGraphicsQueue());
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

@@ -90,7 +90,6 @@ namespace VulkanCore {
 		PickPhysicalDevice();
 		CreateLogicalDevice();
 		CreateCommandPools();
-		SetupDebugMarkers();
 	}
 
 	void VulkanDevice::Destroy()
@@ -103,20 +102,6 @@ namespace VulkanCore {
 
 	VulkanDevice::~VulkanDevice()
 	{
-	}
-
-	uint32_t VulkanDevice::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
-	{
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
-		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-		{
-			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-				return i;
-		}
-
-		VK_CORE_ASSERT(false, "Failed to find suitable Memory Type!");
-		return 0;
 	}
 
 	VkFormat VulkanDevice::FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
@@ -145,13 +130,30 @@ namespace VulkanCore {
 		std::vector<VkExtensionProperties> extensions(extensionCount);
 		vkEnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, &extensionCount, extensions.data());
 
-		for (auto extension : extensions)
+		for (const auto& extension : extensions)
 		{
 			if (strcmp(extension.extensionName, extensionName) == 0)
 				return true;
 		}
 
 		return false;
+	}
+
+	bool VulkanDevice::IsInDebugMode() const
+	{
+		uint32_t layerCount = 0;
+		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+		std::vector<VkLayerProperties> layers(layerCount);
+		vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
+
+		for (const auto& layer : layers)
+		{
+			if (strcmp(layer.layerName, "VK_LAYER_RENDERDOC_Capture") == 0)
+				return true; // RenderDoc layer is active
+		}
+
+		return false; // RenderDoc layer not found
 	}
 
 	VkCommandBuffer VulkanDevice::GetCommandBuffer(bool compute)
@@ -200,53 +202,23 @@ namespace VulkanCore {
 		vkFreeCommandBuffers(m_LogicalDevice, compute ? m_ComputeCommandPool : m_CommandPool, 1, &commandBuffer);
 	}
 
-	void VulkanDevice::CreateImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
-	{
-		VK_CHECK_RESULT(vkCreateImage(m_LogicalDevice, &imageInfo, nullptr, &image), "Failed to Create Image!");
-
-		VkMemoryRequirements memRequirements;
-		vkGetImageMemoryRequirements(m_LogicalDevice, image, &memRequirements);
-
-		VkMemoryAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
-
-		VK_CHECK_RESULT(vkAllocateMemory(m_LogicalDevice, &allocInfo, nullptr, &imageMemory), "Failed to Allocate Image Memory!");
-		VK_CHECK_RESULT(vkBindImageMemory(m_LogicalDevice, image, imageMemory, 0), "Failed to Bind Image Memory!");
-	}
-
-	VmaAllocation VulkanDevice::CreateImage(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image)
-	{
-		VmaAllocationCreateInfo allocInfo{};
-		allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
-		allocInfo.preferredFlags = properties;
-
-		VmaAllocation imageAllocation;
-
-		VK_CHECK_RESULT(vmaCreateImage(VulkanContext::GetVulkanMemoryAllocator(), &imageInfo, &allocInfo, &image, &imageAllocation, nullptr), "Failed to Create Image!");
-		return imageAllocation;
-	}
-
 	void VulkanDevice::PickPhysicalDevice()
 	{
+		auto context = VulkanContext::GetCurrentContext();
+
 		uint32_t deviceCount = 0;
-
-		const auto vulkanInstance = VulkanContext::GetCurrentContext()->m_VulkanInstance;
-
-		vkEnumeratePhysicalDevices(vulkanInstance, &deviceCount, nullptr);
+		vkEnumeratePhysicalDevices(context->m_VulkanInstance, &deviceCount, nullptr);
 		VK_CORE_ASSERT(deviceCount != 0, "Failed to find GPUs with Vulkan Support!");
 
 		VK_CORE_INFO("Device Count: {0}", deviceCount);
 		std::vector<VkPhysicalDevice> devices(deviceCount);
-		vkEnumeratePhysicalDevices(vulkanInstance, &deviceCount, devices.data());
+		vkEnumeratePhysicalDevices(context->m_VulkanInstance, &deviceCount, devices.data());
 
 		for (const auto& device : devices) 
 		{
-			auto props = VkPhysicalDeviceProperties{};
-			vkGetPhysicalDeviceProperties(device, &props);
+			vkGetPhysicalDeviceProperties(device, &m_DeviceProperties);
 
-			if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+			if (m_DeviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && context->IsDeviceSuitable(device))
 			{
 				m_PhysicalDevice = device;
 				break;
@@ -254,8 +226,6 @@ namespace VulkanCore {
 		}
 
 		VK_CORE_ASSERT(m_PhysicalDevice != VK_NULL_HANDLE, "Failed to find a Suitable GPU!");
-
-		vkGetPhysicalDeviceProperties(m_PhysicalDevice, &m_DeviceProperties);
 		VK_CORE_INFO("Physical Device: {0}", m_DeviceProperties.deviceName);
 
 		auto sampleCount = m_DeviceProperties.limits.framebufferColorSampleCounts & m_DeviceProperties.limits.framebufferDepthSampleCounts;
@@ -291,33 +261,6 @@ namespace VulkanCore {
 		deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 		deviceFeatures.depthClamp = VK_TRUE;
 
-		VkDeviceCreateInfo createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-		createInfo.pQueueCreateInfos = queueCreateInfos.data();
-
-		auto& deviceExtensions = context->m_DeviceExtensions;
-		const auto& validationLayers = context->m_ValidationLayers;
-
-		if (IsExtensionSupported(VK_EXT_DEBUG_MARKER_EXTENSION_NAME))
-		{
-			deviceExtensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
-			m_DebugMarkers = true;
-		}
-
-		createInfo.pEnabledFeatures = &deviceFeatures;
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-		createInfo.ppEnabledExtensionNames = deviceExtensions.data();
-
-		// Might not really be Necessary anymore because device specific Validation Layers have been deprecated
-		if (context->m_EnableValidation)
-		{
-			createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-			createInfo.ppEnabledLayerNames = validationLayers.data();
-		}
-		else
-			createInfo.enabledLayerCount = 0;
-
 		// Examples: https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples
 		VkPhysicalDeviceSynchronization2Features physicalDeviceSynchronization2Features{};
 		physicalDeviceSynchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
@@ -328,6 +271,13 @@ namespace VulkanCore {
 		physicalDeviceFeatures.features = deviceFeatures;
 		physicalDeviceFeatures.pNext = &physicalDeviceSynchronization2Features;
 
+		VkDeviceCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+		createInfo.pQueueCreateInfos = queueCreateInfos.data();
+		createInfo.pEnabledFeatures = &deviceFeatures;
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(context->m_DeviceExtensions.size());
+		createInfo.ppEnabledExtensionNames = context->m_DeviceExtensions.data();
 		createInfo.pEnabledFeatures = nullptr;
 		createInfo.pNext = &physicalDeviceFeatures;
 
@@ -356,12 +306,6 @@ namespace VulkanCore {
 		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_COMMAND_POOL, "Default Command Pool", m_CommandPool);
 		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_COMMAND_POOL, "Render Thread Command Pool", m_RTCommandPool);
 		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_COMMAND_POOL, "Compute Command Pool", m_ComputeCommandPool);
-	}
-
-	void VulkanDevice::SetupDebugMarkers()
-	{
-		if (m_DebugMarkers)
-			VK_CHECK_RESULT(CreateDebugMarkerEXT(m_LogicalDevice), "Failed to Set Debug Markers");
 	}
 
 	QueueFamilyIndices VulkanDevice::FindQueueFamilies(VkPhysicalDevice device)
