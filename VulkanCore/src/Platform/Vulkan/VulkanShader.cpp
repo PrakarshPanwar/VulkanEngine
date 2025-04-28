@@ -498,11 +498,15 @@ namespace VulkanCore {
 
 		const bool optimize = !device->IsInDebugMode();
 		if (optimize)
+		{
 			options.SetOptimizationLevel(shaderc_optimization_level_performance);
+			VK_CORE_WARN("RenderDoc/NSight Layer is active");
+		}
 		else
 		{
 			options.SetGenerateDebugInfo();
 			options.SetOptimizationLevel(shaderc_optimization_level_zero);
+			VK_CORE_WARN("RenderDoc/NSight Layer is not active");
 		}
 
 		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();

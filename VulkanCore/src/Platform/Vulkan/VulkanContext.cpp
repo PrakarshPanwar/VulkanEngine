@@ -6,29 +6,22 @@
 
 namespace VulkanCore {
 
-	// Debug Marker Function Pointers
-	PFN_vkDebugMarkerSetObjectNameEXT vkDebugMarkerSetObjectNameEXT = VK_NULL_HANDLE;
+	// Debug Utils Marker Function Pointers
 	PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = VK_NULL_HANDLE;
-	PFN_vkCmdDebugMarkerBeginEXT vkCmdDebugMarkerBeginEXT = VK_NULL_HANDLE;
-	PFN_vkCmdDebugMarkerEndEXT vkCmdDebugMarkerEndEXT = VK_NULL_HANDLE;
-
-	VkResult CreateDebugMarkerEXT(VkDevice device)
-	{
-		vkDebugMarkerSetObjectNameEXT = (PFN_vkDebugMarkerSetObjectNameEXT)vkGetDeviceProcAddr(device, "vkDebugMarkerSetObjectNameEXT");
-		vkCmdDebugMarkerBeginEXT = (PFN_vkCmdDebugMarkerBeginEXT)vkGetDeviceProcAddr(device, "vkCmdDebugMarkerBeginEXT");
-		vkCmdDebugMarkerEndEXT = (PFN_vkCmdDebugMarkerEndEXT)vkGetDeviceProcAddr(device, "vkCmdDebugMarkerEndEXT");
-
-		if (vkDebugMarkerSetObjectNameEXT == nullptr)
-			return VK_ERROR_EXTENSION_NOT_PRESENT;
-
-		return VK_SUCCESS;
-	}
+	PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT = VK_NULL_HANDLE;
+	PFN_vkCmdInsertDebugUtilsLabelEXT vkCmdInsertDebugUtilsLabelEXT = VK_NULL_HANDLE;
+	PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT = VK_NULL_HANDLE;
+	PFN_vkQueueBeginDebugUtilsLabelEXT vkQueueBeginDebugUtilsLabelEXT = VK_NULL_HANDLE;
+	PFN_vkQueueEndDebugUtilsLabelEXT vkQueueEndDebugUtilsLabelEXT = VK_NULL_HANDLE;
 
 	VkResult CreateDebugUtilsEXT(VkInstance instance)
 	{
 		vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
-// 		vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdBeginDebugUtilsLabelEXT");
-// 		vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdEndDebugUtilsLabelEXT");
+ 		vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdBeginDebugUtilsLabelEXT");
+		vkCmdInsertDebugUtilsLabelEXT = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdInsertDebugUtilsLabelEXT");
+ 		vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdEndDebugUtilsLabelEXT");
+		vkQueueBeginDebugUtilsLabelEXT = (PFN_vkQueueBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkQueueBeginDebugUtilsLabelEXT");
+		vkQueueEndDebugUtilsLabelEXT = (PFN_vkQueueEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkQueueEndDebugUtilsLabelEXT");
 
 		if (vkSetDebugUtilsObjectNameEXT == nullptr)
 			return VK_ERROR_EXTENSION_NOT_PRESENT;
@@ -50,39 +43,50 @@ namespace VulkanCore {
 
 				vkSetDebugUtilsObjectNameEXT(device, &debugUtilsNameInfo);
 			}
-
-			if (vkDebugMarkerSetObjectNameEXT)
-			{
-				VkDebugMarkerObjectNameInfoEXT debugMarkerNameInfo{};
-				debugMarkerNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
-				debugMarkerNameInfo.objectType = (VkDebugReportObjectTypeEXT)objectType;
-				debugMarkerNameInfo.object = (uint64_t)object;
-				debugMarkerNameInfo.pObjectName = debugName.c_str();
-				
-				vkDebugMarkerSetObjectNameEXT(device, &debugMarkerNameInfo);
-			}
 		}
 
 		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName, float labelColor[])
 		{
-			if (vkCmdDebugMarkerBeginEXT)
+			if (vkCmdBeginDebugUtilsLabelEXT)
 			{
-				VkDebugMarkerMarkerInfoEXT markerInfoExt{};
-				markerInfoExt.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
-				markerInfoExt.pMarkerName = labelName;
-				markerInfoExt.color[0] = labelColor[0];
-				markerInfoExt.color[1] = labelColor[1];
-				markerInfoExt.color[2] = labelColor[2];
-				markerInfoExt.color[3] = labelColor[3];
+				VkDebugUtilsLabelEXT debugLabelEXT{};
+				debugLabelEXT.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+				debugLabelEXT.pLabelName = labelName;
+				debugLabelEXT.color[0] = labelColor[0];
+				debugLabelEXT.color[1] = labelColor[1];
+				debugLabelEXT.color[2] = labelColor[2];
+				debugLabelEXT.color[3] = labelColor[3];
 
-				vkCmdDebugMarkerBeginEXT(cmdBuffer, &markerInfoExt);
+				vkCmdBeginDebugUtilsLabelEXT(cmdBuffer, &debugLabelEXT);
 			}
 		}
 
 		void EndCommandBufferLabel(VkCommandBuffer cmdBuffer)
 		{
-			if (vkCmdDebugMarkerEndEXT)
-				vkCmdDebugMarkerEndEXT(cmdBuffer);
+			if (vkCmdEndDebugUtilsLabelEXT)
+				vkCmdEndDebugUtilsLabelEXT(cmdBuffer);
+		}
+
+		void SetQueueLabel(VkQueue queue, const char* labelName, float labelColor[])
+		{
+			if (vkQueueBeginDebugUtilsLabelEXT)
+			{
+				VkDebugUtilsLabelEXT debugLabelEXT{};
+				debugLabelEXT.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+				debugLabelEXT.pLabelName = labelName;
+				debugLabelEXT.color[0] = labelColor[0];
+				debugLabelEXT.color[1] = labelColor[1];
+				debugLabelEXT.color[2] = labelColor[2];
+				debugLabelEXT.color[3] = labelColor[3];
+
+				vkQueueBeginDebugUtilsLabelEXT(queue, &debugLabelEXT);
+			}
+		}
+
+		void EndQueueLabel(VkQueue queue)
+		{
+			if (vkQueueEndDebugUtilsLabelEXT)
+				vkQueueEndDebugUtilsLabelEXT(queue);
 		}
 
 	}
@@ -99,6 +103,7 @@ namespace VulkanCore {
 			case VK_OBJECT_TYPE_COMMAND_POOL:		   return "Command Pool";
 			case VK_OBJECT_TYPE_INSTANCE:			   return "Instance";
 			case VK_OBJECT_TYPE_DEVICE:				   return "Device";
+			case VK_OBJECT_TYPE_DEVICE_MEMORY:		   return "Device Memory";
 			case VK_OBJECT_TYPE_DESCRIPTOR_POOL:	   return "Descriptor Pool";
 			case VK_OBJECT_TYPE_DESCRIPTOR_SET:		   return "Descriptor Set";
 			case VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT: return "Descriptor Set Layout";
@@ -222,14 +227,14 @@ namespace VulkanCore {
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 		createInfo.ppEnabledExtensionNames = extensions.data();
 
-		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
+		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 		if (m_EnableValidation)
 		{
 			createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
 			createInfo.ppEnabledLayerNames = m_ValidationLayers.data();
 
 			PopulateDebugMessengerCreateInfo(debugCreateInfo);
-			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+			createInfo.pNext = &debugCreateInfo;
 		}
 		else
 		{
@@ -265,15 +270,10 @@ namespace VulkanCore {
 		vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
 		vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
 
-		auto physicalDevice = m_Device->GetPhysicalDevice();
-
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
-
 		VmaAllocatorCreateInfo allocatorInfo{};
 		allocatorInfo.device = m_Device->GetVulkanDevice();
 		allocatorInfo.instance = m_VulkanInstance;
-		allocatorInfo.physicalDevice = physicalDevice;
+		allocatorInfo.physicalDevice = m_Device->GetPhysicalDevice();
 		allocatorInfo.pVulkanFunctions = &vulkanFunctions;
 		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_4;
 		allocatorInfo.pAllocationCallbacks = nullptr;
@@ -288,16 +288,14 @@ namespace VulkanCore {
 	{
 		QueueFamilyIndices indices = m_Device->FindQueueFamilies(device);
 
-		bool extensionsSupported = CheckDeviceExtensionSupport(device);
-
-		bool swapChainAdequate = false;
+		bool swapChainAdequate = false, extensionsSupported = CheckDeviceExtensionSupport(device);
 		if (extensionsSupported)
 		{
 			SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
 			swapChainAdequate = !swapChainSupport.Formats.empty() && !swapChainSupport.PresentModes.empty();
 		}
 
-		VkPhysicalDeviceFeatures supportedFeatures;
+		VkPhysicalDeviceFeatures supportedFeatures{};
 		vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
 		return indices.IsComplete() && extensionsSupported && swapChainAdequate
@@ -329,7 +327,6 @@ namespace VulkanCore {
 		for (const char* layerName : m_ValidationLayers)
 		{
 			bool layerFound = false;
-
 			for (const auto& layerProperties : availableLayers)
 			{
 				if (strcmp(layerName, layerProperties.layerName) == 0)
@@ -367,10 +364,12 @@ namespace VulkanCore {
 	{
 		uint32_t extensionCount = 0;
 		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
 		std::vector<VkExtensionProperties> extensions(extensionCount);
 		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
 		VK_CORE_INFO("Available Extensions:");
+
 		std::unordered_set<std::string> available;
 		for (const auto& extension : extensions)
 		{
@@ -379,6 +378,7 @@ namespace VulkanCore {
 		}
 
 		VK_CORE_INFO("Required Extensions:");
+
 		auto requiredExtensions = GetRequiredExtensions();
 		for (const auto& required : requiredExtensions)
 		{
