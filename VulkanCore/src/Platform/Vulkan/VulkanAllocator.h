@@ -28,12 +28,11 @@ namespace VulkanCore {
 		VmaAllocation AllocateImage(const VkImageCreateInfo& imgInfo, VmaMemoryUsage usage, VkImage& image);
 
 		template<typename T>
-		T* MapMemory(VmaAllocation allocation)
+		T* MapMemory(VmaAllocation allocation) requires std::integral<T>
 		{
 			void* mappedData;
 			VK_CHECK_RESULT(vmaMapMemory(m_VkMemoryAllocator, allocation, &mappedData), "{}: Failed to Map Memory!", m_DebugName);
 
-			static_assert(std::integral<T>, "Type is not Integral");
 			return (T*)mappedData;
 		}
 
@@ -41,6 +40,7 @@ namespace VulkanCore {
 		void DestroyBuffer(VkBuffer& buffer, VmaAllocation allocation);
 		void DestroyImage(VkImage& image, VmaAllocation allocation);
 
+		void WriteAllocatorStats() const;
 		static inline const AllocationStats& GetAllocationStats() { return s_Data; }
 	private:
 		const VmaAllocator m_VkMemoryAllocator = VulkanContext::GetVulkanMemoryAllocator();

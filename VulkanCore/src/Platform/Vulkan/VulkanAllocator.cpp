@@ -117,4 +117,18 @@ namespace VulkanCore {
 		vmaDestroyImage(m_VkMemoryAllocator, image, allocation);
 	}
 
+	void VulkanAllocator::WriteAllocatorStats() const
+	{
+		char* statsString = nullptr;
+		vmaBuildStatsString(m_VkMemoryAllocator, &statsString, VK_TRUE);
+
+		std::ofstream statsFile("../../VulkanProfiler/Scripts/VulkanAllocatorLog.json", std::ios::out | std::ios::binary);
+		if (statsFile.is_open())
+		{
+			statsFile.write(statsString, strlen(statsString));
+			statsFile.flush();
+			statsFile.close();
+		}
+	}
+
 }

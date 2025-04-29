@@ -64,7 +64,7 @@ namespace VulkanCore {
 		void FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers);
 		void SubmitAndPresent();
 		static void ResetStats();
-		static RendererStats GetRendererStats() { return s_Data; }
+		static inline RendererStats GetRendererStats() { return s_Data; }
 		static VulkanRenderer* Get() { return s_Instance; }
 	private:
 		void CreateCommandBuffers();
