@@ -1,6 +1,7 @@
 #include "EditorLayer.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Core/Timestep.h"
 #include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
 #include "VulkanCore/Asset/EditorAssetManager.h"
@@ -83,6 +84,10 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
+		float time = WindowsTime::GetTime();
+		Timestep timestep = time - m_LastFrameTime;
+		m_LastFrameTime = time;
+
 		if ((m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing()) || m_EditorCamera.IsInFly())
 			m_EditorCamera.OnUpdate();
 
@@ -93,12 +98,12 @@ namespace VulkanCore {
 			break;
 		case SceneState::Play:
 		{
-			activeScene->OnUpdateRuntime();
+			activeScene->OnUpdateRuntime(timestep);
 			break;
 		}
 		case SceneState::Simulate:
 		{
-			activeScene->OnUpdateSimulation();
+			activeScene->OnUpdateSimulation(timestep);
 			break;
 		}
 		}

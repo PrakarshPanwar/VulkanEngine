@@ -1,6 +1,8 @@
 #pragma once
 #include <entt.hpp>
+
 #include "VulkanCore/Core/Components.h"
+#include "VulkanCore/Core/Timestep.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
 #include "PhysicsWorld.h"
 
@@ -42,8 +44,8 @@ namespace VulkanCore {
 		void OnSimulationStart();
 		void OnSimulationStop();
 
-		void OnUpdateRuntime();
-		void OnUpdateSimulation();
+		void OnUpdateRuntime(Timestep ts);
+		void OnUpdateSimulation(Timestep ts);
 		//void OnUpdateEditor();
 
 		template<typename... Components>

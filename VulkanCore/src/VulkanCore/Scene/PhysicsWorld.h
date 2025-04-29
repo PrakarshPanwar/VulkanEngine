@@ -1,4 +1,5 @@
 #pragma once
+#include "VulkanCore/Core/Timestep.h"
 #include "VulkanCore/Core/Components.h"
 #include "PhysicsDebugRenderer.h"
 
@@ -13,7 +14,7 @@ namespace VulkanCore {
 		~PhysicsWorld() = default;
 
 		virtual void Init(Scene* scene) = 0;
-		virtual void Update(Scene* scene) = 0;
+		virtual void Update(Timestep ts, Scene* scene) = 0;
 		virtual void DestroySystem() = 0;
 
 		virtual void CreateBodies(Scene* scene) = 0;

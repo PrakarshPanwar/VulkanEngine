@@ -295,19 +295,19 @@ namespace VulkanCore {
 		OnPhysicsWorldStop();
 	}
 
-	void Scene::OnUpdateRuntime()
+	void Scene::OnUpdateRuntime(Timestep ts)
 	{
 		if (m_PhysicsWorld->IsValid() && !m_IsPaused || m_StepFrames-- > 0)
 		{
-			m_PhysicsWorld->Update(this);
+			m_PhysicsWorld->Update(ts, this);
 		}
 	}
 
-	void Scene::OnUpdateSimulation()
+	void Scene::OnUpdateSimulation(Timestep ts)
 	{
 		if (m_PhysicsWorld->IsValid() && !m_IsPaused || m_StepFrames-- > 0)
 		{
-			m_PhysicsWorld->Update(this);
+			m_PhysicsWorld->Update(ts, this);
 		}
 	}
 
