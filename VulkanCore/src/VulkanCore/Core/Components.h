@@ -243,9 +243,20 @@ namespace VulkanCore {
 	{
 	};
 
+	template<typename T, typename... Component>
+	struct IsComponent
+	{
+		static constexpr bool cvalue = (std::same_as<T, Component> || ...);
+	};
+
 	using AllComponents =
 		ComponentGroup<TransformComponent, MeshComponent,
 			PointLightComponent, SpotLightComponent, DirectionalLightComponent, SkyLightComponent,
 			Rigidbody3DComponent, BoxCollider3DComponent, SphereColliderComponent, MeshColliderComponent>;
+
+	template<typename... ComponentType>
+	concept IsComponentType = (IsComponent<ComponentType, TransformComponent, MeshComponent,
+		PointLightComponent, SpotLightComponent, DirectionalLightComponent, SkyLightComponent,
+		Rigidbody3DComponent, BoxCollider3DComponent, SphereColliderComponent, MeshColliderComponent>::cvalue || ...);
 
 }
