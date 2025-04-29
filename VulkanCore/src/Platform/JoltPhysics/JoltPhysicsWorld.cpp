@@ -101,12 +101,12 @@ namespace VulkanCore {
 		VK_CORE_INFO("Initialized Physics System!");
 	}
 
-	void JoltPhysicsWorld::Update(Scene* scene)
+	void JoltPhysicsWorld::Update(Timestep ts, Scene* scene)
 	{
 		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
 
 		constexpr uint32_t collisionSteps = 1;
-		constexpr float deltaTime = 1.0f / 60.0f; // It's kept at 60 FPS shouldn't be variable to Timestep
+		float deltaTime = glm::clamp((float)ts, 1.0f / 120.0f, 1.0f / 60.0f); // It's kept at 60 FPS shouldn't be variable to Timestep
 
 		m_PhysicsSystem->Update(deltaTime, collisionSteps, m_TempAllocator, m_JobSystem);
 
@@ -177,7 +177,7 @@ namespace VulkanCore {
 				bodyPtr->SetFriction(bc3d.Friction);
 				bodyPtr->SetRestitution(bc3d.Restitution);
 
-				bodyInterface.AddBody(bodyPtr->GetID(), activation); // Add Body
+				bodyInterface.AddBody(bodyPtr->GetID(), activation); // Add Box Body
 			}
 
 			if (entity.HasComponent<SphereColliderComponent>())
@@ -203,9 +203,40 @@ namespace VulkanCore {
 				bodyPtr->SetFriction(sc3d.Friction);
 				bodyPtr->SetRestitution(sc3d.Restitution);
 
-				bodyInterface.AddBody(bodyPtr->GetID(), activation); // Add Body
+				bodyInterface.AddBody(bodyPtr->GetID(), activation); // Add Sphere Body
 			}
 
+			if (entity.HasComponent<CapsuleColliderComponent>())
+			{
+				auto& cc3d = entity.GetComponent<CapsuleColliderComponent>();
+
+				JPH::CapsuleShapeSettings capsuleSettings{ cc3d.HalfHeight, cc3d.Radius };
+				capsuleSettings.SetDensity(cc3d.Density);
+
+				auto shapeResult = capsuleSettings.Create();
+				const auto& shapeRef = shapeResult.Get();
+
+				// Obtain Transforms
+				auto bodyTransform = JPH::RVec3(transform.Translation.x, transform.Translation.y, transform.Translation.z);
+				auto bodyQuaternion = Utils::JoltQuaternionFromEulerAngles(transform.Rotation);
+
+				// Set Body Settings
+				JPH::BodyCreationSettings settings{
+					shapeRef,
+					bodyTransform,
+					bodyQuaternion,
+					motionType,
+					objectLayer
+				};
+
+				auto bodyPtr = bodyInterface.CreateBodyWithID(JPH::BodyID{ (uint32_t)ent }, settings); // Create Body with Entity ID
+				bodyPtr->SetFriction(cc3d.Friction);
+				bodyPtr->SetRestitution(cc3d.Restitution);
+
+				bodyInterface.AddBody(bodyPtr->GetID(), activation); // Add Capsule Body
+			}
+
+			// TODO: It is not working yet, to add option to debug Mesh Collider
 			if (entity.HasAllComponent<MeshComponent, MeshColliderComponent>())
 			{
 				auto& mc3d = entity.GetComponent<MeshColliderComponent>();
@@ -256,7 +287,7 @@ namespace VulkanCore {
 				bodyPtr->SetFriction(mc3d.Friction);
 				bodyPtr->SetRestitution(mc3d.Restitution);
 
-				bodyInterface.AddBody(bodyPtr->GetID(), activation); // Add Body
+				bodyInterface.AddBody(bodyPtr->GetID(), activation); // Add Mesh Body
 			}
 		}
 

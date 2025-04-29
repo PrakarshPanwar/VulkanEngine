@@ -269,7 +269,8 @@ namespace VulkanCore {
 			DisplayAddComponentEntry<MeshComponent>("Mesh");
 			DisplayAddComponentEntry<Rigidbody3DComponent>("Rigidbody 3D");
 			DisplayAddComponentEntry<BoxCollider3DComponent>("Box Collider 3D");
-			DisplayAddComponentEntry<SphereColliderComponent>("Sphere Collider 3D");
+			DisplayAddComponentEntry<SphereColliderComponent>("Sphere Collider");
+			DisplayAddComponentEntry<CapsuleColliderComponent>("Capsule Collider");
 			DisplayAddComponentEntry<MeshColliderComponent>("Mesh Collider");
 
 			ImGui::EndPopup();
@@ -529,6 +530,16 @@ namespace VulkanCore {
 		DrawComponent<SphereColliderComponent>("Sphere Collider", entity, [](auto& component)
 		{
 			ImGui::DragFloat3("Offset", glm::value_ptr(component.Offset));
+			ImGui::DragFloat("Radius", &component.Radius);
+			ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+			//ImGui::DragFloat("Restitution Threshold", &component.RestitutionThreshold, 0.01f, 0.0f);
+		});
+
+		DrawComponent<CapsuleColliderComponent>("Capsule Collider", entity, [](auto& component)
+		{
+			ImGui::DragFloat("Half Height", &component.HalfHeight);
 			ImGui::DragFloat("Radius", &component.Radius);
 			ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 1.0f);
 			ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f);

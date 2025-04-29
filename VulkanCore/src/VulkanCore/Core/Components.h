@@ -191,6 +191,21 @@ namespace VulkanCore {
 		SphereColliderComponent(const SphereColliderComponent&) = default;
 	};
 
+	struct CapsuleColliderComponent
+	{
+		float HalfHeight = 1.0f;
+		float Radius = 0.5f;
+
+		// TODO: Move into Physics Material in the future maybe
+		float Density = 1.0f;
+		float Friction = 0.5f;
+		float Restitution = 0.0f;
+		//float RestitutionThreshold = 0.5f;
+
+		CapsuleColliderComponent() = default;
+		CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
+	};
+
 	struct MeshColliderComponent // Convex Hull Body
 	{
 		// TODO: Move into Physics Material in the future maybe
@@ -250,13 +265,11 @@ namespace VulkanCore {
 	};
 
 	using AllComponents =
-		ComponentGroup<TransformComponent, MeshComponent,
-			PointLightComponent, SpotLightComponent, DirectionalLightComponent, SkyLightComponent,
-			Rigidbody3DComponent, BoxCollider3DComponent, SphereColliderComponent, MeshColliderComponent>;
+		ComponentGroup<TransformComponent, MeshComponent, PointLightComponent, SpotLightComponent, DirectionalLightComponent, SkyLightComponent,
+			Rigidbody3DComponent, BoxCollider3DComponent, SphereColliderComponent, CapsuleColliderComponent, MeshColliderComponent>;
 
 	template<typename... ComponentType>
-	concept IsComponentType = (IsComponent<ComponentType, TransformComponent, MeshComponent,
-		PointLightComponent, SpotLightComponent, DirectionalLightComponent, SkyLightComponent,
-		Rigidbody3DComponent, BoxCollider3DComponent, SphereColliderComponent, MeshColliderComponent>::cvalue || ...);
+	concept IsComponentType = (IsComponent<ComponentType, TransformComponent, MeshComponent, PointLightComponent, SpotLightComponent, DirectionalLightComponent, SkyLightComponent,
+		Rigidbody3DComponent, BoxCollider3DComponent, SphereColliderComponent, CapsuleColliderComponent, MeshColliderComponent>::cvalue || ...);
 
 }

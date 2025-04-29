@@ -72,10 +72,11 @@ namespace VulkanCore {
 		glm::vec2 m_ViewportBounds[2];
 		glm::vec4 m_TransformInput{};
 		float m_TransformScalarInput = 0.0f;
-		uint8_t m_TransformInputMask = 0; // 0: X, 1: Y, 2: Z
-		TransformComponent m_EntityTransform{};
+		TransformComponent m_EntityTransform;
 		int m_GizmoType = -1;
 		float m_TranslationSnapValue = 0.5f, m_RotationSnapValue = 45.0f, m_ScaleSnapValue = 0.5f;
+		uint8_t m_TransformInputMask = 0; // 0: X, 1: Y, 2: Z
+		float m_LastFrameTime = 0.0f;
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		std::unique_ptr<ContentBrowserPanel> m_ContentBrowserPanel;

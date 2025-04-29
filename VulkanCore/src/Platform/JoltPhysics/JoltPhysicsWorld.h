@@ -11,7 +11,7 @@ namespace VulkanCore {
 		~JoltPhysicsWorld();
 
 		void Init(Scene* scene) override;
-		void Update(Scene* scene) override;
+		void Update(Timestep ts, Scene* scene) override;
 		void DestroySystem() override;
 
 		void CreateBodies(Scene* scene) override;
