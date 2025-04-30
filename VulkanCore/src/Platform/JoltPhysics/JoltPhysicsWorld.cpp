@@ -106,7 +106,7 @@ namespace VulkanCore {
 		JPH::BodyInterface& bodyInterface = m_PhysicsSystem->GetBodyInterface();
 
 		constexpr uint32_t collisionSteps = 1;
-		float deltaTime = glm::clamp((float)ts, 1.0f / 120.0f, 1.0f / 60.0f); // It's kept at 60 FPS shouldn't be variable to Timestep
+		float deltaTime = glm::max((float)ts, 1.0f / 60.0f); // It's kept at 60 FPS minimum(variable to Timestep)
 
 		m_PhysicsSystem->Update(deltaTime, collisionSteps, m_TempAllocator, m_JobSystem);
 
