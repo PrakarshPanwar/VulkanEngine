@@ -28,6 +28,7 @@ namespace VulkanCore {
 #define VK_CORE_WARN(...)     ::VulkanCore::Log::GetCoreLogger()->warn(__VA_ARGS__)
 #define VK_CORE_ERROR(...)    ::VulkanCore::Log::GetCoreLogger()->error(__VA_ARGS__)
 #define VK_CORE_CRITICAL(...) ::VulkanCore::Log::GetCoreLogger()->critical(__VA_ARGS__)
+#define VK_CORE_DEBUG(...)    ::VulkanCore::Log::GetCoreLogger()->debug(__VA_ARGS__)
 
 // Client log macros
 #define VK_TRACE(...)         ::VulkanCore::Log::GetClientLogger()->trace(__VA_ARGS__)

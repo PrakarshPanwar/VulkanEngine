@@ -78,7 +78,7 @@ namespace VulkanCore {
 		s_Data.AllocatedBytes += vmaAllocInfo.size;
 		s_Data.AllocationCount += 1;
 
-		VK_CORE_TRACE("Buffer Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
+		VK_CORE_DEBUG("Buffer Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
 		
 		return vmaAllocation;
 	}
@@ -97,7 +97,7 @@ namespace VulkanCore {
 		s_Data.AllocatedBytes += vmaAllocInfo.size;
 		s_Data.AllocationCount += 1;
 
-		VK_CORE_TRACE("Image Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
+		VK_CORE_DEBUG("Image Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
 		
 		return vmaAllocation;
 	}
