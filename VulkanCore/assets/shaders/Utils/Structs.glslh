@@ -1,0 +1,18 @@
+// GLSL Header: Structs.glslh
+
+struct VertexOutput
+{
+	vec3 WorldPosition;
+	vec3 ViewPosition;
+	vec3 Normal;
+	mat3 WorldNormals;
+	vec2 TexCoord;
+};
+
+struct TessellationOutput
+{
+	vec3 WorldPosition;
+	vec3 ViewPosition;
+	mat3 WorldNormals;
+	vec2 TexCoord;
+};

@@ -23,7 +23,6 @@ namespace VulkanCore {
 		m_RenderThread = std::jthread(std::bind(&RenderThread::ThreadEntryPoint));
 
 		auto threadHandle = m_RenderThread.native_handle();
-
 		SetThreadDescription(threadHandle, L"Render Thread");
 	}
 
@@ -43,17 +42,6 @@ namespace VulkanCore {
 			// Execute Command Queue
 			for (const auto& executeCommand : executeQueue)
 				executeCommand();
-
-			// Swap Deletion Queues
-			std::vector<std::function<void()>> deletionQueue;
-			{
-				std::scoped_lock swapLock(m_DeletionMutex);
-				deletionQueue.swap(m_DeletionCommandQueue);
-			}
-
-			// Execute Delete Commands
-			for (const auto& deletionCommand : deletionQueue)
-				deletionCommand();
 
 			m_RenderThreadAtomic.notify_one();
 

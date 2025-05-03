@@ -76,10 +76,13 @@ namespace VulkanCore {
 			out << YAML::Key << "UseNormalMap" << YAML::Value << materialData.UseNormalMap;
 
 			// Setting Materials Path
-			auto [diffuseHandle, normalHandle, armHandle] = material->GetMaterialHandles();
+			auto [diffuseHandle, normalHandle, armHandle, displacementHandle] = material->GetMaterialHandles();
 			out << YAML::Key << "AlbedoHandle" << YAML::Value << diffuseHandle;
 			out << YAML::Key << "NormalHandle" << YAML::Value << normalHandle;
 			out << YAML::Key << "ARMHandle" << YAML::Value << armHandle;
+
+			if (displacementHandle)
+				out << YAML::Key << "DisplacementHandle" << YAML::Value << displacementHandle;
 
 			out << YAML::EndMap;
 		}
@@ -109,10 +112,13 @@ namespace VulkanCore {
 			out << YAML::Key << "UseNormalMap" << YAML::Value << materialData.UseNormalMap;
 
 			// Setting Materials Path
-			auto [diffuseHandle, normalHandle, armHandle] = material->GetMaterialHandles();
+			auto [diffuseHandle, normalHandle, armHandle, displacementHandle] = material->GetMaterialHandles();
 			out << YAML::Key << "AlbedoHandle" << YAML::Value << diffuseHandle;
 			out << YAML::Key << "NormalHandle" << YAML::Value << normalHandle;
 			out << YAML::Key << "ARMHandle" << YAML::Value << armHandle;
+
+			if (displacementHandle)
+				out << YAML::Key << "DisplacementHandle" << YAML::Value << displacementHandle;
 
 			out << YAML::EndMap;
 		}
@@ -135,7 +141,8 @@ namespace VulkanCore {
  			return false;
  
  		YAML::Node materialNode = data["Material"];
- 
+		bool isTessellated = (bool)materialNode["DisplacementHandle"];
+
 		std::string filenameStr = metadata.FilePath.stem().string();
 		std::shared_ptr<Material> material = std::make_shared<VulkanMaterial>(filenameStr);
 		std::shared_ptr<MaterialAsset> materialAsset = std::make_shared<MaterialAsset>(material);
@@ -151,20 +158,29 @@ namespace VulkanCore {
  		AssetHandle albedoHandle = materialNode["AlbedoHandle"].as<uint64_t>();
  		AssetHandle normalHandle = materialNode["NormalHandle"].as<uint64_t>();
  		AssetHandle armHandle = materialNode["ARMHandle"].as<uint64_t>();
+		AssetHandle displacementHandle = isTessellated ? materialNode["DisplacementHandle"].as<uint64_t>() : 0;
  
  		// Set Textures
 		bool hasAlbedo = AssetManager::GetAssetManager()->IsAssetHandleValid(albedoHandle);
 		bool hasNormal = AssetManager::GetAssetManager()->IsAssetHandleValid(normalHandle);
 		bool hasARM = AssetManager::GetAssetManager()->IsAssetHandleValid(armHandle);
+		bool hasDisplacement = AssetManager::GetAssetManager()->IsAssetHandleValid(displacementHandle);
 
 		auto diffuseTexture = hasAlbedo ? AssetManager::GetAsset<Texture2D>(albedoHandle) : Renderer::GetWhiteTexture();
 		auto normalTexture = hasNormal ? AssetManager::GetAsset<VulkanTexture>(normalHandle) : Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
 		auto armTexture = hasARM ? AssetManager::GetAsset<VulkanTexture>(armHandle) : Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
+		auto displacementTexture = hasDisplacement ? AssetManager::GetAsset<VulkanTexture>(displacementHandle) : Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM);
 
  		material->SetDiffuseTexture(diffuseTexture);
  		material->SetNormalTexture(normalTexture);
  		material->SetARMTexture(armTexture);
- 
+
+		if (hasDisplacement)
+		{
+			material->SetDisplacementTexture(displacementTexture);
+			materialAsset->SetDisplacement(true);
+		}
+
 		asset = materialAsset;
 		return true;
  	}

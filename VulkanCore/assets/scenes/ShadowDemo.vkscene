@@ -1,0 +1,36 @@
+Scene: ShadowDemo
+Entities:
+  - Entity: 10787812640715436720
+    TagComponent:
+      Tag: Sky Light
+    SkyLightComponent:
+      TextureHandle: 8997689789897987
+  - Entity: 14194850663338953971
+    TagComponent:
+      Tag: Plane
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [25, 0.100000001, 25]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 11134850192642027083
+  - Entity: 2853675886232205505
+    TagComponent:
+      Tag: Sun Light
+    DirectionalLightComponent:
+      Direction: [6, -20.0999999, 19.60000002]
+      Color: [0.250664502, 0.213160217, 0.698841691, 1]
+      Falloff: 1
+  - Entity: 16958800799877704611
+    TagComponent:
+      Tag: Wall
+    TransformComponent:
+      Translation: [0, 13.9798756, 0]
+      Rotation: [0, -0, 0]
+      Scale: [5, 5, 0.100000001]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 17021666477382963620

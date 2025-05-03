@@ -33,8 +33,8 @@ namespace VulkanCore {
 		TreeNode* m_RootNode = nullptr;
 		bool m_AssetMode = true;
 
-		std::shared_ptr<Texture2D> m_DirectoryIcon, m_FileIcon;
-		VkDescriptorSet m_DirectoryIconID, m_FileIconID;
+		std::shared_ptr<Texture2D> m_DirectoryIcon, m_FileIcon, m_RefreshIcon;
+		VkDescriptorSet m_DirectoryIconID, m_FileIconID, m_RefreshIconID;
 
 		std::shared_ptr<MaterialEditor> m_MaterialEditor;
 

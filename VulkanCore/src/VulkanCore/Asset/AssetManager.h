@@ -10,8 +10,6 @@ namespace VulkanCore {
 		template<AssetConcept T>
 		static std::shared_ptr<T> ImportNewAsset(const std::string& filepath)
 		{
-			static_assert(std::derived_from<T, Asset>, "ImportNewAsset only works for types derived from Asset");
-
 			std::filesystem::path assetPath = filepath;
 
 			// Assigning random generated UUIDs
@@ -40,8 +38,6 @@ namespace VulkanCore {
 		template<AssetConcept T, typename... Args>
 		static std::shared_ptr<T> CreateNewAsset(const std::string& filepath, Args&&... args)
 		{
-			static_assert(std::derived_from<T, Asset>, "CreateNewAsset only works for types derived from Asset");
-
 			std::filesystem::path assetPath = filepath;
 
 			// Assigning random generated UUIDs
@@ -68,13 +64,13 @@ namespace VulkanCore {
 		template<AssetConcept T, typename... Args>
 		static std::shared_ptr<T> CreateMemoryOnlyAsset(Args&&... args)
 		{
-			static_assert(std::derived_from<T, Asset>, "CreateMemoryOnlyAsset only works for types derived from Asset");
-
 			AssetHandle handle = {}; // Generate Random handle
 			auto editorAssetManager = GetEditorAssetManager();
 			auto& memoryAssets = editorAssetManager->GetMemoryAssetMap();
 
 			std::shared_ptr<Asset> asset = std::make_shared<T>(std::forward<Args>(args)...);
+			asset->Handle = handle;
+
 			memoryAssets[handle] = asset;
 
 			return std::static_pointer_cast<T>(asset);
@@ -83,8 +79,6 @@ namespace VulkanCore {
 		template<AssetConcept T>
 		static bool RemoveAsset(const std::string& filepath)
 		{
-			static_assert(std::derived_from<T, Asset>, "RemoveAsset only works for types derived from Asset");
-
 			std::filesystem::path assetPath = filepath;
 
 			auto editorAssetManager = GetEditorAssetManager();
@@ -111,8 +105,6 @@ namespace VulkanCore {
 		template<AssetConcept T>
 		static std::shared_ptr<T> GetAsset(AssetHandle handle)
 		{
-			static_assert(std::derived_from<T, Asset>, "GetAsset only works for types derived from Asset");
-
 			std::shared_ptr<Asset> asset = s_AssetManager->GetAsset(handle);
 			return std::static_pointer_cast<T>(asset);
 		}
@@ -121,13 +113,10 @@ namespace VulkanCore {
 		template<AssetConcept T>
 		static std::shared_ptr<T> GetAsset(const std::string& filepath)
 		{
-			static_assert(std::derived_from<T, Asset>, "GetAsset only works for types derived from Asset");
-
 			std::filesystem::path assetPath = filepath;
 
 			auto editorAssetManager = GetEditorAssetManager();
 			const auto& assetRegistry = editorAssetManager->GetAssetRegistry();
-			const auto& assetMap = editorAssetManager->GetAssetMap();
 
 			for (auto&& [handle, metadata] : assetRegistry)
 			{

@@ -53,22 +53,19 @@ namespace VulkanCore {
 
 		void Init();
 		void Destroy();
-		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		QueueFamilyIndices FindPhysicalQueueFamilies() { return FindQueueFamilies(m_PhysicalDevice); }
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 		bool IsExtensionSupported(const char* extensionName);
+		bool IsInDebugMode() const;
 		VkCommandBuffer GetCommandBuffer(bool compute = false);
 		void FlushCommandBuffer(VkCommandBuffer commandBuffer, bool compute = false);
 
-		void CreateImageWithInfo(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-		VmaAllocation CreateImage(const VkImageCreateInfo& imageInfo, VkMemoryPropertyFlags properties, VkImage& image);
 		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
 	private:
 		void CreateLogicalDevice();
 		void PickPhysicalDevice();
 		void CreateCommandPools();
-		void SetupDebugMarkers();
 	private:
 		VkAllocationCallbacks m_AllocationCallbacks;
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
@@ -80,8 +77,6 @@ namespace VulkanCore {
 		VkQueue m_GraphicsQueue;
 		VkQueue m_ComputeQueue;
 		VkQueue m_PresentQueue;
-
-		bool m_EnableDebugMarkers = false;
 	};
 
 }

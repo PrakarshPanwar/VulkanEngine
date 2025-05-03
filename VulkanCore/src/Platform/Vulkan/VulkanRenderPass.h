@@ -6,7 +6,6 @@
 
 namespace VulkanCore {
 
-	// TODO: To read Depth Image we have to also create its resolve form
 	class VulkanRenderPass : public RenderPass
 	{
 	public:
@@ -25,7 +24,7 @@ namespace VulkanCore {
 		RenderPassSpecification m_Specification;
 
 		std::vector<VkClearValue> m_ClearValues;
-		std::vector<VkAttachmentDescription> m_AttachmentDescriptions;
+		std::vector<VkAttachmentDescription2> m_AttachmentDescriptions;
 		VkRenderPass m_RenderPass = nullptr;
 	};
 

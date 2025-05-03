@@ -21,6 +21,13 @@ namespace VulkanCore {
 			return component;
 		}
 
+		template<typename T, typename... Args>
+		T& AddOrReplaceComponent(Args&&... args)
+		{
+			T& component = m_Scene->m_Registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
+			return component;
+		}
+
 		template<typename T>
 		T& GetComponent()
 		{
@@ -32,6 +39,18 @@ namespace VulkanCore {
 		bool HasComponent()
 		{
 			return m_Scene->m_Registry.all_of<T>(m_EntityHandle);
+		}
+
+		template<typename... T>
+		bool HasAllComponent()
+		{
+			return m_Scene->m_Registry.all_of<T...>(m_EntityHandle);
+		}
+
+		template<typename... T>
+		bool HasAnyComponent()
+		{
+			return m_Scene->m_Registry.any_of<T...>(m_EntityHandle);
 		}
 
 		template<typename T>
