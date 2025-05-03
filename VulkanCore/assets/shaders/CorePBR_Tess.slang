@@ -188,7 +188,7 @@ struct PBRParams
 static PBRParams m_Params; // Thread-Local variable
 static TessellationOutput Input;
 
-static const float3 Fdielectric = float3(0.04f, 0.04f, 0.04f);
+static const float3 Fdielectric = 0.04f;
 
 float3 GetNormalsFromMap()
 {
@@ -199,7 +199,7 @@ float3 GetNormalsFromMap()
 float3 Lighting(float3 F0)
 {
     // Reflectance Equation
-    float3 Lo = float3(0.0f);
+    float3 Lo = 0.0f;
     for (int i = 0; i < c_PointLightData.Count; ++i)
     {
         PointLight pointLight = c_PointLightData.PointLights[i];
@@ -228,7 +228,7 @@ float3 Lighting(float3 F0)
         // For Energy Conservation, the Diffuse and Specular Light can't
         // be above 1.0 (unless the Surface Emits Light); to preserve this
         // relationship the Diffuse Component (kD) should equal 1.0 - kS.
-        float3 kD = float3(1.0f) - kS;
+        float3 kD = 1.0f - kS;
         // Multiply kD by the Inverse Metalness such that only non-metals
         // have Diffuse Lighting, or a linear blend if partly metal (pure metals
         // have no diffuse light).
@@ -269,7 +269,7 @@ float3 Lighting(float3 F0)
         // For Energy Conservation, the Diffuse and Specular Light can't
         // be above 1.0 (unless the Surface Emits Light); to preserve this
         // relationship the Diffuse Component (kD) should equal 1.0 - kS.
-        float3 kD = float3(1.0f) - kS;
+        float3 kD = 1.0f - kS;
         // Multiply kD by the Inverse Metalness such that only non-metals
         // have Diffuse Lighting, or a linear blend if partly metal (pure metals
         // have no diffuse light).
@@ -305,7 +305,7 @@ float3 Lighting(float3 F0)
         // For Energy Conservation, the Diffuse and Specular Light can't
         // be above 1.0 (unless the Surface Emits Light); to preserve this
         // relationship the Diffuse Component (kD) should equal 1.0 - kS.
-        float3 kD = float3(1.0f) - kS;
+        float3 kD = 1.0f - kS;
         // Multiply kD by the Inverse Metalness such that only non-metals
         // have Diffuse Lighting, or a linear blend if partly metal (pure metals
         // have no diffuse light).

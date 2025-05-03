@@ -59,7 +59,7 @@ namespace VulkanCore {
 			VK_KHR_MAINTENANCE1_EXTENSION_NAME
 		};
 
-		std::unique_ptr<VulkanDevice> m_Device; 
+		std::unique_ptr<VulkanDevice> m_Device;
 		std::shared_ptr<WindowsWindow> m_Window;
 
 		static VulkanContext* s_Instance;

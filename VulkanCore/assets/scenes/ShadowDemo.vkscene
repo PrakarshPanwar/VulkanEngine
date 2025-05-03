@@ -1,36 +1,65 @@
 Scene: ShadowDemo
 Entities:
-  - Entity: 10787812640715436720
+  - Entity: 16958800799877704611
     TagComponent:
-      Tag: Sky Light
-    SkyLightComponent:
-      TextureHandle: 8997689789897987
+      Tag: Wall
+    TransformComponent:
+      Translation: [0, 13.9798756, 0]
+      Rotation: [0, 0, 0]
+      Scale: [5, 4.99999475, 0.0999999568]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 17021666477382963620
+  - Entity: 2853675886232205505
+    TagComponent:
+      Tag: SunLight
+    DirectionalLightComponent:
+      Direction: [6, -25.2000008, 19.6000004]
+      Color: [1, 0.860869646, 0.409266412, 5]
+      Falloff: 1
   - Entity: 14194850663338953971
     TagComponent:
       Tag: Plane
     TransformComponent:
       Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
-      Scale: [25, 0.100000001, 25]
+      Scale: [150, 0.100000001, 150]
     MeshComponent:
       MeshHandle: 9816593081404201911
       MaterialTable:
         0: 11134850192642027083
-  - Entity: 2853675886232205505
+    Rigidbody3DComponent:
+      BodyType: Static
+      FixedRotation: false
+    BoxCollider3DComponent:
+      Offset: [0, 0, 0]
+      Size: [150, 0.100000001, 150]
+      Density: 1
+      Friction: 0.5
+      Restitution: 1
+  - Entity: 10787812640715436720
     TagComponent:
-      Tag: Sun Light
-    DirectionalLightComponent:
-      Direction: [6, -20.0999999, 19.60000002]
-      Color: [0.250664502, 0.213160217, 0.698841691, 1]
-      Falloff: 1
-  - Entity: 16958800799877704611
+      Tag: SkyLight
+    SkyLightComponent:
+      TextureHandle: 8997689789897987
+  - Entity: 7909029207917827167
     TagComponent:
-      Tag: Wall
+      Tag: Sphere
     TransformComponent:
-      Translation: [0, 13.9798756, 0]
+      Translation: [0.00226503354, 58.1918945, -39.4981689]
       Rotation: [0, -0, 0]
-      Scale: [5, 5, 0.100000001]
+      Scale: [5, 5, 5]
     MeshComponent:
-      MeshHandle: 9816593081404201911
+      MeshHandle: 5887157471203535698
       MaterialTable:
         0: 17021666477382963620
+    Rigidbody3DComponent:
+      BodyType: Dynamic
+      FixedRotation: false
+    SphereColliderComponent:
+      Offset: [0, 0, 0]
+      Radius: 5
+      Density: 1
+      Friction: 0.5
+      Restitution: 0.5

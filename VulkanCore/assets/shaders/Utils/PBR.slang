@@ -54,5 +54,5 @@ public float3 FresnelSchlick(float cosTheta, float3 F0)
 
 public float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
 {
-    return F0 + (max(float3(1.0f - roughness), F0) - F0) * pow(saturate(1.0f - cosTheta), 5.0f);
+    return F0 + (max(1.0f - roughness, F0) - F0) * pow(saturate(1.0f - cosTheta), 5.0f);
 }

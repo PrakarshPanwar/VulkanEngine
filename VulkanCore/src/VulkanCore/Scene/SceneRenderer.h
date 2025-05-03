@@ -174,8 +174,8 @@ namespace VulkanCore {
 		{
 			glm::vec3 CascadeOrigin{ 0.0f };
 			float CascadeSplitLambda = 0.92f;
-			float CascadeNearPlaneOffset = 0.5f;
-			float CascadeFarPlaneOffset = 48.0f;
+			float CascadeNearPlaneOffset = -75.0f;
+			float CascadeFarPlaneOffset = 75.0f;
 			uint32_t MapSize = 4096;
 			int CascadeOffset = 0;
 		} m_CSMSettings;
@@ -185,7 +185,7 @@ namespace VulkanCore {
 		std::shared_ptr<RenderCommandBuffer> m_SceneCommandBuffer;
 		std::shared_ptr<Framebuffer> m_SceneFramebuffer;
 		std::vector<VkDescriptorSet> m_SceneImages;
-		std::vector<VkDescriptorSet> m_ShadowDepthPassImages;
+		std::array<std::vector<VkDescriptorSet>, SHADOW_MAP_CASCADE_COUNT> m_ShadowDepthPassImages;
 		std::shared_ptr<PhysicsDebugRenderer> m_PhysicsDebugRenderer;
 
 		// Pipelines
@@ -262,7 +262,7 @@ namespace VulkanCore {
 
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
-		int m_HoveredEntity;
+		int m_HoveredEntity, m_DepthPassIndex = 0;
 
 		SceneEditorData m_SceneEditorData;
 
