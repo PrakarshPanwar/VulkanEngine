@@ -621,11 +621,11 @@ namespace VulkanCore {
 			};
 
 			// Project Frustum Corners into World Space
-			glm::mat4 invCam = glm::inverse(cameraData.GetProjectionMatrix() * cameraData.GetViewMatrix());
+			glm::mat4 inverseViewProjection = glm::inverse(cameraData.GetViewProjection());
 			for (uint32_t j = 0; j < 8; ++j)
 			{
-				glm::vec4 invCorner = invCam * glm::vec4(frustumCorners[j], 1.0f);
-				frustumCorners[j] = invCorner / invCorner.w;
+				glm::vec4 inverseCorner = inverseViewProjection * glm::vec4(frustumCorners[j], 1.0f);
+				frustumCorners[j] = inverseCorner / inverseCorner.w;
 			}
 
 			for (uint32_t j = 0; j < 4; ++j)
@@ -755,7 +755,8 @@ namespace VulkanCore {
 		m_PhysicsDebugRenderer = PhysicsDebugRenderer::Create();
 
 		m_SceneImages.resize(framesInFlight);
-		m_ShadowDepthPassImages.resize(framesInFlight);
+		for (auto&& shadowDepthImages : m_ShadowDepthPassImages)
+			shadowDepthImages.resize(framesInFlight);
 
 		m_UBCamera.reserve(framesInFlight);
 		m_UBPointLight.reserve(framesInFlight);
@@ -783,7 +784,11 @@ namespace VulkanCore {
 			m_SceneImages[i] = ImGuiLayer::AddTexture(*finalPassImage);
 
 			auto shadowMapImage = m_ShadowMapPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[i];
-			m_ShadowDepthPassImages[i] = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanImage>(shadowMapImage), 0);
+			for (uint32_t j = 0; auto&& shadowDepthImage : m_ShadowDepthPassImages)
+			{
+				shadowDepthImage[i] = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanImage>(shadowMapImage), j);
+				++j;
+			}
 
 			// Uniform Buffers
 			m_UBCamera.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBCamera)));
@@ -988,10 +993,11 @@ namespace VulkanCore {
 			ImGui::DragFloat("Cascade Near Offset", &m_CSMSettings.CascadeNearPlaneOffset, 0.01f, 0.05f, 1000.0f);
 			ImGui::DragFloat("Cascade Far Offset", &m_CSMSettings.CascadeFarPlaneOffset, 0.01f, 0.05f, 1000.0f);
 			ImGui::DragFloat3("Cascade Origin", glm::value_ptr(m_CSMSettings.CascadeOrigin), 0.01f);
+			ImGui::SliderInt("Cascade Index", &m_DepthPassIndex, 0, 3);
 			ImGui::Checkbox("Cascade Offset", (bool*)&m_CSMSettings.CascadeOffset);
 
 			ImVec2 quadSize = { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x };
-			ImGui::Image(m_ShadowDepthPassImages[Renderer::RT_GetCurrentFrameIndex()], quadSize);
+			ImGui::Image(m_ShadowDepthPassImages[m_DepthPassIndex][Renderer::RT_GetCurrentFrameIndex()], quadSize);
 
 			ImGui::TreePop();
 		}

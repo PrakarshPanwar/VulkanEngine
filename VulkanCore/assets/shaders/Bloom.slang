@@ -48,7 +48,7 @@ float3 DownsampleBox13(Sampler2D tex, float lod, float2 uv, float2 texelSize)
     float3 M = tex.SampleLevel(uv + texelSize * float2(0.0f, -2.0f), lod).rgb;
 
     // Weights
-    float3 result = float3(0.0f);
+    float3 result = 0.0f;
     // Inner Box
     result += (B + C + D + E) * 0.5f;
     // Bottom-left Box
@@ -80,7 +80,7 @@ float4 Prefilter(float4 color, float2 uv)
 {
     float3 pr = float3(c_Params.Threshold - c_Params.Knee, c_Params.Knee * 2.0f, 0.25f / c_Params.Knee);
     float clampValue = 20.0f;
-    color = min(float4(clampValue), color);
+    color = min(clampValue, color);
     color = QuadraticThreshold(color, c_Params.Threshold, pr);
     return color;
 }
