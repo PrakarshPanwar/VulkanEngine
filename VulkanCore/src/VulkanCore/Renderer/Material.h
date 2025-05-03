@@ -2,6 +2,7 @@
 #include "VulkanCore/Renderer/Image.h"
 #include "VulkanCore/Renderer/Texture.h"
 #include "VulkanCore/Renderer/UniformBuffer.h"
+#include "VulkanCore/Renderer/StorageBuffer.h"
 #include "RenderCommandBuffer.h"
 #include "ComputePipeline.h"
 #include "Pipeline.h"
@@ -32,11 +33,12 @@ namespace VulkanCore {
 		void SetRoughness(float roughness);
 		void SetMaterialData(MaterialData materialData);
 
-		std::tuple<AssetHandle, AssetHandle, AssetHandle> GetMaterialHandles() const;
+		std::tuple<AssetHandle, AssetHandle, AssetHandle, AssetHandle> GetMaterialHandles() const;
 
 		virtual void SetDiffuseTexture(std::shared_ptr<Texture2D> texture);
 		virtual void SetNormalTexture(std::shared_ptr<Texture2D> texture);
 		virtual void SetARMTexture(std::shared_ptr<Texture2D> texture);
+		virtual void SetDisplacementTexture(std::shared_ptr<Texture2D> texture);
 
 		virtual void SetImage(uint32_t binding, std::shared_ptr<Image2D> image) = 0;
 		virtual void SetImage(uint32_t binding, std::shared_ptr<Image2D> image, uint32_t mipLevel) = 0;
@@ -45,7 +47,9 @@ namespace VulkanCore {
 		virtual void SetTexture(uint32_t binding, std::shared_ptr<TextureCube> textureCube) = 0;
 		virtual void SetTextures(uint32_t binding, const std::vector<std::shared_ptr<Texture2D>>& textures) = 0;
 		virtual void SetBuffer(uint32_t binding, std::shared_ptr<UniformBuffer> uniformBuffer) = 0;
+		virtual void SetBuffer(uint32_t binding, std::shared_ptr<StorageBuffer> storageBuffer) = 0;
 		virtual void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<UniformBuffer>>& uniformBuffers) = 0;
+		virtual void SetBuffers(uint32_t binding, const std::vector<std::shared_ptr<StorageBuffer>>& storageBuffers) = 0;
 
 		virtual void RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, uint32_t setIndex = 0) = 0;
 		virtual void RT_BindMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<ComputePipeline>& pipeline, uint32_t setIndex = 0) = 0;
@@ -62,6 +66,7 @@ namespace VulkanCore {
 		std::shared_ptr<Texture2D> m_DiffuseTexture;
 		std::shared_ptr<Texture2D> m_NormalTexture;
 		std::shared_ptr<Texture2D> m_ARMTexture;
+		std::shared_ptr<Texture2D> m_DisplacementTexture;
 	};
 
 }

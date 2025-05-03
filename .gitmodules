@@ -17,3 +17,6 @@
 [submodule "VulkanCore/vendor/yaml-cpp"]
 	path = VulkanCore/vendor/yaml-cpp
 	url = https://github.com/PrakarshPanwar/yaml-cpp.git
+[submodule "VulkanCore/vendor/JoltPhysics"]
+	path = VulkanCore/vendor/JoltPhysics
+	url = https://github.com/PrakarshPanwar/JoltPhysics.git

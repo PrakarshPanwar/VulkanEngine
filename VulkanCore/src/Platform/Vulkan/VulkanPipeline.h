@@ -10,15 +10,16 @@ namespace VulkanCore {
 	{
 		PipelineConfiguration() = default;
 
-		VkPipelineViewportStateCreateInfo ViewportInfo;
-		VkPipelineInputAssemblyStateCreateInfo InputAssemblyInfo;
-		VkPipelineRasterizationStateCreateInfo RasterizationInfo;
-		VkPipelineMultisampleStateCreateInfo MultisampleInfo;
+		VkPipelineViewportStateCreateInfo ViewportInfo{};
+		VkPipelineInputAssemblyStateCreateInfo InputAssemblyInfo{};
+		VkPipelineTessellationStateCreateInfo TessellationInfo{};
+		VkPipelineRasterizationStateCreateInfo RasterizationInfo{};
+		VkPipelineMultisampleStateCreateInfo MultisampleInfo{};
 		std::vector<VkPipelineColorBlendAttachmentState> ColorBlendAttachments;
-		VkPipelineColorBlendStateCreateInfo ColorBlendInfo;
-		VkPipelineDepthStencilStateCreateInfo DepthStencilInfo;
+		VkPipelineColorBlendStateCreateInfo ColorBlendInfo{};
+		VkPipelineDepthStencilStateCreateInfo DepthStencilInfo{};
 		std::vector<VkDynamicState> DynamicStateEnables;
-		VkPipelineDynamicStateCreateInfo DynamicStateInfo;
+		VkPipelineDynamicStateCreateInfo DynamicStateInfo{};
 		uint32_t Subpass = 0;
 	};
 
@@ -38,9 +39,6 @@ namespace VulkanCore {
 		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout(uint32_t index = 0) const { return m_DescriptorSetLayout[index]; }
 	private:
 		void InvalidateGraphicsPipeline();
-		void RT_InvalidateGraphicsPipeline();
-		void CreateShaderModule(const std::string& shaderSource, VkShaderModule* shaderModule);
-		void CreateShaderModule(const std::vector<uint32_t>& shaderSource, VkShaderModule* shaderModule);
 		void CreatePipelineCache();
 		void Release();
 	private:
@@ -48,7 +46,8 @@ namespace VulkanCore {
 
 		VkPipeline m_GraphicsPipeline = nullptr;
 		VkPipelineLayout m_PipelineLayout = nullptr;
-		VkShaderModule m_VertexShaderModule, m_FragmentShaderModule, m_GeometryShaderModule = nullptr;
+		std::map<ShaderType, VkShaderModule> m_ShaderModules;
+
 		std::shared_ptr<Shader> m_Shader;
 		std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> m_DescriptorSetLayout;
 	};

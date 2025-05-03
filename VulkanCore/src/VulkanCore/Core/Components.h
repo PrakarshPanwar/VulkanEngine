@@ -1,7 +1,7 @@
 #pragma once
 #include "VulkanCore/Renderer/Camera.h"
 #include "VulkanCore/Mesh/Mesh.h"
-#include "VulkanCore/Renderer/Material.h"
+#include "VulkanCore/Asset/MaterialAsset.h"
 #include "VulkanCore/Core/UUID.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -86,7 +86,7 @@ namespace VulkanCore {
 	struct MeshComponent
 	{
 		AssetHandle MeshHandle = 0;
-		AssetHandle MaterialTableHandle = 0;
+		std::shared_ptr<MaterialTable> MaterialTableHandle;
 
 		MeshComponent() = default;
 		MeshComponent(const MeshComponent&) = default;
@@ -97,7 +97,13 @@ namespace VulkanCore {
 		glm::vec4 MRow[3];
 	};
 
-	struct PointLightComponent
+	struct SelectTransformData
+	{
+		glm::vec4 MRow[3];
+		int EntityID = -1;
+	};
+
+	struct alignas(16) PointLightComponent
 	{
 		glm::vec4 Position{ 0.0f };
 		glm::vec4 Color{ 0.0f };
@@ -110,17 +116,15 @@ namespace VulkanCore {
 
 		PointLightComponent(const glm::vec4& position, const glm::vec4& color, float radius, float falloff)
 			: Position(position), Color(color), Radius(radius), Falloff(falloff) {}
-	private:
-		glm::vec2 Padding{};
 	};
 
-	struct SpotLightComponent
+	struct alignas(8) SpotLightComponent
 	{
 		glm::vec4 Position{ 0.0f };
-		glm::vec4 Color{ 0.0f };
-		glm::vec3 Direction{ 0.0f };
+		glm::vec4 Color{ 1.0f };
+		glm::vec3 Direction{ 1.0f };
 		float InnerCutoff = 0.174f;
-		float OuterCutoff = 0.261f;
+		float OuterCutoff = 0.261f; // NOTE: OuterCutoff > InnerCutoff
 		float Radius = 0.1f;
 		float Falloff = 1.0f;
 
@@ -132,8 +136,13 @@ namespace VulkanCore {
 			: Position(position), Color(color), Direction(direction),
 			InnerCutoff(innerCutoff), OuterCutoff(outerCutoff),
 			Radius(radius), Falloff(falloff) {}
-	private:
-		float Padding = 0.0f;
+	};
+
+	struct DirectionalLightComponent
+	{
+		glm::vec4 Color{ 1.0f };
+		glm::vec3 Direction{ 1.0f };
+		float Falloff = 1.0f;
 	};
 
 	// TODO: More variables will be added
@@ -142,11 +151,79 @@ namespace VulkanCore {
 		AssetHandle TextureHandle = 0;
 	};
 
+	struct Rigidbody3DComponent // Entity ID will be Body ID
+	{
+		enum class BodyType { Static = 0, Dynamic, Kinematic };
+		BodyType Type = BodyType::Static;
+		bool FixedRotation = false;
+
+		Rigidbody3DComponent() = default;
+		Rigidbody3DComponent(const Rigidbody3DComponent&) = default;
+	};
+
+	struct BoxCollider3DComponent
+	{
+		glm::vec3 Offset{ 0.0f };
+		glm::vec3 Size{ 0.5f };
+
+		// TODO: Move into Physics Material in the future maybe
+		float Density = 1.0f;
+		float Friction = 0.5f;
+		float Restitution = 0.0f;
+		//float RestitutionThreshold = 0.5f;
+
+		BoxCollider3DComponent() = default;
+		BoxCollider3DComponent(const BoxCollider3DComponent&) = default;
+	};
+
+	struct SphereColliderComponent
+	{
+		glm::vec3 Offset{ 0.0f };
+		float Radius = 0.5f;
+
+		// TODO: Move into Physics Material in the future maybe
+		float Density = 1.0f;
+		float Friction = 0.5f;
+		float Restitution = 0.0f;
+		//float RestitutionThreshold = 0.5f;
+
+		SphereColliderComponent() = default;
+		SphereColliderComponent(const SphereColliderComponent&) = default;
+	};
+
+	struct CapsuleColliderComponent
+	{
+		float HalfHeight = 1.0f;
+		float Radius = 0.5f;
+
+		// TODO: Move into Physics Material in the future maybe
+		float Density = 1.0f;
+		float Friction = 0.5f;
+		float Restitution = 0.0f;
+		//float RestitutionThreshold = 0.5f;
+
+		CapsuleColliderComponent() = default;
+		CapsuleColliderComponent(const CapsuleColliderComponent&) = default;
+	};
+
+	struct MeshColliderComponent // Convex Hull Body
+	{
+		// TODO: Move into Physics Material in the future maybe
+		float Density = 1.0f;
+		float Friction = 0.5f;
+		float Restitution = 0.0f;
+		//float RestitutionThreshold = 0.5f;
+
+		MeshColliderComponent() = default;
+		MeshColliderComponent(const MeshColliderComponent&) = default;
+	};
+
 	struct UBCamera
 	{
 		glm::mat4 Projection{ 1.0f };
 		glm::mat4 View{ 1.0f };
 		glm::mat4 InverseView{ 1.0f };
+		glm::vec2 DepthUnpackConsts{ 0.0f };
 	};
 
 	struct UBPointLights
@@ -163,10 +240,36 @@ namespace VulkanCore {
 		SpotLightComponent SpotLights[10];
 	};
 
-	struct PCModelData
+	struct UBDirectionalLights
 	{
-		glm::mat4 ModelMatrix{ 1.f };
-		glm::mat4 NormalMatrix{};
+		int LightCount;
+		glm::vec3 Padding{};
+		DirectionalLightComponent DirectionalLights[2];
 	};
+
+	struct LightSelectData
+	{
+		glm::vec4 Position{};
+		int EntityID = -1;
+	};
+
+	template<typename... Component>
+	struct ComponentGroup
+	{
+	};
+
+	template<typename T, typename... Component>
+	struct IsComponent
+	{
+		static constexpr bool cvalue = (std::same_as<T, Component> || ...);
+	};
+
+	using AllComponents =
+		ComponentGroup<TransformComponent, MeshComponent, PointLightComponent, SpotLightComponent, DirectionalLightComponent, SkyLightComponent,
+			Rigidbody3DComponent, BoxCollider3DComponent, SphereColliderComponent, CapsuleColliderComponent, MeshColliderComponent>;
+
+	template<typename... ComponentType>
+	concept IsComponentType = (IsComponent<ComponentType, TransformComponent, MeshComponent, PointLightComponent, SpotLightComponent, DirectionalLightComponent, SkyLightComponent,
+		Rigidbody3DComponent, BoxCollider3DComponent, SphereColliderComponent, CapsuleColliderComponent, MeshColliderComponent>::cvalue || ...);
 
 }

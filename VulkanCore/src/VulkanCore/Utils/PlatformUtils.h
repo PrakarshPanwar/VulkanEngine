@@ -10,4 +10,10 @@ namespace VulkanCore {
 		static std::string SaveFile(const char* filter);
 	};
 
+	class WindowsTime
+	{
+	public:
+		static float GetTime();
+	};
+
 }

@@ -18,8 +18,14 @@ namespace VulkanCore {
 		void SetSelectedEntity(Entity entity);
 		void SetContext(std::shared_ptr<Scene> context);
 	private:
-		template<typename T>
+		template<typename T> requires IsComponentType<T>
 		void DisplayAddComponentEntry(const std::string& entryName);
+
+		template<>
+		void DisplayAddComponentEntry<SkyLightComponent>(const std::string& entryName);
+
+		template<>
+		void DisplayAddComponentEntry<DirectionalLightComponent>(const std::string& entryName);
 
 		void DrawEntityNode(Entity entity);
 		void DrawComponents(Entity entity);

@@ -1,4 +1,4 @@
-#version 460 core
+#version 460
 
 layout(binding = 0, rgba32f) writeonly uniform imageCube o_CubeMap;
 layout(binding = 1) uniform samplerCube u_RadianceMap;
@@ -72,7 +72,7 @@ vec2 Hammersley(uint i, uint N)
     return vec2(float(i) / float(N), RadicalInverse_VdC(i));
 }
 
-layout(local_size_x = 16, local_size_y = 16) in;
+layout(local_size_x = 32, local_size_y = 32) in;
 void main()
 {
 	ivec3 invocID = ivec3(gl_GlobalInvocationID);

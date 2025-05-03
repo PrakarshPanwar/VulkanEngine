@@ -100,7 +100,6 @@ namespace VulkanCore {
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
-
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = buffers;
 
@@ -114,22 +113,18 @@ namespace VulkanCore {
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
 
 		VkSwapchainKHR swapChains[] = { m_SwapChain };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
-
 		presentInfo.pImageIndices = imageIndex;
-
-		auto result = vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
 
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		m_CurrentFrame = (m_CurrentFrame + 1) % framesInFlight;
 
-		return result;
+		return vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
 	}
 
 	VkResult VulkanSwapChain::SubmitCommandBuffers(const std::vector<VkCommandBuffer>& buffers, uint32_t* imageIndex)
@@ -149,7 +144,6 @@ namespace VulkanCore {
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
-
 		submitInfo.commandBufferCount = static_cast<uint32_t>(buffers.size());
 		submitInfo.pCommandBuffers = buffers.data();
 
@@ -159,26 +153,27 @@ namespace VulkanCore {
 
 		vkResetFences(device->GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame]);
 
+		glm::vec4 queueLabelColor = { 0.1f, 0.3f, 0.5f, 1.0f };
+		VKUtils::SetQueueLabel(device->GetGraphicsQueue(), "Graphics-Queue", &queueLabelColor.x);
+
 		VK_CHECK_RESULT(vkQueueSubmit(device->GetGraphicsQueue(), 1, &submitInfo, m_InFlightFences[m_CurrentFrame]), "Failed to Submit Draw Command Buffer!");
+
+		VKUtils::EndQueueLabel(device->GetGraphicsQueue());
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
 
 		VkSwapchainKHR swapChains[] = { m_SwapChain };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
-
 		presentInfo.pImageIndices = imageIndex;
-
-		auto result = vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
 
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		m_CurrentFrame = (m_CurrentFrame + 1) % framesInFlight;
 
-		return result;
+		return vkQueuePresentKHR(device->GetPresentQueue(), &presentInfo);
 	}
 
 	bool VulkanSwapChain::CompareSwapFormats(const VulkanSwapChain& swapChain) const
@@ -200,8 +195,9 @@ namespace VulkanCore {
 
 	void VulkanSwapChain::CreateSwapChain()
 	{
+		auto context = VulkanContext::GetCurrentContext();
 		auto device = VulkanContext::GetCurrentDevice();
-		SwapChainSupportDetails swapChainSupport = VulkanContext::GetCurrentContext()->QuerySwapChainSupport(device->GetPhysicalDevice());
+		SwapChainSupportDetails swapChainSupport = context->QuerySwapChainSupport(device->GetPhysicalDevice());
 
 		VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
 		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.PresentModes);
@@ -211,11 +207,9 @@ namespace VulkanCore {
 		if (swapChainSupport.Capabilities.maxImageCount > 0 && imageCount > swapChainSupport.Capabilities.maxImageCount)
 			imageCount = swapChainSupport.Capabilities.maxImageCount;
 
-		const auto vulkanSurface = VulkanContext::GetCurrentContext()->m_VkSurface;
-
 		VkSwapchainCreateInfoKHR createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = vulkanSurface;
+		createInfo.surface = context->m_VulkanSurface;
 		createInfo.minImageCount = imageCount;
 		createInfo.imageFormat = surfaceFormat.format;
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -395,7 +389,7 @@ namespace VulkanCore {
 
 		VkAttachmentReference colorAttachmentRef{};
 		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription depthAttachment{};
 		depthAttachment.format = FindDepthFormat();
@@ -405,11 +399,11 @@ namespace VulkanCore {
 		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentReference depthAttachmentRef{};
 		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription colorAttachmentResolve{};
 		colorAttachmentResolve.format = GetSwapChainImageFormat();
@@ -424,7 +418,7 @@ namespace VulkanCore {
 
 		VkAttachmentReference colorAttachmentResolveRef{};
 		colorAttachmentResolveRef.attachment = 2;
-		colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
 
 		VkSubpassDescription subpass = {};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;

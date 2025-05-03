@@ -34,9 +34,11 @@ namespace VulkanCore {
 
 	void ImGuiLayer::OnAttach()
 	{
+		auto context = VulkanContext::GetCurrentContext();
 		auto device = VulkanContext::GetCurrentDevice();
 
-		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
+		DescriptorPoolBuilder descriptorPoolBuilder = {};
+		descriptorPoolBuilder.SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, 1000);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000);
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000);
@@ -50,7 +52,6 @@ namespace VulkanCore {
 		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000);
 
 		m_ImGuiGlobalPool = descriptorPoolBuilder.Build();
-		//m_ImGuiCmdBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary);
 
 		ImGui::CreateContext();
 
@@ -63,13 +64,12 @@ namespace VulkanCore {
 		GLFWwindow* window = (GLFWwindow*)Application::Get()->GetWindow()->GetNativeWindow();
 		ImGui_ImplGlfw_InitForVulkan(window, true);
 
-		const auto vulkanInstance = VulkanContext::GetCurrentContext()->m_VkInstance;
-
 		ImGui_ImplVulkan_InitInfo init_info = {};
-		init_info.Instance = vulkanInstance;
+		init_info.Instance = context->m_VulkanInstance;
 		init_info.PhysicalDevice = device->GetPhysicalDevice();
 		init_info.Device = device->GetVulkanDevice();
 		init_info.Queue = device->GetGraphicsQueue();
+		init_info.RenderPass = VulkanSwapChain::GetSwapChain()->GetRenderPass();
 		init_info.DescriptorPool = m_ImGuiGlobalPool->GetVulkanDescriptorPool();
 		init_info.MinImageCount = 2;
 		init_info.ImageCount = 3;
@@ -83,28 +83,28 @@ namespace VulkanCore {
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
 
-		bool initSuccess = ImGui_ImplVulkan_Init(&init_info, VulkanSwapChain::GetSwapChain()->GetRenderPass());
+		bool initSuccess = ImGui_ImplVulkan_Init(&init_info);
 		VK_CORE_ASSERT(initSuccess, "Failed to Initialize ImGui");
 
 #define OPENSANS 0
 #define SOURCESANSPRO 1
 #if OPENSANS
-		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", 18.0f);
-		io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", 18.0f);
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("fonts/opensans/OpenSans-Regular.ttf", 18.0f);
+		io.Fonts->AddFontFromFileTTF("fonts/opensans/OpenSans-Bold.ttf", 18.0f);
 #elif SOURCESANSPRO
-		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/SourceSansPro/SourceSansPro-Regular.ttf", 18.0f);
-		io.Fonts->AddFontFromFileTTF("assets/fonts/SourceSansPro/SourceSansPro-Bold.ttf", 18.0f);
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("fonts/SourceSansPro/SourceSansPro-Regular.ttf", 18.0f);
+		io.Fonts->AddFontFromFileTTF("fonts/SourceSansPro/SourceSansPro-Bold.ttf", 18.0f);
 #else
-		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/WorkSans/static/WorkSans-Regular.ttf", 18.0f);
-		io.Fonts->AddFontFromFileTTF("assets/fonts/WorkSans/static/WorkSans-Bold.ttf", 18.0f);
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("fonts/WorkSans/static/WorkSans-Regular.ttf", 18.0f);
+		io.Fonts->AddFontFromFileTTF("fonts/WorkSans/static/WorkSans-Bold.ttf", 18.0f);
 #endif
 
 		SetDarkThemeColor();
 
-		VkCommandBuffer commandBuffer = device->GetCommandBuffer();
-		ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-		device->FlushCommandBuffer(commandBuffer);
-		ImGui_ImplVulkan_DestroyFontUploadObjects();
+		bool createFont = ImGui_ImplVulkan_CreateFontsTexture();
+		VK_CORE_ASSERT(createFont, "Failed to Create Font Textures");
+
+		ImGui_ImplVulkan_DestroyFontsTexture();
 	}
 
 	void ImGuiLayer::OnDetach()
@@ -183,6 +183,16 @@ namespace VulkanCore {
 			imageDescriptor.imageLayout);
 	}
 
+	VkDescriptorSet ImGuiLayer::AddTexture(VulkanImage& image, uint32_t layer)
+	{
+		image.CreateImageViewPerLayer(layer);
+		auto imageDescriptor = image.GetDescriptorArrayImageInfo(layer);
+		
+		return ImGui_ImplVulkan_AddTexture(imageDescriptor.sampler,
+			imageDescriptor.imageView,
+			imageDescriptor.imageLayout);
+	}
+
 	void ImGuiLayer::UpdateDescriptor(VkDescriptorSet descriptorSet, const VulkanImage& image)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
@@ -235,12 +245,31 @@ namespace VulkanCore {
 		vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
 	}
 
+	void ImGuiLayer::UpdateDescriptor(VkDescriptorSet descriptorSet, VulkanImage& image, uint32_t layer)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		image.CreateImageViewPerLayer(layer);
+		VkDescriptorImageInfo descriptorInfo = image.GetDescriptorArrayImageInfo(layer);
+
+		VkWriteDescriptorSet writeDescriptor{};
+		writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptor.dstSet = descriptorSet;
+		writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptor.dstBinding = 0;
+		writeDescriptor.pImageInfo = &descriptorInfo;
+		writeDescriptor.descriptorCount = 1;
+		writeDescriptor.dstArrayElement = 0;
+
+		vkUpdateDescriptorSets(device->GetVulkanDevice(), 1, &writeDescriptor, 0, nullptr);
+	}
+
 	void ImGuiLayer::CheckVkResult(VkResult error)
 	{
 		if (error == 0)
 			return;
 
-		VK_CORE_ERROR("[ImGui] Error: VkResult = {0}", error);
+		VK_CORE_ERROR("[ImGui] Error: VkResult = {0}", (int)error);
 	}
 
 	void ImGuiLayer::SetDarkThemeColor()

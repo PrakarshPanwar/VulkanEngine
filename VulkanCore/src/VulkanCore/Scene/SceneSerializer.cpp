@@ -88,6 +88,29 @@ namespace YAML {
 
 namespace VulkanCore {
 
+	namespace Utils {
+
+		static std::map<std::string, Rigidbody3DComponent::BodyType> s_BodyTypeFromStringMap = {
+			{ "Static", Rigidbody3DComponent::BodyType::Static },
+			{ "Dynamic", Rigidbody3DComponent::BodyType::Dynamic },
+			{ "Kinematic", Rigidbody3DComponent::BodyType::Kinematic }
+		};
+
+		static std::string RigidBody3DBodyTypeToString(Rigidbody3DComponent::BodyType bodyType)
+		{
+			switch (bodyType)
+			{
+			case Rigidbody3DComponent::BodyType::Static:    return "Static";
+			case Rigidbody3DComponent::BodyType::Dynamic:   return "Dynamic";
+			case Rigidbody3DComponent::BodyType::Kinematic: return "Kinematic";
+			default:
+				VK_CORE_ASSERT(false, "Unknown body type");
+				return {};
+			}
+		}
+
+	}
+
 	static YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
 	{
 		out << YAML::Flow;
@@ -158,11 +181,24 @@ namespace VulkanCore {
 
 			auto& slc = entity.GetComponent<SpotLightComponent>();
 			out << YAML::Key << "Color" << YAML::Value << slc.Color;
-			out << YAML::Key << "Direction" << YAML::Value << slc.Direction;
+			//out << YAML::Key << "Direction" << YAML::Value << slc.Direction;
 			out << YAML::Key << "InnerCutoff" << YAML::Value << slc.InnerCutoff;
 			out << YAML::Key << "OuterCutoff" << YAML::Value << slc.OuterCutoff;
 			out << YAML::Key << "Falloff" << YAML::Value << slc.Falloff;
 			out << YAML::Key << "Radius" << YAML::Value << slc.Radius;
+
+			out << YAML::EndMap;
+		}
+
+		if (entity.HasComponent<DirectionalLightComponent>())
+		{
+			out << YAML::Key << "DirectionalLightComponent";
+			out << YAML::BeginMap;
+
+			auto& drlc = entity.GetComponent<DirectionalLightComponent>();
+			out << YAML::Key << "Direction" << YAML::Value << drlc.Direction;
+			out << YAML::Key << "Color" << YAML::Value << drlc.Color;
+			out << YAML::Key << "Falloff" << YAML::Value << drlc.Falloff;
 
 			out << YAML::EndMap;
 		}
@@ -185,9 +221,62 @@ namespace VulkanCore {
 
 			auto& mc = entity.GetComponent<MeshComponent>();
 			out << YAML::Key << "MeshHandle" << YAML::Value << mc.MeshHandle;
-			out << YAML::Key << "MaterialHandle" << YAML::Value << mc.MaterialTableHandle;
+			out << YAML::Key << "MaterialTable" << YAML::Value;
+
+			out << YAML::BeginMap; // Begin Material Table
+			for (auto& [materialIndex, materialAsset] : mc.MaterialTableHandle->GetMaterialMap())
+			{
+				if (materialAsset)
+					out << YAML::Key << materialIndex << YAML::Value << materialAsset->Handle;
+			}
+
+			out << YAML::EndMap; // End Material Table
 
 			out << YAML::EndMap;
+		}
+
+		if (entity.HasComponent<Rigidbody3DComponent>())
+		{
+			out << YAML::Key << "Rigidbody3DComponent";
+			out << YAML::BeginMap; // Rigidbody3DComponent
+
+			auto& rb3dComponent = entity.GetComponent<Rigidbody3DComponent>();
+			out << YAML::Key << "BodyType" << YAML::Value << Utils::RigidBody3DBodyTypeToString(rb3dComponent.Type);
+			out << YAML::Key << "FixedRotation" << YAML::Value << rb3dComponent.FixedRotation;
+
+			out << YAML::EndMap; // Rigidbody3DComponent
+		}
+
+		if (entity.HasComponent<BoxCollider3DComponent>())
+		{
+			out << YAML::Key << "BoxCollider3DComponent";
+			out << YAML::BeginMap; // BoxCollider3DComponent
+
+			auto& bc3dComponent = entity.GetComponent<BoxCollider3DComponent>();
+			out << YAML::Key << "Offset" << YAML::Value << bc3dComponent.Offset;
+			out << YAML::Key << "Size" << YAML::Value << bc3dComponent.Size;
+			out << YAML::Key << "Density" << YAML::Value << bc3dComponent.Density;
+			out << YAML::Key << "Friction" << YAML::Value << bc3dComponent.Friction;
+			out << YAML::Key << "Restitution" << YAML::Value << bc3dComponent.Restitution;
+			//out << YAML::Key << "RestitutionThreshold" << YAML::Value << bc3dComponent.RestitutionThreshold;
+
+			out << YAML::EndMap; // BoxCollider3DComponent
+		}
+
+		if (entity.HasComponent<SphereColliderComponent>())
+		{
+			out << YAML::Key << "SphereColliderComponent";
+			out << YAML::BeginMap; // SphereColliderComponent
+
+			auto& sc3dComponent = entity.GetComponent<SphereColliderComponent>();
+			out << YAML::Key << "Offset" << YAML::Value << sc3dComponent.Offset;
+			out << YAML::Key << "Radius" << YAML::Value << sc3dComponent.Radius;
+			out << YAML::Key << "Density" << YAML::Value << sc3dComponent.Density;
+			out << YAML::Key << "Friction" << YAML::Value << sc3dComponent.Friction;
+			out << YAML::Key << "Restitution" << YAML::Value << sc3dComponent.Restitution;
+			//out << YAML::Key << "RestitutionThreshold" << YAML::Value << cc3dComponent.RestitutionThreshold;
+
+			out << YAML::EndMap; // SphereColliderComponent
 		}
 
 		out << YAML::EndMap; // Entity
@@ -207,14 +296,17 @@ namespace VulkanCore {
 		out << YAML::Key << "Scene" << YAML::Value << scenePath.stem().string();
 		out << YAML::Key << "Entities";
 		out << YAML::Value << YAML::BeginSeq;
-		m_Scene->m_Registry.each([&](auto entityID)
+
+		auto view = m_Scene->m_Registry.view<entt::entity>();
+		for (auto entityID : view)
 		{
 			Entity entity = { entityID, m_Scene.get() };
 			if (!entity)
-				return;
+				continue;
 
 			SerializeEntity(out, entity);
-		});
+		}
+
 		out << YAML::EndSeq;
 		out << YAML::EndMap;
 
@@ -260,7 +352,7 @@ namespace VulkanCore {
 				auto transformComponent = entity["TransformComponent"];
 				if (transformComponent)
 				{
-					auto& tc = deserializedEntity.GetComponent<TransformComponent>();
+					auto& tc = deserializedEntity.AddComponent<TransformComponent>();
 
 					tc.Translation = transformComponent["Translation"].as<glm::vec3>();
 					tc.Rotation = transformComponent["Rotation"].as<glm::vec3>();
@@ -283,11 +375,21 @@ namespace VulkanCore {
 					auto& slc = deserializedEntity.AddComponent<SpotLightComponent>();
 
 					slc.Color = spotLightComponent["Color"].as<glm::vec4>();
-					slc.Direction = spotLightComponent["Direction"].as<glm::vec3>();
+					//slc.Direction = spotLightComponent["Direction"].as<glm::vec3>();
 					slc.InnerCutoff = spotLightComponent["InnerCutoff"].as<float>();
 					slc.OuterCutoff = spotLightComponent["OuterCutoff"].as<float>();
 					slc.Falloff = spotLightComponent["Falloff"].as<float>();
 					slc.Radius = spotLightComponent["Radius"].as<float>();
+				}
+
+				auto directionalLightComponent = entity["DirectionalLightComponent"];
+				if (directionalLightComponent)
+				{
+					auto& drlc = deserializedEntity.AddComponent<DirectionalLightComponent>();
+
+					drlc.Direction = directionalLightComponent["Direction"].as<glm::vec3>();
+					drlc.Color = directionalLightComponent["Color"].as<glm::vec4>();
+					drlc.Falloff = directionalLightComponent["Falloff"].as<float>();
 				}
 
 				auto skyLightComponent = entity["SkyLightComponent"];
@@ -298,10 +400,7 @@ namespace VulkanCore {
 					uint64_t textureHandle = skyLightComponent["TextureHandle"].as<uint64_t>();
 					slc.TextureHandle = textureHandle;
 
-					AssetMetadata metadata = AssetManager::GetMetadata(slc.TextureHandle);
-
-					std::string filepath = metadata.FilePath.generic_string();
-					SceneRenderer::SetSkybox(filepath);
+					SceneRenderer::SetSkybox(slc.TextureHandle);
 				}
 
 				auto meshComponent = entity["MeshComponent"];
@@ -312,13 +411,59 @@ namespace VulkanCore {
 					uint64_t meshHandle = meshComponent["MeshHandle"].as<uint64_t>();
 					mc.MeshHandle = meshHandle;
 
-					uint64_t materialHandle = meshComponent["MaterialHandle"].as<uint64_t>();
-					mc.MaterialTableHandle = materialHandle;
+					// Only contains Material handles
+					auto materialTable = meshComponent["MaterialTable"].as<std::map<uint32_t, uint64_t>>();
 
+					// Creating Material Table
+					std::map<uint32_t, std::shared_ptr<MaterialAsset>> materialTableAssets{};
+					for (auto& [materialIndex, materialHandle] : materialTable)
+						materialTableAssets[materialIndex] = AssetManager::GetAsset<MaterialAsset>(materialHandle);
+
+					// Add null material for submeshes that don't have a material
 					std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(mc.MeshHandle);
-					std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(mc.MaterialTableHandle);
+					for (auto& submesh : mesh->GetMeshSource()->GetSubmeshes())
+					{
+						if (!materialTableAssets.contains(submesh.MaterialIndex))
+							materialTableAssets[submesh.MaterialIndex] = nullptr;
+					}
+
+					mc.MaterialTableHandle = std::make_shared<MaterialTable>(materialTableAssets);
+
+					std::shared_ptr<MaterialAsset> materialAsset = materialTableAssets[0]; // Default Base Material
 					std::shared_ptr<MeshSource> meshSource = mesh->GetMeshSource();
-					meshSource->SetMaterial(materialAsset->GetMaterial());
+					meshSource->SetBaseMaterial(materialAsset);
+				}
+
+				auto rigidbody3DComponent = entity["Rigidbody3DComponent"];
+				if (rigidbody3DComponent)
+				{
+					auto& rb3d = deserializedEntity.AddComponent<Rigidbody3DComponent>();
+					rb3d.Type = Utils::s_BodyTypeFromStringMap[rigidbody3DComponent["BodyType"].as<std::string>()];
+					rb3d.FixedRotation = rigidbody3DComponent["FixedRotation"].as<bool>();
+				}
+
+				auto boxCollider3DComponent = entity["BoxCollider3DComponent"];
+				if (boxCollider3DComponent)
+				{
+					auto& bc3d = deserializedEntity.AddComponent<BoxCollider3DComponent>();
+					bc3d.Offset = boxCollider3DComponent["Offset"].as<glm::vec3>();
+					bc3d.Size = boxCollider3DComponent["Size"].as<glm::vec3>();
+					bc3d.Density = boxCollider3DComponent["Density"].as<float>();
+					bc3d.Friction = boxCollider3DComponent["Friction"].as<float>();
+					bc3d.Restitution = boxCollider3DComponent["Restitution"].as<float>();
+					//bc3d.RestitutionThreshold = boxCollider3DComponent["RestitutionThreshold"].as<float>();
+				}
+
+				auto sphereColliderComponent = entity["SphereColliderComponent"];
+				if (sphereColliderComponent)
+				{
+					auto& sc3d = deserializedEntity.AddComponent<SphereColliderComponent>();
+					sc3d.Offset = sphereColliderComponent["Offset"].as<glm::vec3>();
+					sc3d.Radius = sphereColliderComponent["Radius"].as<float>();
+					sc3d.Density = sphereColliderComponent["Density"].as<float>();
+					sc3d.Friction = sphereColliderComponent["Friction"].as<float>();
+					sc3d.Restitution = sphereColliderComponent["Restitution"].as<float>();
+					//sc3d.RestitutionThreshold = sphereColliderComponent["RestitutionThreshold"].as<float>();
 				}
 			}
 		}

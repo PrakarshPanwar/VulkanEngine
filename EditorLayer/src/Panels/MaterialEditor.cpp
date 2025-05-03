@@ -12,8 +12,6 @@
 
 namespace VulkanCore {
 
-	static const std::filesystem::path g_AssetPath = "assets";
-
 	std::unordered_map<uint64_t, std::shared_ptr<Material>> MaterialEditor::s_OpenedMaterials;
 
 	enum class TextureType
@@ -21,7 +19,8 @@ namespace VulkanCore {
 		None = 0,
 		Diffuse,
 		Normal,
-		ARM
+		ARM,
+		Displacement
 	};
 
 	namespace Utils {
@@ -35,18 +34,19 @@ namespace VulkanCore {
 			{
 				if (ImGui::MenuItem("Remove Texture"))
 				{
-					auto whiteTexture = Renderer::GetWhiteTexture();
-
 					switch (textureType)
 					{
 					case TextureType::Diffuse:
-						material->SetDiffuseTexture(whiteTexture);
+						material->SetDiffuseTexture(Renderer::GetWhiteTexture(ImageFormat::RGBA8_SRGB));
 						break;
 					case TextureType::Normal:
-						material->SetNormalTexture(whiteTexture);
+						material->SetNormalTexture(Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM));
 						break;
 					case TextureType::ARM:
-						material->SetARMTexture(whiteTexture);
+						material->SetARMTexture(Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM));
+						break;
+					case TextureType::Displacement:
+						material->SetDisplacementTexture(Renderer::GetWhiteTexture(ImageFormat::RGBA8_UNORM));
 						break;
 					default:
 						break;
@@ -81,9 +81,9 @@ namespace VulkanCore {
 			ImGui::Separator();
 
 			auto& materialData = vulkanMaterial->GetMaterialData();
-			auto [diffuse, normal, arm] = vulkanMaterial->GetMaterialTextureIDs();
+			auto [diffuse, normal, arm, displacement] = vulkanMaterial->GetMaterialTextureIDs();
 
-			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_FramePadding;
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
 			bool albedoNode = ImGui::TreeNodeEx("ALBEDO", treeNodeFlags);
 			ImGui::PopStyleVar();
@@ -97,8 +97,7 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path assetPath = g_AssetPath / path;
+						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
 						std::shared_ptr<Texture2D> diffuseTex = AssetManager::GetAsset<Texture2D>(assetPath.string());
 						vulkanMaterial->SetDiffuseTexture(diffuseTex);
@@ -129,8 +128,7 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path assetPath = g_AssetPath / path;
+						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
 						std::shared_ptr<Texture2D> normalTex = AssetManager::GetAsset<Texture2D>(assetPath.string());
 						vulkanMaterial->SetNormalTexture(normalTex);
@@ -158,8 +156,7 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path assetPath = g_AssetPath / path;
+						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
 						std::shared_ptr<Texture2D> armTex = AssetManager::GetAsset<Texture2D>(assetPath.string());
 						vulkanMaterial->SetARMTexture(armTex);
@@ -170,6 +167,33 @@ namespace VulkanCore {
 
 				ImGui::DragFloat("Roughness", &materialData.Roughness, 0.01f, 0.0f, 1.0f);
 				ImGui::DragFloat("Metallic", &materialData.Metallic, 0.01f, 0.0f, 1.0f);
+
+				ImGui::TreePop();
+			}
+
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 4, 4 });
+			bool displacementNode = ImGui::TreeNodeEx("DISPLACEMENT", treeNodeFlags);
+			ImGui::PopStyleVar();
+
+			if (displacementNode)
+			{
+				ImGui::Image((ImTextureID)displacement, { 100.0f, 100.0f }, { 0, 1 }, { 1, 0 });
+				Utils::ResetTexturePopup(TextureType::Displacement, vulkanMaterial);
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					{
+						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
+
+						std::shared_ptr<Texture2D> displacementTex = AssetManager::GetAsset<Texture2D>(assetPath.string());
+						vulkanMaterial->SetDisplacementTexture(displacementTex);
+
+						m_MaterialAsset->SetDisplacement(true);
+					}
+
+					ImGui::EndDragDropTarget();
+				}
 
 				ImGui::TreePop();
 			}

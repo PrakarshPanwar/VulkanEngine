@@ -1,7 +1,6 @@
 #pragma once
-#include "VulkanCore/Asset/Asset.h"
 #include "VulkanCore/Asset/AssetMetadata.h"
-#include "VulkanCore/Renderer/Material.h"
+#include "VulkanCore/Asset/MaterialAsset.h"
 #include "VulkanCore/Renderer/VertexBuffer.h"
 #include "VulkanCore/Renderer/IndexBuffer.h"
 
@@ -18,13 +17,11 @@ namespace VulkanCore {
 		glm::vec3 Normal;
 		glm::vec3 Tangent;
 		glm::vec3 Binormal;
-		glm::vec3 Color;
 		glm::vec2 TexCoord;
 
 		bool operator==(const Vertex& other) const
 		{
 			return Position == other.Position &&
-				Color == other.Color && 
 				Normal == other.Normal &&
 				TexCoord == other.TexCoord;
 		}
@@ -52,15 +49,15 @@ namespace VulkanCore {
 	{
 	public:
 		MeshSource(const std::string& filepath);
+		MeshSource(const std::string& meshName, const std::vector<Vertex>& verticesData, const std::vector<uint32_t>& indicesData);
 		~MeshSource();
 
 		const aiScene* GetAssimpScene() const { return m_Scene; }
 		inline const std::vector<MeshNode>& GetMeshNodes() const { return m_Nodes; }
 		inline const std::vector<Submesh>& GetSubmeshes() const { return m_Submeshes; }
 
-		inline std::shared_ptr<Material> GetMaterial(uint32_t index = 0) const { return m_Materials[index]; }
-		// TODO: This method is temporary for now
-		inline void SetMaterial(std::shared_ptr<Material> material) { m_Materials[0] = material; }
+		inline std::shared_ptr<MaterialAsset> GetBaseMaterial() const { return m_BaseMaterial; }
+		inline void SetBaseMaterial(std::shared_ptr<MaterialAsset> baseMaterial) { m_BaseMaterial = baseMaterial; }
 
 		inline std::shared_ptr<VertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
 		inline std::shared_ptr<IndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
@@ -71,19 +68,19 @@ namespace VulkanCore {
 		static AssetType GetStaticType() { return AssetType::MeshAsset; }
 	private:
 		aiScene* m_Scene;
-		std::unique_ptr<Assimp::Importer> m_Importer;
 
-		std::vector<Submesh> m_Submeshes{};
-		std::vector<MeshNode> m_Nodes{};
+		std::vector<Submesh> m_Submeshes;
+		std::vector<MeshNode> m_Nodes;
 
-		std::vector<Vertex> m_Vertices{};
-		std::vector<uint32_t> m_Indices{};
+		std::vector<Vertex> m_Vertices;
+		std::vector<uint32_t> m_Indices;
 
-		// TODO: In future we will support separate material for each submesh
-		std::vector<std::shared_ptr<Material>> m_Materials;
+		std::shared_ptr<MaterialAsset> m_BaseMaterial;
 
 		std::shared_ptr<VertexBuffer> m_VertexBuffer;
 		std::shared_ptr<IndexBuffer> m_IndexBuffer;
+
+		static std::unique_ptr<Assimp::Importer> s_Importer;
 
 		friend class Mesh;
 		friend class MeshImporter;
@@ -99,6 +96,8 @@ namespace VulkanCore {
 		void InvalidateSubmeshes();
 		inline std::shared_ptr<MeshSource> GetMeshSource() const { return m_MeshSource; }
 		inline const std::vector<uint32_t>& GetSubmeshes() const { return m_Submeshes; }
+		inline const std::vector<Vertex>& GetMeshVertices() const { return m_MeshSource->m_Vertices; }
+		inline const std::vector<uint32_t>& GetMeshIndices() const { return m_MeshSource->m_Indices; }
 
 		inline AssetType GetType() const override { return AssetType::Mesh; }
 		static AssetType GetStaticType() { return AssetType::Mesh; }

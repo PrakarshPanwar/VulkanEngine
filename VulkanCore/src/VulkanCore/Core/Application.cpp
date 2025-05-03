@@ -59,8 +59,8 @@ namespace VulkanCore {
 			m_Renderer->BeginFrame();
 			m_Renderer->BeginSwapChainRenderPass();
 
-			Renderer::Submit([this]() { RenderImGui(); });
-			Renderer::Submit([this]() { m_ImGuiLayer->ImGuiEnd(); });
+			Renderer::Submit([this] { RenderImGui(); });
+			Renderer::Submit([this] { m_ImGuiLayer->ImGuiEnd(); });
 
 			m_Renderer->EndSwapChainRenderPass();
 			m_Renderer->EndFrame();
@@ -118,6 +118,8 @@ namespace VulkanCore {
 
 	void Application::ExecuteMainThreadQueue()
 	{
+		VK_CORE_PROFILE_FN("Application::ExecuteMainThreadQueue");
+
 		std::scoped_lock executeLock(m_MainThreadQueueMutex);
 
 		for (auto&& func : m_MainThreadQueue)
