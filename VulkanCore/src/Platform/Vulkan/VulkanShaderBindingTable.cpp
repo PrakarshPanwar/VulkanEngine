@@ -96,7 +96,7 @@ namespace VulkanCore {
 		bufferCreateInfo.size = shaderGroupBaseAlignment * groupCount;
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
-		m_SBTMemAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_SBTBuffer);
+		m_SBTMemAlloc = allocator.AllocateBuffer(VulkanMemoryType::SharedHeap, bufferCreateInfo, m_SBTBuffer);
 		uint8_t* sbtBufferDst = allocator.MapMemory<uint8_t>(m_SBTMemAlloc);
 		uint32_t offset = 0;
 

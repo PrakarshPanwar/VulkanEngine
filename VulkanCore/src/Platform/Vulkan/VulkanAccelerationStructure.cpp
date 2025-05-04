@@ -106,7 +106,7 @@ namespace VulkanCore {
 		instanceBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
 			VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
 
-		instanceBufferAlloc = allocator.AllocateBuffer(instanceBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, instanceBuffer);
+		instanceBufferAlloc = allocator.AllocateBuffer(VulkanMemoryType::HostLocal, instanceBufferCreateInfo, instanceBuffer, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
 
 		// Copy Instance Data to Instance Buffer
 		uint8_t* dstData = allocator.MapMemory<uint8_t>(instanceBufferAlloc);
@@ -156,7 +156,7 @@ namespace VulkanCore {
 
 		VkBuffer buffer;
 		VmaAllocation memAlloc;
-		memAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, buffer);
+		memAlloc = allocator.AllocateBuffer(VulkanMemoryType::DeviceLocal, bufferCreateInfo, buffer, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
 		m_TLASInfo.Buffer = buffer;
 		m_TLASInfo.MemoryAlloc = memAlloc;
@@ -188,7 +188,7 @@ namespace VulkanCore {
 		scratchBufferCreateInfo.size = buildSizesInfo.buildScratchSize;
 		scratchBufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
-		scratchBufferAlloc = allocator.AllocateBuffer(scratchBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, scratchBuffer);
+		scratchBufferAlloc = allocator.AllocateBuffer(VulkanMemoryType::DeviceLocal, scratchBufferCreateInfo, scratchBuffer, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
 		// Scratch Buffer Device Address
 		VkBufferDeviceAddressInfoKHR bufferDeviceAddressInfo{};
@@ -300,7 +300,7 @@ namespace VulkanCore {
 
 			VkBuffer buffer;
 			VmaAllocation memAlloc;
-			memAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, buffer);
+			memAlloc = allocator.AllocateBuffer(VulkanMemoryType::DeviceLocal, bufferCreateInfo, buffer, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
 			// Acceleration Structure
 			VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{};
@@ -327,7 +327,7 @@ namespace VulkanCore {
 			scratchBufferCreateInfo.size = buildSizesInfo.buildScratchSize;
 			scratchBufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
-			scratchBufferAlloc = allocator.AllocateBuffer(scratchBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, scratchBuffer);
+			scratchBufferAlloc = allocator.AllocateBuffer(VulkanMemoryType::DeviceLocal, scratchBufferCreateInfo, scratchBuffer, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
 			// Scratch Buffer Device Address
 			VkBufferDeviceAddressInfoKHR bufferDeviceAddressInfo{};
@@ -397,7 +397,7 @@ namespace VulkanCore {
 
 			VkBuffer buffer;
 			VmaAllocation memAlloc;
-			memAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, buffer);
+			memAlloc = allocator.AllocateBuffer(VulkanMemoryType::DeviceLocal, bufferCreateInfo, buffer, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
 			VulkanAccelerationStructureInfo& blasInfo = blasInput.BLASInfo;
 			blasInfo.Buffer = buffer;

@@ -17,7 +17,7 @@ namespace VulkanCore {
 		storageBufferCreateInfo.size = size;
 		storageBufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		storageBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		m_MemoryAllocation = allocator.AllocateBuffer(storageBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_VulkanBuffer);
+		m_MemoryAllocation = allocator.AllocateBuffer(VulkanMemoryType::SharedHeap, storageBufferCreateInfo, m_VulkanBuffer);
 
 		m_MapDataPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
 
@@ -37,7 +37,6 @@ namespace VulkanCore {
 	void VulkanStorageBuffer::WriteData(void* data, uint32_t offset)
 	{
 		memcpy(m_MapDataPtr, data, m_Size);
-		vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, (VkDeviceSize)offset, (VkDeviceSize)m_Size);
 	}
 
 }

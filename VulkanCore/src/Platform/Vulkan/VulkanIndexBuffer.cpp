@@ -21,7 +21,7 @@ namespace VulkanCore {
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		VkBuffer stagingBuffer;
-		VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, stagingBuffer);
+		VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(VulkanMemoryType::HostLocal, bufferCreateInfo, stagingBuffer, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
 
 		// Copy/Map Data to Staging Buffer
 		uint8_t* dstData = allocator.MapMemory<uint8_t>(stagingBufferAlloc);
@@ -35,7 +35,7 @@ namespace VulkanCore {
 		indexBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		indexBufferCreateInfo.size = m_Size;
 		indexBufferCreateInfo.usage = usage;
-		m_MemoryAllocation = allocator.AllocateBuffer(indexBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_VulkanBuffer);
+		m_MemoryAllocation = allocator.AllocateBuffer(VulkanMemoryType::DeviceLocal, indexBufferCreateInfo, m_VulkanBuffer, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
 		VkCommandBuffer copyCmd = device->GetCommandBuffer();
 
@@ -67,7 +67,7 @@ namespace VulkanCore {
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		m_MemoryAllocation = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_VulkanBuffer);
+		m_MemoryAllocation = allocator.AllocateBuffer(VulkanMemoryType::HostCached, bufferCreateInfo, m_VulkanBuffer);
 
 		// Map Data to Index Buffer
 		m_MapDataPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
@@ -87,10 +87,7 @@ namespace VulkanCore {
 	void VulkanIndexBuffer::WriteData(void* data, uint32_t offset)
 	{
 		if (data)
-		{
 			memcpy(m_MapDataPtr, data, m_Size);
-			vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, (VkDeviceSize)offset, (VkDeviceSize)m_Size);
-		}
 	}
 
 	uint64_t VulkanIndexBuffer::GetVulkanBufferDeviceAddress(uint64_t offset) const
