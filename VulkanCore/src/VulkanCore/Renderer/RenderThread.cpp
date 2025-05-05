@@ -10,7 +10,7 @@ namespace VulkanCore {
 	std::mutex RenderThread::m_ThreadMutex;
 	std::mutex RenderThread::m_DeletionMutex;
 	std::atomic<bool> RenderThread::m_RenderThreadAtomic;
-	std::vector<std::function<void()>> RenderThread::m_RenderCommandQueue;
+	std::vector<std::function<void()>> RenderThread::m_RenderCommandQueue, RenderThread::m_CommandQueue;
 	std::vector<std::function<void()>> RenderThread::m_DeletionCommandQueue;
 	std::jthread RenderThread::m_RenderThread;
 	int RenderThread::m_ThreadFrameIndex = 0;
@@ -33,20 +33,21 @@ namespace VulkanCore {
 			VK_CORE_PROFILE_THREAD("Render Thread");
 
 			// Swap Queues
-			std::vector<std::function<void()>> executeQueue;
 			{
 				std::scoped_lock swapLock(m_ThreadMutex);
-				executeQueue.swap(m_RenderCommandQueue);
+				m_CommandQueue.swap(m_RenderCommandQueue);
 			}
 
 			// Execute Command Queue
-			for (const auto& executeCommand : executeQueue)
+			for (const auto& executeCommand : m_CommandQueue)
 				executeCommand();
 
 			m_RenderThreadAtomic.notify_one();
 
 			m_RenderThreadAtomic.wait(false);
 			m_RenderThreadAtomic.store(false);
+
+			m_CommandQueue.clear();
 		}
 
 		ExecuteCommandQueue();
@@ -69,9 +70,6 @@ namespace VulkanCore {
 
 	void RenderThread::WaitAndSet()
 	{
-		m_RenderThreadAtomic.store(true);
-		m_RenderThreadAtomic.notify_one();
-
 		int mainFrameIndex = Renderer::GetCurrentFrameIndex();
 		int renderFrameIndex = Renderer::RT_GetCurrentFrameIndex();
 

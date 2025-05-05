@@ -158,6 +158,11 @@ namespace VulkanCore {
 		s_Renderer->SubmitFullscreenQuad(cmdBuffer, pipeline, shaderMaterial);
 	}
 
+	void Renderer::SubmitAndPresent()
+	{
+		s_Renderer->SubmitAndPresent();
+	}
+
 	std::shared_ptr<Image2D> Renderer::CreateBRDFTexture()
 	{
 		return s_Renderer->CreateBRDFTexture();
@@ -176,14 +181,6 @@ namespace VulkanCore {
 	void Renderer::Init()
 	{
 		RenderThread::Init();
-	}
-
-	void Renderer::WaitAndRender()
-	{
-		VK_CORE_PROFILE();
-
-		RenderThread::NextFrame();
-		RenderThread::WaitAndSet();
 	}
 
 	void Renderer::WaitAndExecute()

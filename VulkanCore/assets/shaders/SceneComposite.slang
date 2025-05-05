@@ -74,7 +74,7 @@ float3 AGXTonemap(float3 color)
     // This could also be done before the Rec. 2020 transform, allowing the transform to
     // be combined with the AgX inset matrix, but doing this causes a loss of color information
     // that could be correctly interpreted within the Rec. 2020 color space
-    color = max(color, float3(0.0f));
+    color = max(color, 0.0f);
 
     color = mul(color, agx_inset_matrix);
 
@@ -88,13 +88,13 @@ float3 AGXTonemap(float3 color)
     color = AGXDefaultContrastApprox(color);
 
     // Convert back to linear before applying outset matrix.
-    color = pow(color, float3(2.4f));
+    color = pow(color, 2.4f);
 
     // Apply outset to make the result more chroma-laden and then go back to linear sRGB
     color = mul(color, agx_outset_rec2020_to_srgb_matrix);
 
     // Simply hard clip instead of Blender's complex lusRGB.compensate_low_side
-    color = max(color, float3(0.0f));
+    color = max(color, 0.0f);
 
     return color;
 }

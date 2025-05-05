@@ -49,6 +49,7 @@ namespace VulkanCore {
 		static void RenderLight(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const LightSelectData& lightData);
 		static void RenderLight(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const glm::vec4& position);
 		static void SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial);
+		static void SubmitAndPresent();
 
 		static std::shared_ptr<Image2D> CreateBRDFTexture();
 		static std::shared_ptr<Texture2D> GetWhiteTexture(ImageFormat format = ImageFormat::RGBA8_SRGB);
@@ -79,7 +80,6 @@ namespace VulkanCore {
 		static void ShutDown();
 		static void SetRendererAPI(VulkanRenderer* vkRenderer);
 		static void BuildShaders();
-		static void WaitAndRender();
 		static void WaitAndExecute();
 	private:
 		static std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;

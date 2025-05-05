@@ -81,7 +81,7 @@ namespace VulkanCore {
 			FramebufferSpecification geomFramebufferSpec;
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
-			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::RGBA8_UNORM, ImageFormat::RGBA8_SRGB, ImageFormat::DEPTH32F };
+			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::DEPTH32F };
 			geomFramebufferSpec.ReadDepthTexture = true;
 			geomFramebufferSpec.Transfer = true;
 			geomFramebufferSpec.Samples = 4;
@@ -912,13 +912,11 @@ namespace VulkanCore {
 				auto vulkanDepthTexture = std::dynamic_pointer_cast<VulkanImage>(m_SceneDepthTextures[i]);
 				vulkanDepthTexture->Resize(m_ViewportSize.x, m_ViewportSize.y, Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y));
 #endif
-
 				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanSceneTexture->GetVulkanImageInfo().Image,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, vulkanSceneTexture->GetSpecification().MipLevels, 0, 1 });
-
 #if VK_FEATURE_GTAO
 				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanDepthTexture->GetVulkanImageInfo().Image,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
@@ -926,7 +924,6 @@ namespace VulkanCore {
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 					VkImageSubresourceRange{ VK_IMAGE_ASPECT_DEPTH_BIT, 0, vulkanDepthTexture->GetSpecification().MipLevels, 0, 1 });
 #endif
-
 				// Update ImGui Viewport Image
 				std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
 				ImGuiLayer::UpdateDescriptor(m_SceneImages[i], *finalPassImage);
@@ -1105,6 +1102,8 @@ namespace VulkanCore {
 		ResetDrawCommands();
 
 		m_SceneCommandBuffer->End();
+
+		Renderer::SubmitAndPresent(); // Submits all Render Calls and Presents image to SwapChain
 	}
 
 	void SceneRenderer::RenderLights()

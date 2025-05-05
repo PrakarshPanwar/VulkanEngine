@@ -21,7 +21,7 @@ namespace VulkanCore {
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		VkBuffer stagingBuffer;
-		VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(VulkanMemoryType::HostLocal, bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, stagingBuffer);
+		VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(VulkanMemoryType::HostLocal, bufferCreateInfo, stagingBuffer, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
 
 		// Copy/Map Data to Staging Buffer
 		uint8_t* dstData = allocator.MapMemory<uint8_t>(stagingBufferAlloc);
@@ -32,7 +32,7 @@ namespace VulkanCore {
 		vertexBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		vertexBufferCreateInfo.size = m_Size;
 		vertexBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		m_MemoryAllocation = allocator.AllocateBuffer(VulkanMemoryType::DeviceLocal, vertexBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_VulkanBuffer);
+		m_MemoryAllocation = allocator.AllocateBuffer(VulkanMemoryType::DeviceLocal, vertexBufferCreateInfo, m_VulkanBuffer, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
 		VkCommandBuffer copyCmd = device->GetCommandBuffer();
 
@@ -64,7 +64,7 @@ namespace VulkanCore {
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		m_MemoryAllocation = allocator.AllocateBuffer(VulkanMemoryType::SharedHeap, bufferCreateInfo, VMA_MEMORY_USAGE_AUTO, m_VulkanBuffer);
+		m_MemoryAllocation = allocator.AllocateBuffer(VulkanMemoryType::SharedHeap, bufferCreateInfo, m_VulkanBuffer);
 
 		// Map Data to Vertex Buffer
 		m_MapDataPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);

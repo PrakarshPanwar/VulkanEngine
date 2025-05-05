@@ -46,7 +46,7 @@ namespace VulkanCore {
 		static std::mutex m_ThreadMutex;
 		static std::mutex m_DeletionMutex;
 		static std::atomic<bool> m_RenderThreadAtomic;
-		static std::vector<std::function<void()>> m_RenderCommandQueue;
+		static std::vector<std::function<void()>> m_RenderCommandQueue, m_CommandQueue;
 		static std::vector<std::function<void()>> m_DeletionCommandQueue;
 		static std::jthread m_RenderThread;
 		static int m_ThreadFrameIndex;
