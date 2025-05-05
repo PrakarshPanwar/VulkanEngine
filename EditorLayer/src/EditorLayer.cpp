@@ -84,14 +84,30 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
+		auto activeScene = m_ActiveScene.load();
 		float time = WindowsTime::GetTime();
 		Timestep timestep = time - m_LastFrameTime;
 		m_LastFrameTime = time;
 
+		// Mouse Position relative to Viewport
+		auto [mx, my] = Input::GetMousePosition();
+		mx -= m_ViewportBounds[0].x;
+		my -= m_ViewportBounds[0].y;
+		int mouseX = (int)mx;
+		int mouseY = (int)my;
+
+		SceneEditorData sceneEditorData{};
+		sceneEditorData.CameraData = m_EditorCamera;
+		sceneEditorData.ViewportMousePos = glm::max(glm::ivec2{ mouseX, mouseY }, 0);
+		sceneEditorData.ViewportHovered = m_ViewportHovered;
+		sceneEditorData.ShowPhysicsCollider = m_ShowPhysicsCollider && activeScene->IsRunning();
+
+		m_SceneRenderer->SetSceneEditorData(sceneEditorData);
+		m_SceneRenderer->RenderScene();
+
 		if ((m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing()) || m_EditorCamera.IsInFly())
 			m_EditorCamera.OnUpdate();
 
-		auto activeScene = m_ActiveScene.load();
 		switch (m_SceneState)
 		{
 		case SceneState::Edit:
@@ -107,22 +123,6 @@ namespace VulkanCore {
 			break;
 		}
 		}
-
-		// Mouse Position relative to Viewport
-		auto [mx, my] = Input::GetMousePosition();
-		mx -= m_ViewportBounds[0].x;
-		my -= m_ViewportBounds[0].y;
-		int mouseX = (int)mx;
-		int mouseY = (int)my;
-
-		SceneEditorData sceneEditorData{};
-		sceneEditorData.CameraData = m_EditorCamera;
-		sceneEditorData.ViewportMousePos = glm::max(glm::ivec2{ mouseX, mouseY }, 0);
-		sceneEditorData.ViewportHovered = m_ViewportHovered;
-		sceneEditorData.ShowPhysicsCollider = m_ShowPhysicsCollider && activeScene->IsRunning();
-		m_SceneRenderer->SetSceneEditorData(sceneEditorData);
-
-		m_SceneRenderer->RenderScene();
 	}
 
 	void EditorLayer::OnEvent(Event& e)

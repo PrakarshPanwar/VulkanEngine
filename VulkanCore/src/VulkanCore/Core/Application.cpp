@@ -68,7 +68,7 @@ namespace VulkanCore {
 			for (Layer* layer : m_LayerStack)
 				layer->OnUpdate();
 
-			m_Renderer->SubmitAndPresent();
+			m_Renderer->WaitForRenderThread();
 		}
 	}
 

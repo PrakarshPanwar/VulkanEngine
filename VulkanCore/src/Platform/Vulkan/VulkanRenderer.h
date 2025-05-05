@@ -63,6 +63,8 @@ namespace VulkanCore {
 		void RecreateSwapChain();
 		void FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers);
 		void SubmitAndPresent();
+		void WaitForRenderThread();
+
 		static void ResetStats();
 		static inline RendererStats GetRendererStats() { return s_Data; }
 		static VulkanRenderer* Get() { return s_Instance; }

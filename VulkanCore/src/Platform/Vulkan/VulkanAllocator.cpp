@@ -63,7 +63,7 @@ namespace VulkanCore {
 	{
 	}
 
-	VmaAllocation VulkanAllocator::AllocateBuffer(VulkanMemoryType memoryType, const VkBufferCreateInfo& bufInfo, VmaMemoryUsage usage, VkBuffer& buffer)
+	VmaAllocation VulkanAllocator::AllocateBuffer(VulkanMemoryType memoryType, const VkBufferCreateInfo& bufInfo, VkBuffer& buffer, VmaMemoryUsage usage)
 	{
 		VmaAllocationCreateInfo allocInfo{};
 		allocInfo.usage = usage;
@@ -73,6 +73,10 @@ namespace VulkanCore {
 		VmaAllocation vmaAllocation;
 		VmaAllocationInfo vmaAllocInfo = {};
 		VK_CHECK_RESULT(vmaCreateBuffer(m_VkMemoryAllocator, &bufInfo, &allocInfo, &buffer, &vmaAllocation, &vmaAllocInfo), "{0}: Failed to Allocate Buffer!", m_DebugName);
+
+		VkMemoryPropertyFlags memoryPropertyFlags{};
+		vmaGetMemoryTypeProperties(m_VkMemoryAllocator, vmaAllocInfo.memoryType, &memoryPropertyFlags);
+		VK_CORE_ASSERT(memoryPropertyFlags > 0, "Buffer Memory Type is Invalid!");
 
 		// Update Stats
 		s_Data.AllocatedBytes += vmaAllocInfo.size;
@@ -92,6 +96,10 @@ namespace VulkanCore {
 		VmaAllocation vmaAllocation;
 		VmaAllocationInfo vmaAllocInfo = {};
 		VK_CHECK_RESULT(vmaCreateImage(m_VkMemoryAllocator, &imgInfo, &allocInfo, &image, &vmaAllocation, &vmaAllocInfo), "{0}: Failed to Allocate Image!", m_DebugName);
+
+		VkMemoryPropertyFlags memoryPropertyFlags{};
+		vmaGetMemoryTypeProperties(m_VkMemoryAllocator, vmaAllocInfo.memoryType, &memoryPropertyFlags);
+		VK_CORE_ASSERT(memoryPropertyFlags == 1, "Image Memory Type is not Device Local!");
 
 		// Update Stats
 		s_Data.AllocatedBytes += vmaAllocInfo.size;

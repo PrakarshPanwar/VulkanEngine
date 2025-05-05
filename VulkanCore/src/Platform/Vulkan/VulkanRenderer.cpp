@@ -814,10 +814,19 @@ namespace VulkanCore {
 	{
 		VulkanRenderCommandBuffer::SubmitCommandBuffersToQueue();
 
-		Renderer::WaitAndRender();
+		RenderThread::NextFrame();
+		RenderThread::SetAtomicFlag(true);
+		RenderThread::NotifyThread(); // Wakes up Render Thread
 
 		IsFrameStarted = false;
 		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
+	}
+
+	void VulkanRenderer::WaitForRenderThread()
+	{
+		VK_CORE_PROFILE();
+
+		RenderThread::WaitAndSet();
 	}
 
 	void VulkanRenderer::FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers)

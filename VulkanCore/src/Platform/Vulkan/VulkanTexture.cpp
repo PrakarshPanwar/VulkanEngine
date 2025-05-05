@@ -101,7 +101,7 @@ namespace VulkanCore {
 			bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 			VkBuffer stagingBuffer;
-			VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(VulkanMemoryType::HostLocal, bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, stagingBuffer);
+			VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(VulkanMemoryType::HostLocal, bufferCreateInfo, stagingBuffer, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
 
 			uint8_t* dstData = allocator.MapMemory<uint8_t>(stagingBufferAlloc);
 			memcpy(dstData, m_LocalStorage, imageSize);
@@ -287,7 +287,7 @@ namespace VulkanCore {
 			bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 			VkBuffer stagingBuffer;
-			VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(VulkanMemoryType::HostLocal, bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, stagingBuffer);
+			VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(VulkanMemoryType::HostLocal, bufferCreateInfo, stagingBuffer, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
 
 			std::array<VkBufferImageCopy, 6> bufferCopyRegions{};
 			std::array<VkDeviceSize, 6> byteOffsets{};
