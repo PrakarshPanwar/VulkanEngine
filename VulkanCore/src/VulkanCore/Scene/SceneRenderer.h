@@ -36,14 +36,14 @@ namespace VulkanCore {
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialTable> materialTable);
 		void UpdateSkybox(AssetHandle skyTextureHandle);
 
-		inline int GetHoveredEntity() const { return m_HoveredEntity; }
-		inline glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
+		int GetHoveredEntity() const { return m_HoveredEntity; }
+		glm::ivec2 GetViewportSize() const { return m_ViewportSize; }
 		std::shared_ptr<Image2D> GetFinalPassImage(uint32_t index) const;
-		inline VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
-		inline const EditorCamera& GetEditorCamera() const { return m_SceneEditorData.CameraData; }
+		VkDescriptorSet GetSceneImage(uint32_t index) const { return m_SceneImages[index]; }
+		const EditorCamera& GetEditorCamera() const { return m_SceneEditorData.CameraData; }
 
 		static SceneRenderer* GetSceneRenderer() { return s_Instance; }
-		static inline VkDescriptorSet GetTextureCubeID() { return s_Instance->m_SkyboxTextureID; }
+		static VkDescriptorSet GetTextureCubeID() { return s_Instance->m_SkyboxTextureID; }
 		static std::shared_ptr<RenderCommandBuffer> GetRenderCommandBuffer() { return s_Instance->m_SceneCommandBuffer; }
 		static void SetSkybox(AssetHandle skyTextureHandle);
 		void SetSceneEditorData(const SceneEditorData& sceneEditorData) { m_SceneEditorData = sceneEditorData; }

@@ -34,9 +34,9 @@ namespace VulkanCore {
 		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size);
 		void ReloadPipeline() override;
 
-		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
-		inline PipelineSpecification GetSpecification() const override { return m_Specification; }
-		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout(uint32_t index = 0) const { return m_DescriptorSetLayout[index]; }
+		VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
+		PipelineSpecification GetSpecification() const override { return m_Specification; }
+		std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout(uint32_t index = 0) const { return m_DescriptorSetLayout[index]; }
 	private:
 		void InvalidateGraphicsPipeline();
 		void CreatePipelineCache();

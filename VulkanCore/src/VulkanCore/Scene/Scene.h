@@ -60,7 +60,7 @@ namespace VulkanCore {
 		void SetPaused(bool paused) { m_IsPaused = paused; }
 		void StepFrames(int frames = 1);
 
-		inline AssetType GetType() const override { return AssetType::Scene; }
+		AssetType GetType() const override { return AssetType::Scene; }
 		static AssetType GetStaticType() { return AssetType::Scene; }
 	private:
 		void OnPhysicsWorldStart();

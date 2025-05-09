@@ -14,12 +14,12 @@ namespace VulkanCore {
 		void OnUpdate();
 		void OnEvent(Event& e);
 
-		inline float GetDistance() const { return m_Distance; }
-		inline void SetDistance(float distance) { m_Distance = distance; }
-		inline bool IsInFly() const { return m_FlyMode; }
+		float GetDistance() const { return m_Distance; }
+		void SetDistance(float distance) { m_Distance = distance; }
+		bool IsInFly() const { return m_FlyMode; }
 		void SetFly(bool flyMode);
 
-		inline void SetViewportSize(float width, float height)
+		void SetViewportSize(float width, float height)
 		{ 
 			m_ViewportWidth = width;
 			m_ViewportHeight = height;
@@ -27,12 +27,12 @@ namespace VulkanCore {
 			UpdateProjection();
 		}
 
-		inline float GetAspectRatio() const { return m_AspectRatio; }
-		inline void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; UpdateProjection(); }
+		float GetAspectRatio() const { return m_AspectRatio; }
+		void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; UpdateProjection(); }
 		void SetFocalPoint(const glm::vec3& focalPoint);
 
-		inline float GetFieldOfView() const { return m_FOV; }
-		inline void SetFieldOfView(float fov)
+		float GetFieldOfView() const { return m_FOV; }
+		void SetFieldOfView(float fov)
 		{
 			m_FOV = fov;
 			UpdateProjection();

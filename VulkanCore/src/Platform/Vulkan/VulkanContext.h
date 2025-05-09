@@ -30,9 +30,9 @@ namespace VulkanCore {
 		void Destroy();
 		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
 
-		static inline VulkanContext* GetCurrentContext() { return s_Instance; }
-		static inline VulkanDevice* GetCurrentDevice() { return s_Instance->m_Device.get(); }
-		static inline VmaAllocator GetVulkanMemoryAllocator() { return s_Instance->m_VulkanMemoryAllocator; }
+		static VulkanContext* GetCurrentContext() { return s_Instance; }
+		static VulkanDevice* GetCurrentDevice() { return s_Instance->m_Device.get(); }
+		static VmaAllocator GetVulkanMemoryAllocator() { return s_Instance->m_VulkanMemoryAllocator; }
 	private:
 		void CreateInstance();
 		void SetupDebugMessenger();

@@ -14,7 +14,7 @@ namespace VulkanCore {
 		void AddRef() override { ++m_Refs; }
 		void Release() override { if (--m_Refs == 0) delete this; }
 
-		inline std::shared_ptr<Mesh> GetMesh() const { return m_JoltMesh; }
+		std::shared_ptr<Mesh> GetMesh() const { return m_JoltMesh; }
 	private:
 		void CalculateTangentBasis(std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
 	private:

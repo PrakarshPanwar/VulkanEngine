@@ -22,14 +22,14 @@ namespace VulkanCore {
 		void End() override;
 		void Execute(VkCommandBuffer secondaryCmdBuffers[], uint32_t count);
 
-		inline VkCommandBuffer GetActiveCommandBuffer() const { return m_CommandBuffers[Renderer::GetCurrentFrameIndex()]; }
-		inline VkCommandBuffer RT_GetActiveCommandBuffer() const { return m_CommandBuffers[Renderer::RT_GetCurrentFrameIndex()]; }
-		inline VkQueryPool RT_GetCurrentTimestampQueryPool() const { return m_TimestampQueryPools[Renderer::RT_GetCurrentFrameIndex()]; }
+		VkCommandBuffer GetActiveCommandBuffer() const { return m_CommandBuffers[Renderer::GetCurrentFrameIndex()]; }
+		VkCommandBuffer RT_GetActiveCommandBuffer() const { return m_CommandBuffers[Renderer::RT_GetCurrentFrameIndex()]; }
+		VkQueryPool RT_GetCurrentTimestampQueryPool() const { return m_TimestampQueryPools[Renderer::RT_GetCurrentFrameIndex()]; }
 
 		void RetrieveQueryPoolResults();
 		void IncrementQueryIndex();
 		uint64_t GetQueryTime(uint32_t index) const;
-		inline uint32_t GetTimestampQueryIndex() const { return m_TimestampsQueryIndex; }
+		uint32_t GetTimestampQueryIndex() const { return m_TimestampsQueryIndex; }
 
 		static void SubmitCommandBuffersToQueue();
 	private:

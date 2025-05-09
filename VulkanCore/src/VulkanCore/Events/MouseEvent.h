@@ -9,10 +9,10 @@ namespace VulkanCore {
 		MouseMovedEvent(float x, float y)
 			: m_MouseX(x), m_MouseY(y) {}
 
-		inline float GetX() const { return m_MouseX; }
-		inline float GetY() const { return m_MouseY; }
+		float GetX() const { return m_MouseX; }
+		float GetY() const { return m_MouseY; }
 
-		inline std::pair<float, float> GetMousePosition() const { return { m_MouseX, m_MouseY }; }
+		std::pair<float, float> GetMousePosition() const { return { m_MouseX, m_MouseY }; }
 
 		std::string ToString() const override
 		{
@@ -33,10 +33,10 @@ namespace VulkanCore {
 		MouseScrolledEvent(float xoffset, float yoffset)
 			: m_XOffset(xoffset), m_YOffset(yoffset) {}
 
-		inline float GetXOffset() const { return m_XOffset; }
-		inline float GetYOffset() const { return m_YOffset; }
+		float GetXOffset() const { return m_XOffset; }
+		float GetYOffset() const { return m_YOffset; }
 
-		inline std::pair<float, float> GetMouseScroll() const { return { m_XOffset, m_YOffset }; }
+		std::pair<float, float> GetMouseScroll() const { return { m_XOffset, m_YOffset }; }
 
 		EVENT_CLASS_TYPE(MouseScrolled)
 		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
@@ -47,7 +47,7 @@ namespace VulkanCore {
 	class MouseButtonEvent : public Event
 	{
 	public:
-		inline int GetMouseButton() const { return m_MouseButton; }
+		int GetMouseButton() const { return m_MouseButton; }
 
 		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 	protected:

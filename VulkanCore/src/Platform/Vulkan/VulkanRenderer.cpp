@@ -74,7 +74,6 @@ namespace VulkanCore {
 		Renderer::Submit([this]
 		{
 			auto result = m_SwapChain->AcquireNextImage(&m_CurrentImageIndex);
-
 			if (result == VK_ERROR_OUT_OF_DATE_KHR)
 			{
 				RecreateSwapChain();
