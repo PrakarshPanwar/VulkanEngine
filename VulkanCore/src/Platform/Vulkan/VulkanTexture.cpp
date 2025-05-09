@@ -134,7 +134,6 @@ namespace VulkanCore {
 
 			if (m_Specification.GenerateMips)
 				GenerateMipMaps();
-
 			else
 			{
 				VkCommandBuffer barrierCmd = device->GetCommandBuffer();
@@ -229,7 +228,7 @@ namespace VulkanCore {
 	}
 
 	// ---------------------------------------------------------------------------------------------------
-	// -----------------------------TEXTURE CUBE MAPS-----------------------------------------------------
+	// -------------------------------------TEXTURE CUBE MAPS---------------------------------------------
 	// ---------------------------------------------------------------------------------------------------
 
 	VulkanTextureCube::VulkanTextureCube(uint32_t width, uint32_t height, ImageFormat format)

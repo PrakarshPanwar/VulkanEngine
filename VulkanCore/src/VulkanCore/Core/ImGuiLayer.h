@@ -35,7 +35,7 @@ namespace VulkanCore {
 		void BlockEvents(bool block) { m_BlockEvents = block; }
 
 		static ImGuiLayer* Get() { return s_Instance; }
-		inline bool GetBlockEvents() const { return m_BlockEvents; }
+		bool GetBlockEvents() const { return m_BlockEvents; }
 	private:
 		void SetDarkThemeColor();
 	private:

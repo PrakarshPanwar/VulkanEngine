@@ -6,7 +6,7 @@ namespace VulkanCore {
 	class KeyEvent : public Event
 	{
 	public:
-		inline int GetKeyCode() const { return m_KeyCode; }
+		int GetKeyCode() const { return m_KeyCode; }
 
 		EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryInput)
 	public:
@@ -22,7 +22,7 @@ namespace VulkanCore {
 		KeyPressedEvent(int keycode, int repeatcount)
 			: KeyEvent(keycode), m_RepeatCount(repeatcount) {}
 
-		inline int GetRepeatCount() const { return m_RepeatCount; }
+		int GetRepeatCount() const { return m_RepeatCount; }
 
 		std::string ToString() const override
 		{

@@ -21,9 +21,9 @@ namespace VulkanCore {
 		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size, size_t offset = 0);
 		void ReloadPipeline() override;
 
-		inline std::shared_ptr<Shader> GetShader() const override { return m_Shader; }
-		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
-		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
+		std::shared_ptr<Shader> GetShader() const override { return m_Shader; }
+		VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
+		std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
 	private:
 		void InvalidateComputePipeline();
 	private:

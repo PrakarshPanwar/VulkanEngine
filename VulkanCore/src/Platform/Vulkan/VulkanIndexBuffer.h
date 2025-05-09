@@ -13,8 +13,8 @@ namespace VulkanCore {
 		~VulkanIndexBuffer();
 
 		void WriteData(void* data, uint32_t offset) override;
-		inline VkBuffer GetVulkanBuffer() const { return m_VulkanBuffer; }
-		inline uint8_t* GetMapPointer() const { return m_MapDataPtr; }
+		VkBuffer GetVulkanBuffer() const { return m_VulkanBuffer; }
+		uint8_t* GetMapPointer() const { return m_MapDataPtr; }
 	private:
 		VkBuffer m_VulkanBuffer = nullptr;
 		VmaAllocation m_MemoryAllocation = nullptr;

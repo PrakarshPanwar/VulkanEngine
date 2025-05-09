@@ -57,7 +57,7 @@ namespace VulkanCore {
 		virtual void UpdateMaterials() = 0;
 		virtual void PrepareShaderMaterial() = 0;
 
-		inline MaterialData& GetMaterialData() { return m_MaterialData; }
+		MaterialData& GetMaterialData() { return m_MaterialData; }
 
 		static std::shared_ptr<Material> Create(const std::string& debugName);
 	protected:

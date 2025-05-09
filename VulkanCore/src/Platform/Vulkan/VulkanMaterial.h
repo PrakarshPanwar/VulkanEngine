@@ -13,9 +13,9 @@ namespace VulkanCore {
 		VulkanMaterial(std::shared_ptr<Shader> shader, const std::string& debugName);
 		~VulkanMaterial();
 
-		inline const VkDescriptorSet& GetVulkanMaterialDescriptorSet() const { return m_MaterialDescriptorSets[Renderer::GetCurrentFrameIndex()]; }
-		inline const VkDescriptorSet& RT_GetVulkanMaterialDescriptorSet() const { return m_MaterialDescriptorSets[Renderer::RT_GetCurrentFrameIndex()]; }
-		inline std::tuple<VkDescriptorSet, VkDescriptorSet, VkDescriptorSet, VkDescriptorSet> GetMaterialTextureIDs() const
+		const VkDescriptorSet& GetVulkanMaterialDescriptorSet() const { return m_MaterialDescriptorSets[Renderer::GetCurrentFrameIndex()]; }
+		const VkDescriptorSet& RT_GetVulkanMaterialDescriptorSet() const { return m_MaterialDescriptorSets[Renderer::RT_GetCurrentFrameIndex()]; }
+		std::tuple<VkDescriptorSet, VkDescriptorSet, VkDescriptorSet, VkDescriptorSet> GetMaterialTextureIDs() const
 		{
 			return { m_DiffuseDstID, m_NormalDstID, m_ARMDstID, m_DisplacementDstID };
 		}

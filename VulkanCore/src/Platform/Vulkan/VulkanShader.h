@@ -18,9 +18,9 @@ namespace VulkanCore {
 		[[maybe_unused]] std::vector<VkDescriptorSet> AllocateDescriptorSets(uint32_t index = 0);
 		[[maybe_unused]] std::vector<VkDescriptorSet> AllocateAllDescriptorSets();
 
-		inline std::map<uint32_t, std::vector<uint32_t>>& GetShaderModules() { return m_VulkanSPIRV; }
-		inline uint32_t GetPushConstantSize() const { return (uint32_t)m_PushConstantSize; }
-		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout(uint32_t index = 0) const { return m_DescriptorSetLayouts[index]; }
+		std::map<uint32_t, std::vector<uint32_t>>& GetShaderModules() { return m_VulkanSPIRV; }
+		uint32_t GetPushConstantSize() const { return (uint32_t)m_PushConstantSize; }
+		std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout(uint32_t index = 0) const { return m_DescriptorSetLayouts[index]; }
 
 		void Reload() override;
 		bool HasGeometryShader() const override;

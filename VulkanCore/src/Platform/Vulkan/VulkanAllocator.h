@@ -41,7 +41,7 @@ namespace VulkanCore {
 		void DestroyImage(VkImage& image, VmaAllocation allocation);
 
 		void WriteAllocatorStats() const;
-		static inline const AllocationStats& GetAllocationStats() { return s_Data; }
+		static const AllocationStats& GetAllocationStats() { return s_Data; }
 	private:
 		const VmaAllocator m_VkMemoryAllocator = VulkanContext::GetVulkanMemoryAllocator();
 		std::string_view m_DebugName;

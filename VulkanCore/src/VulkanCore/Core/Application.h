@@ -57,7 +57,7 @@ namespace VulkanCore {
 		std::shared_ptr<ImGuiLayer> GetImGuiLayer() { return m_ImGuiLayer; }
 		static Application* Get() { return s_Instance; }
 
-		inline const ApplicationSpecification& GetSpecification() const { return m_Specification; }
+		const ApplicationSpecification& GetSpecification() const { return m_Specification; }
 	private:
 		bool OnWindowClose(WindowCloseEvent& window);
 		bool OnWindowResize(WindowResizeEvent& window);

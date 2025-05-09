@@ -13,7 +13,7 @@ namespace VulkanCore {
 		~VulkanVertexBuffer();
 
 		void WriteData(void* data, uint32_t offset) override;
-		inline VkBuffer GetVulkanBuffer() const { return m_VulkanBuffer; }
+		VkBuffer GetVulkanBuffer() const { return m_VulkanBuffer; }
 	private:
 		VkBuffer m_VulkanBuffer = nullptr;
 		VmaAllocation m_MemoryAllocation = nullptr;
