@@ -72,6 +72,10 @@ namespace VulkanCore {
 			glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
 			m_InitialMousePosition = mouse;
 
+			auto abs_delta = glm::abs(delta);
+			if (abs_delta.x > 0.5f || abs_delta.y > 0.5f)
+				delta = glm::vec2{ 0.0f };
+
 			Input::SetCursorMode(CursorMode::Locked);
 			MouseRotate(delta);
 		}
@@ -82,6 +86,10 @@ namespace VulkanCore {
 			const glm::vec2& mouse{ mousePosition.first, mousePosition.second };
 			glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
 			m_InitialMousePosition = mouse;
+
+			auto abs_delta = glm::abs(delta);
+			if (abs_delta.x > 0.5f || abs_delta.y > 0.5f)
+				delta = glm::vec2{ 0.0f };
 
 			if (Input::IsMouseButtonPressed(Mouse::ButtonMiddle))
 				MousePan(delta);
@@ -183,7 +191,6 @@ namespace VulkanCore {
 		glm::vec2 abs_delta = glm::abs(delta);
 		if (abs_delta.x < abs_delta.y)
 			m_FocalPoint += -GetForwardDirection() * delta.y * DragSpeed();
-
 		else
 		{
 			float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;

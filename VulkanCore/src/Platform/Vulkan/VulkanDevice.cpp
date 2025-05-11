@@ -61,7 +61,7 @@ namespace VulkanCore {
 		VkInstance instance,
 		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
 		const VkAllocationCallbacks* pAllocator,
-		VkDebugUtilsMessengerEXT* pDebugMessenger) 
+		VkDebugUtilsMessengerEXT* pDebugMessenger)
 	{
 		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 		if (func != nullptr)
@@ -214,7 +214,7 @@ namespace VulkanCore {
 		std::vector<VkPhysicalDevice> devices(deviceCount);
 		vkEnumeratePhysicalDevices(context->m_VulkanInstance, &deviceCount, devices.data());
 
-		for (const auto& device : devices) 
+		for (const auto& device : devices)
 		{
 			vkGetPhysicalDeviceProperties(device, &m_DeviceProperties);
 
