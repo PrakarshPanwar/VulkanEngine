@@ -106,6 +106,7 @@ struct PBRParams
     float Occlusion;
     float Metallic;
     float Roughness;
+    float ShadowCoefficient;
 };
 
 static PBRParams m_Params; // Thread-Local variable
@@ -234,7 +235,7 @@ float3 Lighting(float3 F0)
         // have no diffuse light).
         kD *= 1.0f - m_Params.Metallic;
         // Add to Outgoing Radiance Lo
-        Lo += (kD * m_Params.Albedo / PI + specular) * radiance * NdotL;
+        Lo += (kD * m_Params.Albedo / PI + specular) * radiance * NdotL * m_Params.ShadowCoefficient;
     }
 
     return Lo;
@@ -281,7 +282,9 @@ float LinearizeDepth(const float screenDepth)
 float ShadowTextureProjection(float4 coords, float2 offset, uint index)
 {
     float shadow = 1.0f;
-    float bias = 0.005f;
+
+    float cosTheta = saturate(dot(m_Params.Normal, c_DirectionalLightData.DirectionLights[0].Direction));
+    float bias = max(0.005f, 0.05f * (1.0f - cosTheta));
 
     if (coords.z > -1.0f && coords.z < 1.0f)
     {
@@ -329,10 +332,11 @@ float CalculateShadow()
 
     // Depth Compare for Shadowing
     float4 shadowCoord = mul(float4(Input.WorldPosition, 1.0f), mul(c_CascadeData.LightSpaceMatrices[cascadeIndex], BIAS_MATRIX));
-    shadowCoord = shadowCoord / shadowCoord.w;
+    shadowCoord.xyz = shadowCoord.xyz / shadowCoord.w;
+    shadowCoord.xyz = shadowCoord.xyz * 0.5f + 0.5f;
 
     float shadow = FilterPCF(shadowCoord, cascadeIndex);
-    //float shadow = ShadowTextureProjection(shadowCoord / shadowCoord.w, float2(0.0), cascadeIndex);
+    //float shadow = ShadowTextureProjection(shadowCoord, float2(0.0), cascadeIndex);
 
     return shadow;
 }
@@ -367,13 +371,11 @@ void FSMain(VertexOutput vertexOutput : VERTEX_OUT,
     float3 F0 = lerp(Fdielectric, m_Params.Albedo, m_Params.Metallic);
 
     // Shadow
-    float shadow = CalculateShadow();
+    m_Params.ShadowCoefficient = CalculateShadow();
 
     float3 lightingContribution = Lighting(F0);
     float3 iblContribution = IBL(F0, Lr);
-
     o_LightsDataTexture = float4(lightingContribution, 1.0f); // Lights Data Texture
-    lightingContribution *= shadow; // Apply Shadow
 
     float3 color = iblContribution + lightingContribution;
     o_Color = float4(color, c_MaterialData.Albedo.a); // Final Color
