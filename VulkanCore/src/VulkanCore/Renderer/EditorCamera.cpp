@@ -73,7 +73,7 @@ namespace VulkanCore {
 			m_InitialMousePosition = mouse;
 
 			auto abs_delta = glm::abs(delta);
-			if (abs_delta.x > 0.5f || abs_delta.y > 0.5f)
+			if (glm::any(glm::greaterThan(abs_delta, glm::vec2{ 0.5f })))
 				delta = glm::vec2{ 0.0f };
 
 			Input::SetCursorMode(CursorMode::Locked);
@@ -88,7 +88,7 @@ namespace VulkanCore {
 			m_InitialMousePosition = mouse;
 
 			auto abs_delta = glm::abs(delta);
-			if (abs_delta.x > 0.5f || abs_delta.y > 0.5f)
+			if (glm::any(glm::greaterThan(abs_delta, glm::vec2{ 0.5f })))
 				delta = glm::vec2{ 0.0f };
 
 			if (Input::IsMouseButtonPressed(Mouse::ButtonMiddle))
