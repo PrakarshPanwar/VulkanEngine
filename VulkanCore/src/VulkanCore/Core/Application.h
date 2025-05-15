@@ -10,6 +10,9 @@
 #include "LayerStack.h"
 #include "Timer.h"
 
+// Required for ImGui
+#define SUBMIT_TO_MAIN_THREAD VulkanCore::Application::Get()->SubmitToMainThread
+
 namespace VulkanCore {
 
 	struct ApplicationCommandLineArgs
@@ -46,16 +49,20 @@ namespace VulkanCore {
 		void OnEvent(Event& e);
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);
+		
+		void SubmitToMainThread(std::function<void()>&& func);
 
 		Window* GetWindow() { return m_Window.get(); }
 		WindowsWindow* GetWindowsWindow() { return std::dynamic_pointer_cast<WindowsWindow>(m_Window).get(); }
 		std::shared_ptr<ImGuiLayer> GetImGuiLayer() { return m_ImGuiLayer; }
 		static Application* Get() { return s_Instance; }
 
-		inline const ApplicationSpecification& GetSpecification() const { return m_Specification; }
+		const ApplicationSpecification& GetSpecification() const { return m_Specification; }
 	private:
 		bool OnWindowClose(WindowCloseEvent& window);
 		bool OnWindowResize(WindowResizeEvent& window);
+
+		void ExecuteMainThreadQueue();
 	private:
 		ApplicationSpecification m_Specification;
 		std::shared_ptr<Window> m_Window;
@@ -63,6 +70,9 @@ namespace VulkanCore {
 		std::unique_ptr<VulkanRenderer> m_Renderer;
 		std::shared_ptr<ImGuiLayer> m_ImGuiLayer;
 		std::unique_ptr<Timer> m_AppTimer;
+
+		std::vector<std::function<void()>> m_MainThreadQueue;
+		std::mutex m_MainThreadQueueMutex;
 
 		bool m_Running = true, m_GammaCorrection = false;
 		LayerStack m_LayerStack;

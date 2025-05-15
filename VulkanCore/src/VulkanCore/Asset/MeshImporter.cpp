@@ -99,7 +99,6 @@ namespace VulkanCore {
 		for (uint32_t m = 0; m < (uint32_t)meshSource->m_Submeshes.size(); ++m)
 		{
 			aiMesh* mesh = meshSource->m_Scene->mMeshes[m];
-			aiMaterial* material = meshSource->m_Scene->mMaterials[m];
 
 			for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
 			{
@@ -131,8 +130,6 @@ namespace VulkanCore {
 					vertex.Binormal = mVector;
 				}
 
-				vertex.Color = glm::vec3{ 1.0f };
-
 				if (mesh->HasTextureCoords(0))
 				{
 					glm::vec2 mTexCoords = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
@@ -145,7 +142,6 @@ namespace VulkanCore {
 			for (uint32_t i = 0; i < mesh->mNumFaces; ++i)
 			{
 				aiFace face = mesh->mFaces[i];
-
 				for (uint32_t j = 0; j < face.mNumIndices; ++j)
 					meshSource->m_Indices.push_back(face.mIndices[j]);
 			}

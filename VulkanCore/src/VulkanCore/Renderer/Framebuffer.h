@@ -30,15 +30,16 @@ namespace VulkanCore {
 		uint32_t Width = 0, Height = 0;
 		FramebufferAttachmentSpecification Attachments;
 		uint32_t Samples = 1;
+		uint32_t Layers = 1;
 		glm::vec4 ClearColor = { 0.01f, 0.01f, 0.01f, 1.0f };
-		bool Transfer = false;
-		bool ReadDepthTexture = false;
+		bool Transfer = false, ReadDepthTexture = false;
 	};
 
 	class Framebuffer : public Resource
 	{
 	public:
-		virtual const std::vector<std::shared_ptr<Image2D>>& GetAttachment(bool resolve, uint32_t index = 0) const = 0;
+		virtual const std::vector<std::shared_ptr<Image2D>>& GetAttachment(uint32_t index = 0) const = 0;
+		virtual const std::vector<std::shared_ptr<Image2D>>& GetDepthAttachment() const = 0;
 		virtual const std::vector<FramebufferTextureSpecification>& GetColorAttachmentsTextureSpec() const = 0;
 		virtual const FramebufferTextureSpecification& GetDepthAttachmentTextureSpec() const = 0;
 

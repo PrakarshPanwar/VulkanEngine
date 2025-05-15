@@ -1,0 +1,65 @@
+// GLSL Header: Shadow.glslh
+
+float LinearizeDepth(const float screenDepth)
+{
+	float depthLinearizeMul = u_Camera.DepthUnpackConsts.x;
+	float depthLinearizeAdd = u_Camera.DepthUnpackConsts.y;
+	return depthLinearizeMul / (depthLinearizeAdd - screenDepth);
+}
+
+float ShadowTextureProjection(vec4 coords, vec2 offset, uint index)
+{
+    float shadow = 1.0;
+	float bias = 0.005;
+
+	if (coords.z > -1.0 && coords.z < 1.0)
+    {
+		float dist = texture(u_ShadowMap, vec3(coords.st + offset, index)).r;
+		if (coords.w > 0 && dist < coords.z - bias)
+			shadow = 0.1; // Ambient Value
+	}
+
+	return shadow;
+}
+
+float FilterPCF(vec4 coords, uint index)
+{
+	vec2 texSize = vec2(textureSize(u_ShadowMap, 0));
+	float scale = 0.75;
+	float dx = scale / texSize.x;
+	float dy = scale / texSize.y;
+
+	int count = 0;
+	int range = 1;
+
+	float shadowFactor = 0.0;
+	for (int x = -range; x <= range; x++)
+    {
+		for (int y = -range; y <= range; y++)
+        {
+			shadowFactor += ShadowTextureProjection(coords, vec2(dx * x, dy * y), index);
+			count++;
+		}
+	}
+
+	return shadowFactor / count;
+}
+
+float CalculateShadow()
+{
+	uint cascadeIndex = 0;
+	for(uint i = 0; i < 3; ++i)
+    {
+		if (Input.ViewPosition.z < u_CascadeData.CascadeSplitLevels[i])
+			cascadeIndex = i + 1;
+	}
+
+	// Depth Compare for Shadowing
+	vec4 shadowCoord = (BIAS_MATRIX * u_CascadeData.LightSpaceMatrices[cascadeIndex]) * vec4(Input.WorldPosition, 1.0);
+	shadowCoord = shadowCoord / shadowCoord.w;
+
+	float shadow = FilterPCF(shadowCoord, cascadeIndex);
+    //float shadow = ShadowTextureProjection(shadowCoord / shadowCoord.w, vec2(0.0), cascadeIndex);
+
+    return shadow;
+}

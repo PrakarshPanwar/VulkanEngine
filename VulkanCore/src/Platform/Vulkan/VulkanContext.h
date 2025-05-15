@@ -8,9 +8,10 @@ namespace VulkanCore {
 		void SetDebugUtilsObjectName(VkDevice device, VkObjectType objectType, const std::string& debugName, void* object);
 		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName, float labelColor[]);
 		void EndCommandBufferLabel(VkCommandBuffer cmdBuffer);
+		void SetQueueLabel(VkQueue queue, const char* labelName, float labelColor[]);
+		void EndQueueLabel(VkQueue queue);
 	}
 
-	VkResult CreateDebugMarkerEXT(VkDevice device);
 	VkResult CreateDebugUtilsEXT(VkInstance instance);
 
 	class VulkanContext
@@ -29,9 +30,9 @@ namespace VulkanCore {
 		void Destroy();
 		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
 
-		static inline VulkanContext* GetCurrentContext() { return s_Instance; }
-		static inline VulkanDevice* GetCurrentDevice() { return s_Instance->m_Device.get(); }
-		static inline VmaAllocator GetVulkanMemoryAllocator() { return s_Instance->m_VkMemoryAllocator; }
+		static VulkanContext* GetCurrentContext() { return s_Instance; }
+		static VulkanDevice* GetCurrentDevice() { return s_Instance->m_Device.get(); }
+		static VmaAllocator GetVulkanMemoryAllocator() { return s_Instance->m_VulkanMemoryAllocator; }
 	private:
 		void CreateInstance();
 		void SetupDebugMessenger();
@@ -46,20 +47,19 @@ namespace VulkanCore {
 		void HasGLFWRequiredInstanceExtensions();
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
 	private:
-		VkInstance m_VkInstance;
+		VkInstance m_VulkanInstance;
 		VkDebugUtilsMessengerEXT m_DebugMessenger;
-		VkSurfaceKHR m_VkSurface;
+		VkSurfaceKHR m_VulkanSurface;
 
-		VmaAllocator m_VkMemoryAllocator;
+		VmaAllocator m_VulkanMemoryAllocator;
 
 		const std::vector<const char*> m_ValidationLayers = { "VK_LAYER_KHRONOS_validation" };
 		std::vector<const char*> m_DeviceExtensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-			VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME,
 			VK_KHR_MAINTENANCE1_EXTENSION_NAME
 		};
 
-		std::unique_ptr<VulkanDevice> m_Device; 
+		std::unique_ptr<VulkanDevice> m_Device;
 		std::shared_ptr<WindowsWindow> m_Window;
 
 		static VulkanContext* s_Instance;

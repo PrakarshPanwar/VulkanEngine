@@ -21,7 +21,7 @@ namespace VulkanCore {
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		VkBuffer stagingBuffer;
-		VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, stagingBuffer);
+		VmaAllocation stagingBufferAlloc = allocator.AllocateBuffer(VulkanMemoryType::HostLocal, bufferCreateInfo, stagingBuffer, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
 
 		// Copy/Map Data to Staging Buffer
 		uint8_t* dstData = allocator.MapMemory<uint8_t>(stagingBufferAlloc);
@@ -32,7 +32,7 @@ namespace VulkanCore {
 		vertexBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		vertexBufferCreateInfo.size = m_Size;
 		vertexBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		m_MemoryAllocation = allocator.AllocateBuffer(vertexBufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE, m_VulkanBuffer);
+		m_MemoryAllocation = allocator.AllocateBuffer(VulkanMemoryType::DeviceLocal, vertexBufferCreateInfo, m_VulkanBuffer, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
 		VkCommandBuffer copyCmd = device->GetCommandBuffer();
 
@@ -64,20 +64,20 @@ namespace VulkanCore {
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		m_MemoryAllocation = allocator.AllocateBuffer(bufferCreateInfo, VMA_MEMORY_USAGE_AUTO_PREFER_HOST, m_VulkanBuffer);
+		m_MemoryAllocation = allocator.AllocateBuffer(VulkanMemoryType::SharedHeap, bufferCreateInfo, m_VulkanBuffer);
 
 		// Map Data to Vertex Buffer
-		m_MappedPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
+		m_MapDataPtr = allocator.MapMemory<uint8_t>(m_MemoryAllocation);
 	}
 
 	VulkanVertexBuffer::~VulkanVertexBuffer()
 	{
-		Renderer::SubmitResourceFree([mappedPtr = m_MappedPtr, memoryAlloc = m_MemoryAllocation, vulkanBuffer = m_VulkanBuffer]() mutable
+		Renderer::SubmitResourceFree([mapPtr = m_MapDataPtr, memoryAlloc = m_MemoryAllocation, vulkanBuffer = m_VulkanBuffer]() mutable
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 			VulkanAllocator allocator("VertexBuffer");
 		
-			if (mappedPtr)
+			if (mapPtr)
 				allocator.UnmapMemory(memoryAlloc);
 
 			allocator.DestroyBuffer(vulkanBuffer, memoryAlloc);
@@ -87,10 +87,7 @@ namespace VulkanCore {
 	void VulkanVertexBuffer::WriteData(void* data, uint32_t offset)
 	{
 		if (data)
-		{
-			memcpy(m_MappedPtr, data, m_Size);
-			vmaFlushAllocation(VulkanContext::GetVulkanMemoryAllocator(), m_MemoryAllocation, (VkDeviceSize)offset, (VkDeviceSize)m_Size);
-		}
+			memcpy(m_MapDataPtr, data, m_Size);
 	}
 
 }

@@ -68,7 +68,7 @@ namespace VulkanCore {
 		void FreeDescriptors(std::vector<VkDescriptorSet>& descriptors) const;
 		void ResetPool();
 
-		inline VkDescriptorPool GetVulkanDescriptorPool() { return m_DescriptorPool; }
+		VkDescriptorPool GetVulkanDescriptorPool() const { return m_DescriptorPool; }
 	private:
 		VkDescriptorPool m_DescriptorPool;
 
