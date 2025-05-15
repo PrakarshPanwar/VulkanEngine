@@ -8,6 +8,7 @@ namespace VulkanCore {
 	{
 	public:
 		ContentBrowserPanel();
+		~ContentBrowserPanel();
 
 		void SetThumbnailSize(float thumbnailSize) { m_ThumbnailSize = thumbnailSize; }
 		void SetPadding(float padding) { m_Padding = padding; }
@@ -18,10 +19,22 @@ namespace VulkanCore {
 		void RemoveAssetDialog(bool open, const std::filesystem::path& path);
 		void CreateMaterialDialog();
 	private:
-		std::filesystem::path m_CurrentDirectory;
+		struct TreeNode
+		{
+			std::filesystem::path FilePath;
 
-		std::shared_ptr<Texture2D> m_DirectoryIcon, m_FileIcon;
-		VkDescriptorSet m_DirectoryIconID, m_FileIconID;
+			TreeNode* ParentNode = nullptr;
+			std::list<TreeNode> ChildNodes;
+		};
+
+		void UpdateAssetTree(TreeNode* treeNode);
+	private:
+		std::filesystem::path m_CurrentDirectory;
+		TreeNode* m_RootNode = nullptr;
+		bool m_AssetMode = true;
+
+		std::shared_ptr<Texture2D> m_DirectoryIcon, m_FileIcon, m_RefreshIcon;
+		VkDescriptorSet m_DirectoryIconID, m_FileIconID, m_RefreshIconID;
 
 		std::shared_ptr<MaterialEditor> m_MaterialEditor;
 

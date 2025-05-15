@@ -6,9 +6,9 @@ namespace VulkanCore {
 	class KeyEvent : public Event
 	{
 	public:
-		inline int GetKeyCode() const { return m_KeyCode; }
+		int GetKeyCode() const { return m_KeyCode; }
 
-		EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryInput);
+		EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryInput)
 	public:
 		KeyEvent(int keycode)
 			: m_KeyCode(keycode) {}
@@ -22,7 +22,7 @@ namespace VulkanCore {
 		KeyPressedEvent(int keycode, int repeatcount)
 			: KeyEvent(keycode), m_RepeatCount(repeatcount) {}
 
-		inline int GetRepeatCount() const { return m_RepeatCount; }
+		int GetRepeatCount() const { return m_RepeatCount; }
 
 		std::string ToString() const override
 		{
@@ -31,7 +31,7 @@ namespace VulkanCore {
 			return ss.str();
 		}
 
-		EVENT_CLASS_TYPE(KeyPressed);
+		EVENT_CLASS_TYPE(KeyPressed)
 	private:
 		int m_RepeatCount;
 	};
@@ -49,7 +49,23 @@ namespace VulkanCore {
 			return ss.str();
 		}
 
-		EVENT_CLASS_TYPE(KeyReleased);
+		EVENT_CLASS_TYPE(KeyReleased)
+	};
+
+	class KeyTypedEvent : public KeyEvent
+	{
+	public:
+		KeyTypedEvent(int keycode)
+			: KeyEvent(keycode) {}
+
+		std::string ToString() const override
+		{
+			std::stringstream ss;
+			ss << "KeyTypedEvent: " << m_KeyCode;
+			return ss.str();
+		}
+
+		EVENT_CLASS_TYPE(KeyTyped)
 	};
 
 }

@@ -13,6 +13,7 @@ group "Dependencies"
 	include "VulkanCore/vendor/glfw"
 	include "VulkanCore/vendor/imgui"
 	include "VulkanCore/vendor/yaml-cpp"
+	include "VulkanCore/vendor/JoltPhysics"
 group ""
 
 include "VulkanCore"

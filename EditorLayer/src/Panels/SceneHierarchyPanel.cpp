@@ -1,3 +1,4 @@
+#include <filesystem>
 #include "SceneHierarchyPanel.h"
 
 #include "VulkanCore/Asset/AssetManager.h"
@@ -6,16 +7,12 @@
 #include "VulkanCore/Scene/SceneRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
-#include <filesystem>
-
 #include <imgui.h>
 #include <imgui_internal.h>
 
 #include <glm/gtc/type_ptr.hpp>
 
 namespace VulkanCore {
-
-	static const std::filesystem::path g_AssetPath = "assets";
 
 	static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f)
 	{
@@ -98,11 +95,12 @@ namespace VulkanCore {
 
 		if (m_Context)
 		{
-			m_Context->m_Registry.each([&](auto entityID)
+			auto view = m_Context->m_Registry.view<entt::entity>();
+			for (auto entityID : view)
 			{
 				Entity entity{ entityID, m_Context.get() };
 				DrawEntityNode(entity);
-			});
+			}
 
 			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
 				m_SelectionContext = {};
@@ -130,7 +128,7 @@ namespace VulkanCore {
 
 	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
 	{
-
+		m_SelectionContext = entity;
 	}
 
 	void SceneHierarchyPanel::SetContext(std::shared_ptr<Scene> context)
@@ -153,6 +151,9 @@ namespace VulkanCore {
 		bool entityDeleted = false;
 		if (ImGui::BeginPopupContextItem())
 		{
+			if (ImGui::MenuItem("Duplicate Entity"))
+				m_SelectionContext = m_Context->DuplicateEntity(entity);
+
 			if (ImGui::MenuItem("Delete Entity"))
 				entityDeleted = true;
 
@@ -170,15 +171,16 @@ namespace VulkanCore {
 					MeshComponent meshComponent = entity.GetComponent<MeshComponent>();
 
 					std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshComponent.MeshHandle);
-					for (const MeshNode& submeshes : mesh->GetMeshSource()->GetMeshNodes())
+					for (const Submesh& submesh : mesh->GetMeshSource()->GetSubmeshes())
 					{
-						if (ImGui::TreeNode(submeshes.Name.c_str()))
+						if (ImGui::TreeNodeEx((void*)submesh.BaseVertex, 0, submesh.NodeName.c_str()))
 							ImGui::TreePop();
 					}
 				}
 
 				ImGui::TreePop();
 			}
+
 			ImGui::TreePop();
 		}
 
@@ -190,7 +192,8 @@ namespace VulkanCore {
 		}
 	}
 
-	template<typename T, typename UIFunction>
+	template<typename T, typename UIFunction> 
+		requires IsComponentType<T> && std::regular_invocable<UIFunction, T&>
 	static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction)
 	{
 		const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
@@ -214,7 +217,7 @@ namespace VulkanCore {
 			bool removeComponent = false;
 			if (ImGui::BeginPopup("ComponentSettings"))
 			{
-				if (ImGui::MenuItem("Remove component"))
+				if (ImGui::MenuItem("Remove Component"))
 					removeComponent = true;
 
 				ImGui::EndPopup();
@@ -250,15 +253,32 @@ namespace VulkanCore {
 		ImGui::PushItemWidth(-1);
 
 		if (ImGui::Button("Add Component"))
-			ImGui::OpenPopup("AddComponent");
+		{
+			if (entity.HasAnyComponent<SkyLightComponent, DirectionalLightComponent>())
+				ImGui::OpenPopup("NoComponent");
+			else
+				ImGui::OpenPopup("AddComponent");
+		}
 
 		if (ImGui::BeginPopup("AddComponent"))
 		{
 			DisplayAddComponentEntry<PointLightComponent>("Point Light");
 			DisplayAddComponentEntry<SpotLightComponent>("Spot Light");
+			DisplayAddComponentEntry<DirectionalLightComponent>("Directional Light");
 			DisplayAddComponentEntry<SkyLightComponent>("Skybox");
 			DisplayAddComponentEntry<MeshComponent>("Mesh");
+			DisplayAddComponentEntry<Rigidbody3DComponent>("Rigidbody 3D");
+			DisplayAddComponentEntry<BoxCollider3DComponent>("Box Collider 3D");
+			DisplayAddComponentEntry<SphereColliderComponent>("Sphere Collider");
+			DisplayAddComponentEntry<CapsuleColliderComponent>("Capsule Collider");
+			DisplayAddComponentEntry<MeshColliderComponent>("Mesh Collider");
 
+			ImGui::EndPopup();
+		}
+
+		if (ImGui::BeginPopup("NoComponent"))
+		{
+			ImGui::Text("Entity has either Skybox or Directional Light");
 			ImGui::EndPopup();
 		}
 
@@ -271,6 +291,7 @@ namespace VulkanCore {
 			DrawVec3Control("Rotation", rotation);
 			component.Rotation = glm::radians(rotation);
 			DrawVec3Control("Scale", component.Scale, 1.0f);
+			ImGui::Spacing();
 		});
 
 		DrawComponent<PointLightComponent>("Point Light", entity, [](auto& component)
@@ -288,7 +309,7 @@ namespace VulkanCore {
 			float innerCutoff = glm::degrees(component.InnerCutoff);
 			float outerCutoff = glm::degrees(component.OuterCutoff);
 			ImGui::DragFloat("Inner Cutoff", &innerCutoff, 0.01f, 0.01f, outerCutoff);
-			ImGui::DragFloat("Outer Cutoff", &outerCutoff, 0.01f, innerCutoff, 80.0f);
+			ImGui::DragFloat("Outer Cutoff", &outerCutoff, 0.01f, innerCutoff, 80.0f); // Outer cutoff should be greater than Inner cutoff
 			component.InnerCutoff = glm::radians(innerCutoff);
 			component.OuterCutoff = glm::radians(outerCutoff);
 
@@ -296,10 +317,18 @@ namespace VulkanCore {
 			ImGui::DragFloat("Radius", &component.Radius, 0.01f, 0.001f, 1000.0f);
 		});
 
+		DrawComponent<DirectionalLightComponent>("Directional Light", entity, [](auto& component)
+		{
+			DrawVec3Control("Direction", component.Direction, 1.0f, 75.0f);
+			ImGui::Spacing();
+			ImGui::ColorEdit3("Color", glm::value_ptr(component.Color));
+			ImGui::DragFloat("Intensity", (float*)&component.Color.w, 0.01f, 0.0f, 10000.0f);
+			ImGui::DragFloat("Falloff", &component.Falloff, 0.01f, 0.0f, 10000.0f);
+		});
+
 		DrawComponent<SkyLightComponent>("Skybox", entity, [](auto& component)
 		{
 			auto skyboxAsset = AssetManager::GetAsset<Texture2D>(component.TextureHandle);
-
 			if (skyboxAsset)
 			{
 				ImTextureID iconID = SceneRenderer::GetTextureCubeID();
@@ -313,14 +342,13 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path assetPath = g_AssetPath / path;
-
+						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 						std::string filepath = assetPath.generic_string();
-						SceneRenderer::SetSkybox(filepath);
 
 						auto newSkybox = AssetManager::GetAsset<Texture2D>(filepath);
 						component.TextureHandle = newSkybox->Handle;
+
+						SceneRenderer::SetSkybox(component.TextureHandle);
 					}
 
 					ImGui::EndDragDropTarget();
@@ -339,14 +367,13 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path assetPath = g_AssetPath / path;
-
+						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 						std::string filepath = assetPath.generic_string();
-						SceneRenderer::SetSkybox(filepath);
 
 						auto newSkybox = AssetManager::GetAsset<Texture2D>(filepath);
 						component.TextureHandle = newSkybox->Handle;
+
+						SceneRenderer::SetSkybox(component.TextureHandle);
 					}
 
 					ImGui::EndDragDropTarget();
@@ -359,9 +386,9 @@ namespace VulkanCore {
 			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
 			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(component.MeshHandle);
-			std::shared_ptr<MaterialAsset> materialAsset = AssetManager::GetAsset<MaterialAsset>(component.MaterialTableHandle);
+			std::shared_ptr<MaterialTable> materialTable = component.MaterialTableHandle;
 
-			if (mesh && materialAsset)
+			if (mesh && materialTable)
 			{
 				// Mesh Asset
 				auto meshSource = mesh->GetMeshSource();
@@ -373,13 +400,19 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path assetPath = g_AssetPath / path;
+						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
-						sceneRenderer->UpdateMeshInstanceData(mesh, materialAsset);
+						sceneRenderer->UpdateMeshInstanceData(mesh, materialTable);
 
 						std::shared_ptr<Mesh> newMesh = AssetManager::GetAsset<Mesh>(assetPath.string());
 						component.MeshHandle = newMesh->Handle;
+
+						// Initialize Material Table
+						std::map<uint32_t, std::shared_ptr<MaterialAsset>> materialTableAssets{};
+						for (auto& submesh : newMesh->GetMeshSource()->GetSubmeshes())
+							materialTableAssets[submesh.MaterialIndex] = nullptr;
+
+						component.MaterialTableHandle = std::make_shared<MaterialTable>(materialTableAssets);
 					}
 
 					ImGui::EndDragDropTarget();
@@ -387,30 +420,38 @@ namespace VulkanCore {
 
 				ImGui::Separator();
 
-				// Material Asset
-				AssetHandle materialHandle = component.MaterialTableHandle;
-				auto& materialAssetMetadata = AssetManager::GetMetadata(materialHandle);
-				const auto& materialAssetPath = materialAssetMetadata.FilePath.generic_string();
-				ImGui::InputText("Material", (char*)materialAssetPath.data(), materialAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
-
-				if (ImGui::BeginDragDropTarget())
+				ImGui::Text("Material Table");
+				for (auto& [materialIndex, materialAsset] : materialTable->GetMaterialMap())
 				{
-					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+					std::string materialIndexLabel = std::format("[{}]", materialIndex);
+
+					// Material Asset
+					if (materialAsset)
 					{
-						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path assetPath = g_AssetPath / path;
-
-						sceneRenderer->UpdateMeshInstanceData(mesh, materialAsset);
-
-						std::shared_ptr<MaterialAsset> newMaterialAsset = AssetManager::GetAsset<MaterialAsset>(assetPath.string());
-						component.MaterialTableHandle = newMaterialAsset->Handle;
-						meshSource->SetMaterial(newMaterialAsset->GetMaterial());
+						AssetHandle materialHandle = materialAsset->Handle;
+						auto& materialAssetMetadata = AssetManager::GetMetadata(materialHandle);
+						const auto& materialAssetPath = materialAssetMetadata.FilePath.generic_string();
+						ImGui::InputText(materialIndexLabel.c_str(), (char*)materialAssetPath.data(), materialAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
+					}
+					else
+					{
+						char materialNullPath[5] = "NULL";
+						ImGui::InputText(materialIndexLabel.c_str(), materialNullPath, strlen(materialNullPath), ImGuiInputTextFlags_ReadOnly);
 					}
 
-					ImGui::EndDragDropTarget();
-				}
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+						{
+							std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
-				ImGui::Separator();
+							std::shared_ptr<MaterialAsset> newMaterialAsset = AssetManager::GetAsset<MaterialAsset>(assetPath.string());
+							materialTable->SetMaterial(materialIndex, newMaterialAsset);
+						}
+
+						ImGui::EndDragDropTarget();
+					}
+				}
 
 				// Mesh Stats
 				ImGui::Text("Vertex Count: %d", meshSource->GetVertexCount());
@@ -429,45 +470,93 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						const wchar_t* path = (const wchar_t*)payload->Data;
-						std::filesystem::path assetPath = g_AssetPath / path;
+						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
 
 						std::shared_ptr<Mesh> newMesh = AssetManager::GetAsset<Mesh>(assetPath.string());
 						component.MeshHandle = newMesh->Handle;
+
+						// Initialize Material Table
+						std::map<uint32_t, std::shared_ptr<MaterialAsset>> materialTableAssets{};
+						for (auto& submesh : newMesh->GetMeshSource()->GetSubmeshes())
+							materialTableAssets[submesh.MaterialIndex] = nullptr;
+
+						// TODO: Create only default material as memory only asset
+						auto meshSource = newMesh->GetMeshSource();
+						meshSource->SetBaseMaterial(std::make_shared<MaterialAsset>(Material::Create("Default Material")));
+
+						component.MaterialTableHandle = std::make_shared<MaterialTable>(materialTableAssets);
 					}
 
 					ImGui::EndDragDropTarget();
 				}
-
-				if (component.MeshHandle)
-				{
-					// Import Material Asset
-					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-					ImGui::Button("Import Material", buttonSize);
-					ImGui::PopItemFlag();
-
-					if (ImGui::BeginDragDropTarget())
-					{
-						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-						{
-							const wchar_t* path = (const wchar_t*)payload->Data;
-							std::filesystem::path assetPath = g_AssetPath / path;
-
-							std::shared_ptr<MaterialAsset> newMaterialAsset = AssetManager::GetAsset<MaterialAsset>(assetPath.string());
-							component.MaterialTableHandle = newMaterialAsset->Handle;
-
-							auto meshSource = mesh->GetMeshSource();
-							meshSource->SetMaterial(newMaterialAsset->GetMaterial());
-						}
-
-						ImGui::EndDragDropTarget();
-					}
-				}
 			}
+		});
+
+		DrawComponent<Rigidbody3DComponent>("Rigidbody 3D", entity, [](auto& component)
+		{
+			const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
+			const char* currentBodyTypeString = bodyTypeStrings[(int)component.Type];
+			if (ImGui::BeginCombo("Body Type", currentBodyTypeString))
+			{
+				for (int i = 0; i < 3; ++i)
+				{
+					bool isSelected = currentBodyTypeString == bodyTypeStrings[i];
+					if (ImGui::Selectable(bodyTypeStrings[i], isSelected))
+					{
+						currentBodyTypeString = bodyTypeStrings[i];
+						component.Type = (Rigidbody3DComponent::BodyType)i;
+					}
+
+					if (isSelected)
+						ImGui::SetItemDefaultFocus();
+				}
+
+				ImGui::EndCombo();
+			}
+
+			ImGui::Checkbox("Fixed Rotation", &component.FixedRotation);
+		});
+
+		DrawComponent<BoxCollider3DComponent>("Box Collider 3D", entity, [](auto& component)
+		{
+			ImGui::DragFloat3("Offset", glm::value_ptr(component.Offset));
+			ImGui::DragFloat3("Size", glm::value_ptr(component.Size));
+			ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+			//ImGui::DragFloat("Restitution Threshold", &component.RestitutionThreshold, 0.01f, 0.0f);
+		});
+
+		DrawComponent<SphereColliderComponent>("Sphere Collider", entity, [](auto& component)
+		{
+			ImGui::DragFloat3("Offset", glm::value_ptr(component.Offset));
+			ImGui::DragFloat("Radius", &component.Radius);
+			ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+			//ImGui::DragFloat("Restitution Threshold", &component.RestitutionThreshold, 0.01f, 0.0f);
+		});
+
+		DrawComponent<CapsuleColliderComponent>("Capsule Collider", entity, [](auto& component)
+		{
+			ImGui::DragFloat("Half Height", &component.HalfHeight);
+			ImGui::DragFloat("Radius", &component.Radius);
+			ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+			//ImGui::DragFloat("Restitution Threshold", &component.RestitutionThreshold, 0.01f, 0.0f);
+		});
+
+		DrawComponent<MeshColliderComponent>("Mesh Collider", entity, [](auto& component)
+		{
+			ImGui::DragFloat("Density", &component.Density, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Friction", &component.Friction, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Restitution", &component.Restitution, 0.01f, 0.0f, 1.0f);
+			//ImGui::DragFloat("Restitution Threshold", &component.RestitutionThreshold, 0.01f, 0.0f);
 		});
 	}
 
-	template<typename T>
+	template<typename T> requires IsComponentType<T>
 	void SceneHierarchyPanel::DisplayAddComponentEntry(const std::string& entryName)
 	{
 		if (!m_SelectionContext.HasComponent<T>())
@@ -479,4 +568,29 @@ namespace VulkanCore {
 			}
 		}
 	}
+
+	template<>
+	void SceneHierarchyPanel::DisplayAddComponentEntry<SkyLightComponent>(const std::string& entryName)
+	{
+		if (ImGui::MenuItem(entryName.c_str()))
+		{
+			m_SelectionContext.AddComponent<SkyLightComponent>();
+			m_SelectionContext.RemoveComponent<TransformComponent>();
+
+			ImGui::CloseCurrentPopup();
+		}
+	}
+
+	template<>
+	void SceneHierarchyPanel::DisplayAddComponentEntry<DirectionalLightComponent>(const std::string& entryName)
+	{
+		if (ImGui::MenuItem(entryName.c_str()))
+		{
+			m_SelectionContext.AddComponent<DirectionalLightComponent>();
+			m_SelectionContext.RemoveComponent<TransformComponent>();
+
+			ImGui::CloseCurrentPopup();
+		}
+	}
+
 }

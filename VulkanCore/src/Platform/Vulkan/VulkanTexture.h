@@ -12,11 +12,11 @@ namespace VulkanCore {
 		VulkanTexture(uint32_t width, uint32_t height, ImageFormat format);
 		~VulkanTexture();
 
-		inline const TextureSpecification& GetSpecification() const override { return m_Specification; }
-		inline bool IsLoaded() const override { return m_IsLoaded; }
+		const TextureSpecification& GetSpecification() const override { return m_Specification; }
+		bool IsLoaded() const override { return m_IsLoaded; }
 
-		inline const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
-		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_Image->GetDescriptorImageInfo(); }
+		const VulkanImageInfo& GetVulkanImageInfo() const { return m_Info; }
+		const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_Image->GetDescriptorImageInfo(); }
 
 		void Reload(ImageFormat format);
 	private:
@@ -38,17 +38,16 @@ namespace VulkanCore {
 	public:
 		VulkanTextureCube(void* data, TextureSpecification spec = {});
 		VulkanTextureCube(uint32_t width, uint32_t height, ImageFormat format = ImageFormat::RGBA32F);
-
 		~VulkanTextureCube();
 
-		inline const TextureSpecification& GetSpecification() const override { return m_Specification; }
-		inline bool IsLoaded() const override { return m_IsLoaded; }
+		const TextureSpecification& GetSpecification() const override { return m_Specification; }
+		bool IsLoaded() const override { return m_IsLoaded; }
 
 		void Invalidate();
 		void GenerateMipMaps(bool readonly);
 		VkImageView CreateImageViewSingleMip(uint32_t mip);
 		VkImageView CreateImageViewPerLayer(uint32_t layer);
-		inline const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_DescriptorImageInfo; }
+		const VkDescriptorImageInfo& GetDescriptorImageInfo() const { return m_DescriptorImageInfo; }
 	private:
 		void Release();
 	private:

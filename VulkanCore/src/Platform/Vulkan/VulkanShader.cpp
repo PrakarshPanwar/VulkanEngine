@@ -8,6 +8,7 @@
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 
+#include <regex>
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
 #include <spirv_cross/spirv_glsl.hpp>
@@ -17,14 +18,34 @@ namespace VulkanCore {
 
 	namespace Utils {
 
+		static constexpr std::array<ShaderType, 6> s_ShaderTypes = {
+			ShaderType::Compute,
+			ShaderType::Vertex,
+			ShaderType::Fragment,
+			ShaderType::TessellationControl,
+			ShaderType::TessellationEvaluation,
+			ShaderType::Geometry
+		};
+
+		static std::map<std::filesystem::path, ShaderType> s_ShaderExtensionMap = {
+			{ ".vert", ShaderType::Vertex },
+			{ ".frag", ShaderType::Fragment },
+			{ ".tesc", ShaderType::TessellationControl },
+			{ ".tese", ShaderType::TessellationEvaluation },
+			{ ".geom", ShaderType::Geometry },
+			{ ".comp", ShaderType::Compute }
+		};
+
 		static shaderc_shader_kind GLShaderStageToShaderC(ShaderType stage)
 		{
 			switch (stage)
 			{
-			case ShaderType::Vertex:   return shaderc_glsl_vertex_shader;
-			case ShaderType::Fragment: return shaderc_glsl_fragment_shader;
-			case ShaderType::Geometry: return shaderc_glsl_geometry_shader;
-			case ShaderType::Compute:  return shaderc_glsl_compute_shader;
+			case ShaderType::Vertex:				 return shaderc_glsl_vertex_shader;
+			case ShaderType::Fragment:				 return shaderc_glsl_fragment_shader;
+			case ShaderType::TessellationControl:	 return shaderc_glsl_tess_control_shader;
+			case ShaderType::TessellationEvaluation: return shaderc_glsl_tess_evaluation_shader;
+			case ShaderType::Geometry:				 return shaderc_glsl_geometry_shader;
+			case ShaderType::Compute:				 return shaderc_glsl_compute_shader;
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
@@ -35,19 +56,21 @@ namespace VulkanCore {
 		{
 			switch (stage)
 			{
-			case ShaderType::Vertex:   return "Vertex";
-			case ShaderType::Fragment: return "Fragment";
-			case ShaderType::Geometry: return "Geometry";
-			case ShaderType::Compute:  return "Compute";
+			case ShaderType::Vertex:				 return "Vertex";
+			case ShaderType::Fragment:				 return "Fragment";
+			case ShaderType::TessellationControl:	 return "TessellationControl";
+			case ShaderType::TessellationEvaluation: return "TessellationEvaluation";
+			case ShaderType::Geometry:				 return "Geometry";
+			case ShaderType::Compute:				 return "Compute";
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
 			return {};
 		}
 
-		static const char* GetCacheDirectory()
+		static consteval const char* GetCacheDirectory()
 		{
-			return "assets\\cache";
+			return "cache";
 		}
 
 		static void CreateCacheDirectoryIfRequired()
@@ -61,72 +84,38 @@ namespace VulkanCore {
 		{
 			switch (stage)
 			{
-			case ShaderType::Vertex:   return ".vert.spv";
-			case ShaderType::Fragment: return ".frag.spv";
-			case ShaderType::Geometry: return ".geom.spv";
-			case ShaderType::Compute:  return ".comp.spv";
+			case ShaderType::Vertex:				 return ".vert.spv";
+			case ShaderType::Fragment:				 return ".frag.spv";
+			case ShaderType::TessellationControl:	 return ".tesc.spv";
+			case ShaderType::TessellationEvaluation: return ".tese.spv";
+			case ShaderType::Geometry:				 return ".geom.spv";
+			case ShaderType::Compute:				 return ".comp.spv";
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
 			return "";
 		}
+
 	}
 
-	VulkanShader::VulkanShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath)
-		: m_VertexFilePath(vsfilepath), m_FragmentFilePath(fsfilepath), m_GeometryFilePath(gsfilepath)
+	VulkanShader::VulkanShader(const std::string& shaderName)
+		: m_ShaderName(shaderName)
 	{
-		if (m_GeometryFilePath.empty())
-		{
-			auto [VertexSrc, FragmentSrc] = ParseShader(vsfilepath, fsfilepath);
-
-			Utils::CreateCacheDirectoryIfRequired();
-
-			std::unordered_map<uint32_t, std::string> Sources;
-			Sources[(uint32_t)ShaderType::Vertex] = VertexSrc;
-			Sources[(uint32_t)ShaderType::Fragment] = FragmentSrc;
-
-			m_ShaderSources = Sources;
-			CompileOrGetVulkanBinaries(Sources);
-		}
-		else
-		{
-			auto [VertexSrc, FragmentSrc, GeometrySrc] = ParseShader(vsfilepath, fsfilepath, gsfilepath);
-
-			Utils::CreateCacheDirectoryIfRequired();
-
-			std::unordered_map<uint32_t, std::string> Sources;
-			Sources[(uint32_t)ShaderType::Vertex] = VertexSrc;
-			Sources[(uint32_t)ShaderType::Fragment] = FragmentSrc;
-			Sources[(uint32_t)ShaderType::Geometry] = GeometrySrc;
-
-			m_ShaderSources = Sources;
-			CompileOrGetVulkanBinaries(Sources);
-		}
-
-		ReflectShaderData();
-		InvalidateDescriptors();
-	}
-
-	VulkanShader::VulkanShader(const std::string& cmpfilepath)
-		: m_ComputeFilePath(cmpfilepath)
-	{
-		auto ComputeSrc = ParseShader(cmpfilepath);
-
 		Utils::CreateCacheDirectoryIfRequired();
 
-		std::unordered_map<uint32_t, std::string> Sources;
-		Sources[(uint32_t)ShaderType::Compute] = ComputeSrc;
+		Timer timer("GLSL Shader Creation");
 
-		m_ShaderSources = Sources;
+		CheckRequiredStagesForCompilation();
+
+		std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>> Sources = ParseShaders();
 		CompileOrGetVulkanBinaries(Sources);
 
 		ReflectShaderData();
-		InvalidateDescriptors();
+		//InvalidateDescriptors();
 	}
 
 	VulkanShader::~VulkanShader()
 	{
-
 	}
 
 	std::shared_ptr<VulkanDescriptorSetLayout> VulkanShader::CreateDescriptorSetLayout(int index)
@@ -170,7 +159,7 @@ namespace VulkanCore {
 							shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
 						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-							shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+							shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
 						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
@@ -234,10 +223,10 @@ namespace VulkanCore {
 					VkShaderStageFlags shaderStageFlags = 0;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-						shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+						shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
 					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
@@ -279,100 +268,121 @@ namespace VulkanCore {
 		return {};
 	}
 
-	std::tuple<std::string, std::string> VulkanShader::ParseShader(const std::string& vsfilepath, const std::string& fsfilepath)
+	void VulkanShader::CheckRequiredStagesForCompilation()
 	{
-		std::ifstream VertexSource(vsfilepath, std::ios::binary);
-		std::ifstream FragmentSource(fsfilepath, std::ios::binary);
+		constexpr const char* cacheDirectory = "cache/", *shaderDirectory = "shaders/";
 
-		VK_CORE_ASSERT(VertexSource.is_open(), "Failed to Open Vertex Shader File!");
-		VK_CORE_ASSERT(FragmentSource.is_open(), "Failed to Open Fragment Shader File!");
+		const std::array<std::pair<std::string, std::string>, 6> shaderPaths = {
+			std::make_pair(shaderDirectory + m_ShaderName + ".comp", cacheDirectory + m_ShaderName + ".comp.spv"),
+			std::make_pair(shaderDirectory + m_ShaderName + ".vert", cacheDirectory + m_ShaderName + ".vert.spv"),
+			std::make_pair(shaderDirectory + m_ShaderName + ".frag", cacheDirectory + m_ShaderName + ".frag.spv"),
+			std::make_pair(shaderDirectory + m_ShaderName + ".tesc", cacheDirectory + m_ShaderName + ".tesc.spv"),
+			std::make_pair(shaderDirectory + m_ShaderName + ".tese", cacheDirectory + m_ShaderName + ".tese.spv"),
+			std::make_pair(shaderDirectory + m_ShaderName + ".geom", cacheDirectory + m_ShaderName + ".geom.spv")
+		};
 
-		std::stringstream VertexStream, FragmentStream;
-
-		VertexStream << VertexSource.rdbuf();
-		FragmentStream << FragmentSource.rdbuf();
-
-		return { VertexStream.str(), FragmentStream.str() };
-	}
-
-	std::tuple<std::string, std::string, std::string> VulkanShader::ParseShader(const std::string& vsfilepath, const std::string& fsfilepath, const std::string& gsfilepath)
-	{
-		std::ifstream VertexSource(vsfilepath, std::ios::binary);
-		std::ifstream FragmentSource(fsfilepath, std::ios::binary);
-		std::ifstream GeometrySource(gsfilepath, std::ios::binary);
-
-		VK_CORE_ASSERT(VertexSource.is_open(), "Failed to Open Vertex Shader File!");
-		VK_CORE_ASSERT(FragmentSource.is_open(), "Failed to Open Fragment Shader File!");
-		VK_CORE_ASSERT(GeometrySource.is_open(), "Failed to Open Geometry Shader File!");
-
-		std::stringstream VertexStream, FragmentStream, GeometryStream;
-
-		VertexStream << VertexSource.rdbuf();
-		FragmentStream << FragmentSource.rdbuf();
-		GeometryStream << GeometrySource.rdbuf();
-
-		return { VertexStream.str(), FragmentStream.str(), GeometryStream.str() };
-	}
-
-	std::string VulkanShader::ParseShader(const std::string& cmpfilepath)
-	{
-		std::ifstream ComputeSource(cmpfilepath, std::ios::binary);
-
-		VK_CORE_ASSERT(ComputeSource.is_open(), "Failed to Open Compute Shader File!");
-
-		std::stringstream ComputeStream;
-		ComputeStream << ComputeSource.rdbuf();
-
-		return ComputeStream.str();
-	}
-
-	void VulkanShader::ParseShader()
-	{
-		std::unordered_map<uint32_t, std::string> Sources;
-
-		if (!(m_VertexFilePath.empty() || m_FragmentFilePath.empty()))
+		for (uint32_t i = 0; auto&& [shaderPath, cachePath] : shaderPaths)
 		{
-			std::ifstream VertexSource(m_VertexFilePath, std::ios::binary);
-			std::ifstream FragmentSource(m_FragmentFilePath, std::ios::binary);
+			if (std::filesystem::exists(shaderPath) && !std::filesystem::exists(cachePath))
+				m_LoadShaderFlag.set(i);
+			else if (std::filesystem::exists(cachePath))
+				m_LoadShaderFlag.set(i + 1);
 
-			VK_CORE_ASSERT(VertexSource.is_open(), "Failed to Open Vertex Shader File!");
-			VK_CORE_ASSERT(FragmentSource.is_open(), "Failed to Open Fragment Shader File!");
-
-			std::stringstream VertexStream, FragmentStream;
-
-			VertexStream << VertexSource.rdbuf();
-			FragmentStream << FragmentSource.rdbuf();
-
-			Sources[(uint32_t)ShaderType::Vertex] = VertexStream.str();
-			Sources[(uint32_t)ShaderType::Fragment] = FragmentStream.str();
+			i += 2;
 		}
-		else
+	}
+
+	std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>> VulkanShader::ParseShaders()
+	{
+		constexpr const char* shaderDirectory = "shaders/";
+
+		std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>> Sources;
+
+		const std::array<std::pair<ShaderType, std::string>, 6> shaderPaths = {
+			std::make_pair(ShaderType::Compute,				   shaderDirectory + m_ShaderName + ".comp"),
+			std::make_pair(ShaderType::Vertex,				   shaderDirectory + m_ShaderName + ".vert"),
+			std::make_pair(ShaderType::Fragment,			   shaderDirectory + m_ShaderName + ".frag"),
+			std::make_pair(ShaderType::TessellationControl,	   shaderDirectory + m_ShaderName + ".tesc"),
+			std::make_pair(ShaderType::TessellationEvaluation, shaderDirectory + m_ShaderName + ".tese"),
+			std::make_pair(ShaderType::Geometry,			   shaderDirectory + m_ShaderName + ".geom")
+		};
+
+		for (uint32_t i = 0; auto&& [stage, shaderPath] : shaderPaths)
 		{
-			std::ifstream ComputeSource(m_ComputeFilePath, std::ios::binary);
+			if (m_LoadShaderFlag.test(i))
+			{
+				std::ifstream ShaderSource(shaderPath, std::ios::binary);
 
-			VK_CORE_ASSERT(ComputeSource.is_open(), "Failed to Open Compute Shader File!");
+				std::filesystem::path filePath = shaderPath;
+				VK_CORE_ASSERT(ShaderSource.is_open(), "Failed to Open {0} Shader File!", Utils::GLShaderTypeToString(Utils::s_ShaderExtensionMap[filePath.extension()]));
 
-			std::stringstream ComputeStream;
-			ComputeStream << ComputeSource.rdbuf();
+				std::stringstream ShaderStream;
+				ShaderStream << ShaderSource.rdbuf();
 
-			Sources[(uint32_t)ShaderType::Compute] = ComputeStream.str();
+				Sources[(uint32_t)stage] = { filePath, ParsePreprocessIncludes(ShaderStream) };
+			}
+
+			i += 2;
 		}
 
-		m_ShaderSources = Sources;
+		return Sources;
 	}
 
-	void VulkanShader::CompileOrGetVulkanBinaries(const std::unordered_map<uint32_t, std::string>& shaderSources)
+	// NOTE: It currently supports single depth headers(i.e. no header within header)
+	std::string VulkanShader::ParsePreprocessIncludes(std::stringstream& sourceCode)
 	{
+		constexpr const char* shaderPath = "shaders";
+
+		std::string sourceStr = sourceCode.str();
+		std::regex includeRegex("^[ ]*#[ ]*include[ ]+[\"<](.*)[\">].*");
+
+		std::smatch matches{};
+		std::string line{};
+		while (std::getline(sourceCode, line))
+		{
+			if (std::regex_search(line, matches, includeRegex))
+			{
+				std::filesystem::path includeFilePath = matches[1].str();
+				includeFilePath = shaderPath / includeFilePath;
+
+				if (std::filesystem::exists(includeFilePath))
+				{
+					std::ifstream includeFileSource(includeFilePath, std::ios::binary);
+
+					std::stringstream includeFileStream;
+					includeFileStream << includeFileSource.rdbuf();
+
+					sourceStr = std::regex_replace(sourceStr, includeRegex, includeFileStream.str(), std::regex_constants::format_first_only);
+				}
+				else
+				{
+					VK_CORE_CRITICAL("{} header doesn't exist!", includeFilePath.generic_string());
+					__debugbreak();
+				}
+			}
+		}
+
+		return sourceStr;
+	}
+
+	void VulkanShader::CompileOrGetVulkanBinaries(std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>>& shaderSources)
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
 		shaderc::Compiler compiler;
 		shaderc::CompileOptions options;
 
-		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
-		const bool optimize = true;
+		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
+		options.SetTargetSpirv(shaderc_spirv_version_1_4);
 
+		const bool optimize = !device->IsInDebugMode();
 		if (optimize)
 			options.SetOptimizationLevel(shaderc_optimization_level_performance);
 		else
+		{
+			options.SetGenerateDebugInfo();
 			options.SetOptimizationLevel(shaderc_optimization_level_zero);
+		}
 
 		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
 
@@ -386,7 +396,6 @@ namespace VulkanCore {
 			Timer timer(Utils::GLShaderTypeToString(stage) + " Shader Creation");
 
 			shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, Utils::GLShaderStageToShaderC(stage), shaderFilePath.string().c_str(), options);
-
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 			{
 				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
@@ -408,48 +417,50 @@ namespace VulkanCore {
 			}
 		};
 
-		Timer timer("Whole Shader Creation Process");
-
-		for (auto&& [stage, source] : shaderSources)
+		for (uint32_t i = 0; auto stage : Utils::s_ShaderTypes)
 		{
-			std::filesystem::path shaderFilePath;
+			uint8_t lowB = m_LoadShaderFlag.test(i), highB = m_LoadShaderFlag.test(i + 1);
+			uint8_t loadBit = (highB << 1) | lowB;
 
-			ShaderType shaderType = (ShaderType)stage;
-			switch (shaderType)
+			switch (loadBit)
 			{
-			case ShaderType::Vertex:
-				shaderFilePath = m_VertexFilePath;
+			case 0:
 				break;
-			case ShaderType::Fragment:
-				shaderFilePath = m_FragmentFilePath;
+			case 1: // Load from Shader Source File
+			{
+				auto& source = shaderSources[(uint32_t)stage];
+
+				std::filesystem::path shaderFilePath = std::get<0>(source);
+				ShaderType shaderType = (ShaderType)stage;
+
+				m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderFilePath, std::get<1>(source), shaderType));
+
 				break;
-			case ShaderType::Geometry:
-				shaderFilePath = m_GeometryFilePath;
+			}
+			case 2: // Load from Shader Cache Binary
+			{
+				std::filesystem::path cachedPath = cacheDirectory / (m_ShaderName + Utils::GLShaderStageCachedVulkanFileExtension(stage));
+
+				std::ifstream in(cachedPath, std::ios::in | std::ios::binary);
+				if (in.is_open())
+				{
+					in.seekg(0, std::ios::end);
+					auto size = in.tellg();
+					in.seekg(0, std::ios::beg);
+
+					auto& data = shaderData[(uint32_t)stage];
+					data.resize(size / sizeof(uint32_t));
+					in.read((char*)data.data(), size);
+				}
+
 				break;
-			case ShaderType::Compute:
-				shaderFilePath = m_ComputeFilePath;
-				break;
+			}
 			default:
-				VK_CORE_ASSERT(false, "Cannot find Shader Type!");
+				VK_CORE_ASSERT(false, "Invalid Load Bit!");
 				break;
 			}
 
-			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(shaderType));
-
-			std::ifstream in(cachedPath, std::ios::in | std::ios::binary);
-
-			if (in.is_open())
-			{
-				in.seekg(0, std::ios::end);
-				auto size = in.tellg();
-				in.seekg(0, std::ios::beg);
-
-				auto& data = shaderData[stage];
-				data.resize(size / sizeof(uint32_t));
-				in.read((char*)data.data(), size);
-			}
-			else
-				m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderFilePath, source, shaderType));
+			i += 2;
 		}
 
 		for (auto& future : m_Futures)
@@ -461,22 +472,45 @@ namespace VulkanCore {
 
 	void VulkanShader::Reload()
 	{
-		ParseShader();
+		auto device = VulkanContext::GetCurrentDevice();
+
+		Timer timer("Shader Recreation Process");
+
+		// Check Valid Shader Types and reset Load flag
+		for (uint32_t i = 0; auto stage : Utils::s_ShaderTypes)
+		{
+			if (m_LoadShaderFlag.test(i) || m_LoadShaderFlag.test(i + 1))
+			{
+				m_LoadShaderFlag.set(i);
+				m_LoadShaderFlag.reset(i + 1);
+			}
+
+			i += 2;
+		}
+
+		auto shaderSources = ParseShaders();
 
 		shaderc::Compiler compiler;
 		shaderc::CompileOptions options;
 
-		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
-		const bool optimize = true;
+		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
+		options.SetTargetSpirv(shaderc_spirv_version_1_4);
 
+		const bool optimize = !device->IsInDebugMode();
 		if (optimize)
+		{
 			options.SetOptimizationLevel(shaderc_optimization_level_performance);
+			VK_CORE_WARN("RenderDoc/NSight Layer is active");
+		}
 		else
+		{
+			options.SetGenerateDebugInfo();
 			options.SetOptimizationLevel(shaderc_optimization_level_zero);
+			VK_CORE_WARN("RenderDoc/NSight Layer is not active");
+		}
 
 		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
 
-		auto& shaderSources = m_ShaderSources;
 		auto& shaderData = m_VulkanSPIRV;
 		shaderData.clear();
 		m_Futures.clear();
@@ -510,34 +544,13 @@ namespace VulkanCore {
 			}
 		};
 
-		Timer timer("Shader Recreation Process");
-
 		for (auto&& [stage, source] : shaderSources)
 		{
-			std::filesystem::path shaderFilePath;
-
 			ShaderType shaderType = (ShaderType)stage;
-			switch (shaderType)
-			{
-			case ShaderType::Vertex:
-				shaderFilePath = m_VertexFilePath;
-				break;
-			case ShaderType::Fragment:
-				shaderFilePath = m_FragmentFilePath;
-				break;
-			case ShaderType::Geometry:
-				shaderFilePath = m_GeometryFilePath;
-				break;
-			case ShaderType::Compute:
-				shaderFilePath = m_ComputeFilePath;
-				break;
-			default:
-				VK_CORE_ASSERT(false, "Cannot find Shader Type!");
-				break;
-			}
+			std::filesystem::path shaderFilePath = std::get<0>(source);
 
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(shaderType));
-			m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderFilePath, source, shaderType));
+			m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderFilePath, std::get<1>(source), shaderType));
 		}
 
 		for (auto& future : m_Futures)
@@ -547,13 +560,20 @@ namespace VulkanCore {
 		SetReloadFlag();
 	}
 
+	bool VulkanShader::HasGeometryShader() const
+	{
+		return m_VulkanSPIRV.contains((uint32_t)ShaderType::Geometry);
+	}
+
+	bool VulkanShader::HasTessellationShaders() const
+	{
+		return m_VulkanSPIRV.contains((uint32_t)ShaderType::TessellationControl)
+			&& m_VulkanSPIRV.contains((uint32_t)ShaderType::TessellationEvaluation);
+	}
+
 	void VulkanShader::ReflectShaderData()
 	{
-		std::filesystem::path shaderFilePath = m_VertexFilePath;
-		if (!std::filesystem::exists(shaderFilePath))
-			shaderFilePath = m_ComputeFilePath;
-
-		VK_CORE_INFO("In {0}:", shaderFilePath.stem());
+		VK_CORE_INFO("In {0}:", m_ShaderName);
 
 		for (auto&& [stage, shader] : m_VulkanSPIRV)
 		{
@@ -599,4 +619,3 @@ namespace VulkanCore {
 	}
 
 }
-

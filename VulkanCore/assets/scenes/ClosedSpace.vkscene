@@ -1,0 +1,91 @@
+Scene: ClosedSpace
+Entities:
+  - Entity: 6103245061431778636
+    TagComponent:
+      Tag: Rock
+    TransformComponent:
+      Translation: [0, 30, 0]
+      Rotation: [0, 0, 0]
+      Scale: [200, 200, 200]
+    MeshComponent:
+      MeshHandle: 6944358963220749138
+      MaterialTable:
+        0: 13101957755938767227
+  - Entity: 13841765569656559826
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Translation: [0, 12.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [6, 6, 6]
+    MeshComponent:
+      MeshHandle: 5887157471203535698
+      MaterialTable:
+        0: 17021666477382963620
+  - Entity: 15851074549022986198
+    TagComponent:
+      Tag: Sun Light
+    DirectionalLightComponent:
+      Direction: [1, -6, 1]
+      Color: [1, 1, 1, 1]
+      Falloff: 1
+  - Entity: 1916941786780627311
+    TagComponent:
+      Tag: Wall3
+    TransformComponent:
+      Translation: [0, 4, -10.25]
+      Rotation: [0, -0, 0]
+      Scale: [10, 4, 0.25]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 3893884925322395954
+  - Entity: 1153411140672436239
+    TagComponent:
+      Tag: Wall2
+    TransformComponent:
+      Translation: [-10.25, 4, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 4, 10]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 3893884925322395954
+  - Entity: 4461713910826235506
+    TagComponent:
+      Tag: Skybox
+    SkyLightComponent:
+      TextureHandle: 3546977580009258482
+  - Entity: 6393257465138400864
+    TagComponent:
+      Tag: Base Plane
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [10, 0.25, 10]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 18152442800595508283
+  - Entity: 18388049089659310855
+    TagComponent:
+      Tag: Wall0
+    TransformComponent:
+      Translation: [0, 4, 10.25]
+      Rotation: [0, -0, 0]
+      Scale: [10, 4, 0.25]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 3893884925322395954
+  - Entity: 12905070812060394482
+    TagComponent:
+      Tag: Wall1
+    TransformComponent:
+      Translation: [10.25, 4, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.25, 4, 10.5]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 3893884925322395954

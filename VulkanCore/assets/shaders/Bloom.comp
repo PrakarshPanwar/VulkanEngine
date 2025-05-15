@@ -1,4 +1,4 @@
-#version 460 core
+#version 460
 
 layout(binding = 0, rgba32f) restrict writeonly uniform image2D o_Image;
 
@@ -8,8 +8,8 @@ layout(binding = 2) uniform sampler2D u_BloomTexture;
 layout(push_constant) uniform BloomParams
 {
 	vec2 LodAndMode;
-	layout (offset = 8)  float Threshold;
-	layout (offset = 12) float Knee;
+	float Threshold;
+	float Knee;
 } u_Params;
 
 #define BLOOM_MODE_PREFILTER      0
@@ -101,7 +101,7 @@ vec3 UpsampleTent9(sampler2D tex, float lod, vec2 uv, vec2 texelSize, float radi
 	return result * (1.0 / 16.0);
 }
 
-layout(local_size_x = 16, local_size_y = 16) in;
+layout(local_size_x = 32, local_size_y = 32) in;
 void main()
 {
 	vec2 imgSize = vec2(imageSize(o_Image));
@@ -115,7 +115,6 @@ void main()
 		color = Prefilter(color, texCoords);
 		color.a = 1.0;
 	}
-
 	else if (uint(u_Params.LodAndMode.y) == BLOOM_MODE_UPSAMPLE_FIRST)
 	{
 		vec2 bloomTexSize = vec2(textureSize(u_Texture, int(u_Params.LodAndMode.x + 1.0)));
@@ -125,7 +124,6 @@ void main()
 		vec3 existing = textureLod(u_Texture, texCoords, u_Params.LodAndMode.x).rgb;
 		color.rgb = existing + upsampledTexture;
 	}
-
 	else if (uint(u_Params.LodAndMode.y) == BLOOM_MODE_UPSAMPLE)
 	{
 		vec2 bloomTexSize = vec2(textureSize(u_BloomTexture, int(u_Params.LodAndMode.x + 1.0)));
@@ -135,7 +133,6 @@ void main()
 		vec3 existing = textureLod(u_Texture, texCoords, u_Params.LodAndMode.x).rgb;
 		color.rgb = existing + upsampledTexture;
 	}
-
 	else if (uint(u_Params.LodAndMode.y) == BLOOM_MODE_DOWNSAMPLE)
 	{
 		color.rgb = DownsampleBox13(u_Texture, u_Params.LodAndMode.x, texCoords, 1.0 / texSize);

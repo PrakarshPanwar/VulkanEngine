@@ -7,12 +7,18 @@ namespace VulkanCore {
 	enum class ImageFormat
 	{
 		None,
+		R8_UNORM,
+		R32I,
+		R32F,
+		RGB8_SRGB,
 		RGBA8_SRGB,
 		RGBA8_NORM,
+		RGB8_UNORM,
 		RGBA8_UNORM,
 		RGBA16_NORM,
 		RGBA16_UNORM,
 		RGBA16F,
+		RGB32F,
 		RGBA32F,
 		R11G11B10F,
 
@@ -27,11 +33,25 @@ namespace VulkanCore {
 		Clamp
 	};
 
+	enum class FilterMode
+	{
+		Nearest,
+		Linear
+	};
+
 	enum class ImageUsage
 	{
 		Storage,
 		Attachment,
+		ReadAttachment,
 		Texture
+	};
+
+	enum class DependencyType
+	{
+		None = 0,
+		GraphicsToShaderRead,
+		GraphicsToComputeRead
 	};
 
 	struct ImageSpecification
@@ -41,16 +61,18 @@ namespace VulkanCore {
 		uint32_t Width, Height;
 		uint32_t Samples = 1;
 		uint32_t MipLevels = 1;
+		uint32_t Layers = 1;
 		ImageFormat Format;
 		ImageUsage Usage;
 		bool Transfer = false;
 		TextureWrap SamplerWrap = TextureWrap::Clamp;
+		FilterMode SamplerFilter = FilterMode::Linear;
 	};
 
 	class Image2D : public Resource
 	{
 	public:
-		virtual void Resize(uint32_t width, uint32_t height, uint32_t mips) = 0;
+		virtual void Resize(uint32_t width, uint32_t height, uint32_t mips = 1) = 0;
 		virtual glm::uvec2 GetMipSize(uint32_t mipLevel) const = 0;
 		virtual const ImageSpecification& GetSpecification() const = 0;
 	};

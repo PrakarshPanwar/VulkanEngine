@@ -1,6 +1,7 @@
 #include "EditorLayer.h"
 
 #include "VulkanCore/Core/Core.h"
+#include "VulkanCore/Core/Timestep.h"
 #include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/ImGuiLayer.h"
 #include "VulkanCore/Asset/EditorAssetManager.h"
@@ -23,8 +24,6 @@
 
 namespace VulkanCore {
 
-	static const std::filesystem::path g_AssetPath = "assets";
-
 	EditorLayer::EditorLayer()
 		: Layer("Editor Layer")
 	{
@@ -44,14 +43,27 @@ namespace VulkanCore {
 		m_AssetManagerBase = std::make_shared<EditorAssetManager>();
 		AssetManager::Init(m_AssetManagerBase);
 
-		m_MenuIcon = TextureImporter::LoadTexture2D("../EditorLayer/Resources/Icons/MenuIcon.png");
+		// TODO: Move this to Icon class
+		m_MenuIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/MenuIcon.png");
+		m_PlayIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/PlayIcon.png");
+		m_PauseIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/PauseIcon.png");
+		m_StepIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/StepIcon.png");
+		m_SimulateIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/SimulateIcon.png");
+		m_StopIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/StopIcon.png");
+
 		m_MenuIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_MenuIcon));
+		m_PlayIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_PlayIcon));
+		m_PauseIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_PauseIcon));
+		m_StepIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_StepIcon));
+		m_SimulateIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_SimulateIcon));
+		m_StopIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_StopIcon));
 
-		m_Scene = std::make_shared<Scene>();
-		m_SceneRenderer = std::make_shared<SceneRenderer>(m_Scene);
+		m_EditorScene = std::make_shared<Scene>();
+		m_ActiveScene = m_EditorScene;
+		m_SceneRenderer = std::make_shared<SceneRenderer>(m_ActiveScene);
 
-		m_SceneHierarchyPanel = SceneHierarchyPanel(m_Scene);
-		m_ContentBrowserPanel = ContentBrowserPanel();
+		m_SceneHierarchyPanel = SceneHierarchyPanel(m_ActiveScene);
+		m_ContentBrowserPanel = std::make_unique<ContentBrowserPanel>();
 
 		auto commandLineArgs = Application::Get()->GetSpecification().CommandLineArgs;
 		if (commandLineArgs.Count > 1)
@@ -72,19 +84,55 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
-		if (m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing())
+		auto activeScene = m_ActiveScene.load();
+		float time = WindowsTime::GetTime();
+		Timestep timestep = time - m_LastFrameTime;
+		m_LastFrameTime = time;
+
+		// Mouse Position relative to Viewport
+		auto [mx, my] = Input::GetMousePosition();
+		mx -= m_ViewportBounds[0].x;
+		my -= m_ViewportBounds[0].y;
+		int mouseX = (int)mx;
+		int mouseY = (int)my;
+
+		SceneEditorData sceneEditorData{};
+		sceneEditorData.CameraData = m_EditorCamera;
+		sceneEditorData.ViewportMousePos = glm::max(glm::ivec2{ mouseX, mouseY }, 0);
+		sceneEditorData.ViewportHovered = m_ViewportHovered;
+		sceneEditorData.ShowPhysicsCollider = m_ShowPhysicsCollider && activeScene->IsRunning();
+
+		m_SceneRenderer->SetSceneEditorData(sceneEditorData);
+		m_SceneRenderer->RenderScene();
+
+		if ((m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing()) || m_EditorCamera.IsInFly())
 			m_EditorCamera.OnUpdate();
 
-		m_SceneRenderer->RenderScene(m_EditorCamera);
+		switch (m_SceneState)
+		{
+		case SceneState::Edit:
+			break;
+		case SceneState::Play:
+		{
+			activeScene->OnUpdateRuntime(timestep);
+			break;
+		}
+		case SceneState::Simulate:
+		{
+			activeScene->OnUpdateSimulation(timestep);
+			break;
+		}
+		}
 	}
 
 	void EditorLayer::OnEvent(Event& e)
 	{
-		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents())
+		if (!Application::Get()->GetImGuiLayer()->GetBlockEvents() || m_EditorCamera.IsInFly())
 			m_EditorCamera.OnEvent(e);
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnKeyEvent));
+		dispatcher.Dispatch<MouseButtonPressedEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnMouseButtonEvent));
 		dispatcher.Dispatch<WindowResizeEvent>(VK_CORE_BIND_EVENT_FN(EditorLayer::OnWindowResize));
 	}
 
@@ -138,6 +186,11 @@ namespace VulkanCore {
 			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 		}
 
+		if (m_EditorCamera.IsInFly())
+			io.ConfigFlags |= ImGuiConfigFlags_NoMouse;
+		else if (io.ConfigFlags & ImGuiConfigFlags_NoMouse)
+			io.ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+
 		if (ImGui::BeginMenuBar())
 		{
 			if (ImGui::BeginMenu("File"))
@@ -157,10 +210,73 @@ namespace VulkanCore {
 				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
 					SaveSceneAs();
 
-// 				if (ImGui::MenuItem("Exit"))
-// 					Application::Get()->Close();
+ 				//if (ImGui::MenuItem("Exit"))
+ 				//	Application::Get()->Close();
 
 				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Settings"))
+			{
+				ImGui::Checkbox("Show Application Stats", &m_ShowApplicationStats);
+				ImGui::Checkbox("Show Camera Data", &m_ShowCameraData);
+
+				ImGui::EndMenu();
+			}
+
+			if (std::popcount(m_TransformInputMask))
+			{
+				auto selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+				if (selectedEntity)
+				{
+					ImGui::PushItemWidth(45.0f);
+					ImGui::SetKeyboardFocusHere();
+					bool edited = ImGui::InputFloat("##TransformInput", &m_TransformScalarInput, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_CharsDecimal);
+					ImGui::PopItemWidth();
+
+					ImGui::TextColored(m_TransformInputMask & 0x1 ? ImVec4{ 0.8f, 0.0f, 0.0f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "X = %.3f", m_TransformInput.x);
+					ImGui::SameLine();
+					ImGui::TextColored(m_TransformInputMask & 0x2 ? ImVec4{ 0.0f, 0.8f, 0.0f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "\tY = %.3f", m_TransformInput.y);
+					ImGui::SameLine();
+					ImGui::TextColored(m_TransformInputMask & 0x4 ? ImVec4{ 0.0f, 0.0f, 0.8f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "\tZ = %.3f", m_TransformInput.z);
+
+					if (edited || ImGui::IsKeyPressed(ImGuiKey_X) || ImGui::IsKeyPressed(ImGuiKey_Y) || ImGui::IsKeyPressed(ImGuiKey_Z))
+					{
+						// Transfer Input Data using bit flag
+						__m128 value = _mm_mask_mov_ps(_mm_setzero_ps(), m_TransformInputMask, _mm_set1_ps(m_TransformScalarInput));
+						_mm_store_ps(glm::value_ptr(m_TransformInput), value);
+
+						auto& transform = selectedEntity.GetComponent<TransformComponent>();
+						transform = m_EntityTransform;
+
+						switch (m_GizmoType)
+						{
+						case ImGuizmo::OPERATION::TRANSLATE:
+						{
+							transform.Translation += glm::vec3(m_TransformInput);
+							break;
+						}
+						case ImGuizmo::OPERATION::ROTATE:
+						{
+							transform.Rotation += glm::vec3(glm::radians(m_TransformInput));
+							break;
+						}
+						case ImGuizmo::OPERATION::SCALE:
+						{
+							__m128 scale = _mm_mask_mov_ps(_mm_set1_ps(1.0f), m_TransformInputMask, value);
+							_mm_store_ps(glm::value_ptr(m_TransformInput), scale);
+
+							transform.Scale *= glm::vec3(m_TransformInput);
+							break;
+						}
+						default:
+							break;
+						}
+					}
+
+					if (ImGui::IsKeyPressed(ImGuiKey_Enter))
+						m_TransformInputMask = 0;
+				}
 			}
 
 			ImGui::EndMenuBar();
@@ -169,22 +285,28 @@ namespace VulkanCore {
 		style.WindowMinSize.x = minWinSizeX;
 
 		//ImGui::ShowDemoWindow(&m_ImGuiShowWindow);
-		ImGui::Begin("Application Stats");
-		SHOW_FRAMERATES;
-		ImGui::Checkbox("Show ImGui Demo Window", &m_ImGuiShowWindow);
-		ImGui::Text("Camera Aspect Ratio: %.6f", m_EditorCamera.GetAspectRatio());
-		ImGui::End();
 
-		ImGui::Begin("Viewport");
+		// Remove Padding from viewport
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0.0f, 0.0f));
+
+		ImGuiWindowFlags viewportFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar
+			| ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove;
+
+		ImGui::Begin("Viewport", nullptr, viewportFlags);
+		ImGui::PopStyleVar(2);
+
 		auto region = ImGui::GetContentRegionAvail();
 		m_ViewportSize = { region.x, region.y };
 
-		auto windowSize = ImGui::GetWindowSize();
-		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-		auto viewportOffset = ImGui::GetWindowPos();
-		m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
-		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
+		ImGuiWindow* window = ImGui::GetCurrentWindow();
+		ImRect viewportRegion = window->WorkRect;
+
+		auto viewportOffset = ImGui::GetCursorScreenPos();
+		auto viewportMinRegion = ImVec2{ viewportRegion.Min.x - viewportOffset.x, viewportRegion.Min.y - viewportOffset.y };
+		auto viewportMaxRegion = ImVec2{ viewportRegion.Max.x - viewportOffset.x, viewportRegion.Max.y - viewportOffset.y };
+		m_ViewportBounds[0] = { viewportRegion.Min.x, viewportRegion.Min.y };
+		m_ViewportBounds[1] = { viewportRegion.Max.x, viewportRegion.Max.y };
 
 		if (glm::ivec2 sceneViewportSize = m_SceneRenderer->GetViewportSize();
 			m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
@@ -198,15 +320,14 @@ namespace VulkanCore {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
+		ImGui::SetNextItemAllowOverlap();
 		ImGui::Image(m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
-		ImGui::SetItemAllowOverlap();
 
 		if (ImGui::BeginDragDropTarget())
 		{
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 			{
-				const wchar_t* path = (const wchar_t*)payload->Data;
-				std::filesystem::path scenePath = g_AssetPath / path;
+				std::filesystem::path scenePath = (const wchar_t*)payload->Data;
 				OpenScene(scenePath.string());
 			}
 
@@ -214,9 +335,9 @@ namespace VulkanCore {
 		}
 
 		// Button Position just at the top
-		ImGui::SetCursorPos({ ImGui::GetWindowContentRegionMin().x + 5.0f, ImGui::GetWindowContentRegionMin().y + 5.0f });
+		ImGui::SetCursorPos({ viewportMinRegion.x + 5.0f, viewportMinRegion.y + 5.0f });
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 20.0f);
-		if (ImGui::ImageButton((ImTextureID)m_MenuIconID, { 20.0f, 20.0f }, { 0, 1 }, { 1, 0 }))
+		if (ImGui::ImageButton("##MenuIcon", (ImTextureID)m_MenuIconID, { 20.0f, 20.0f }, { 0, 1 }, { 1, 0 }))
 			ImGui::OpenPopup("EditorSettings");
 		ImGui::PopStyleVar();
 
@@ -226,35 +347,73 @@ namespace VulkanCore {
 			static float thumbnailSize = 128.0f;
 			static float padding = 16.0f;
 
+			ImGui::Text("Camera/Content Browser");
 			ImGui::DragFloat("Field of View", &fov, 0.5f, 5.0f, 90.0f);
 			if (ImGui::IsItemActive())
 				m_EditorCamera.SetFieldOfView(glm::radians(fov));
 
 			ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
 			if (ImGui::IsItemActive())
-				m_ContentBrowserPanel.SetThumbnailSize(thumbnailSize);
+				m_ContentBrowserPanel->SetThumbnailSize(thumbnailSize);
 
 			ImGui::SliderFloat("Padding", &padding, 0, 32);
 			if (ImGui::IsItemActive())
-				m_ContentBrowserPanel.SetPadding(padding);
+				m_ContentBrowserPanel->SetPadding(padding);
+
+			ImGui::Separator();
+			ImGui::Text("Snap Parameters");
+			ImGui::Checkbox("Snap", &m_EnableSnap);
+			ImGui::DragFloat("Translation", &m_TranslationSnapValue, 0.01f, 0.01f);
+			ImGui::DragFloat("Rotation", &m_RotationSnapValue);
+			ImGui::DragFloat("Scale", &m_ScaleSnapValue, 0.2f);
+			ImGui::Checkbox("Show Physics Collider", &m_ShowPhysicsCollider);
 
 			ImGui::EndPopup();
+		}
+
+		if (m_ViewportHovered && (m_SceneState == SceneState::Edit) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)
+			&& !ImGui::IsKeyDown(ImGuiKey_LeftAlt) && !ImGuizmo::IsOver())
+		{
+			int entityHandle = m_SceneRenderer->GetHoveredEntity();
+			Entity hoveredEntity = entityHandle == -1 ? Entity{} : Entity{ (entt::entity)entityHandle, m_ActiveScene.load().get() };
+
+			m_SceneHierarchyPanel.SetSelectedEntity(hoveredEntity);
+		}
+
+		if (m_ShowApplicationStats)
+		{
+			ImGui::SetCursorPos({ viewportMinRegion.x + 50.0f, viewportMinRegion.y + 10.0f });
+			SHOW_FRAMERATES;
+		}
+
+		if (m_ShowCameraData)
+		{
+			ImGui::SetCursorPos({ viewportMaxRegion.x - 350.0f, viewportMinRegion.y + 10.0f });
+
+			glm::vec3 cameraDirection = m_EditorCamera.GetForwardDirection();
+			ImGui::Text("Aspect Ratio: %.2f\t Direction: %.3f, %.3f, %.3f", m_EditorCamera.GetAspectRatio(), cameraDirection.x, cameraDirection.y, cameraDirection.z);
 		}
 
 		RenderGizmo();
 		ImGui::End(); // End of Viewport
 
+		UI_Toolbar();
 		m_SceneHierarchyPanel.OnImGuiRender();
-		m_ContentBrowserPanel.OnImGuiRender();
+		m_ContentBrowserPanel->OnImGuiRender();
 		m_SceneRenderer->OnImGuiRender();
 
 		ImGui::End(); // End of DockSpace
 	}
 
-	bool EditorLayer::OnKeyEvent(KeyPressedEvent& keyevent)
+	bool EditorLayer::OnKeyEvent(KeyPressedEvent& e)
 	{
+		bool shiftKey = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+		bool altKey = Input::IsKeyPressed(Key::LeftAlt) || Input::IsKeyPressed(Key::RightAlt);
+
+		bool isFlying = m_EditorCamera.IsInFly();
+
 		// Gizmos: Unreal Engine Controls
-		switch (keyevent.GetKeyCode())
+		switch (e.GetKeyCode())
 		{
 		case Key::Q:
 		{
@@ -264,32 +423,123 @@ namespace VulkanCore {
 		}
 		case Key::W:
 		{
-			if (!ImGuizmo::IsUsing())
+			if (!ImGuizmo::IsUsing() && !isFlying)
 				m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+
+			if (shiftKey)
+			{
+				Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+				m_TransformInputMask = !m_EditorCamera.IsInFly() && selectedEntity ? 0x7 : 0;
+				m_EntityTransform = m_TransformInputMask ? selectedEntity.GetComponent<TransformComponent>() : TransformComponent{};
+				m_TransformInput = {};
+			}
+
 			break;
 		}
 		case Key::E:
 		{
 			if (!ImGuizmo::IsUsing())
 				m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+
+			if (shiftKey)
+			{
+				Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+				m_TransformInputMask = !m_EditorCamera.IsInFly() && selectedEntity ? 0x7 : 0;
+				m_EntityTransform = m_TransformInputMask ? selectedEntity.GetComponent<TransformComponent>() : TransformComponent{};
+				m_TransformInput = {};
+			}
+
 			break;
 		}
 		case Key::R:
 		{
 			if (!ImGuizmo::IsUsing())
 				m_GizmoType = ImGuizmo::OPERATION::SCALE;
+
+			if (shiftKey)
+			{
+				Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+				m_TransformInputMask = !m_EditorCamera.IsInFly() && selectedEntity ? 0x7 : 0;
+				m_EntityTransform = m_TransformInputMask ? selectedEntity.GetComponent<TransformComponent>() : TransformComponent{};
+				m_TransformInput = glm::vec4{ 1.0f };
+			}
+
+			break;
+		}
+		case Key::X:
+		{
+			if (m_TransformInputMask)
+				m_TransformInputMask = 0x1;
+
+			break;
+		}
+		case Key::Y:
+		{
+			if (m_TransformInputMask)
+				m_TransformInputMask = 0x2;
+
+			break;
+		}
+		case Key::Z:
+		{
+			if (m_TransformInputMask)
+				m_TransformInputMask = 0x4;
+
+			break;
+		}
+		case Key::D:
+		{
+			if (shiftKey)
+			{
+				auto duplicateEntity = m_EditorScene->DuplicateEntity(m_SceneHierarchyPanel.GetSelectedEntity());
+				if (duplicateEntity)
+					m_SceneHierarchyPanel.SetSelectedEntity(duplicateEntity);
+			}
+
+			break;
+		}
+		case Key::Period:
+		{
+			Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+			if (selectedEntity)
+			{
+				auto transform = selectedEntity.GetComponent<TransformComponent>();
+				m_EditorCamera.SetFocalPoint(transform.Translation);
+			}
+
+			break;
+		}
+		case Key::GraveAccent:
+		{
+			if (shiftKey)
+				m_EditorCamera.SetFly(true);
 			break;
 		}
 		}
+
 		return false;
 	}
 
-	bool EditorLayer::OnMouseScroll(MouseScrolledEvent& mouseScroll)
+	bool EditorLayer::OnMouseButtonEvent(MouseButtonPressedEvent& e)
+	{
+		switch (e.GetMouseButton())
+		{
+		case Mouse::ButtonLeft:
+		{
+			if (m_EditorCamera.IsInFly())
+				m_EditorCamera.SetFly(false);
+		}
+		}
+
+		return false;
+	}
+
+	bool EditorLayer::OnMouseScroll(MouseScrolledEvent& e)
 	{
 		return false;
 	}
 
-	bool EditorLayer::OnWindowResize(WindowResizeEvent& windowEvent)
+	bool EditorLayer::OnWindowResize(WindowResizeEvent& e)
 	{
 		m_WindowResized = true;
 		return false;
@@ -310,43 +560,146 @@ namespace VulkanCore {
 			const glm::mat4& cameraProjection = m_EditorCamera.GetProjectionMatrix();
 			glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
 
-			// Entity transform
-			auto& tc = selectedEntity.GetComponent<TransformComponent>();
-			glm::mat4 transform = tc.GetTransform();
-
-			// Snapping
-			bool snap = Input::IsKeyPressed(Key::LeftControl);
-			float snapValue = 0.5f; // Snap to 0.5m for translation/scale
-			// Snap to 45 degrees for rotation
-			if (m_GizmoType == ImGuizmo::OPERATION::ROTATE)
-				snapValue = 45.0f;
-
-			float snapValues[3] = { snapValue, snapValue, snapValue };
-
-			ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
-				(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::WORLD, glm::value_ptr(transform),
-				nullptr, snap ? snapValues : nullptr);
-
-			if (ImGuizmo::IsUsing())
+			if (selectedEntity.HasComponent<TransformComponent>())
 			{
-				glm::vec3 translation, scale, skew;
-				glm::vec4 perspective;
-				glm::quat rotation;
+				// Entity transform
+				auto& tc = selectedEntity.GetComponent<TransformComponent>();
+				glm::mat4 transform = tc.GetTransform();
 
-				glm::decompose(transform, scale, rotation, translation, skew, perspective);
+				// Snapping
+				float snapValue = 0.0f; // Snap to 0.5m for translation/scale
+				switch (m_GizmoType)
+				{
+				case ImGuizmo::TRANSLATE:
+					snapValue = m_TranslationSnapValue;
+					break;
+				case ImGuizmo::ROTATE:
+					snapValue = m_RotationSnapValue;
+					break;
+				case ImGuizmo::SCALE:
+					snapValue = m_ScaleSnapValue;
+					break;
+				default:
+					break;
+				}
 
-				tc.Translation = translation;
-				tc.Rotation = glm::eulerAngles(rotation);
-				tc.Scale = scale;
+				bool snap = Input::IsKeyPressed(Key::LeftControl) || m_EnableSnap;
+				float snapValues[3] = { snapValue, snapValue, snapValue };
+
+				ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
+					(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::WORLD, glm::value_ptr(transform),
+					nullptr, snap ? snapValues : nullptr);
+
+				if (ImGuizmo::IsUsing())
+				{
+					glm::vec3 translation, scale, skew;
+					glm::vec4 perspective;
+					glm::quat rotation;
+
+					glm::decompose(transform, scale, rotation, translation, skew, perspective);
+
+					tc.Translation = translation;
+					tc.Rotation = glm::eulerAngles(rotation);
+					tc.Scale = scale;
+				}
+			}
+			/*else if (selectedEntity.HasComponent<DirectionalLightComponent>())
+			{
+				auto drlc = selectedEntity.GetComponent<DirectionalLightComponent>();
+				glm::mat4 rotation = glm::toMat4(glm::quat(drlc.Direction));
+			}*/
+		}
+	}
+
+	void EditorLayer::UI_Toolbar()
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+		auto& colors = ImGui::GetStyle().Colors;
+		const auto& buttonHovered = colors[ImGuiCol_ButtonHovered];
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(buttonHovered.x, buttonHovered.y, buttonHovered.z, 0.5f));
+		const auto& buttonActive = colors[ImGuiCol_ButtonActive];
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
+
+		ImGui::Begin("##Toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+		auto activeScene = m_ActiveScene.load();
+		bool toolbarEnabled = (bool)activeScene;
+
+		ImVec4 tintColor = ImVec4(1, 1, 1, 1);
+		if (!toolbarEnabled)
+			tintColor.w = 0.5f;
+
+		float size = ImGui::GetWindowHeight() - 4.0f;
+		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+
+		bool hasPlayButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play;
+		bool hasSimulateButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate;
+		bool hasPauseButton = m_SceneState != SceneState::Edit;
+
+		if (hasPlayButton)
+		{
+			auto icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate) ? m_PlayIconID : m_StopIconID;
+			if (ImGui::ImageButton("##PlayState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
+			{
+				if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate)
+					OnScenePlay();
+				else if (m_SceneState == SceneState::Play)
+					OnSceneStop();
 			}
 		}
+
+		if (hasSimulateButton)
+		{
+			if (hasPlayButton)
+				ImGui::SameLine();
+
+			auto icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play) ? m_SimulateIconID : m_StopIconID;
+			if (ImGui::ImageButton("##SimulateState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
+			{
+				if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play)
+					OnSceneSimulate();
+				else if (m_SceneState == SceneState::Simulate)
+					OnSceneStop();
+			}
+		}
+		if (hasPauseButton)
+		{
+			bool isPaused = activeScene->IsPaused();
+			ImGui::SameLine();
+			{
+				auto icon = isPaused ? m_PlayIconID : m_PauseIconID;
+				if (ImGui::ImageButton("##PauseState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
+				{
+					activeScene->SetPaused(!isPaused);
+				}
+			}
+
+			// Step button
+			if (isPaused)
+			{
+				ImGui::SameLine();
+				{
+					bool isPaused = activeScene->IsPaused();
+					if (ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor, ImGuiButtonFlags_Repeat) && toolbarEnabled)
+					{
+						activeScene->StepFrames();
+					}
+				}
+			}
+		}
+
+		ImGui::PopStyleVar(2);
+		ImGui::PopStyleColor(3);
+		ImGui::End();
 	}
 
 	void EditorLayer::NewScene()
 	{
-		m_Scene = std::make_shared<Scene>();
-		m_SceneRenderer->SetActiveScene(m_Scene);
-		m_SceneHierarchyPanel.SetContext(m_Scene);
+		m_ActiveScene = std::make_shared<Scene>();
+		m_SceneRenderer->SetActiveScene(m_ActiveScene);
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
 		m_EditorScenePath = std::filesystem::path();
 	}
@@ -368,13 +721,14 @@ namespace VulkanCore {
 			return;
 		}
 
-		std::shared_ptr<Scene> newScene = std::make_shared<Scene>();
-		SceneSerializer serializer(newScene);
-		if (serializer.Deserialize(filepath.string()))
+		auto newScene = AssetManager::GetAsset<Scene>(path);
+		if (newScene)
 		{
-			m_Scene = newScene;
-			m_SceneRenderer->SetActiveScene(m_Scene);
-			m_SceneHierarchyPanel.SetContext(m_Scene);
+			m_ActiveScene = newScene;
+			m_EditorScene = newScene;
+
+			m_SceneRenderer->SetActiveScene(m_ActiveScene);
+			m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 			m_EditorScenePath = path;
 		}
 	}
@@ -382,7 +736,7 @@ namespace VulkanCore {
 	void EditorLayer::SaveScene()
 	{
 		if (!m_EditorScenePath.empty())
-			SerializeScene(m_Scene, m_EditorScenePath);
+			SerializeScene(m_ActiveScene, m_EditorScenePath);
 		else
 			SaveSceneAs();
 	}
@@ -392,9 +746,68 @@ namespace VulkanCore {
 		std::string filepath = FileDialogs::SaveFile("VulkanEngine Scene (*.vkscene)\0*.vkscene\0");
 		if (!filepath.empty())
 		{
-			SerializeScene(m_Scene, filepath);
+			SerializeScene(m_ActiveScene, filepath);
 			m_EditorScenePath = filepath;
 		}
+	}
+
+	void EditorLayer::OnScenePlay()
+	{
+		if (m_SceneState == SceneState::Simulate)
+			OnSceneStop();
+
+		m_SceneState = SceneState::Play;
+		m_GizmoType = -1; // Disable Gizmo
+
+		m_ActiveScene = Scene::CopyScene(m_EditorScene);
+
+		auto activeScene = m_ActiveScene.load();
+		activeScene->OnRuntimeStart();
+
+		m_SceneRenderer->SetActiveScene(m_ActiveScene);
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+	}
+
+	void EditorLayer::OnSceneSimulate()
+	{
+		if (m_SceneState == SceneState::Play)
+			OnSceneStop();
+
+		m_SceneState = SceneState::Simulate;
+		m_GizmoType = -1; // Disable Gizmo
+
+		m_ActiveScene = Scene::CopyScene(m_EditorScene);
+
+		auto activeScene = m_ActiveScene.load();
+		activeScene->OnSimulationStart();
+
+		m_SceneRenderer->SetActiveScene(m_ActiveScene);
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+	}
+
+	void EditorLayer::OnSceneStop()
+	{
+		VK_CORE_ASSERT(m_SceneState == SceneState::Play || m_SceneState == SceneState::Simulate, "Invalid Scene State!");
+
+		auto activeScene = m_ActiveScene.load();
+		if (m_SceneState == SceneState::Play)
+			activeScene->OnRuntimeStop();
+		else if (m_SceneState == SceneState::Simulate)
+			activeScene->OnSimulationStop();
+
+		m_SceneState = SceneState::Edit;
+
+		m_ActiveScene = m_EditorScene;
+		m_SceneRenderer->SetActiveScene(m_ActiveScene);
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+	}
+
+	void EditorLayer::OnScenePause()
+	{
+		if (m_SceneState == SceneState::Edit)
+			return;
+
+		m_ActiveScene.load()->SetPaused(true);
 	}
 
 	void EditorLayer::SerializeScene(std::shared_ptr<Scene> scene, const std::filesystem::path& scenePath)

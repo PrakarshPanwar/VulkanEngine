@@ -5,16 +5,16 @@
 
 namespace VulkanCore {
 
-	Camera::Camera()
+	Camera::Camera(float fov, float aspectRatio, float nearClip, float farClip)
+		: m_FOV(fov), m_AspectRatio(aspectRatio), m_NearClip(nearClip), m_FarClip(farClip)
 	{
-
 	}
 
 	Camera::~Camera()
 	{
-
 	}
 
+#if 0
 	void Camera::SetOrthographicProjection(float left, float right, float top, float bottom, float near, float far)
 	{
 		m_Projection[0][0] = 2.f / (right - left);
@@ -102,5 +102,6 @@ namespace VulkanCore {
 		m_View[3][1] = -glm::dot(v, position);
 		m_View[3][2] = -glm::dot(w, position);
 	}
+#endif
 
 }

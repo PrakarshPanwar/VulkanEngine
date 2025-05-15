@@ -20,7 +20,39 @@ namespace VulkanCore {
 			}
 		}
 
+		static VkMemoryPropertyFlags VulkanMemoryFlags(VulkanMemoryType memoryType)
+		{
+			switch (memoryType)
+			{
+			case VulkanMemoryType::None:		return 0;
+			case VulkanMemoryType::DeviceLocal: return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+			case VulkanMemoryType::HostLocal:	return VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+			case VulkanMemoryType::HostCached:  return VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+			case VulkanMemoryType::SharedHeap:  return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+			default:
+				VK_CORE_ASSERT(false, "Could not find necessary Format!");
+				return 0;
+			}
+		}
+
+		static VmaAllocationCreateFlags VulkanAllocationFlags(VulkanMemoryType memoryType)
+		{
+			switch (memoryType)
+			{
+			case VulkanMemoryType::None:        return 0;
+			case VulkanMemoryType::DeviceLocal: return 0;
+			case VulkanMemoryType::HostLocal:   return VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			case VulkanMemoryType::HostCached:  return VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			case VulkanMemoryType::SharedHeap:  return VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			default:
+				VK_CORE_ASSERT(false, "Could not find necessary Format!");
+				return 0;
+			}
+		}
+
 	}
+
+	AllocationStats VulkanAllocator::s_Data;
 
 	VulkanAllocator::VulkanAllocator(const char* debugName)
 		: m_DebugName(debugName)
@@ -31,20 +63,26 @@ namespace VulkanCore {
 	{
 	}
 
-	VmaAllocation VulkanAllocator::AllocateBuffer(const VkBufferCreateInfo& bufInfo, VmaMemoryUsage usage, VkBuffer& buffer)
+	VmaAllocation VulkanAllocator::AllocateBuffer(VulkanMemoryType memoryType, const VkBufferCreateInfo& bufInfo, VkBuffer& buffer, VmaMemoryUsage usage)
 	{
 		VmaAllocationCreateInfo allocInfo{};
 		allocInfo.usage = usage;
-		allocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
-		allocInfo.preferredFlags = Utils::VulkanMemoryFlags(usage);
+		allocInfo.flags = Utils::VulkanAllocationFlags(memoryType);
+		allocInfo.preferredFlags = Utils::VulkanMemoryFlags(memoryType);
 
 		VmaAllocation vmaAllocation;
-		VK_CHECK_RESULT(vmaCreateBuffer(m_VkMemoryAllocator, &bufInfo, &allocInfo, &buffer, &vmaAllocation, nullptr), "{0}: Failed to Allocate Buffer!", m_DebugName);
-		
 		VmaAllocationInfo vmaAllocInfo = {};
-		vmaGetAllocationInfo(m_VkMemoryAllocator, vmaAllocation, &vmaAllocInfo);
+		VK_CHECK_RESULT(vmaCreateBuffer(m_VkMemoryAllocator, &bufInfo, &allocInfo, &buffer, &vmaAllocation, &vmaAllocInfo), "{0}: Failed to Allocate Buffer!", m_DebugName);
 
-		VK_CORE_TRACE("Buffer Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
+		VkMemoryPropertyFlags memoryPropertyFlags{};
+		vmaGetMemoryTypeProperties(m_VkMemoryAllocator, vmaAllocInfo.memoryType, &memoryPropertyFlags);
+		VK_CORE_ASSERT(memoryPropertyFlags > 0, "Buffer Memory Type is Invalid!");
+
+		// Update Stats
+		s_Data.AllocatedBytes += vmaAllocInfo.size;
+		s_Data.AllocationCount += 1;
+
+		VK_CORE_DEBUG("Buffer Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
 		
 		return vmaAllocation;
 	}
@@ -56,12 +94,18 @@ namespace VulkanCore {
 		allocInfo.preferredFlags = Utils::VulkanMemoryFlags(usage);
 
 		VmaAllocation vmaAllocation;
-		VK_CHECK_RESULT(vmaCreateImage(m_VkMemoryAllocator, &imgInfo, &allocInfo, &image, &vmaAllocation, nullptr), "{0}: Failed to Allocate Image!", m_DebugName);
-		
 		VmaAllocationInfo vmaAllocInfo = {};
-		vmaGetAllocationInfo(m_VkMemoryAllocator, vmaAllocation, &vmaAllocInfo);
+		VK_CHECK_RESULT(vmaCreateImage(m_VkMemoryAllocator, &imgInfo, &allocInfo, &image, &vmaAllocation, &vmaAllocInfo), "{0}: Failed to Allocate Image!", m_DebugName);
 
-		VK_CORE_TRACE("Image Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
+		VkMemoryPropertyFlags memoryPropertyFlags{};
+		vmaGetMemoryTypeProperties(m_VkMemoryAllocator, vmaAllocInfo.memoryType, &memoryPropertyFlags);
+		VK_CORE_ASSERT(memoryPropertyFlags == 1, "Image Memory Type is not Device Local!");
+
+		// Update Stats
+		s_Data.AllocatedBytes += vmaAllocInfo.size;
+		s_Data.AllocationCount += 1;
+
+		VK_CORE_DEBUG("Image Size({0}): {1}", m_DebugName, vmaAllocInfo.size);
 		
 		return vmaAllocation;
 	}
@@ -79,6 +123,20 @@ namespace VulkanCore {
 	void VulkanAllocator::DestroyImage(VkImage& image, VmaAllocation allocation)
 	{
 		vmaDestroyImage(m_VkMemoryAllocator, image, allocation);
+	}
+
+	void VulkanAllocator::WriteAllocatorStats() const
+	{
+		char* statsString = nullptr;
+		vmaBuildStatsString(m_VkMemoryAllocator, &statsString, VK_TRUE);
+
+		std::ofstream statsFile("../../VulkanProfiler/Scripts/VulkanAllocatorLog.json", std::ios::out | std::ios::binary);
+		if (statsFile.is_open())
+		{
+			statsFile.write(statsString, strlen(statsString));
+			statsFile.flush();
+			statsFile.close();
+		}
 	}
 
 }
