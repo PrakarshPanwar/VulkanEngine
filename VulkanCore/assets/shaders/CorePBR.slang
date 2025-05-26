@@ -20,16 +20,16 @@ struct CascadeData
 struct VertexInput
 {
     // Vertex Bindings
-    [[vk::location(0)]] float3 Position;
-    [[vk::location(1)]] float3 Normal;
-    [[vk::location(2)]] float3 Tangent;
-    [[vk::location(3)]] float3 Binormal;
-    [[vk::location(4)]] float2 TexCoord;
+    [vk::location(0)] float3 Position;
+    [vk::location(1)] float3 Normal;
+    [vk::location(2)] float3 Tangent;
+    [vk::location(3)] float3 Binormal;
+    [vk::location(4)] float2 TexCoord;
 
     // Instance Bindings
-    [[vk::location(5)]] float4 MRow0;
-    [[vk::location(6)]] float4 MRow1;
-    [[vk::location(7)]] float4 MRow2;
+    [vk::location(5)] float4 MRow0;
+    [vk::location(6)] float4 MRow1;
+    [vk::location(7)] float4 MRow2;
 };
 
 struct VertexOutput
@@ -47,14 +47,14 @@ struct VertexStageOutput
     float4 Position : SV_Position;
 };
 
-[[vk::push_constant]] ConstantBuffer<Material> c_MaterialData;
+[vk::push_constant] ConstantBuffer<Material> c_MaterialData;
 
 // Camera and Lights Set
-[[vk::binding(0, 0)]] ConstantBuffer<Camera> c_Camera;
-[[vk::binding(1, 0)]] ConstantBuffer<PointLightData> c_PointLightData;
-[[vk::binding(2, 0)]] ConstantBuffer<SpotLightData> c_SpotLightData;
-[[vk::binding(3, 0)]] ConstantBuffer<DirectionalLightData> c_DirectionalLightData;
-[[vk::binding(4, 0)]] ConstantBuffer<CascadeData> c_CascadeData;
+[vk::binding(0, 0)] ConstantBuffer<Camera> c_Camera;
+[vk::binding(1, 0)] ConstantBuffer<PointLightData> c_PointLightData;
+[vk::binding(2, 0)] ConstantBuffer<SpotLightData> c_SpotLightData;
+[vk::binding(3, 0)] ConstantBuffer<DirectionalLightData> c_DirectionalLightData;
+[vk::binding(4, 0)] ConstantBuffer<CascadeData> c_CascadeData;
 
 [shader("vertex")]
 void VSMain(in VertexInput vertexInput, out VertexStageOutput output)
@@ -83,15 +83,15 @@ void VSMain(in VertexInput vertexInput, out VertexStageOutput output)
 } // End of Vertex Stage
 
 // Material Set
-[[vk::binding(0, 1)]] Sampler2D r_AlbedoTexture;
-[[vk::binding(1, 1)]] Sampler2D r_NormalTexture;
-[[vk::binding(2, 1)]] Sampler2D r_ARMTexture;
+[vk::binding(0, 1)] Sampler2D r_AlbedoTexture;
+[vk::binding(1, 1)] Sampler2D r_NormalTexture;
+[vk::binding(2, 1)] Sampler2D r_ARMTexture;
 
 // IBL
-[[vk::binding(6, 0)]] SamplerCube r_IrradianceMap;
-[[vk::binding(7, 0)]] Sampler2D r_BRDFLUT;
-[[vk::binding(8, 0)]] SamplerCube r_PrefilteredMap;
-[[vk::binding(9, 0)]] Sampler2DArray r_ShadowMap;
+[vk::binding(6, 0)] SamplerCube r_IrradianceMap;
+[vk::binding(7, 0)] Sampler2D r_BRDFLUT;
+[vk::binding(8, 0)] SamplerCube r_PrefilteredMap;
+[vk::binding(9, 0)] Sampler2DArray r_ShadowMap;
 
 import PBR;
 import Math;
@@ -282,9 +282,7 @@ float LinearizeDepth(const float screenDepth)
 float ShadowTextureProjection(float4 coords, float2 offset, uint index)
 {
     float shadow = 1.0f;
-
-    float cosTheta = saturate(dot(m_Params.Normal, c_DirectionalLightData.DirectionLights[0].Direction));
-    float bias = max(0.005f, 0.05f * (1.0f - cosTheta));
+    float bias = 0.005f;
 
     if (coords.z > -1.0f && coords.z < 1.0f)
     {

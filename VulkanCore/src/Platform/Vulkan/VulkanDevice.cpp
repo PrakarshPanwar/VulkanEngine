@@ -324,30 +324,21 @@ namespace VulkanCore {
 		for (const auto& queueFamily : queueFamilies)
 		{
 			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-			{
 				indices.GraphicsFamily = i;
-				indices.GraphicsFamilyHasValue = true;
-			}
 
 			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
-			{
 				indices.ComputeFamily = i;
-				indices.ComputeFamilyHasValue = indices.GraphicsFamily != indices.ComputeFamily;
-			}
 
 			VkBool32 presentSupport = false;
 			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, vulkanSurface, &presentSupport);
 
 			if (queueFamily.queueCount > 0 && presentSupport)
-			{
 				indices.PresentFamily = i;
-				indices.PresentFamilyHasValue = true;
-			}
 
 			if (indices.IsComplete())
 				break;
 
-			i++;
+			++i;
 		}
 
 		return indices;

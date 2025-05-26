@@ -565,4 +565,29 @@ namespace VulkanCore {
 		return result;
 	}
 
+	VulkanTexture3D::VulkanTexture3D(void* data, TextureSpecification spec)
+	{
+
+	}
+
+	VulkanTexture3D::~VulkanTexture3D()
+	{
+
+	}
+
+	void VulkanTexture3D::Invalidate()
+	{
+
+	}
+
+	void VulkanTexture3D::Release()
+	{
+
+	}
+
+	void VulkanTexture3D::GenerateMipMaps()
+	{
+
+	}
+
 }

@@ -18,13 +18,13 @@ struct SceneData
     float FogFallOffDistance;
 };
 
-[[vk::push_constant]] ConstantBuffer<SceneData> c_SceneParams;
+[vk::push_constant] ConstantBuffer<SceneData> c_SceneParams;
 
-[[vk::binding(0, 0)]] ConstantBuffer<Camera> c_Camera;
-[[vk::binding(1, 0)]] Sampler2D r_InputTexture;
-[[vk::binding(2, 0)]] Sampler2D r_DepthTexture;
-[[vk::binding(3, 0)]] Sampler2D r_BloomTexture;
-[[vk::binding(4, 0)]] Sampler2D r_BloomDirtTexture;
+[vk::binding(0, 0)] ConstantBuffer<Camera> c_Camera;
+[vk::binding(1, 0)] Sampler2D r_InputTexture;
+[vk::binding(2, 0)] Sampler2D r_DepthTexture;
+[vk::binding(3, 0)] Sampler2D r_BloomTexture;
+[vk::binding(4, 0)] Sampler2D r_BloomDirtTexture;
 
 // Polynomial approximation of EaryChow's AgX sigmoid curve.
 // In Blender's implementation, numbers could go a little bit over 1.0, so it's best to ensure

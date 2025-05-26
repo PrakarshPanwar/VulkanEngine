@@ -3,16 +3,16 @@
 struct VertexInput
 {
     // Vertex Bindings
-    [[vk::location(0)]] float3 Position;
-    [[vk::location(1)]] float3 Normal;
-    [[vk::location(2)]] float3 Tangent;
-    [[vk::location(3)]] float3 Binormal;
-    [[vk::location(4)]] float2 TexCoord;
+    [vk::location(0)] float3 Position;
+    [vk::location(1)] float3 Normal;
+    [vk::location(2)] float3 Tangent;
+    [vk::location(3)] float3 Binormal;
+    [vk::location(4)] float2 TexCoord;
 
     // Instance Bindings
-    [[vk::location(5)]] float4 MRow0;
-    [[vk::location(6)]] float4 MRow1;
-    [[vk::location(7)]] float4 MRow2;
+    [vk::location(5)] float4 MRow0;
+    [vk::location(6)] float4 MRow1;
+    [vk::location(7)] float4 MRow2;
 };
 
 struct VertexOutput
@@ -44,7 +44,7 @@ struct CascadeData
     float4x4 LightSpaceMatrices[4];
 };
 
-[[vk::binding(1, 0)]] ConstantBuffer<CascadeData> c_CascadeData;
+[vk::binding(1, 0)] ConstantBuffer<CascadeData> c_CascadeData;
 
 struct GeometryOutput
 {

@@ -237,7 +237,7 @@ namespace VulkanCore {
 			}
 
 			// TODO: It is not working yet, to add option to debug Mesh Collider
-			if (entity.HasAllComponent<MeshComponent, MeshColliderComponent>())
+			if (entity.HasAllComponents<MeshComponent, MeshColliderComponent>())
 			{
 				auto& mc3d = entity.GetComponent<MeshColliderComponent>();
 				auto& mc = entity.GetComponent<MeshComponent>();

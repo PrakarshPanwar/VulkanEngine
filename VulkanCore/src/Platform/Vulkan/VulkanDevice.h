@@ -25,15 +25,15 @@ namespace VulkanCore {
 
 	struct QueueFamilyIndices
 	{
-		uint32_t GraphicsFamily;
-		uint32_t ComputeFamily;
-		uint32_t PresentFamily;
+		uint32_t GraphicsFamily : 8 = _UI8_MAX;
+		uint32_t ComputeFamily : 8 = _UI8_MAX;
+		uint32_t PresentFamily : 8 = _UI8_MAX;
 
-		bool GraphicsFamilyHasValue = false;
-		bool ComputeFamilyHasValue = false;
-		bool PresentFamilyHasValue = false;
+		const bool HasGraphicsFamily() const { return GraphicsFamily < _UI8_MAX; }
+		const bool HasComputeFamily() const { return ComputeFamily < _UI8_MAX && ComputeFamily != GraphicsFamily; }
+		const bool HasPresentFamily() const { return PresentFamily < _UI8_MAX; }
 
-		bool IsComplete() { return GraphicsFamilyHasValue && ComputeFamilyHasValue && PresentFamilyHasValue; }
+		const bool IsComplete() const { return HasGraphicsFamily() && HasComputeFamily() && HasPresentFamily(); }
 	};
 
 	class VulkanDevice

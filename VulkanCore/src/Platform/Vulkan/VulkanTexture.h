@@ -25,12 +25,34 @@ namespace VulkanCore {
 		void GenerateMipMaps();
 	private:
 		TextureSpecification m_Specification;
+		bool m_IsLoaded = false;
 
 		std::shared_ptr<VulkanImage> m_Image;
 		VulkanImageInfo m_Info;
 
 		uint8_t* m_LocalStorage = nullptr;
+	};
+
+	class VulkanTexture3D : public Texture3D
+	{
+	public:
+		VulkanTexture3D(void* data, TextureSpecification spec = {});
+		~VulkanTexture3D();
+
+		const TextureSpecification& GetSpecification() const override { return m_Specification; }
+		bool IsLoaded() const override { return m_IsLoaded; }
+	private:
+		void Invalidate();
+		void Release();
+		void GenerateMipMaps();
+	private:
+		TextureSpecification m_Specification;
 		bool m_IsLoaded = false;
+
+		std::shared_ptr<VulkanImage> m_Image;
+		VulkanImageInfo m_Info;
+
+		uint8_t* m_LocalStorage = nullptr;
 	};
 
 	class VulkanTextureCube : public TextureCube
@@ -54,11 +76,12 @@ namespace VulkanCore {
 		std::vector<VkImageView> m_MipReferences;
 
 		TextureSpecification m_Specification;
+		bool m_IsLoaded = false;
+
 		VulkanImageInfo m_Info;
 		VkDescriptorImageInfo m_DescriptorImageInfo;
 
 		uint8_t* m_LocalStorage = nullptr;
-		bool m_IsLoaded = false;
 	};
 
 }

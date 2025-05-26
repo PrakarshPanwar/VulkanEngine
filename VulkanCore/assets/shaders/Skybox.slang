@@ -46,7 +46,7 @@ static const float3 verticesData[36] = float3[](
 	float3( 1.0f, -1.0f,  1.0f)
 );
 
-[[vk::binding(0, 0)]] ConstantBuffer<Camera> c_Camera;
+[vk::binding(0, 0)] ConstantBuffer<Camera> c_Camera;
 
 [shader("vertex")]
 void VSMain(in uint id : SV_VertexID, out float4 position : SV_Position, out float3 texCoord : TEXCOORD0)
@@ -71,8 +71,8 @@ struct SkyboxData
 	float LOD;
 };
 
-[[vk::push_constant]] ConstantBuffer<SkyboxData> c_Skybox;
-[[vk::binding(1, 0)]] SamplerCube r_CubeMap;
+[vk::push_constant] ConstantBuffer<SkyboxData> c_Skybox;
+[vk::binding(1, 0)] SamplerCube r_CubeMap;
 
 [shader("fragment")]
 void FSMain(in float3 texCoord : TEXCOORD0, out float4 o_Color : SV_Target)
