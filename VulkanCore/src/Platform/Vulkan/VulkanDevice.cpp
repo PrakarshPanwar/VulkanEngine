@@ -260,6 +260,7 @@ namespace VulkanCore {
 		deviceFeatures.multiViewport = VK_TRUE;
 		deviceFeatures.fragmentStoresAndAtomics = VK_TRUE;
 		deviceFeatures.depthClamp = VK_TRUE;
+		deviceFeatures.independentBlend = VK_TRUE;
 
 		// Examples: https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples
 		VkPhysicalDeviceSynchronization2Features physicalDeviceSynchronization2Features{};

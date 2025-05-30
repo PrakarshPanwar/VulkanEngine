@@ -81,7 +81,13 @@ namespace VulkanCore {
 			FramebufferSpecification geomFramebufferSpec;
 			geomFramebufferSpec.Width = 1920;
 			geomFramebufferSpec.Height = 1080;
-			geomFramebufferSpec.Attachments = { ImageFormat::RGBA32F, ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::DEPTH32F };
+			geomFramebufferSpec.Attachments = { 
+				{ ImageFormat::RGBA32F, BlendFactor::SrcAlpha, BlendFactor::OneMinusSrcAlpha },
+				ImageFormat::RGBA16F,
+				ImageFormat::RGBA16F,
+				ImageFormat::DEPTH32F
+			};
+
 			geomFramebufferSpec.ReadDepthTexture = true;
 			geomFramebufferSpec.Transfer = true;
 			geomFramebufferSpec.Samples = 4;
@@ -92,7 +98,6 @@ namespace VulkanCore {
 			PipelineSpecification geomPipelineSpec;
 			geomPipelineSpec.DebugName = "Geometry Pipeline";
 			geomPipelineSpec.pShader = Renderer::GetShader("CorePBR");
-			geomPipelineSpec.Blend = true;
 			geomPipelineSpec.pRenderPass = std::make_shared<VulkanRenderPass>(geomRenderPassSpec);
 			geomPipelineSpec.Layout = vertexLayout;
 			geomPipelineSpec.InstanceLayout = instanceLayout;
@@ -109,7 +114,6 @@ namespace VulkanCore {
 			PipelineSpecification lightPipelineSpec;
 			lightPipelineSpec.DebugName = "Light Pipeline";
 			lightPipelineSpec.pShader = Renderer::GetShader("LightShader");
-			lightPipelineSpec.Blend = true;
 			lightPipelineSpec.pRenderPass = geomPipelineSpec.pRenderPass;
 
 			m_GeometryPipeline = std::make_shared<VulkanPipeline>(geomPipelineSpec);

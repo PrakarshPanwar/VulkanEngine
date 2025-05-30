@@ -1,6 +1,6 @@
 // Shader File : "Bloom.slang"
 
-[vk::binding(0)] RWTexture2D o_Image;
+[vk::binding(0)] RWTexture2D<float4> o_Image;
 
 [vk::binding(1)] Sampler2D r_Texture;
 [vk::binding(2)] Sampler2D r_BloomTexture;

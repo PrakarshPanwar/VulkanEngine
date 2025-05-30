@@ -5,15 +5,34 @@
 
 namespace VulkanCore {
 
+	enum class BlendFactor
+	{
+		None = 0,
+		Zero,
+		One,
+		SrcColor,
+		OneMinusSrcColor,
+		SrcAlpha,
+		OneMinusSrcAlpha
+	};
+
 	struct FramebufferTextureSpecification
 	{
 		FramebufferTextureSpecification() = default;
 		FramebufferTextureSpecification(ImageFormat format)
 			: ImgFormat(format) {}
 
+		FramebufferTextureSpecification(ImageFormat format, BlendFactor srcColorBlendFactor, BlendFactor dstColorBlendFactor)
+			: ImgFormat(format), SrcColorBlendFactor(srcColorBlendFactor), DstColorBlendFactor(dstColorBlendFactor) {}
+
 		ImageFormat ImgFormat = ImageFormat::None;
+		BlendFactor SrcColorBlendFactor = BlendFactor::One, DstColorBlendFactor = BlendFactor::Zero;
 
 		operator bool() const { return ImgFormat != ImageFormat::None; }
+		const bool IsBlended() const
+		{
+			return SrcColorBlendFactor != BlendFactor::One || DstColorBlendFactor != BlendFactor::Zero;
+		}
 	};
 
 	struct FramebufferAttachmentSpecification
