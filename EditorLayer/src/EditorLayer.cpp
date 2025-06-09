@@ -632,7 +632,11 @@ namespace VulkanCore {
 			tintColor.w = 0.5f;
 
 		float size = ImGui::GetWindowHeight() - 4.0f;
-		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+		
+		// Begin Stack Layout
+		ImGui::BeginHorizontal(372846283284, { ImGui::GetContentRegionAvail().x, 0.0f });
+
+		ImGui::Spring(0.5f);
 
 		bool hasPlayButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play;
 		bool hasSimulateButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate;
@@ -652,9 +656,6 @@ namespace VulkanCore {
 
 		if (hasSimulateButton)
 		{
-			if (hasPlayButton)
-				ImGui::SameLine();
-
 			auto icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play) ? m_SimulateIconID : m_StopIconID;
 			if (ImGui::ImageButton("##SimulateState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
 			{
@@ -664,31 +665,26 @@ namespace VulkanCore {
 					OnSceneStop();
 			}
 		}
+
 		if (hasPauseButton)
 		{
 			bool isPaused = activeScene->IsPaused();
-			ImGui::SameLine();
-			{
-				auto icon = isPaused ? m_PlayIconID : m_PauseIconID;
-				if (ImGui::ImageButton("##PauseState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
-				{
-					activeScene->SetPaused(!isPaused);
-				}
-			}
+			auto icon = isPaused ? m_PlayIconID : m_PauseIconID;
+			if (ImGui::ImageButton("##PauseState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
+				activeScene->SetPaused(!isPaused);
 
 			// Step button
 			if (isPaused)
 			{
-				ImGui::SameLine();
-				{
-					bool isPaused = activeScene->IsPaused();
-					if (ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor, ImGuiButtonFlags_Repeat) && toolbarEnabled)
-					{
-						activeScene->StepFrames();
-					}
-				}
+				bool isPaused = activeScene->IsPaused();
+				if (ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor, ImGuiButtonFlags_Repeat) && toolbarEnabled)
+					activeScene->StepFrames();
 			}
 		}
+
+		ImGui::Spring(0.5f);
+
+		ImGui::EndHorizontal(); // End of Stack Layout
 
 		ImGui::PopStyleVar(2);
 		ImGui::PopStyleColor(3);

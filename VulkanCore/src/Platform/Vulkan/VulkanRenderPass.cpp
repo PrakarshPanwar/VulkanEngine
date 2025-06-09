@@ -255,17 +255,19 @@ namespace VulkanCore {
 
 	void VulkanRenderPass::RecreateFramebuffers(uint32_t width, uint32_t height)
 	{
-		std::bitset<8> resizeBitFlag = 0;
+		std::bitset<11> resizeBitFlag = 0;
+		bool multisampled = Utils::IsMultisampled(m_Specification);
+
 		for (uint32_t i = 0; i < m_Specification.ColorLoadOps.size(); ++i)
 		{
 			if (m_Specification.ColorLoadOps[i] != AttachmentLoadOp::Load)
 				resizeBitFlag.set(i);
 
-			if (Utils::IsMultisampled(m_Specification))
+			if (multisampled)
 				resizeBitFlag.set(i + m_Specification.ColorLoadOps.size());
 		}
 
-		resizeBitFlag.set(7, m_Specification.DepthLoadOp != AttachmentLoadOp::Load);
+		resizeBitFlag.set(10, m_Specification.DepthLoadOp != AttachmentLoadOp::Load);
 
 		auto Framebuffer = std::static_pointer_cast<VulkanFramebuffer>(m_Specification.TargetFramebuffer);
 		Framebuffer->Resize(width, height, resizeBitFlag);

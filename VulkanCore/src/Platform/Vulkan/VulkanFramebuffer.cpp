@@ -222,7 +222,7 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height, const std::bitset<8> resizeBitFlag)
+	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height, const std::bitset<11> resizeBitFlag)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
@@ -240,7 +240,7 @@ namespace VulkanCore {
 			++i;
 		}
 
-		if (resizeBitFlag.test(7))
+		if (resizeBitFlag.test(10))
 		{
 			for (auto& depthImage : m_DepthAttachment)
 				depthImage->Resize(width, height);

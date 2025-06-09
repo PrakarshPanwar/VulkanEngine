@@ -25,7 +25,7 @@ namespace VulkanCore {
 		void Invalidate();
 		void CreateFramebuffer(VkRenderPass renderPass);
 		void Release();
-		void Resize(uint32_t width, uint32_t height, const std::bitset<8> resizeBitFlag);
+		void Resize(uint32_t width, uint32_t height, const std::bitset<11> resizeBitFlag);
 		void SetColorAttachments(uint32_t index, const std::vector<std::shared_ptr<Image2D>>& colorImages);
 		void SetDepthAttachments(const std::vector<std::shared_ptr<Image2D>>& depthImages);
 
