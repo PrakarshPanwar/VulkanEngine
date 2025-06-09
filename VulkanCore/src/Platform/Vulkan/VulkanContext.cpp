@@ -45,7 +45,7 @@ namespace VulkanCore {
 			}
 		}
 
-		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName, float labelColor[])
+		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName, const float labelColor[])
 		{
 			if (vkCmdBeginDebugUtilsLabelEXT)
 			{
@@ -67,7 +67,7 @@ namespace VulkanCore {
 				vkCmdEndDebugUtilsLabelEXT(cmdBuffer);
 		}
 
-		void SetQueueLabel(VkQueue queue, const char* labelName, float labelColor[])
+		void SetQueueLabel(VkQueue queue, const char* labelName, const float labelColor[])
 		{
 			if (vkQueueBeginDebugUtilsLabelEXT)
 			{

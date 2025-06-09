@@ -6,9 +6,9 @@ namespace VulkanCore {
 
 	namespace VKUtils {
 		void SetDebugUtilsObjectName(VkDevice device, VkObjectType objectType, const std::string& debugName, void* object);
-		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName, float labelColor[]);
+		void SetCommandBufferLabel(VkCommandBuffer cmdBuffer, const char* labelName, const float labelColor[]);
 		void EndCommandBufferLabel(VkCommandBuffer cmdBuffer);
-		void SetQueueLabel(VkQueue queue, const char* labelName, float labelColor[]);
+		void SetQueueLabel(VkQueue queue, const char* labelName, const float labelColor[]);
 		void EndQueueLabel(VkQueue queue);
 	}
 

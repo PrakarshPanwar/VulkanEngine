@@ -135,8 +135,8 @@ namespace VulkanCore {
 	void Scene::OnUpdateGeometry(SceneRenderer* renderer)
 	{
 		VK_CORE_PROFILE_FN("Submit-SubmitMeshes");
-		auto view = m_Registry.view<TransformComponent, MeshComponent>();
 
+		auto view = m_Registry.view<TransformComponent, MeshComponent>();
 		for (auto ent : view)
 		{
 			auto [transform, meshComponent] = view.get<TransformComponent, MeshComponent>(ent);
@@ -149,7 +149,6 @@ namespace VulkanCore {
 	void Scene::OnSelectGeometry(SceneRenderer* renderer)
 	{
 		auto view = m_Registry.view<TransformComponent, MeshComponent>();
-
 		for (auto ent : view)
 		{
 			auto [transform, meshComponent] = view.get<TransformComponent, MeshComponent>(ent);
@@ -169,8 +168,8 @@ namespace VulkanCore {
 		{
 			// Point Lights
 			VK_CORE_PROFILE_FN("Scene-PointLights");
-			auto view = m_Registry.view<TransformComponent, PointLightComponent>();
 
+			auto view = m_Registry.view<TransformComponent, PointLightComponent>();
 			for (auto ent : view)
 			{
 				auto [transform, pointLightComponent] = view.get<TransformComponent, PointLightComponent>(ent);
@@ -184,8 +183,8 @@ namespace VulkanCore {
 		{
 			// Spot Lights
 			VK_CORE_PROFILE_FN("Scene-SpotLights");
-			auto view = m_Registry.view<TransformComponent, SpotLightComponent>();
 
+			auto view = m_Registry.view<TransformComponent, SpotLightComponent>();
 			for (auto ent : view)
 			{
 				auto [transform, spotLightComponent] = view.get<TransformComponent, SpotLightComponent>(ent);

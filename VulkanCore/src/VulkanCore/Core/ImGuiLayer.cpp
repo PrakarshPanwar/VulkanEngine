@@ -134,10 +134,14 @@ namespace VulkanCore {
 		Application* app = Application::Get();
 		io.DisplaySize = ImVec2{ (float)app->GetWindow()->GetWidth(), (float)app->GetWindow()->GetHeight() };
 #endif
-
 		ImGui::Render();
+
+		constexpr float imguiLabelColor[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
+		VKUtils::SetCommandBufferLabel(vulkanCmdBuffer, "ImGuiLayer", imguiLabelColor);
+
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vulkanCmdBuffer);
 
+		VKUtils::EndCommandBufferLabel(vulkanCmdBuffer);
 #if IMGUI_VIEWPORTS
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{

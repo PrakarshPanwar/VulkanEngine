@@ -110,7 +110,9 @@ namespace VulkanCore {
 			{
 			case CompareOp::None:		 return VK_COMPARE_OP_NEVER;
 			case CompareOp::Less:		 return VK_COMPARE_OP_LESS;
+			case CompareOp::Equal:		 return VK_COMPARE_OP_EQUAL;
 			case CompareOp::LessOrEqual: return VK_COMPARE_OP_LESS_OR_EQUAL;
+			case CompareOp::Always:		 return VK_COMPARE_OP_ALWAYS;
 			default:
 				VK_CORE_ASSERT(false, "Compare Op not supported!");
 				return VK_COMPARE_OP_MAX_ENUM;

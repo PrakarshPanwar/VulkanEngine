@@ -54,7 +54,9 @@ namespace VulkanCore {
 	void Renderer::BuildShaders()
 	{
 		VK_CREATE_SLANG_SHADER("CorePBR");
+		VK_CREATE_SLANG_SHADER("CorePBR_OIT");
 		VK_CREATE_SHADER("CorePBR_Tess"); // TODO: Future support required for Vulkan Tessellation in Slang
+		VK_CREATE_SLANG_SHADER("OITBlend");
 		VK_CREATE_SLANG_SHADER("Lines");
 		VK_CREATE_SHADER("ShadowDepth"); // TODO: Problem in ShaderLayer SPIR-V
 		VK_CREATE_SHADER("CoreEditor");

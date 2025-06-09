@@ -19,13 +19,15 @@ namespace VulkanCore {
 		const std::vector<FramebufferTextureSpecification>& GetColorAttachmentsTextureSpec() const override { return m_ColorAttachmentSpecifications; }
 		const FramebufferTextureSpecification& GetDepthAttachmentTextureSpec() const override { return m_DepthAttachmentSpecification; }
 		bool HasDepthAttachment() const { return m_DepthAttachmentSpecification; }
-		const std::vector<std::shared_ptr<Image2D>>& GetAttachment(uint32_t index = 0) const override;
-		const std::vector<std::shared_ptr<Image2D>>& GetDepthAttachment() const override;
+		const std::vector<std::shared_ptr<Image2D>>& GetAttachment(uint32_t index = 0, bool resolved = true) const override;
+		const std::vector<std::shared_ptr<Image2D>>& GetDepthAttachment(bool resolved = true) const override;
 
 		void Invalidate();
 		void CreateFramebuffer(VkRenderPass renderPass);
 		void Release();
-		void Resize(uint32_t width, uint32_t height);
+		void Resize(uint32_t width, uint32_t height, const std::bitset<8> resizeBitFlag);
+		void SetColorAttachments(uint32_t index, const std::vector<std::shared_ptr<Image2D>>& colorImages);
+		void SetDepthAttachments(const std::vector<std::shared_ptr<Image2D>>& depthImages);
 
 		void* ReadPixel(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<IndexBuffer> imageBuffer, uint32_t index, uint32_t x, uint32_t y);
 	private:

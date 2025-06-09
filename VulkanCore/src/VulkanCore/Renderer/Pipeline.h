@@ -17,7 +17,9 @@ namespace VulkanCore {
 	{
 		None,
 		Less,
-		LessOrEqual
+		Equal,
+		LessOrEqual,
+		Always
 	};
 
 	enum class CullMode

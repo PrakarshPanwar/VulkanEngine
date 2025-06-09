@@ -299,7 +299,7 @@ float FilterPCF(float4 coords, uint index)
     float texWidth, texHeight, texElements;
     r_ShadowMap.GetDimensions(texWidth, texHeight, texElements);
 
-    float scale = 0.75f;
+    float scale = 1.0f;
     float dx = scale / texWidth;
     float dy = scale / texHeight;
 
@@ -331,7 +331,7 @@ float CalculateShadow()
     // Depth Compare for Shadowing
     float4 shadowCoord = mul(float4(Input.WorldPosition, 1.0f), mul(c_CascadeData.LightSpaceMatrices[cascadeIndex], BIAS_MATRIX));
     shadowCoord.xyz = shadowCoord.xyz / shadowCoord.w;
-    shadowCoord.xyz = shadowCoord.xyz * 0.5f + 0.5f;
+    shadowCoord.xy = shadowCoord.xy * 0.5f + 0.5f;
 
     float shadow = FilterPCF(shadowCoord, cascadeIndex);
     //float shadow = ShadowTextureProjection(shadowCoord, float2(0.0), cascadeIndex);
@@ -341,9 +341,8 @@ float CalculateShadow()
 
 [shader("fragment")]
 void FSMain(VertexOutput vertexOutput : VERTEX_OUT,
-    out float4 o_Color : SV_Target0,
-    out float4 o_ViewNormalsTexture : SV_Target1,
-    out float4 o_LightsDataTexture : SV_Target2)
+    out float4 o_Accumulated : SV_Target0,
+    out float o_Revealage : SV_Target1)
 {
     Input = vertexOutput;
 
@@ -359,7 +358,6 @@ void FSMain(VertexOutput vertexOutput : VERTEX_OUT,
     float3 cameraPosition = c_Camera.InverseView[3].xyz;
     m_Params.View = normalize(cameraPosition - vertexOutput.WorldPosition);
     m_Params.Normal = c_MaterialData.UseNormalMap == 0 ? normalize(vertexOutput.Normal) : GetNormalsFromMap();
-    o_ViewNormalsTexture = mul(float4(m_Params.View, 1.0f), c_Camera.View); // View Normals Texture
 
     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0f);
     float3 Lr = 2.0f * m_Params.NdotV * m_Params.Normal - m_Params.View;
@@ -373,8 +371,12 @@ void FSMain(VertexOutput vertexOutput : VERTEX_OUT,
 
     float3 lightingContribution = Lighting(F0);
     float3 iblContribution = IBL(F0, Lr);
-    o_LightsDataTexture = float4(lightingContribution, 1.0f); // Lights Data Texture
 
-    float3 color = iblContribution + lightingContribution;
-    o_Color = float4(color, 1.0f); // Final Color
+    float4 color = float4(iblContribution + lightingContribution, c_MaterialData.Albedo.a);
+
+    float weight = max(min(1.0f, max(max(color.r, color.g), color.b) * color.a), color.a) *
+        clamp(0.03f / (1e-5 + pow(Input.ViewPosition.z / 200.0f, 4.0f)), 1e-2, 3e3);
+
+    o_Accumulated = float4(color.rgb * color.a, color.a) * weight;
+    o_Revealage = color.a;
 } // End of Fragment Stage

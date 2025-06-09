@@ -10,9 +10,61 @@
 
 namespace VulkanCore {
 
+	namespace Utils {
+
+		static VkAttachmentLoadOp VulkanAttachmentLoadOp(AttachmentLoadOp loadOp)
+		{
+			switch (loadOp)
+			{
+				case AttachmentLoadOp::DontCare: return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				case AttachmentLoadOp::Clear:	 return VK_ATTACHMENT_LOAD_OP_CLEAR;
+				case AttachmentLoadOp::Load:	 return VK_ATTACHMENT_LOAD_OP_LOAD;
+				default:
+					VK_CORE_ASSERT(false, "Attachment Load Operation not defined!");
+					return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			}
+		}
+
+		static VkAttachmentStoreOp VulkanAttachmentStoreOp(AttachmentStoreOp storeOp)
+		{
+			switch (storeOp)
+			{
+				case AttachmentStoreOp::DontCare: return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+				case AttachmentStoreOp::Store:    return VK_ATTACHMENT_STORE_OP_STORE;
+				default:
+					VK_CORE_ASSERT(false, "Attachment Store Operation not defined!");
+					return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			}
+		}
+
+		static VkImageLayout VulkanAttachmentInitialLayout(AttachmentLoadOp loadOp)
+		{
+			switch (loadOp)
+			{
+				case AttachmentLoadOp::DontCare: return VK_IMAGE_LAYOUT_UNDEFINED;
+				case AttachmentLoadOp::Load:     return VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+				case AttachmentLoadOp::Clear:    return VK_IMAGE_LAYOUT_UNDEFINED;
+				default:
+					VK_CORE_ASSERT(false, "Invalid Attachment Load Operation for layout determination!");
+					return VK_IMAGE_LAYOUT_UNDEFINED;
+			}
+		}
+
+	}
+
 	VulkanRenderPass::VulkanRenderPass(const RenderPassSpecification& spec)
 		: m_Specification(spec)
 	{
+		const auto& FramebufferColorAttachments = m_Specification.TargetFramebuffer->GetColorAttachmentsTextureSpec();
+		if ((m_Specification.ColorLoadOps.size() != FramebufferColorAttachments.size()) ||
+			(m_Specification.ColorStoreOps.size()) != FramebufferColorAttachments.size())
+		{
+			bool multisampled = Utils::IsMultisampled(m_Specification);
+
+			m_Specification.ColorLoadOps.resize(FramebufferColorAttachments.size(), AttachmentLoadOp::Clear);
+			m_Specification.ColorStoreOps.resize(FramebufferColorAttachments.size(), multisampled ? AttachmentStoreOp::DontCare : AttachmentStoreOp::Store);
+		}
+
 		Renderer::Submit([this]
 		{
 			Invalidate();
@@ -21,18 +73,18 @@ namespace VulkanCore {
 
 	VulkanRenderPass::~VulkanRenderPass()
 	{
-		auto device = VulkanContext::GetCurrentDevice();
-
-		if (m_RenderPass == nullptr)
-			return;
-
-		vkDestroyRenderPass(device->GetVulkanDevice(), m_RenderPass, nullptr);
+		if (m_RenderPass)
+			Release();
 	}
 
 	void VulkanRenderPass::Invalidate()
 	{
+		if (m_RenderPass)
+			Release();
+
 		auto device = VulkanContext::GetCurrentDevice();
 		auto Framebuffer = std::static_pointer_cast<VulkanFramebuffer>(m_Specification.TargetFramebuffer);
+		const auto& FramebufferColorAttachments = Framebuffer->GetColorAttachmentsTextureSpec();
 
 		VkSampleCountFlagBits samples = Utils::VulkanSampleCount(Framebuffer->GetSpecification().Samples);
 
@@ -41,27 +93,28 @@ namespace VulkanCore {
 		std::vector<VkAttachmentReference2> attachmentRefs;
 
 		// Color Attachments Description
-		for (const auto& attachmentSpec : Framebuffer->GetColorAttachmentsTextureSpec())
+		for (uint32_t i = 0; const auto& attachmentSpec : FramebufferColorAttachments)
 		{
 			VkAttachmentDescription2 colorAttachment = {};
 			colorAttachment.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2;
 			colorAttachment.format = Utils::VulkanImageFormat(attachmentSpec.ImgFormat);
 			colorAttachment.samples = samples;
-			colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			colorAttachment.storeOp = multisampled ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE;
+			colorAttachment.loadOp = Utils::VulkanAttachmentLoadOp(m_Specification.ColorLoadOps[i]);
+			colorAttachment.storeOp = Utils::VulkanAttachmentStoreOp(m_Specification.ColorStoreOps[i]);
 			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			colorAttachment.initialLayout = Utils::VulkanAttachmentInitialLayout(m_Specification.ColorLoadOps[i]);
 			colorAttachment.finalLayout = multisampled ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 
 			attachmentDescriptions.push_back(colorAttachment);
+			++i;
 		}
 
 		// Resolve Attachment Description
 		VkAttachmentDescription2 colorAttachmentResolve = {};
 		if (multisampled)
 		{
-			for (const auto& attachmentSpec : Framebuffer->GetColorAttachmentsTextureSpec())
+			for (const auto& attachmentSpec : FramebufferColorAttachments)
 			{
 				colorAttachmentResolve.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2;
 				colorAttachmentResolve.format = Utils::VulkanImageFormat(attachmentSpec.ImgFormat);
@@ -85,11 +138,11 @@ namespace VulkanCore {
 			depthAttachment.sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2;
 			depthAttachment.format = Utils::VulkanImageFormat(Framebuffer->GetDepthAttachmentTextureSpec().ImgFormat);
 			depthAttachment.samples = samples;
-			depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			depthAttachment.storeOp = multisampled ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE;
+			depthAttachment.loadOp = Utils::VulkanAttachmentLoadOp(m_Specification.DepthLoadOp);
+			depthAttachment.storeOp = Utils::VulkanAttachmentStoreOp(m_Specification.DepthStoreOp);
 			depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			depthAttachment.initialLayout = Utils::VulkanAttachmentInitialLayout(m_Specification.DepthLoadOp);
 			depthAttachment.finalLayout = multisampled ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 			attachmentDescriptions.push_back(depthAttachment);
 
@@ -111,7 +164,7 @@ namespace VulkanCore {
 		}
 
 		// Color Attachment References
-		for (int i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
+		for (int i = 0; i < FramebufferColorAttachments.size(); ++i)
 		{
 			VkAttachmentReference2 colorAttachmentRef = {};
 			colorAttachmentRef.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2;
@@ -123,7 +176,7 @@ namespace VulkanCore {
 		// Resolve Attachment Reference(Only applicable if multisampling is present)
 		if (multisampled)
 		{
-			for (int i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
+			for (int i = 0; i < FramebufferColorAttachments.size(); ++i)
 			{
 				VkAttachmentReference2 colorAttachmentResolveRef = {};
 				colorAttachmentResolveRef.sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2;
@@ -154,7 +207,7 @@ namespace VulkanCore {
 		VkSubpassDescription2 subpass = {}; // TODO: Changes need to be made
 		subpass.sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2;
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = static_cast<uint32_t>(Framebuffer->GetColorAttachmentsTextureSpec().size());
+		subpass.colorAttachmentCount = static_cast<uint32_t>(FramebufferColorAttachments.size());
 		subpass.pColorAttachments = attachmentRefs.data();
 		subpass.pDepthStencilAttachment = Framebuffer->HasDepthAttachment() ? &depthAttachmentRef : nullptr;
 		subpass.pResolveAttachments = multisampled ? attachmentRefs.data() + subpass.colorAttachmentCount : nullptr;
@@ -190,10 +243,50 @@ namespace VulkanCore {
 		Framebuffer->CreateFramebuffer(m_RenderPass);
 	}
 
+	void VulkanRenderPass::Release()
+	{
+		auto device = VulkanContext::GetCurrentDevice();
+
+		if (m_RenderPass == nullptr)
+			return;
+
+		vkDestroyRenderPass(device->GetVulkanDevice(), m_RenderPass, nullptr);
+	}
+
 	void VulkanRenderPass::RecreateFramebuffers(uint32_t width, uint32_t height)
 	{
+		std::bitset<8> resizeBitFlag = 0;
+		for (uint32_t i = 0; i < m_Specification.ColorLoadOps.size(); ++i)
+		{
+			if (m_Specification.ColorLoadOps[i] != AttachmentLoadOp::Load)
+				resizeBitFlag.set(i);
+
+			if (Utils::IsMultisampled(m_Specification))
+				resizeBitFlag.set(i + m_Specification.ColorLoadOps.size());
+		}
+
+		resizeBitFlag.set(7, m_Specification.DepthLoadOp != AttachmentLoadOp::Load);
+
 		auto Framebuffer = std::static_pointer_cast<VulkanFramebuffer>(m_Specification.TargetFramebuffer);
-		Framebuffer->Resize(width, height);
+		Framebuffer->Resize(width, height, resizeBitFlag);
+		Framebuffer->CreateFramebuffer(m_RenderPass);
+	}
+
+	void VulkanRenderPass::SetColorAttachment(uint32_t index, const std::vector<std::shared_ptr<Image2D>>& colorImages)
+	{
+		VK_CORE_ASSERT(m_Specification.ColorLoadOps[index] == AttachmentLoadOp::Load, "Invalid Load Operation is used!");
+
+		auto Framebuffer = std::static_pointer_cast<VulkanFramebuffer>(m_Specification.TargetFramebuffer);
+		Framebuffer->SetColorAttachments(index, colorImages);
+		Framebuffer->CreateFramebuffer(m_RenderPass);
+	}
+
+	void VulkanRenderPass::SetDepthAttachment(const std::vector<std::shared_ptr<Image2D>>& depthImages)
+	{
+		VK_CORE_ASSERT(m_Specification.DepthLoadOp == AttachmentLoadOp::Load, "Invalid Load Operation is used!");
+
+		auto Framebuffer = std::static_pointer_cast<VulkanFramebuffer>(m_Specification.TargetFramebuffer);
+		Framebuffer->SetDepthAttachments(depthImages);
 		Framebuffer->CreateFramebuffer(m_RenderPass);
 	}
 
@@ -216,8 +309,13 @@ namespace VulkanCore {
 			beginPassInfo.renderArea.offset = { 0, 0 };
 			beginPassInfo.renderArea.extent = framebufferExtent;
 
-			for (uint32_t i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); ++i)
-				m_ClearValues[i].color = { fbSpec.ClearColor.x, fbSpec.ClearColor.y, fbSpec.ClearColor.z, fbSpec.ClearColor.w };
+			for (uint32_t i = 0; auto& FramebufferColorAttachment : Framebuffer->GetColorAttachmentsTextureSpec())
+			{
+				float ClearColor = FramebufferColorAttachment.ClearColor;
+				m_ClearValues[i].color = { ClearColor, ClearColor, ClearColor, ClearColor };
+
+				++i;
+			}
 
 			if (m_Specification.TargetFramebuffer->GetSpecification().ReadDepthTexture && multisampled)
 			{
