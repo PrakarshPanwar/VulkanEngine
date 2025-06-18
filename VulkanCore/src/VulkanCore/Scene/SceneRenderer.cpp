@@ -836,8 +836,9 @@ namespace VulkanCore {
 		Renderer::WaitAndExecute();
 
 		// Set Transparent Pipeline Depth Attachment
-		m_GeometryTransparentPipeline->GetSpecification().pRenderPass->SetDepthAttachment(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment(false));
-		m_GeometryCompositePipeline->GetSpecification().pRenderPass->SetColorAttachment(0, m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetAttachment(0, false));
+		auto geomFramebuffer = m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer;
+		m_GeometryTransparentPipeline->GetSpecification().pRenderPass->SetDepthAttachment(geomFramebuffer->GetDepthAttachment(false));
+		m_GeometryCompositePipeline->GetSpecification().pRenderPass->SetColorAttachment(0, geomFramebuffer->GetAttachment(0, false));
 
 		// Create Physics Debug Renderer
 		m_PhysicsDebugRenderer = PhysicsDebugRenderer::Create();
@@ -1058,11 +1059,10 @@ namespace VulkanCore {
 		{
 			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
 
-			ImGui::Text("Geometry Pass: %lluns", vulkanCmdBuffer->GetQueryTime(1));
-			ImGui::Text("Skybox Pass: %lluns", vulkanCmdBuffer->GetQueryTime(0));
-			ImGui::Text("Lights Pass: %lluns", vulkanCmdBuffer->GetQueryTime(2));
-			ImGui::Text("Composite Pass: %lluns", vulkanCmdBuffer->GetQueryTime(4));
-			ImGui::Text("Bloom Compute Pass: %lluns", vulkanCmdBuffer->GetQueryTime(3));
+			ImGui::Text("Geometry Pass: %lluns", vulkanCmdBuffer->GetQueryTime(0));
+			ImGui::Text("Transparent Pass: %lluns", vulkanCmdBuffer->GetQueryTime(1));
+			ImGui::Text("Composite Pass: %lluns", vulkanCmdBuffer->GetQueryTime(3));
+			ImGui::Text("Bloom Compute Pass: %lluns", vulkanCmdBuffer->GetQueryTime(2));
 			ImGui::TreePop();
 		}
 
@@ -1203,13 +1203,13 @@ namespace VulkanCore {
 		Renderer::BindPipeline(m_SceneCommandBuffer, m_LightPipeline, m_PointLightShaderMaterial);
 
 		// Point Lights
-		for (auto pointLightPosition : m_PointLightPositions)
+		for (auto& pointLightPosition : m_PointLightPositions)
 			Renderer::RenderLight(m_SceneCommandBuffer, m_LightPipeline, pointLightPosition);
 
 		Renderer::BindPipeline(m_SceneCommandBuffer, m_LightPipeline, m_SpotLightShaderMaterial);
 
 		// Spot Lights
-		for (auto spotLightPosition : m_SpotLightPositions)
+		for (auto& spotLightPosition : m_SpotLightPositions)
 			Renderer::RenderLight(m_SceneCommandBuffer, m_LightPipeline, spotLightPosition);
 	}
 
@@ -1480,7 +1480,6 @@ namespace VulkanCore {
 	void SceneRenderer::GeometryPass()
 	{
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Skybox", DebugLabelColor::Orange);
-
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().pRenderPass);
 		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
@@ -1492,13 +1491,10 @@ namespace VulkanCore {
 
 		// Rendering Skybox
 		Renderer::RenderSkybox(m_SceneCommandBuffer, m_SkyboxPipeline, m_SkyboxMaterial, &m_SkyboxSettings);
-		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 
 		// Rendering Geometry
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Geometry-Pass", DebugLabelColor::Gold);
-		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
-
 		Renderer::BindPipeline(m_SceneCommandBuffer, m_GeometryPipeline, m_GeometryMaterial);
 
 		// Static Geometry
@@ -1518,20 +1514,21 @@ namespace VulkanCore {
 		for (auto& [mk, dc] : m_MeshTessellatedDrawList)
 			Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryTessellatedPipeline, dc.TransformBuffer, m_MeshTessellatedTransformMap[mk].Transforms, dc.InstanceCount);
 
-		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 
 		// Rendering Point Lights
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Lights", DebugLabelColor::Grey);
-		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		RenderLights();
 
+		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometryPipeline->GetSpecification().pRenderPass); // End Opaque Geometry Pass
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 
 		// Transparent Geometry Pass
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Transparent-Pass", DebugLabelColor::Lemon);
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryTransparentPipeline->GetSpecification().pRenderPass);
+		Renderer::BeginTimestampsQuery(m_SceneCommandBuffer);
 
 		// Transparent Meshes(Weighted OIT)
 		Renderer::BindPipeline(m_SceneCommandBuffer, m_GeometryTransparentPipeline, m_GeometryMaterial);
@@ -1540,13 +1537,16 @@ namespace VulkanCore {
 			Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryTransparentPipeline, dc.TransformBuffer, m_MeshTransparentTransformMap[mk].Transforms, dc.InstanceCount);
 
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometryTransparentPipeline->GetSpecification().pRenderPass); // End Transparent Geometry Pass
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 
 		// Composite OIT Pass
+		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Transparent-Composite", DebugLabelColor::Lavender);
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_GeometryCompositePipeline->GetSpecification().pRenderPass);
 		Renderer::SubmitFullscreenQuad(m_SceneCommandBuffer, m_GeometryCompositePipeline, m_GeometryCompositeMaterial);
-		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometryCompositePipeline->GetSpecification().pRenderPass);
 
 		Renderer::EndTimestampsQuery(m_SceneCommandBuffer);
+		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometryCompositePipeline->GetSpecification().pRenderPass);
+		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
 
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Copy-Image", DebugLabelColor::Pink);
 
@@ -1704,7 +1704,7 @@ namespace VulkanCore {
 	void SceneRenderer::CreateCommandBuffers()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-		m_SceneCommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary, 5);
+		m_SceneCommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary, 4);
 	}
 
 	void SceneRenderer::ResetDrawCommands()

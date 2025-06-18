@@ -40,8 +40,6 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<Image2D>> m_DepthAttachment, m_DepthAttachmentResolve;
 
 		std::vector<VkFramebuffer> m_Framebuffers;
-
-		static uint32_t s_InstanceCount;
 	};
 
 }

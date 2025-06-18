@@ -631,10 +631,11 @@ namespace VulkanCore {
 		if (!toolbarEnabled)
 			tintColor.w = 0.5f;
 
+		auto region = ImGui::GetContentRegionAvail();
 		float size = ImGui::GetWindowHeight() - 4.0f;
 		
 		// Begin Stack Layout
-		ImGui::BeginHorizontal(372846283284, { ImGui::GetContentRegionAvail().x, 0.0f });
+		ImGui::BeginHorizontal(372846283284, { region.x, 0.0f });
 
 		ImGui::Spring(0.5f);
 

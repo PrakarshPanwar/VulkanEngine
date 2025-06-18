@@ -7,8 +7,6 @@
 
 namespace VulkanCore {
 
-	uint32_t VulkanFramebuffer::s_InstanceCount = 0;
-
 	VulkanFramebuffer::VulkanFramebuffer(const FramebufferSpecification& spec)
 		: m_Specification(spec)
 	{
@@ -24,8 +22,6 @@ namespace VulkanCore {
 		{
 			Invalidate();
 		});
-
-		s_InstanceCount++;
 	}
 
 	VulkanFramebuffer::~VulkanFramebuffer()
@@ -33,7 +29,6 @@ namespace VulkanCore {
 		if (m_Framebuffers.at(0) == nullptr)
 			return;
 
-		VK_CORE_TRACE("Framebuffers Instances: {}", s_InstanceCount);
 		Release();
 	}
 
