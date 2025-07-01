@@ -17,8 +17,8 @@ IncludeDir["Jolt"] = "%{wks.location}/VulkanCore/vendor/JoltPhysics"
 
 LibraryDir = {}
 LibraryDir["VulkanSDK"] = "%{wks.location}/VulkanCore/vendor/VulkanSDK/Lib"
-LibraryDir["Assimp"] = "%{wks.location}/VulkanCore/vendor/Assimp/lib"
-LibraryDir["AssimpBin"] = "%{wks.location}/VulkanCore/vendor/Assimp/bin"
+LibraryDir["Assimp"] = "%{wks.location}/VulkanCore/vendor/Assimp/build/lib"
+LibraryDir["AssimpBin"] = "%{wks.location}/VulkanCore/vendor/Assimp/build/bin"
 LibraryDir["optick"] = "%{wks.location}/VulkanCore/vendor/Optick/lib/x64"
 
 Library = {}

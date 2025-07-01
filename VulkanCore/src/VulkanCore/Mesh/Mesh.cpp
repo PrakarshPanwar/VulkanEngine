@@ -9,8 +9,8 @@
 #include "Platform/Vulkan/VulkanVertexBuffer.h"
 #include "Platform/Vulkan/VulkanIndexBuffer.h"
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tinyobjloader.h>
+//#define TINYOBJLOADER_IMPLEMENTATION
+//#include <tinyobjloader.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
