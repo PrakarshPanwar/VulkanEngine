@@ -336,6 +336,9 @@ namespace VulkanCore {
 
 		// Button Position just at the top
 		ImGui::SetCursorPos({ viewportMinRegion.x + 5.0f, viewportMinRegion.y + 5.0f });
+		ImGui::BeginHorizontal("##ViewportUI", { region.x - 20.0f, 40.0f }, 0.35f);
+
+		ImGui::Spring(0.0f);
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 20.0f);
 		if (ImGui::ImageButton("##MenuIcon", (ImTextureID)m_MenuIconID, { 20.0f, 20.0f }, { 0, 1 }, { 1, 0 }))
 			ImGui::OpenPopup("EditorSettings");
@@ -380,19 +383,19 @@ namespace VulkanCore {
 			m_SceneHierarchyPanel.SetSelectedEntity(hoveredEntity);
 		}
 
+		ImGui::Spring();
 		if (m_ShowApplicationStats)
 		{
-			ImGui::SetCursorPos({ viewportMinRegion.x + 50.0f, viewportMinRegion.y + 10.0f });
 			SHOW_FRAMERATES;
 		}
 
 		if (m_ShowCameraData)
 		{
-			ImGui::SetCursorPos({ viewportMaxRegion.x - 350.0f, viewportMinRegion.y + 10.0f });
-
 			glm::vec3 cameraDirection = m_EditorCamera.GetForwardDirection();
 			ImGui::Text("Aspect Ratio: %.2f\t Direction: %.3f, %.3f, %.3f", m_EditorCamera.GetAspectRatio(), cameraDirection.x, cameraDirection.y, cameraDirection.z);
 		}
+
+		ImGui::EndHorizontal(); // End of Viewport Stack
 
 		RenderGizmo();
 		ImGui::End(); // End of Viewport

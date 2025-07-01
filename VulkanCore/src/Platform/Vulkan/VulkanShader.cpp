@@ -111,7 +111,6 @@ namespace VulkanCore {
 		CompileOrGetVulkanBinaries(Sources);
 
 		ReflectShaderData();
-		//InvalidateDescriptors();
 	}
 
 	VulkanShader::~VulkanShader()

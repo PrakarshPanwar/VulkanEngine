@@ -333,7 +333,6 @@ namespace VulkanCore {
 		VK_CORE_TRACE("Deserializing Scene: '{}'", sceneName);
 
 		auto entities = data["Entities"];
-
 		if (entities)
 		{
 			for (auto entity : entities)

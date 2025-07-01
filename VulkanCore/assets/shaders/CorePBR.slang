@@ -330,8 +330,7 @@ float CalculateShadow()
 
     // Depth Compare for Shadowing
     float4 shadowCoord = mul(float4(Input.WorldPosition, 1.0f), mul(c_CascadeData.LightSpaceMatrices[cascadeIndex], BIAS_MATRIX));
-    shadowCoord.xyz = shadowCoord.xyz / shadowCoord.w;
-    shadowCoord.xyz = shadowCoord.xyz * 0.5f + 0.5f;
+    shadowCoord = shadowCoord / shadowCoord.w; // Perspective Divide
 
     float shadow = FilterPCF(shadowCoord, cascadeIndex);
     //float shadow = ShadowTextureProjection(shadowCoord, float2(0.0), cascadeIndex);

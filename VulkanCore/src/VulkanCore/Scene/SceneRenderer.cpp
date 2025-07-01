@@ -1654,10 +1654,9 @@ namespace VulkanCore {
 
 			for (uint32_t i = 1; i < mips; i++)
 			{
+				int currentIdx = i - 1;
 				m_LodAndMode.LOD = float(i - 1);
 				m_LodAndMode.Mode = 1.0f;
-
-				int currentIdx = i - 1;
 
 				m_BloomComputeMaterials.PingMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 				workGroups = glm::ceil((glm::vec2)m_BloomTextures[0]->GetMipSize(i) / 32.0f);
@@ -1666,7 +1665,6 @@ namespace VulkanCore {
 				vulkanBloomPipeline->Dispatch(dispatchCmd, workGroups.x, workGroups.y, 1);
 
 				m_LodAndMode.LOD = (float)i;
-				
 				m_BloomComputeMaterials.PongMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
 
 				vulkanBloomPipeline->SetPushConstants(dispatchCmd, &m_LodAndMode, sizeof(glm::vec2));

@@ -69,6 +69,7 @@ namespace VulkanCore {
 	void ContentBrowserPanel::OnImGuiRender()
 	{
 		ImGui::Begin("Content Browser");
+		ImGui::BeginHorizontal("##ContentBrowserToolbar", { ImGui::GetContentRegionAvail().x, 30.0f });
 
 		static TreeNode* tempNode = m_RootNode;
 		if (m_AssetMode)
@@ -77,8 +78,6 @@ namespace VulkanCore {
 			{
 				if (ImGui::Button("Back"))
 					tempNode = tempNode->ParentNode;
-
-				ImGui::SameLine();
 			}
 		}
 		else
@@ -87,8 +86,6 @@ namespace VulkanCore {
 			{
 				if (ImGui::Button("Back"))
 					m_CurrentDirectory = m_CurrentDirectory.parent_path();
-
-				ImGui::SameLine();
 			}
 		}
 
@@ -103,7 +100,7 @@ namespace VulkanCore {
 			delete oldNode;
 		}
 
-		ImGui::SameLine();
+		ImGui::SetItemTooltip("Refresh Asset Tree");
 
 		ImVec4 buttonColor = m_AssetMode ? ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f } : ImVec4{ 0.2f, 0.3f, 0.8f, 1.0f };
 		ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
@@ -111,6 +108,9 @@ namespace VulkanCore {
 		if (ImGui::Button("Show All Files"))
 			m_AssetMode = !m_AssetMode;
 		ImGui::PopStyleColor(2);
+
+		ImGui::Spring(0.9f);
+		ImGui::EndHorizontal();
 
 		float cellSize = m_ThumbnailSize + m_Padding;
 
