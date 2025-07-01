@@ -25,6 +25,9 @@ namespace VulkanCore {
 	void EditorCamera::UpdateView()
 	{
 		// m_Yaw = m_Pitch = 0.0f; // Lock the camera's rotation
+		if (glm::any(glm::notEqual(m_FocalPoint, m_FinalFocalPoint, 1e-5f)))
+			m_FocalPoint = glm::mix(m_FocalPoint, m_FinalFocalPoint, 0.05f);
+
 		m_Position = CalculatePosition();
 
 		glm::quat orientation = GetOrientation();
@@ -120,7 +123,7 @@ namespace VulkanCore {
 
 	void EditorCamera::SetFocalPoint(const glm::vec3& focalPoint)
 	{
-		m_FocalPoint = focalPoint;
+		m_FinalFocalPoint = focalPoint;
 	}
 
 	bool EditorCamera::OnKeyEvent(KeyPressedEvent& e)

@@ -74,7 +74,7 @@ namespace VulkanCore {
 		float ZoomSpeed() const;
 	private:
 		glm::vec3 m_Position = { 0.0f, 0.0f, 0.0f };
-		glm::vec3 m_FocalPoint = { 0.0f, 0.0f, 0.0f };
+		glm::vec3 m_FocalPoint = { 0.0f, 0.0f, 0.0f }, m_FinalFocalPoint = { 0.0f, 0.0f, 0.0f };
 
 		glm::vec2 m_InitialMousePosition = { 0.0f, 0.0f };
 
