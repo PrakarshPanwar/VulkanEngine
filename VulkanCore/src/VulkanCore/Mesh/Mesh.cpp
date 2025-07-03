@@ -9,8 +9,8 @@
 #include "VulkanCore/Asset/AssetManager.h"
 #include "Platform/Vulkan/VulkanMaterial.h"
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tinyobjloader.h>
+//#define TINYOBJLOADER_IMPLEMENTATION
+//#include <tinyobjloader.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
