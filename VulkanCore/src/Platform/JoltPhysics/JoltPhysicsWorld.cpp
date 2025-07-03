@@ -246,14 +246,19 @@ namespace VulkanCore {
 				auto& meshVertexData = meshAsset->GetMeshVertices();
 				auto& meshIndexData = meshAsset->GetMeshIndices();
 
+				const auto& submeshData = meshAsset->GetMeshSource()->GetSubmeshes();
+				auto localTransform = submeshData[0].LocalTransform; // Only one submesh is supported for now
+
 				JPH::VertexList vertices{};
 				JPH::IndexedTriangleList triangleList{};
-				for (int i = 0; i < meshVertexData.size(); ++i)
+				for (const auto& vertex : meshVertexData)
 				{
+					glm::vec4 position = localTransform * glm::vec4{ vertex.Position.x, vertex.Position.y, vertex.Position.z, 1.0f }; // Transform Vertex position by the Local Transform of the Submesh
+
 					vertices.emplace_back(
-						meshVertexData[i].Position.x * transform.Scale.x,
-						meshVertexData[i].Position.y * transform.Scale.y,
-						meshVertexData[i].Position.z * transform.Scale.z);
+						position.x * transform.Scale.x,
+						position.y * transform.Scale.y,
+						position.z * transform.Scale.z);
 				}
 
 				for (int i = 0; i < meshIndexData.size(); i += 3)
@@ -282,6 +287,9 @@ namespace VulkanCore {
 					motionType,
 					objectLayer
 				};
+
+				settings.mOverrideMassProperties = JPH::EOverrideMassProperties::MassAndInertiaProvided;
+				settings.mMassPropertiesOverride.SetMassAndInertiaOfSolidBox(JPH::Vec3(transform.Scale.x, transform.Scale.y, transform.Scale.z) * 2.0f, mc3d.Density);
 
 				auto bodyPtr = bodyInterface.CreateBodyWithID(JPH::BodyID{ (uint32_t)ent }, settings); // Create Body with Entity ID
 				bodyPtr->SetFriction(mc3d.Friction);

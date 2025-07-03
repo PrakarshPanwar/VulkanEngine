@@ -10,6 +10,7 @@ namespace VulkanCore {
 	{
 	public:
 		JoltMesh(const JPH::DebugRenderer::Vertex* verticesPtr, int vertexCount, const JPH::uint32* indicesPtr, int indexCount);
+		JoltMesh(const JPH::DebugRenderer::Triangle* trianglesPtr, int triangleCount);
 
 		void AddRef() override { ++m_Refs; }
 		void Release() override { if (--m_Refs == 0) delete this; }

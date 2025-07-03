@@ -47,6 +47,8 @@ namespace VulkanCore {
 		auto& camera = sceneRenderer->GetEditorCamera();
 		auto& cameraPosition = camera.GetPosition();
 
+		std::lock_guard primitivesLock(m_PrimitivesMutex);
+
 		glm::mat4 transform = {
 			transformMat.GetColumn4(0).GetX(), transformMat.GetColumn4(0).GetY(), transformMat.GetColumn4(0).GetZ(), transformMat.GetColumn4(0).GetW(),
 			transformMat.GetColumn4(1).GetX(), transformMat.GetColumn4(1).GetY(), transformMat.GetColumn4(1).GetZ(), transformMat.GetColumn4(1).GetW(),
@@ -70,8 +72,8 @@ namespace VulkanCore {
 
 	JPH::DebugRenderer::Batch JoltDebugRenderer::CreateTriangleBatch(const Triangle* trianglesPtr, int triangleCount)
 	{
-		VK_CORE_WARN("Method not Implemented!");
-		return nullptr;
+		JoltMesh* joltMesh = new JoltMesh(trianglesPtr, triangleCount);
+		return joltMesh;
 	}
 
 	JPH::DebugRenderer::Batch JoltDebugRenderer::CreateTriangleBatch(const Vertex* verticesPtr, int vertexCount, const JPH::uint32* indicesPtr, int indexCount)
