@@ -115,12 +115,10 @@ namespace VulkanCore {
 
 		// Compiler Options
 		std::array<slang::CompilerOptionEntry, 2> options = {
-			slang::CompilerOptionEntry{
-				slang::CompilerOptionName::UseUpToDateBinaryModule,
+			slang::CompilerOptionEntry{slang::CompilerOptionName::UseUpToDateBinaryModule,
 				{ slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr }
 			},
-			slang::CompilerOptionEntry{
-				slang::CompilerOptionName::Optimization,
+			slang::CompilerOptionEntry{slang::CompilerOptionName::Optimization,
 				{ slang::CompilerOptionValueKind::Int, SLANG_OPTIMIZATION_LEVEL_HIGH, 0, nullptr, nullptr }
 			}
 		};
@@ -141,7 +139,7 @@ namespace VulkanCore {
 		sessionDesc.preprocessorMacroCount = (uint32_t)preprocessorMacroDesc.size();
 #endif
 		sessionDesc.compilerOptionEntries = options.data();
-		sessionDesc.compilerOptionEntryCount = options.size();
+		sessionDesc.compilerOptionEntryCount = (uint32_t)options.size();
 
 		std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
 		constexpr const char* slangModuleExtension = ".slang-module";
@@ -159,14 +157,14 @@ namespace VulkanCore {
 		// Cache New Loaded Modules to disk
 		for (int i = 0; i < m_SlangSession->getLoadedModuleCount(); ++i)
 		{
-			auto module = m_SlangSession->getLoadedModule(i);
-			auto name = module->getName();
+			auto slangModule = m_SlangSession->getLoadedModule(i);
+			auto name = slangModule->getName();
 			std::string fileName = name + (std::string)slangModuleExtension;
 
 			std::filesystem::path cachedPath = cacheDirectory / fileName;
 
 			Slang::ComPtr<slang::IBlob> moduleBlob{};
-			module->serialize(moduleBlob.writeRef());
+			slangModule->serialize(moduleBlob.writeRef());
 
 			std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
 			if (out.is_open())
@@ -234,7 +232,7 @@ namespace VulkanCore {
 	}
 
 	// For GLSL to HLSL/Slang Mapping
-	// https://anteru.net/blog/2016/mapping-between-HLSL-and-GLSL/
+	// https://docs.shader-slang.org/en/latest/coming-from-glsl.html
 	void VulkanSlangShader::CompileOrGetSlangBinaries()
 	{
 		constexpr const char* shaderPaths[] = { "cache/slang", "shaders", "shaders/Utils" };

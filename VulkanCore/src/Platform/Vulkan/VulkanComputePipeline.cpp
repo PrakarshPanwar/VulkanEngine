@@ -80,17 +80,17 @@ namespace VulkanCore {
 		m_ComputePipeline = nullptr;
 	}
 
-	void VulkanComputePipeline::Bind(VkCommandBuffer commandBuffer)
+	void VulkanComputePipeline::Bind(VkCommandBuffer commandBuffer) const
 	{
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline);
 	}
 
-	void VulkanComputePipeline::Dispatch(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+	void VulkanComputePipeline::Dispatch(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
 	{
 		vkCmdDispatch(commandBuffer, groupCountX, groupCountY, groupCountZ);
 	}
 
-	void VulkanComputePipeline::Execute(VkCommandBuffer cmdBuf, VkDescriptorSet dstSet, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+	void VulkanComputePipeline::Execute(VkCommandBuffer cmdBuf, VkDescriptorSet dstSet, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
 	{
 		vkCmdBindDescriptorSets(cmdBuf,
 			VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -100,7 +100,7 @@ namespace VulkanCore {
 		vkCmdDispatch(cmdBuf, groupCountX, groupCountY, groupCountZ);
 	}
 
-	void VulkanComputePipeline::SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size, size_t offset)
+	void VulkanComputePipeline::SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size, size_t offset) const
 	{
 		vkCmdPushConstants(cmdBuf,
 			m_PipelineLayout,

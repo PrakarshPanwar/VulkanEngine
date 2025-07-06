@@ -25,7 +25,7 @@ namespace VulkanCore {
 	void EditorCamera::UpdateView()
 	{
 		// m_Yaw = m_Pitch = 0.0f; // Lock the camera's rotation
-		if (glm::any(glm::notEqual(m_FocalPoint, m_FinalFocalPoint, 1e-5f)))
+		if (!m_FlyMode && glm::any(glm::notEqual(m_FocalPoint, m_FinalFocalPoint, 1e-5f)))
 			m_FocalPoint = glm::mix(m_FocalPoint, m_FinalFocalPoint, 0.05f);
 
 		m_Position = CalculatePosition();

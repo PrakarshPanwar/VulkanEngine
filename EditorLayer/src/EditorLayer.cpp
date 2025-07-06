@@ -72,7 +72,7 @@ namespace VulkanCore {
 			OpenScene(sceneFilePath);
 		}
 
-		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 10.0f, 1000.0f);
+		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
 	}
 
 	void EditorLayer::OnDetach()
@@ -595,9 +595,9 @@ namespace VulkanCore {
 
 				if (ImGuizmo::IsUsing())
 				{
-					glm::vec3 translation, scale, skew;
-					glm::vec4 perspective;
-					glm::quat rotation;
+					glm::vec3 translation{}, scale{}, skew{};
+					glm::vec4 perspective{};
+					glm::quat rotation{};
 
 					glm::decompose(transform, scale, rotation, translation, skew, perspective);
 

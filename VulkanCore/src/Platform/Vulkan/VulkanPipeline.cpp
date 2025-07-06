@@ -456,12 +456,12 @@ namespace VulkanCore {
 		m_GraphicsPipeline = nullptr;
 	}
 
-	void VulkanPipeline::Bind(VkCommandBuffer commandBuffer)
+	void VulkanPipeline::Bind(VkCommandBuffer commandBuffer) const
 	{
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 	}
 
-	void VulkanPipeline::SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size)
+	void VulkanPipeline::SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size) const
 	{
 		vkCmdPushConstants(cmdBuf,
 			m_PipelineLayout,

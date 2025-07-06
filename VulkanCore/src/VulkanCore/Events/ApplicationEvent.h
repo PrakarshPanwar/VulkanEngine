@@ -14,9 +14,7 @@ namespace VulkanCore {
 
 		std::string ToString() const override
 		{
-			std::stringstream ss;
-			ss << "Window Resize Event: " << m_Width << ", " << m_Height;
-			return ss.str();
+			return std::format("WindowResizeEvent: {0}, {1}", m_Width, m_Height);
 		}
 
 		EVENT_CLASS_TYPE(WindowResize)

@@ -16,9 +16,7 @@ namespace VulkanCore {
 
 		std::string ToString() const override
 		{
-			std::stringstream ss;
-			ss << "Mouse Moved Event: " << m_MouseX << ", " << m_MouseY;
-			return ss.str();
+			return std::format("MouseMovedEvent: {0}, {1}", m_MouseX, m_MouseY);
 		}
 
 		EVENT_CLASS_TYPE(MouseMoved)
@@ -65,9 +63,7 @@ namespace VulkanCore {
 
 		std::string ToString() const override
 		{
-			std::stringstream ss;
-			ss << "Mouse Button Pressed Event: " << m_MouseButton;
-			return ss.str();
+			return std::format("MouseButtonPressedEvent: {}", m_MouseButton);
 		}
 
 		EVENT_CLASS_TYPE(MouseButtonPressed)
@@ -81,9 +77,7 @@ namespace VulkanCore {
 
 		std::string ToString() const override
 		{
-			std::stringstream ss;
-			ss << "Mouse Button Released Event: " << m_MouseButton;
-			return ss.str();
+			return std::format("MouseButtonReleasedEvent: {}", m_MouseButton);
 		}
 
 		EVENT_CLASS_TYPE(MouseButtonReleased)
