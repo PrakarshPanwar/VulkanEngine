@@ -180,16 +180,16 @@ namespace VulkanCore {
 
 			equirectSetWriter.Build(equirectSet);
 
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
+			VulkanCommandBuffer dispatchCmd = device->GetCommandBuffer(VulkanQueueType::Compute);
 
-			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+			vkCmdBindDescriptorSets(dispatchCmd.CmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
 				equirectangularConversionPipeline->GetVulkanPipelineLayout(), 0, 1,
 				&equirectSet, 0, nullptr);
 
-			equirectangularConversionPipeline->Bind(dispatchCmd);
-			equirectangularConversionPipeline->Dispatch(dispatchCmd, cubemapSize / 32, cubemapSize / 32, 6);
+			equirectangularConversionPipeline->Bind(dispatchCmd.CmdBuffer);
+			equirectangularConversionPipeline->Dispatch(dispatchCmd.CmdBuffer, cubemapSize / 32, cubemapSize / 32, 6);
 
-			device->FlushCommandBuffer(dispatchCmd, true);
+			device->FlushCommandBuffer(dispatchCmd);
 			
 			envUnfiltered->GenerateMipMaps(true);
 		});
@@ -222,19 +222,19 @@ namespace VulkanCore {
 			}
 
 			// Dispatch Pipeline
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
-			environmentMipFilterPipeline->Bind(dispatchCmd);
+			VulkanCommandBuffer dispatchCmd = device->GetCommandBuffer(VulkanQueueType::Compute);
+			environmentMipFilterPipeline->Bind(dispatchCmd.CmdBuffer);
 
 			const float deltaRoughness = 1.0f / glm::max((float)mipCount - 1.0f, 1.0f);
 			for (uint32_t i = 0, size = cubemapSize; i < mipCount; ++i, size /= 2)
 			{
 				uint32_t numGroups = glm::max(1u, size / 32);
 				float roughness = i * deltaRoughness;
-				environmentMipFilterPipeline->SetPushConstants(dispatchCmd, &roughness, sizeof(float));
-				environmentMipFilterPipeline->Execute(dispatchCmd, descriptorSets[i], numGroups, numGroups, 6);
+				environmentMipFilterPipeline->SetPushConstants(dispatchCmd.CmdBuffer, &roughness, sizeof(float));
+				environmentMipFilterPipeline->Execute(dispatchCmd.CmdBuffer, descriptorSets[i], numGroups, numGroups, 6);
 			}
 
-			device->FlushCommandBuffer(dispatchCmd, true);
+			device->FlushCommandBuffer(dispatchCmd);
 		});
 
 		auto environmentIrradianceShader = Renderer::GetShader("EnvironmentIrradiance");
@@ -260,12 +260,12 @@ namespace VulkanCore {
 			descriptorWriter.Build(descriptorSet);
 
 			// Dispatch Pipeline
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
+			VulkanCommandBuffer dispatchCmd = device->GetCommandBuffer(VulkanQueueType::Compute);
 
-			environmentIrradiancePipeline->Bind(dispatchCmd);
-			environmentIrradiancePipeline->Execute(dispatchCmd, descriptorSet, irradianceMapSize / 32, irradianceMapSize / 32, 6);
+			environmentIrradiancePipeline->Bind(dispatchCmd.CmdBuffer);
+			environmentIrradiancePipeline->Execute(dispatchCmd.CmdBuffer, descriptorSet, irradianceMapSize / 32, irradianceMapSize / 32, 6);
 
-			device->FlushCommandBuffer(dispatchCmd, true);
+			device->FlushCommandBuffer(dispatchCmd);
 
 			irradianceMap->GenerateMipMaps(false);
 		});
@@ -446,12 +446,12 @@ namespace VulkanCore {
 			descriptorWriter.Build(descriptorSet);
 
 			// Dispatch Pipeline
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
+			VulkanCommandBuffer dispatchCmd = device->GetCommandBuffer(VulkanQueueType::Compute);
 
-			generateBRDFPipeline->Bind(dispatchCmd);
-			generateBRDFPipeline->Execute(dispatchCmd, descriptorSet, textureSize / 32, textureSize / 32, 1);
+			generateBRDFPipeline->Bind(dispatchCmd.CmdBuffer);
+			generateBRDFPipeline->Execute(dispatchCmd.CmdBuffer, descriptorSet, textureSize / 32, textureSize / 32, 1);
 
-			device->FlushCommandBuffer(dispatchCmd, true);
+			device->FlushCommandBuffer(dispatchCmd);
 		});
 
 		return brdfTexture;

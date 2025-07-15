@@ -46,14 +46,14 @@ namespace VulkanCore {
 		queryPoolCreateInfo.queryCount = m_TimestampQueryBufferSize;
 		queryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
 
-		VkCommandBuffer cmdBuffer = device->GetCommandBuffer();
+		VulkanCommandBuffer resetCmd = device->GetCommandBuffer();
 		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
 		{
 			vkCreateQueryPool(device->GetVulkanDevice(), &queryPoolCreateInfo, nullptr, &m_TimestampQueryPools[i]);
-			vkCmdResetQueryPool(cmdBuffer, m_TimestampQueryPools[i], 0, m_TimestampQueryBufferSize);
+			vkCmdResetQueryPool(resetCmd.CmdBuffer, m_TimestampQueryPools[i], 0, m_TimestampQueryBufferSize);
 		}
 
-		device->FlushCommandBuffer(cmdBuffer);
+		device->FlushCommandBuffer(resetCmd);
 	}
 
 	void VulkanRenderCommandBuffer::InvalidateCommandBuffers()

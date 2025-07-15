@@ -864,7 +864,7 @@ namespace VulkanCore {
 		m_SceneDepthTextures.reserve(framesInFlight);
 #endif
 
-		VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+		VulkanCommandBuffer barrierCmd = device->GetCommandBuffer();
 
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
@@ -922,7 +922,7 @@ namespace VulkanCore {
 			auto SceneTexture = std::static_pointer_cast<VulkanImage>(m_SceneRenderTextures.emplace_back(std::make_shared<VulkanImage>(sceneRTSpec)));
 			SceneTexture->Invalidate();
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, SceneTexture->GetVulkanImageInfo().Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd.CmdBuffer, SceneTexture->GetVulkanImageInfo().Image,
 				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -989,7 +989,7 @@ namespace VulkanCore {
 			m_BloomMipSize = (glm::uvec2(m_ViewportSize.x, m_ViewportSize.y) + 1u) / 2u;
 			m_BloomMipSize += 16u - m_BloomMipSize % 16u;
 
-			VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+			VulkanCommandBuffer barrierCmd = device->GetCommandBuffer();
 
 			for (uint32_t i = 0; i < framesInFlight; ++i)
 			{
@@ -1003,7 +1003,7 @@ namespace VulkanCore {
 				auto vulkanDepthTexture = std::dynamic_pointer_cast<VulkanImage>(m_SceneDepthTextures[i]);
 				vulkanDepthTexture->Resize(m_ViewportSize.x, m_ViewportSize.y, Utils::CalculateMipCount(m_ViewportSize.x, m_ViewportSize.y));
 #endif
-				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanSceneTexture->GetVulkanImageInfo().Image,
+				Utils::InsertImageMemoryBarrier(barrierCmd.CmdBuffer, vulkanSceneTexture->GetVulkanImageInfo().Image,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,

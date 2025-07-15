@@ -386,12 +386,12 @@ namespace VulkanCore {
 			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
 			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(component.MeshHandle);
+			std::shared_ptr<MeshSource> meshSource = mesh->GetMeshSource();
 			std::shared_ptr<MaterialTable> materialTable = component.MaterialTableHandle;
 
 			if (mesh && materialTable)
 			{
 				// Mesh Asset
-				auto meshSource = mesh->GetMeshSource();
 				auto& meshAssetMetadata = AssetManager::GetMetadata(meshSource->Handle);
 				const auto& meshAssetPath = meshAssetMetadata.FilePath.generic_string();
 				ImGui::InputText("Mesh", (char*)meshAssetPath.data(), meshAssetPath.size(), ImGuiInputTextFlags_ReadOnly);

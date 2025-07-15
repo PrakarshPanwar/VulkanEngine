@@ -107,7 +107,7 @@ namespace VulkanCore {
 			memcpy(dstData, m_LocalStorage, imageSize);
 			allocator.UnmapMemory(stagingBufferAlloc);
 
-			VkCommandBuffer copyCmd = device->GetCommandBuffer();
+			VulkanCommandBuffer copyCmd = device->GetCommandBuffer();
 			VkImageSubresourceRange subResourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 
 			VkBufferImageCopy region{};
@@ -123,7 +123,7 @@ namespace VulkanCore {
 			region.imageOffset = { 0, 0, 0 };
 			region.imageExtent = { (uint32_t)m_Specification.Width, (uint32_t)m_Specification.Height, 1 };
 
-			vkCmdCopyBufferToImage(copyCmd,
+			vkCmdCopyBufferToImage(copyCmd.CmdBuffer,
 				stagingBuffer,
 				m_Image->GetVulkanImageInfo().Image,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -136,9 +136,9 @@ namespace VulkanCore {
 				GenerateMipMaps();
 			else
 			{
-				VkCommandBuffer barrierCmd = device->GetCommandBuffer();
+				VulkanCommandBuffer barrierCmd = device->GetCommandBuffer();
 
-				Utils::InsertImageMemoryBarrier(barrierCmd, m_Image->GetVulkanImageInfo().Image,
+				Utils::InsertImageMemoryBarrier(barrierCmd.CmdBuffer, m_Image->GetVulkanImageInfo().Image,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -162,7 +162,7 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		VkCommandBuffer blitCmd = device->GetCommandBuffer();
+		VulkanCommandBuffer blitCmd = device->GetCommandBuffer();
 
 		const VkImage vulkanImage = m_Image->GetVulkanImageInfo().Image;
 		VkImageSubresourceRange subresourceRange = {};
@@ -180,7 +180,7 @@ namespace VulkanCore {
 		{
 			subresourceRange.baseMipLevel = i - 1;
 
-			Utils::InsertImageMemoryBarrier(blitCmd, vulkanImage,
+			Utils::InsertImageMemoryBarrier(blitCmd.CmdBuffer, vulkanImage,
 				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 
@@ -200,13 +200,13 @@ namespace VulkanCore {
 			imageBlit.dstSubresource.baseArrayLayer = 0;
 			imageBlit.dstSubresource.layerCount = 1;
 
-			vkCmdBlitImage(blitCmd,
+			vkCmdBlitImage(blitCmd.CmdBuffer,
 				vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 				vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				1, &imageBlit,
 				VK_FILTER_LINEAR);
 
-			Utils::InsertImageMemoryBarrier(blitCmd, vulkanImage,
+			Utils::InsertImageMemoryBarrier(blitCmd.CmdBuffer, vulkanImage,
 				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -218,7 +218,7 @@ namespace VulkanCore {
 
 		subresourceRange.baseMipLevel = mipLevels - 1;
 
-		Utils::InsertImageMemoryBarrier(blitCmd, vulkanImage,
+		Utils::InsertImageMemoryBarrier(blitCmd.CmdBuffer, vulkanImage,
 			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -302,7 +302,7 @@ namespace VulkanCore {
 				byteOffset += imageSize;
 			}
 
-			VkCommandBuffer copyCmd = device->GetCommandBuffer();
+			VulkanCommandBuffer copyCmd = device->GetCommandBuffer();
 
 			VkImageSubresourceRange subresourceRange{};
 			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -312,7 +312,7 @@ namespace VulkanCore {
 			subresourceRange.layerCount = 6;
 
 			Utils::InsertImageMemoryBarrier(
-				copyCmd, m_Info.Image,
+				copyCmd.CmdBuffer, m_Info.Image,
 				VK_ACCESS_2_NONE, VK_ACCESS_2_TRANSFER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				VK_PIPELINE_STAGE_2_NONE, VK_PIPELINE_STAGE_2_COPY_BIT,
@@ -335,7 +335,7 @@ namespace VulkanCore {
 				bufferCopyRegions[i] = bufferCopyRegion;
 			}
 
-			vkCmdCopyBufferToImage(copyCmd,
+			vkCmdCopyBufferToImage(copyCmd.CmdBuffer,
 				stagingBuffer,
 				m_Info.Image,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -390,10 +390,10 @@ namespace VulkanCore {
 
 		// Set Image to General Layout
 		VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, mipCount, 0, 6 };
-		VkCommandBuffer layoutCmd = device->GetCommandBuffer();
+		VulkanCommandBuffer layoutCmd = device->GetCommandBuffer();
 
 		Utils::SetImageLayout(
-			layoutCmd, m_Info.Image,
+			layoutCmd.CmdBuffer, m_Info.Image,
 			m_LocalStorage ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_GENERAL,
 			subresourceRange);
@@ -425,7 +425,7 @@ namespace VulkanCore {
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		VkCommandBuffer blitCmd = device->GetCommandBuffer();
+		VulkanCommandBuffer blitCmd = device->GetCommandBuffer();
 
 		uint32_t mipLevels = Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height);
 		for (uint32_t face = 0; face < 6; ++face)
@@ -437,7 +437,7 @@ namespace VulkanCore {
 			mipSubRange.levelCount = 1;
 			mipSubRange.layerCount = 1;
 
-			Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
+			Utils::InsertImageMemoryBarrier(blitCmd.CmdBuffer, m_Info.Image,
 				VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT,
 				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 				VK_PIPELINE_STAGE_NONE, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -475,19 +475,19 @@ namespace VulkanCore {
 				mipSubRange.levelCount = 1;
 				mipSubRange.layerCount = 1;
 
-				Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
+				Utils::InsertImageMemoryBarrier(blitCmd.CmdBuffer, m_Info.Image,
 					0, VK_ACCESS_TRANSFER_WRITE_BIT,
 					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 					mipSubRange);
 
-				vkCmdBlitImage(blitCmd,
+				vkCmdBlitImage(blitCmd.CmdBuffer,
 					m_Info.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 					m_Info.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 					1, &imageBlit,
 					VK_FILTER_LINEAR);
 
-				Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
+				Utils::InsertImageMemoryBarrier(blitCmd.CmdBuffer, m_Info.Image,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -500,7 +500,7 @@ namespace VulkanCore {
 		subresourceRange.layerCount = 6;
 		subresourceRange.levelCount = mipLevels;
 
-		Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
+		Utils::InsertImageMemoryBarrier(blitCmd.CmdBuffer, m_Info.Image,
 			VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, readonly ? VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
 			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
