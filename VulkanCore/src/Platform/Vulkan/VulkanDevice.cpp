@@ -94,9 +94,13 @@ namespace VulkanCore {
 
 	void VulkanDevice::Destroy()
 	{
+		// All Command Pools
 		vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
 		vkDestroyCommandPool(m_LogicalDevice, m_RTCommandPool, nullptr);
 		vkDestroyCommandPool(m_LogicalDevice, m_ComputeCommandPool, nullptr);
+		vkDestroyCommandPool(m_LogicalDevice, m_TransferCommandPool, nullptr);
+
+		// Destroy Device
 		vkDestroyDevice(m_LogicalDevice, nullptr);
 	}
 
@@ -265,15 +269,21 @@ namespace VulkanCore {
 		QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-		std::set<uint32_t> uniqueQueueFamilies = { indices.GraphicsFamily, indices.TransferFamily, indices.ComputeFamily, indices.PresentFamily };
+
+		// Key: Queue Family Index, Value: Queue Count
+		std::map<uint32_t, uint32_t> queueFamilyCounts{};
+		++queueFamilyCounts[indices.GraphicsFamily];
+		++queueFamilyCounts[indices.TransferFamily];
+		++queueFamilyCounts[indices.ComputeFamily];
+		++queueFamilyCounts[indices.PresentFamily];
 
 		float queuePriority[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-		for (uint32_t queueFamily : uniqueQueueFamilies)
+		for (auto&& [queueFamily, queueCount] : queueFamilyCounts)
 		{
 			VkDeviceQueueCreateInfo queueCreateInfo{};
 			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 			queueCreateInfo.queueFamilyIndex = queueFamily;
-			queueCreateInfo.queueCount = 4;
+			queueCreateInfo.queueCount = queueCount;
 			queueCreateInfo.pQueuePriorities = queuePriority;
 			queueCreateInfos.push_back(queueCreateInfo);
 		}
@@ -315,6 +325,11 @@ namespace VulkanCore {
 		vkGetDeviceQueue(m_LogicalDevice, indices.TransferFamily, 1, &m_TransferQueue);
 		vkGetDeviceQueue(m_LogicalDevice, indices.ComputeFamily, 2, &m_ComputeQueue);
 		vkGetDeviceQueue(m_LogicalDevice, indices.PresentFamily, 3, &m_PresentQueue);
+
+		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_QUEUE, "Graphics Queue", m_GraphicsQueue);
+		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_QUEUE, "Transfer Queue", m_TransferQueue);
+		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_QUEUE, "Compute Queue", m_ComputeQueue);
+		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_QUEUE, "Present Queue", m_PresentQueue);
 	}
 
 	void VulkanDevice::CreateCommandPools()

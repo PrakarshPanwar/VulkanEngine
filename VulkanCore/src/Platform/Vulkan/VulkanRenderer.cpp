@@ -71,7 +71,7 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
-		VK_CORE_ASSERT(!IsFrameStarted, "Cannot call BeginFrame() while frame being already in progress!");
+		VK_CORE_ASSERT(!m_IsFrameStarted, "Cannot call BeginFrame() while frame being already in progress!");
 
 		Renderer::Submit([this]
 		{
@@ -85,20 +85,20 @@ namespace VulkanCore {
 			VK_CORE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to Acquire Swap Chain!");
 		});
 
-		IsFrameStarted = true;
+		m_IsFrameStarted = true;
 
 		m_CommandBuffer->Begin();
 	}
 
 	void VulkanRenderer::EndFrame()
 	{
-		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndFrame() while frame is not in progress!");
+		VK_CORE_ASSERT(m_IsFrameStarted, "Cannot call EndFrame() while frame is not in progress!");
 		m_CommandBuffer->End();
 	}
 
 	void VulkanRenderer::BeginSwapChainRenderPass()
 	{
-		VK_CORE_ASSERT(IsFrameStarted, "Cannot call BeginSwapChainRenderPass() if frame is not in progress!");
+		VK_CORE_ASSERT(m_IsFrameStarted, "Cannot call BeginSwapChainRenderPass() if frame is not in progress!");
 	
 		Renderer::Submit([this]
 		{
@@ -136,7 +136,7 @@ namespace VulkanCore {
 
 	void VulkanRenderer::EndSwapChainRenderPass()
 	{
-		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndSwapChainRenderPass() if frame is not in progress!");
+		VK_CORE_ASSERT(m_IsFrameStarted, "Cannot call EndSwapChainRenderPass() if frame is not in progress!");
 
 		Renderer::Submit([this]
 		{
@@ -145,7 +145,7 @@ namespace VulkanCore {
 		});
 	}
 
-	std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> VulkanRenderer::CreateEnviromentMap(const std::shared_ptr<Texture>& envTexture)
+	std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> VulkanRenderer::CreateEnvironmentMap(const std::shared_ptr<Texture>& envTexture)
 	{
 		constexpr uint32_t cubemapSize = 1024;
 		constexpr uint32_t irradianceMapSize = 32;
@@ -760,8 +760,7 @@ namespace VulkanCore {
 	void VulkanRenderer::CreateCommandBuffers()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-
-		m_CommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetRenderThreadCommandPool());
+		m_CommandBuffer = std::make_shared<VulkanRenderCommandBuffer>("MainRenderer", device->GetRenderThreadCommandPool());
 	}
 
 	void VulkanRenderer::DeleteResources()
@@ -778,6 +777,7 @@ namespace VulkanCore {
 		descriptorPoolBuilder.SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
 		descriptorPoolBuilder.SetMaxSets(100).AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10);
 		descriptorPoolBuilder.SetMaxSets(1000).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10);
+		descriptorPoolBuilder.SetMaxSets(1000).AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10);
 		m_GlobalDescriptorPool = descriptorPoolBuilder.Build();
 	}
 
@@ -796,18 +796,14 @@ namespace VulkanCore {
 		m_SwapChain.reset();
 
 		if (m_SwapChain == nullptr)
-		{
 			m_SwapChain = std::make_unique<VulkanSwapChain>(extent);
-		}
 		else
 		{
 			std::shared_ptr<VulkanSwapChain> oldSwapChain = std::move(m_SwapChain);
 			m_SwapChain = std::make_unique<VulkanSwapChain>(extent, oldSwapChain);
 
 			if (!oldSwapChain->CompareSwapFormats(*m_SwapChain->GetSwapChain()))
-			{
 				VK_CORE_ASSERT(false, "Swap Chain Image(or Depth) Format has changed!");
-			}
 		}
 	}
 
@@ -819,7 +815,7 @@ namespace VulkanCore {
 		RenderThread::SetAtomicFlag(true);
 		RenderThread::NotifyThread(); // Wakes up Render Thread
 
-		IsFrameStarted = false;
+		m_IsFrameStarted = false;
 		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
 	}
 

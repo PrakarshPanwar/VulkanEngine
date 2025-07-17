@@ -1410,7 +1410,7 @@ namespace VulkanCore {
 		auto equirectTexture = AssetManager::GetAsset<Texture2D>(skyTextureHandle);
 
 		// Obtain Cubemaps
-		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnviromentMap(equirectTexture);
+		auto [filteredMap, irradianceMap] = VulkanRenderer::CreateEnvironmentMap(equirectTexture);
 		m_CubemapTexture = filteredMap;
 		m_PrefilteredTexture = filteredMap;
 		m_IrradianceTexture = irradianceMap;
@@ -1702,7 +1702,7 @@ namespace VulkanCore {
 	void SceneRenderer::CreateCommandBuffers()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-		m_SceneCommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetCommandPool(), CommandBufferLevel::Primary, 4);
+		m_SceneCommandBuffer = std::make_shared<VulkanRenderCommandBuffer>("SceneRenderer", device->GetCommandPool(), CommandBufferLevel::Primary, 4);
 	}
 
 	void SceneRenderer::ResetDrawCommands()
