@@ -96,7 +96,7 @@ namespace VulkanCore {
 		m_CommandBuffer->End();
 	}
 
-	void VulkanRenderer::BeginSwapChainRenderPass()
+	void VulkanRenderer::BeginSCRenderPass()
 	{
 		VK_CORE_ASSERT(m_IsFrameStarted, "Cannot call BeginSwapChainRenderPass() if frame is not in progress!");
 	
@@ -134,7 +134,7 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::EndSwapChainRenderPass()
+	void VulkanRenderer::EndSCRenderPass()
 	{
 		VK_CORE_ASSERT(m_IsFrameStarted, "Cannot call EndSwapChainRenderPass() if frame is not in progress!");
 

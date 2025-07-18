@@ -1497,15 +1497,15 @@ namespace VulkanCore {
 		Renderer::BeginGPUPerfMarker(m_SceneCommandBuffer, "Geometry-Pass", DebugLabelColor::Gold);
 		Renderer::BindPipeline(m_SceneCommandBuffer, m_GeometryPipeline, m_GeometryMaterial);
 
-		// Static Geometry
-		for (auto& [mk, dc] : m_MeshDrawList)
-			Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk].Transforms, dc.InstanceCount);
-
-		if (m_SceneEditorData.ShowPhysicsCollider)
+		if (m_SceneEditorData.ShowPhysicsCollider) // Physics Debug Geometry
 		{
-			// Physics Debug Geometry
 			for (auto& [mk, dc] : m_PhysicsDebugMeshDrawList)
 				Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_PhysicsDebugMeshTransformMap[mk].Transforms, dc.InstanceCount);
+		}
+		else // Static Geometry
+		{
+			for (auto& [mk, dc] : m_MeshDrawList)
+				Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_MeshTransformMap[mk].Transforms, dc.InstanceCount);
 		}
 
 		// Tessellated Geometry(i.e. Displacement Maps, Dynamic LOD)

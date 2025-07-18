@@ -26,8 +26,8 @@ namespace VulkanCore {
 
 		void BeginFrame();
 		void EndFrame();
-		void BeginSwapChainRenderPass();
-		void EndSwapChainRenderPass();
+		void BeginSCRenderPass();
+		void EndSCRenderPass();
 
 		bool IsFrameInProgress() const { return m_IsFrameStarted; }
 		float GetAspectRatio() const { return m_SwapChain->ExtentAspectRatio(); }

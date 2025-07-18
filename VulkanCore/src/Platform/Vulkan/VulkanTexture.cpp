@@ -107,19 +107,17 @@ namespace VulkanCore {
 			memcpy(dstData, m_LocalStorage, imageSize);
 			allocator.UnmapMemory(stagingBufferAlloc);
 
-			VulkanCommandBuffer copyCmd = device->GetCommandBuffer();
+			VulkanCommandBuffer copyCmd = device->GetCommandBuffer(VulkanQueueType::Transfer);
 			VkImageSubresourceRange subResourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 
 			VkBufferImageCopy region{};
 			region.bufferOffset = 0;
 			region.bufferRowLength = 0;
 			region.bufferImageHeight = 0;
-
 			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			region.imageSubresource.mipLevel = 0;
 			region.imageSubresource.baseArrayLayer = 0;
 			region.imageSubresource.layerCount = 1;
-
 			region.imageOffset = { 0, 0, 0 };
 			region.imageExtent = { (uint32_t)m_Specification.Width, (uint32_t)m_Specification.Height, 1 };
 

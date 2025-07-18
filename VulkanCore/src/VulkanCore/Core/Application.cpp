@@ -57,12 +57,12 @@ namespace VulkanCore {
 
 			// Render Swapchain/ImGui
 			m_Renderer->BeginFrame();
-			m_Renderer->BeginSwapChainRenderPass();
+			m_Renderer->BeginSCRenderPass();
 
 			Renderer::Submit([this] { RenderImGui(); });
 			Renderer::Submit([this] { m_ImGuiLayer->ImGuiEnd(); });
 
-			m_Renderer->EndSwapChainRenderPass();
+			m_Renderer->EndSCRenderPass();
 			m_Renderer->EndFrame();
 
 			for (Layer* layer : m_LayerStack)
