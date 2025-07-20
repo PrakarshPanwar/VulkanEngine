@@ -296,7 +296,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([this, beginCmd, Framebuffer = std::static_pointer_cast<VulkanFramebuffer>(m_Specification.TargetFramebuffer)]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderPass::Begin");
+			VK_CORE_PROFILE_FN("VulkanRenderPass::Begin", TracyZoneLabelColor::Red);
 
 			const FramebufferSpecification fbSpec = Framebuffer->GetSpecification();
 			const VkExtent2D framebufferExtent = { fbSpec.Width, fbSpec.Height };

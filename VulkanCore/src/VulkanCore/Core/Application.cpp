@@ -50,7 +50,7 @@ namespace VulkanCore {
 
 		while (m_Running)
 		{
-			VK_CORE_BEGIN_FRAME("Main Thread");
+			VK_CORE_START_FRAME("Main Thread");
 			m_Window->OnUpdate();
 
 			ExecuteMainThreadQueue();
@@ -69,6 +69,7 @@ namespace VulkanCore {
 				layer->OnUpdate();
 
 			m_Renderer->WaitForRenderThread();
+			VK_CORE_END_FRAME("Main Thread");
 		}
 	}
 
@@ -118,7 +119,7 @@ namespace VulkanCore {
 
 	void Application::ExecuteMainThreadQueue()
 	{
-		VK_CORE_PROFILE_FN("Application::ExecuteMainThreadQueue");
+		VK_CORE_PROFILE_FN("Application::ExecuteMainThreadQueue", TracyZoneLabelColor::Purple);
 
 		std::scoped_lock executeLock(m_MainThreadQueueMutex);
 

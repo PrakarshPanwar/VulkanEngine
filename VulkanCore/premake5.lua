@@ -36,6 +36,7 @@ project "VulkanCore"
 		"%{IncludeDir.TinyObjLoader}",
 		"%{IncludeDir.entt}",
 		"%{IncludeDir.optick}",
+		"%{IncludeDir.tracy}",
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.ImGuizmo}",
 		"%{IncludeDir.yaml_cpp}",
@@ -44,8 +45,22 @@ project "VulkanCore"
 		"%{IncludeDir.Jolt}"
 	}
 
-	defines { "IMGUI_DEFINE_MATH_OPERATORS", "SPDLOG_USE_STD_FORMAT", "GLM_FORCE_DEPTH_ZERO_TO_ONE", "JPH_DEBUG_RENDERER" }
-	links { "GLFW", "%{Library.Vulkan}", "ImGui", "yaml-cpp", "JoltPhysics", "%{Library.optick_Release}" }
+	defines {
+		"IMGUI_DEFINE_MATH_OPERATORS",
+		"SPDLOG_USE_STD_FORMAT",
+		"GLM_FORCE_DEPTH_ZERO_TO_ONE",
+		"JPH_DEBUG_RENDERER",
+		"TRACY_ENABLE"
+	}
+
+	links {
+		"GLFW",
+		"%{Library.Vulkan}",
+		"ImGui",
+		"yaml-cpp",
+		"JoltPhysics",
+		"%{Library.optick_Release}"
+	}
 
 	filter "system:windows"
 		systemversion "latest"
@@ -53,7 +68,7 @@ project "VulkanCore"
 
 	filter "configurations:Debug"
 		defines { "VK_DEBUG" }
-		links { "%{Library.ShaderC_Debug}", "%{Library.SPIRV_Cross_Debug}", "%{Library.SPIRV_Cross_GLSL_Debug}", "%{Library.Slang_Debug}", "%{Library.AssimpLibDebug}" }
+		links { "%{Library.ShaderC_Debug}", "%{Library.SPIRV_Cross_Debug}", "%{Library.SPIRV_Cross_GLSL_Debug}", "%{Library.Slang_Debug}", "%{Library.AssimpLibDebug}", "%{Library.tracy_Debug}" }
 		symbols "On"
 
 		postbuildcommands { "{COPY} %{Library.AssimpDLLDebug} ../bin/" .. outputdir .. "/%{prj.name}" }
@@ -61,7 +76,7 @@ project "VulkanCore"
 
 	filter "configurations:Release"
 		defines { "VK_RELEASE" }
-		links { "%{Library.ShaderC_Release}", "%{Library.SPIRV_Cross_Release}", "%{Library.SPIRV_Cross_GLSL_Release}", "%{Library.Slang_Release}", "%{Library.AssimpLibRelease}" }
+		links { "%{Library.ShaderC_Release}", "%{Library.SPIRV_Cross_Release}", "%{Library.SPIRV_Cross_GLSL_Release}", "%{Library.Slang_Release}", "%{Library.AssimpLibRelease}", "%{Library.tracy_Release}" }
 		optimize "On"
 
 		postbuildcommands { "{COPY} %{Library.AssimpDLLRelease} ../bin/" .. outputdir .. "/%{prj.name}" }

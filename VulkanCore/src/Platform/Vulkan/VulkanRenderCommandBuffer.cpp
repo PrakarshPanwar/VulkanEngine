@@ -99,7 +99,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([this]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderCommandBuffer::Begin");
+			VK_CORE_PROFILE_FN("VulkanRenderCommandBuffer::Begin", TracyZoneLabelColor::Green);
 
 			VkCommandBuffer commandBuffer = RT_GetActiveCommandBuffer();
 
@@ -178,7 +178,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::SubmitCommandBuffers");
+			VK_CORE_PROFILE_FN("VulkanRenderer::SubmitCommandBuffers", TracyZoneLabelColor::Green);
 
 			uint32_t frameIndex = Renderer::RT_GetCurrentFrameIndex();
 		

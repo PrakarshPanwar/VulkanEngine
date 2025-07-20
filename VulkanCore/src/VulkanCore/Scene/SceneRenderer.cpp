@@ -1149,7 +1149,7 @@ namespace VulkanCore {
 
 	void SceneRenderer::RenderScene()
 	{
-		VK_CORE_PROFILE_FN("Submit-SceneRenderer");
+		VK_CORE_PROFILE_FN("Submit-SceneRenderer", TracyZoneLabelColor::Blue);
 
 		int frameIndex = Renderer::GetCurrentFrameIndex();
 
@@ -1631,7 +1631,7 @@ namespace VulkanCore {
 
 		Renderer::Submit([this]
 		{
-			VK_CORE_PROFILE_FN("SceneRenderer::BloomCompute");
+			VK_CORE_PROFILE_FN("SceneRenderer::BloomCompute", TracyZoneLabelColor::Blue);
 
 			auto vulkanBloomPipeline = std::static_pointer_cast<VulkanComputePipeline>(m_BloomPipeline);
 			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);

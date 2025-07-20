@@ -20,3 +20,6 @@
 [submodule "VulkanCore/vendor/JoltPhysics"]
 	path = VulkanCore/vendor/JoltPhysics
 	url = https://github.com/PrakarshPanwar/JoltPhysics.git
+[submodule "VulkanCore/vendor/tracy"]
+	path = VulkanCore/vendor/tracy
+	url = https://github.com/wolfpld/tracy.git

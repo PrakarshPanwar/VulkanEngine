@@ -277,7 +277,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([commandBuffer, sourceImage, destImage]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::CopyVulkanImage");
+			VK_CORE_PROFILE_FN("VulkanRenderer::CopyVulkanImage", TracyZoneLabelColor::Cyan);
 			VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(commandBuffer)->RT_GetActiveCommandBuffer();
 
 			VkImage srcImage = std::static_pointer_cast<VulkanImage>(sourceImage)->GetVulkanImageInfo().Image;
@@ -329,7 +329,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([commandBuffer, image]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::BlitVulkanImage");
+			VK_CORE_PROFILE_FN("VulkanRenderer::BlitVulkanImage", TracyZoneLabelColor::Cyan);
 			VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(commandBuffer)->RT_GetActiveCommandBuffer();
 
 			VkImage vulkanImage = std::static_pointer_cast<VulkanImage>(image)->GetVulkanImageInfo().Image;
@@ -513,7 +513,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer, pipeline, skyboxMaterial, pcData]
 		{
-			VK_CORE_PROFILE_FN("Renderer::RenderSkybox");
+			VK_CORE_PROFILE_FN("Renderer::RenderSkybox", TracyZoneLabelColor::Cyan);
 
 			VkCommandBuffer vulkanDrawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
 			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
@@ -593,7 +593,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer, mesh, pipeline, material, transformBuffer, transformData, submeshIndex, instanceCount]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMesh");
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMesh", TracyZoneLabelColor::Cyan);
 
 			// Bind Vertex Buffer
 			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
@@ -638,7 +638,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer, mesh, transformBuffer, transformData, submeshIndex, instanceCount]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::RenderSelectedMesh");
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderSelectedMesh", TracyZoneLabelColor::Cyan);
 
 			// Bind Vertex Buffer
 			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
@@ -663,7 +663,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer, mesh, transformBuffer, transformData, submeshIndex, instanceCount]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMeshWithoutMaterial");
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMeshWithoutMaterial", TracyZoneLabelColor::Cyan);
 
 			// Bind Vertex Buffer
 			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
@@ -688,7 +688,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer, linesData, drawCount]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::RenderLines");
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderLines", TracyZoneLabelColor::Cyan);
 
 			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
 
@@ -734,7 +734,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer, pipeline, shaderMaterial]
 		{
-			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad");
+			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad", TracyZoneLabelColor::Cyan);
 
 			VkCommandBuffer vulkanDrawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
 			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);

@@ -134,7 +134,7 @@ namespace VulkanCore {
 
 	void Scene::OnUpdateGeometry(SceneRenderer* renderer)
 	{
-		VK_CORE_PROFILE_FN("Submit-SubmitMeshes");
+		VK_CORE_PROFILE_FN("Submit-SubmitMeshes", TracyZoneLabelColor::Gold);
 
 		auto view = m_Registry.view<TransformComponent, MeshComponent>();
 		for (auto ent : view)
@@ -167,7 +167,7 @@ namespace VulkanCore {
 	{
 		{
 			// Point Lights
-			VK_CORE_PROFILE_FN("Scene-PointLights");
+			VK_CORE_PROFILE_FN("Scene-PointLights", TracyZoneLabelColor::Gold);
 
 			auto view = m_Registry.view<TransformComponent, PointLightComponent>();
 			for (auto ent : view)
@@ -182,7 +182,7 @@ namespace VulkanCore {
 
 		{
 			// Spot Lights
-			VK_CORE_PROFILE_FN("Scene-SpotLights");
+			VK_CORE_PROFILE_FN("Scene-SpotLights", TracyZoneLabelColor::Gold);
 
 			auto view = m_Registry.view<TransformComponent, SpotLightComponent>();
 			for (auto ent : view)
