@@ -48,10 +48,12 @@ namespace VulkanCore {
 	{
 		m_DirectoryIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/DirectoryIcon.png");
 		m_FileIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/FileIcon.png");
+		m_BackIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/BackIcon.png");
 		m_RefreshIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/RefreshIcon.png");
 
 		m_DirectoryIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_DirectoryIcon));
 		m_FileIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_FileIcon));
+		m_BackIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_BackIcon));
 		m_RefreshIconID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_RefreshIcon));
 
 		std::unique_ptr<Timer> timer = std::make_unique<Timer>("Asset Tree Creation");
@@ -69,28 +71,21 @@ namespace VulkanCore {
 	void ContentBrowserPanel::OnImGuiRender()
 	{
 		ImGui::Begin("Content Browser");
+		ImGui::BeginHorizontal("##ContentBrowserToolbar", { ImGui::GetContentRegionAvail().x, 30.0f });
 
 		static TreeNode* tempNode = m_RootNode;
-		if (m_AssetMode)
+		if (m_AssetMode && tempNode != m_RootNode &&
+			ImGui::ImageButton("##BackIcon", m_BackIconID, { 18.5f, 18.5f }, { 0, 0 }, { 1, 1 }))
 		{
-			if (tempNode != m_RootNode)
-			{
-				if (ImGui::Button("Back"))
-					tempNode = tempNode->ParentNode;
-
-				ImGui::SameLine();
-			}
+			tempNode = tempNode->ParentNode;
 		}
-		else
+		else if (m_CurrentDirectory != std::filesystem::current_path() &&
+			ImGui::ImageButton("##BackIcon", m_BackIconID, { 18.5f, 18.5f }, { 0, 0 }, { 1, 1 }))
 		{
-			if (m_CurrentDirectory != std::filesystem::current_path())
-			{
-				if (ImGui::Button("Back"))
-					m_CurrentDirectory = m_CurrentDirectory.parent_path();
-
-				ImGui::SameLine();
-			}
+			m_CurrentDirectory = m_CurrentDirectory.parent_path();
 		}
+
+		ImGui::SetItemTooltip("Back");
 
 		if (ImGui::ImageButton("##RefreshButton", m_RefreshIconID, { 18.5f, 18.5f }, { 0, 0 }, { 1, 1 }))
 		{
@@ -103,7 +98,7 @@ namespace VulkanCore {
 			delete oldNode;
 		}
 
-		ImGui::SameLine();
+		ImGui::SetItemTooltip("Refresh Asset Tree");
 
 		ImVec4 buttonColor = m_AssetMode ? ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f } : ImVec4{ 0.2f, 0.3f, 0.8f, 1.0f };
 		ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
@@ -111,6 +106,9 @@ namespace VulkanCore {
 		if (ImGui::Button("Show All Files"))
 			m_AssetMode = !m_AssetMode;
 		ImGui::PopStyleColor(2);
+
+		ImGui::Spring(0.9f);
+		ImGui::EndHorizontal();
 
 		float cellSize = m_ThumbnailSize + m_Padding;
 

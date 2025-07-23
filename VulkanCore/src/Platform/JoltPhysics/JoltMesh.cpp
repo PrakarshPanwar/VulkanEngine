@@ -2,7 +2,27 @@
 #include "JoltDebugRenderer.h"
 #include "JoltMesh.h"
 
+#include "VulkanCore/Core/HashCombine.h"
 #include "VulkanCore/Asset/AssetManager.h"
+
+namespace std {
+
+	template<>
+	struct hash<VulkanCore::Vertex>
+	{
+		size_t operator()(const VulkanCore::Vertex& vertex) const
+		{
+			size_t seed = 0;
+			VulkanCore::HashCombine(seed, 
+				vertex.Position.x, vertex.Position.y, vertex.Position.z,
+				vertex.Normal.x, vertex.Normal.y, vertex.Normal.z,
+				vertex.TexCoord.x, vertex.TexCoord.y);
+
+			return seed;
+		}
+	};
+
+}
 
 namespace VulkanCore {
 
@@ -28,7 +48,43 @@ namespace VulkanCore {
 		CalculateTangentBasis(verticesData, indicesData);
 
 		// Memory Only Physics Meshes
-		auto meshSource = AssetManager::CreateMemoryOnlyAsset<MeshSource>("Box", verticesData, indicesData);
+		auto meshSource = AssetManager::CreateMemoryOnlyAsset<MeshSource>("Standard Collider", verticesData, indicesData);
+		m_JoltMesh = AssetManager::CreateMemoryOnlyAsset<Mesh>(meshSource);
+	}
+
+	JoltMesh::JoltMesh(const JPH::DebugRenderer::Triangle* trianglesPtr, int triangleCount)
+	{
+		std::vector<Vertex> verticesData{};
+		std::vector<uint32_t> indicesData{};
+
+		std::unordered_map<Vertex, uint32_t> uniqueVertexData{};
+
+		for (int i = 0; i < triangleCount; ++i)
+		{
+			for (const auto& triangleVertex : trianglesPtr[i].mV)
+			{
+				Vertex vertexData{};
+				vertexData.Position = { triangleVertex.mPosition.x, triangleVertex.mPosition.y, triangleVertex.mPosition.z };
+				vertexData.Normal = { triangleVertex.mNormal.x, triangleVertex.mNormal.y, triangleVertex.mNormal.z };
+				vertexData.TexCoord = { triangleVertex.mUV.x, triangleVertex.mUV.y };
+
+				if (!uniqueVertexData.contains(vertexData))
+				{
+					uniqueVertexData[vertexData] = static_cast<uint32_t>(verticesData.size());
+					verticesData.push_back(vertexData);
+				}
+				
+				indicesData.push_back(uniqueVertexData[vertexData]);
+			}
+		}
+
+		verticesData.shrink_to_fit();
+		indicesData.shrink_to_fit();
+
+		CalculateTangentBasis(verticesData, indicesData);
+
+		// Memory Only Physics Meshes
+		auto meshSource = AssetManager::CreateMemoryOnlyAsset<MeshSource>("Dynamic Mesh Collider", verticesData, indicesData);
 		m_JoltMesh = AssetManager::CreateMemoryOnlyAsset<Mesh>(meshSource);
 	}
 
@@ -56,12 +112,12 @@ namespace VulkanCore {
 
 			float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
 
-			glm::vec3 tangent;
+			glm::vec3 tangent{};
 			tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
 			tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
 			tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
 
-			glm::vec3 binormal;
+			glm::vec3 binormal{};
 			binormal.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
 			binormal.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
 			binormal.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);

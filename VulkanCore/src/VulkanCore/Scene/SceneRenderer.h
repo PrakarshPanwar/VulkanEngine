@@ -10,6 +10,7 @@
 #include "PhysicsDebugRenderer.h"
 
 #define VK_FEATURE_GTAO 0
+#define VK_FEATURE_OIT 1
 
 namespace VulkanCore {
 
@@ -189,30 +190,34 @@ namespace VulkanCore {
 		std::shared_ptr<PhysicsDebugRenderer> m_PhysicsDebugRenderer;
 
 		// Pipelines
-		std::shared_ptr<Pipeline> m_GeometryPipeline;
-		std::shared_ptr<Pipeline> m_GeometryTessellatedPipeline;
-		std::shared_ptr<Pipeline> m_GeometrySelectPipeline;
-		std::shared_ptr<Pipeline> m_LinesPipeline;
-		std::shared_ptr<Pipeline> m_ShadowMapPipeline;
-		std::shared_ptr<Pipeline> m_LightPipeline;
-		std::shared_ptr<Pipeline> m_LightSelectPipeline;
-		std::shared_ptr<Pipeline> m_CompositePipeline;
-		std::shared_ptr<Pipeline> m_SkyboxPipeline;
-		std::shared_ptr<ComputePipeline> m_BloomPipeline;
-		std::shared_ptr<ComputePipeline> m_GTAOPipeline; // Ground Truth Ambient Occlusion
+		std::shared_ptr<Pipeline> m_GeometryPipeline,
+			m_GeometryTransparentPipeline,
+			m_GeometryTessellatedPipeline,
+			m_GeometryCompositePipeline,
+			m_GeometrySelectPipeline,
+			m_LinesPipeline,
+			m_ShadowMapPipeline,
+			m_LightPipeline,
+			m_LightSelectPipeline,
+			m_CompositePipeline,
+			m_SkyboxPipeline;
+
+		std::shared_ptr<ComputePipeline> m_BloomPipeline,
+			m_GTAOPipeline; // Ground Truth Ambient Occlusion
 
 		// Material Resources
 		// Material per Shader set
-		std::shared_ptr<Material> m_GeometryMaterial;
-		std::shared_ptr<Material> m_GeometrySelectMaterial;
-		std::shared_ptr<Material> m_LinesMaterial;
-		std::shared_ptr<Material> m_ShadowMapMaterial;
-		std::shared_ptr<Material> m_PointLightShaderMaterial;
-		std::shared_ptr<Material> m_SpotLightShaderMaterial;
-		std::shared_ptr<Material> m_LightSelectMaterial;
-		std::shared_ptr<Material> m_CompositeShaderMaterial;
-		std::shared_ptr<Material> m_SkyboxMaterial;
-		std::shared_ptr<Material> m_GTAOMaterial;
+		std::shared_ptr<Material> m_GeometryMaterial,
+			m_GeometryCompositeMaterial,
+			m_GeometrySelectMaterial,
+			m_LinesMaterial,
+			m_ShadowMapMaterial,
+			m_PointLightShaderMaterial,
+			m_SpotLightShaderMaterial,
+			m_LightSelectMaterial,
+			m_CompositeShaderMaterial,
+			m_SkyboxMaterial,
+			m_GTAOMaterial;
 
 		// Bloom Materials
 		struct BloomComputeMaterials
@@ -224,41 +229,41 @@ namespace VulkanCore {
 			std::vector<std::shared_ptr<Material>> UpsampleMaterials;
 		} m_BloomComputeMaterials;
 
-		std::vector<std::shared_ptr<UniformBuffer>> m_UBCamera;
-		std::vector<std::shared_ptr<UniformBuffer>> m_UBPointLight;
-		std::vector<std::shared_ptr<UniformBuffer>> m_UBSpotLight;
-		std::vector<std::shared_ptr<UniformBuffer>> m_UBDirectionalLight;
-		std::vector<std::shared_ptr<UniformBuffer>> m_UBCascadeLightMatrices;
-		std::vector<std::shared_ptr<IndexBuffer>> m_ImageBuffer; // For Selecting Entities
+		std::vector<std::shared_ptr<UniformBuffer>> m_UBCamera, m_UBCascadeLightMatrices,
+			m_UBPointLight, m_UBSpotLight, m_UBDirectionalLight; // Light UBs
 
+		std::vector<std::shared_ptr<IndexBuffer>> m_ImageBuffer; // For Selecting Entities
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 		std::vector<uint32_t> m_LightHandles;
 
-		std::vector<std::shared_ptr<Image2D>> m_BloomTextures;
-		std::vector<std::shared_ptr<Image2D>> m_AOTextures;
-		std::vector<std::shared_ptr<Image2D>> m_SceneRenderTextures; // For Bloom
+		std::vector<std::shared_ptr<Image2D>> m_BloomTextures,
+			m_AOTextures,
+			m_SceneRenderTextures; // For Bloom
 #if VK_FEATURE_GTAO
-		std::vector<std::shared_ptr<Image2D>> m_SceneDepthTextures; // For AO
+		m_SceneDepthTextures; // For AO
 #endif
-
-		std::shared_ptr<Texture2D> m_BloomDirtTexture;
-		std::shared_ptr<Texture2D> m_PointLightTextureIcon, m_SpotLightTextureIcon;
+		std::shared_ptr<Texture2D> m_BloomDirtTexture,
+			m_PointLightTextureIcon, m_SpotLightTextureIcon;
 
 		// Skybox Resources
 		std::shared_ptr<TextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;
 		std::shared_ptr<Image2D> m_BRDFTexture;
 		VkDescriptorSet m_SkyboxTextureID;
 
-		std::map<MeshKey, DrawCommand> m_MeshDrawList;
-		std::map<MeshKey, MeshTransform> m_MeshTransformMap;
-		std::map<MeshKey, DrawCommand> m_MeshTessellatedDrawList;
-		std::map<MeshKey, MeshTransform> m_MeshTessellatedTransformMap;
-		std::map<MeshKey, DrawCommand> m_ShadowMeshDrawList;
-		std::map<MeshKey, MeshTransform> m_ShadowMeshTransformMap;
+		std::map<MeshKey, DrawCommand> m_MeshDrawList,
+			m_MeshTransparentDrawList,
+			m_MeshTessellatedDrawList,
+			m_ShadowMeshDrawList,
+			m_PhysicsDebugMeshDrawList;
+
+		std::map<MeshKey, MeshTransform> m_MeshTransformMap,
+			m_MeshTransparentTransformMap,
+			m_MeshTessellatedTransformMap,
+			m_ShadowMeshTransformMap,
+			m_PhysicsDebugMeshTransformMap;
+
 		std::map<MeshKey, DrawSelectCommand> m_SelectedMeshDrawList;
 		std::map<MeshKey, MeshSelectTransform> m_SelectedMeshTransformMap;
-		std::map<MeshKey, DrawCommand> m_PhysicsDebugMeshDrawList;
-		std::map<MeshKey, MeshTransform> m_PhysicsDebugMeshTransformMap;
 
 		glm::ivec2 m_ViewportSize = { 1920, 1080 };
 		glm::uvec2 m_BloomMipSize;
@@ -279,7 +284,7 @@ namespace std {
 	{
 		size_t operator()(const VulkanCore::SceneRenderer::MeshKey& other)
 		{
-			std::hash<uint64_t> h{};
+			hash<uint64_t> h{};
 			size_t hashVal = 0;
 			hashVal ^= h(other.MeshHandle) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
 			hashVal ^= h(other.SubmeshIndex) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);

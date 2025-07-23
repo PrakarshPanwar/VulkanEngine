@@ -10,6 +10,7 @@ namespace VulkanCore {
 		None = 0,
 		Scene,
 		Texture2D,
+		Texture3D,
 		TextureCube,
 		Mesh,	   // For Runtime YAML Mesh File(class Mesh)
 		MeshAsset, // For Native Mesh File(class MeshSource)

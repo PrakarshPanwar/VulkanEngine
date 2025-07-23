@@ -279,6 +279,20 @@ namespace VulkanCore {
 			out << YAML::EndMap; // SphereColliderComponent
 		}
 
+		if (entity.HasComponent<MeshColliderComponent>())
+		{
+			out << YAML::Key << "MeshColliderComponent";
+			out << YAML::BeginMap; // MeshColliderComponent
+
+			auto& mc3dComponent = entity.GetComponent<MeshColliderComponent>();
+			out << YAML::Key << "Density" << YAML::Value << mc3dComponent.Density;
+			out << YAML::Key << "Friction" << YAML::Value << mc3dComponent.Friction;
+			out << YAML::Key << "Restitution" << YAML::Value << mc3dComponent.Restitution;
+			//out << YAML::Key << "RestitutionThreshold" << YAML::Value << mc3dComponent.RestitutionThreshold;
+
+			out << YAML::EndMap; // MeshColliderComponent
+		}
+
 		out << YAML::EndMap; // Entity
 	}
 
@@ -333,7 +347,6 @@ namespace VulkanCore {
 		VK_CORE_TRACE("Deserializing Scene: '{}'", sceneName);
 
 		auto entities = data["Entities"];
-
 		if (entities)
 		{
 			for (auto entity : entities)
@@ -464,6 +477,16 @@ namespace VulkanCore {
 					sc3d.Friction = sphereColliderComponent["Friction"].as<float>();
 					sc3d.Restitution = sphereColliderComponent["Restitution"].as<float>();
 					//sc3d.RestitutionThreshold = sphereColliderComponent["RestitutionThreshold"].as<float>();
+				}
+
+				auto meshColliderComponent = entity["MeshColliderComponent"];
+				if (meshColliderComponent)
+				{
+					auto& mc3d = deserializedEntity.AddComponent<MeshColliderComponent>();
+					mc3d.Density = meshColliderComponent["Density"].as<float>();
+					mc3d.Friction = meshColliderComponent["Friction"].as<float>();
+					mc3d.Restitution = meshColliderComponent["Restitution"].as<float>();
+					//mc3d.RestitutionThreshold = meshColliderComponent["RestitutionThreshold"].as<float>();
 				}
 			}
 		}

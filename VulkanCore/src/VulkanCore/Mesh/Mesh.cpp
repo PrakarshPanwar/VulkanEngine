@@ -21,7 +21,7 @@ namespace VulkanCore {
 
 		static glm::mat4 Mat4FromAIMatrix4(const aiMatrix4x4& matrix)
 		{
-			glm::mat4 result;
+			glm::mat4 result{};
 
 			result[0][0] = matrix.a1; result[1][0] = matrix.a2; result[2][0] = matrix.a3; result[3][0] = matrix.a4;
 			result[0][1] = matrix.b1; result[1][1] = matrix.b2; result[2][1] = matrix.b3; result[3][1] = matrix.b4;

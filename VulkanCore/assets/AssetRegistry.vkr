@@ -487,3 +487,11 @@ Asset Registry:
     Metadata:
       Filepath: meshes/Box.vkmesh
       Type: Mesh
+  - Handle: 6322805197742733304
+    Metadata:
+      Filepath: materials/VintageLampGlass.vkmat
+      Type: Material
+  - Handle: 11174909556212788810
+    Metadata:
+      Filepath: materials/LampFlame.vkmat
+      Type: Material

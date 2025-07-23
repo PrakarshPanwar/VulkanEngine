@@ -1,7 +1,7 @@
 // Shader File: "SceneComposite.slang"
 
 [shader("vertex")]
-void VSMain(in uint id : SV_VertexID, out float4 position : SV_Position, out float2 texCoord : TEXCOORD0)
+void VSMain(in uint id : SV_VulkanVertexID, out float4 position : SV_Position, out float2 texCoord : TEXCOORD0)
 {
     texCoord = float2((id << 1) & 2, id & 2);
     position = float4(texCoord * 2.0f - 1.0f, 0, 1);
@@ -18,13 +18,13 @@ struct SceneData
     float FogFallOffDistance;
 };
 
-[[vk::push_constant]] ConstantBuffer<SceneData> c_SceneParams;
+[vk::push_constant] ConstantBuffer<SceneData> c_SceneParams;
 
-[[vk::binding(0, 0)]] ConstantBuffer<Camera> c_Camera;
-[[vk::binding(1, 0)]] Sampler2D r_InputTexture;
-[[vk::binding(2, 0)]] Sampler2D r_DepthTexture;
-[[vk::binding(3, 0)]] Sampler2D r_BloomTexture;
-[[vk::binding(4, 0)]] Sampler2D r_BloomDirtTexture;
+[vk::binding(0, 0)] ConstantBuffer<Camera> c_Camera;
+[vk::binding(1, 0)] Sampler2D r_InputTexture;
+[vk::binding(2, 0)] Sampler2D r_DepthTexture;
+[vk::binding(3, 0)] Sampler2D r_BloomTexture;
+[vk::binding(4, 0)] Sampler2D r_BloomDirtTexture;
 
 // Polynomial approximation of EaryChow's AgX sigmoid curve.
 // In Blender's implementation, numbers could go a little bit over 1.0, so it's best to ensure

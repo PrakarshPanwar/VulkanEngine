@@ -26,7 +26,7 @@ namespace VulkanCore {
 		VkFormat FindDepthFormat();
 
 		VkResult AcquireNextImage(uint32_t* imageIndex);
-		VkResult SubmitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
+		//VkResult SubmitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
 		VkResult SubmitCommandBuffers(const std::vector<VkCommandBuffer>& buffers, uint32_t* imageIndex);
 
 		bool CompareSwapFormats(const VulkanSwapChain& swapChain) const;
@@ -53,12 +53,12 @@ namespace VulkanCore {
 
 		// Only for MSAA
 		std::vector<VkImage> m_ColorImages;
-		std::vector<VmaAllocation> m_ColorImageMemories;
+		std::vector<VmaAllocation> m_ColorImageAllocations;
 		std::vector<VkImageView> m_ColorImageViews;
 
 		// Required for Depth
 		std::vector<VkImage> m_DepthImages;
-		std::vector<VmaAllocation> m_DepthImageMemories;
+		std::vector<VmaAllocation> m_DepthImageAllocations;
 		std::vector<VkImageView> m_DepthImageViews;
 
 		// Required to receive images from Swap Chain
@@ -71,7 +71,7 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanSwapChain> m_OldSwapChain;
 
 		std::vector<VkSemaphore> m_ImageAvailableSemaphores;
-		std::vector<VkSemaphore> m_RenderFinishedSemaphores;
+		std::vector<VkSemaphore> m_ReadyToPresentSemaphores;
 		std::vector<VkFence> m_InFlightFences;
 		std::vector<VkFence> m_ImagesInFlight;
 		size_t m_CurrentFrame = 0;

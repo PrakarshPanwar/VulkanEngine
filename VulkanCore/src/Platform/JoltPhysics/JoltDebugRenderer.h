@@ -4,6 +4,7 @@
 #define JPH_DEBUG_RENDERER_EXPORT
 #include "Jolt/Renderer/DebugRenderer.h"
 #undef JPH_DEBUG_RENDERER_EXPORT
+#include "Jolt/Core/Mutex.h"
 
 #include "VulkanCore/Renderer/VertexBuffer.h"
 #include "VulkanCore/Scene/PhysicsDebugRenderer.h"
@@ -42,6 +43,8 @@ namespace VulkanCore {
 		void CreateMaterials();
 	private:
 		std::shared_ptr<MaterialAsset> m_DefaultPhysicsMaterialAsset;
+
+		JPH::Mutex m_PrimitivesMutex;
 
 		std::vector<LineVertex> m_LinesBuffer;
 		std::shared_ptr<VertexBuffer> m_LinesVertexBuffer;

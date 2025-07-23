@@ -10,6 +10,11 @@ namespace VulkanCore {
 		return std::make_shared<VulkanTexture>(data, spec);
 	}
 
+	std::shared_ptr<Texture3D> Texture3D::Create(void* data, TextureSpecification spec)
+	{
+		return std::make_shared<VulkanTexture3D>(data, spec);
+	}
+
 	std::shared_ptr<TextureCube> TextureCube::Create(void* data, TextureSpecification spec)
 	{
 		return std::make_shared<VulkanTextureCube>(data, spec);

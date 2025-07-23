@@ -26,10 +26,10 @@ namespace VulkanCore {
 
 		void BeginFrame();
 		void EndFrame();
-		void BeginSwapChainRenderPass();
-		void EndSwapChainRenderPass();
+		void BeginSCRenderPass();
+		void EndSCRenderPass();
 
-		bool IsFrameInProgress() const { return IsFrameStarted; }
+		bool IsFrameInProgress() const { return m_IsFrameStarted; }
 		float GetAspectRatio() const { return m_SwapChain->ExtentAspectRatio(); }
 		std::shared_ptr<RenderCommandBuffer> GetRendererCommandBuffer() const { return m_CommandBuffer; }
 
@@ -52,7 +52,7 @@ namespace VulkanCore {
 		void RenderLight(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const glm::vec4& position);
 		void SubmitFullscreenQuad(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<Material>& shaderMaterial);
 
-		static std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> CreateEnviromentMap(const std::shared_ptr<Texture>& envTexture);
+		static std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> CreateEnvironmentMap(const std::shared_ptr<Texture>& envTexture);
 		std::shared_ptr<Image2D> CreateBRDFTexture();
 		std::shared_ptr<Texture2D> GetWhiteTexture(ImageFormat format);
 		std::shared_ptr<TextureCube> GetBlackTextureCube(ImageFormat format);
@@ -82,7 +82,7 @@ namespace VulkanCore {
 
 		uint32_t m_CurrentImageIndex;
 		int m_CurrentFrameIndex = 0;
-		bool IsFrameStarted = false;
+		bool m_IsFrameStarted = false;
 
 		static RendererStats s_Data;
 		static VulkanRenderer* s_Instance;

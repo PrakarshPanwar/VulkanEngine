@@ -34,12 +34,12 @@ namespace VulkanCore {
 		indexBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 		m_MemoryAllocation = allocator.AllocateBuffer(VulkanMemoryType::DeviceLocal, indexBufferCreateInfo, m_VulkanBuffer, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
-		VkCommandBuffer copyCmd = device->GetCommandBuffer();
+		VulkanCommandBuffer copyCmd = device->GetCommandBuffer(VulkanQueueType::Transfer);
 
 		VkBufferCopy copyRegion{};
 		copyRegion.size = m_Size;
 
-		vkCmdCopyBuffer(copyCmd,
+		vkCmdCopyBuffer(copyCmd.CmdBuffer,
 			stagingBuffer,
 			m_VulkanBuffer,
 			1,

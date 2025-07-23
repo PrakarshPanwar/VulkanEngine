@@ -24,8 +24,8 @@ namespace VulkanCore {
 
 	std::vector<std::vector<VkCommandBuffer>> VulkanRenderCommandBuffer::m_AllCommandBuffers;
 
-	VulkanRenderCommandBuffer::VulkanRenderCommandBuffer(VkCommandPool cmdPool, CommandBufferLevel cmdBufLevel, uint32_t queryCount)
-		: m_CommandPool(cmdPool), m_CommandBufferLevel(cmdBufLevel), m_TimestampQueryBufferSize(queryCount << 1)
+	VulkanRenderCommandBuffer::VulkanRenderCommandBuffer(const std::string& debugName, VkCommandPool cmdPool, CommandBufferLevel cmdBufLevel, uint32_t queryCount)
+		: m_DebugName(debugName), m_CommandPool(cmdPool), m_CommandBufferLevel(cmdBufLevel), m_TimestampQueryBufferSize(queryCount << 1)
 	{
 		InvalidateCommandBuffers();
 		if (queryCount > 0)
@@ -46,14 +46,14 @@ namespace VulkanCore {
 		queryPoolCreateInfo.queryCount = m_TimestampQueryBufferSize;
 		queryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
 
-		VkCommandBuffer cmdBuffer = device->GetCommandBuffer();
+		VulkanCommandBuffer resetCmd = device->GetCommandBuffer();
 		for (uint32_t i = 0; i < Renderer::GetConfig().FramesInFlight; ++i)
 		{
 			vkCreateQueryPool(device->GetVulkanDevice(), &queryPoolCreateInfo, nullptr, &m_TimestampQueryPools[i]);
-			vkCmdResetQueryPool(cmdBuffer, m_TimestampQueryPools[i], 0, m_TimestampQueryBufferSize);
+			vkCmdResetQueryPool(resetCmd.CmdBuffer, m_TimestampQueryPools[i], 0, m_TimestampQueryBufferSize);
 		}
 
-		device->FlushCommandBuffer(cmdBuffer);
+		device->FlushCommandBuffer(resetCmd);
 	}
 
 	void VulkanRenderCommandBuffer::InvalidateCommandBuffers()
@@ -71,6 +71,9 @@ namespace VulkanCore {
 		allocInfo.commandBufferCount = framesInFlight;
 
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(device->GetVulkanDevice(), &allocInfo, m_CommandBuffers.data()), "Failed to Allocate Command Buffers!");
+
+		for (uint32_t i = 0; i < framesInFlight; ++i)
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_COMMAND_BUFFER, std::format("{0} CB: {1}", m_DebugName, i), m_CommandBuffers[i]);
 
 		if (m_CommandBufferLevel == CommandBufferLevel::Primary)
 			m_AllCommandBuffers.push_back(m_CommandBuffers);
@@ -92,11 +95,11 @@ namespace VulkanCore {
 		m_CommandBuffers.clear();
 	}
 
-	void VulkanRenderCommandBuffer::Begin()
+	void VulkanRenderCommandBuffer::Begin() const
 	{
 		Renderer::Submit([this]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderCommandBuffer::Begin");
+			VK_CORE_PROFILE_FN("VulkanRenderCommandBuffer::Begin", TracyZoneLabelColor::Green);
 
 			VkCommandBuffer commandBuffer = RT_GetActiveCommandBuffer();
 
@@ -116,7 +119,7 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderCommandBuffer::Begin(VkRenderPass renderPass, VkFramebuffer framebuffer)
+	void VulkanRenderCommandBuffer::Begin(VkRenderPass renderPass, VkFramebuffer framebuffer) const
 	{
 		VkCommandBuffer commandBuffer = RT_GetActiveCommandBuffer();
 		VkQueryPool queryPool = RT_GetCurrentTimestampQueryPool();
@@ -137,17 +140,17 @@ namespace VulkanCore {
 			vkCmdResetQueryPool(commandBuffer, queryPool, 0, m_TimestampQueryBufferSize);
 	}
 
-	void VulkanRenderCommandBuffer::End()
+	void VulkanRenderCommandBuffer::End() const
 	{
 		Renderer::Submit([this] { vkEndCommandBuffer(RT_GetActiveCommandBuffer()); });
 	}
 
-	void VulkanRenderCommandBuffer::Execute(VkCommandBuffer secondaryCmdBuffers[], uint32_t count)
+	void VulkanRenderCommandBuffer::Execute(VkCommandBuffer secondaryCmdBuffers[], uint32_t count) const
 	{
 		vkCmdExecuteCommands(RT_GetActiveCommandBuffer(), count, secondaryCmdBuffers);
 	}
 
-	void VulkanRenderCommandBuffer::RetrieveQueryPoolResults()
+	void VulkanRenderCommandBuffer::RetrieveQueryPoolResults() const
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
@@ -175,7 +178,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::SubmitCommandBuffersToQueue");
+			VK_CORE_PROFILE_FN("VulkanRenderer::SubmitCommandBuffers", TracyZoneLabelColor::Green);
 
 			uint32_t frameIndex = Renderer::RT_GetCurrentFrameIndex();
 		

@@ -17,7 +17,9 @@ namespace VulkanCore {
 	{
 		None,
 		Less,
-		LessOrEqual
+		Equal,
+		LessOrEqual,
+		Always
 	};
 
 	enum class CullMode
@@ -37,7 +39,7 @@ namespace VulkanCore {
 		std::shared_ptr<RenderPass> pRenderPass;
 		PrimitiveTopology Topology = PrimitiveTopology::TriangleList;
 		CullMode CullingMode = CullMode::None;
-		bool DepthTest = true, DepthWrite = true, DepthClamp = false, Blend = false;
+		bool DepthTest = true, DepthWrite = true, DepthClamp = false;
 		CompareOp DepthCompareOp = CompareOp::Less;
 		uint32_t PatchControlPoints = 0;
 

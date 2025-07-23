@@ -4,11 +4,11 @@ import Buffers;
 
 struct VertexInput
 {
-    [[vk::location(0)]] float3 Position;
-    [[vk::location(1)]] float4 Color;
+    [vk::location(0)] float3 Position;
+    [vk::location(1)] float4 Color;
 };
 
-[[vk::binding(0, 0)]] ConstantBuffer<Camera> c_Camera;
+[vk::binding(0, 0)] ConstantBuffer<Camera> c_Camera;
 
 [shader("vertex")]
 void VSMain(VertexInput vertexInput, out float4 position : SV_Position, out float4 color : COLOR0)

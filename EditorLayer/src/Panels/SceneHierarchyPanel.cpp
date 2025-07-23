@@ -14,7 +14,7 @@
 
 namespace VulkanCore {
 
-	static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f)
+	static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 90.0f)
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		auto boldFont = io.Fonts->Fonts[1];
@@ -386,12 +386,12 @@ namespace VulkanCore {
 			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
 			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(component.MeshHandle);
+			std::shared_ptr<MeshSource> meshSource = mesh->GetMeshSource();
 			std::shared_ptr<MaterialTable> materialTable = component.MaterialTableHandle;
 
 			if (mesh && materialTable)
 			{
 				// Mesh Asset
-				auto meshSource = mesh->GetMeshSource();
 				auto& meshAssetMetadata = AssetManager::GetMetadata(meshSource->Handle);
 				const auto& meshAssetPath = meshAssetMetadata.FilePath.generic_string();
 				ImGui::InputText("Mesh", (char*)meshAssetPath.data(), meshAssetPath.size(), ImGuiInputTextFlags_ReadOnly);
