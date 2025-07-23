@@ -49,7 +49,7 @@ static const float3 verticesData[36] = float3[](
 [vk::binding(0, 0)] ConstantBuffer<Camera> c_Camera;
 
 [shader("vertex")]
-void VSMain(in uint id : SV_VertexID, out float4 position : SV_Position, out float3 texCoord : TEXCOORD0)
+void VSMain(in uint id : SV_VulkanVertexID, out float4 position : SV_Position, out float3 texCoord : TEXCOORD0)
 {
 	texCoord = verticesData[id];
 	float3x3 viewRotation = float3x3(c_Camera.View);

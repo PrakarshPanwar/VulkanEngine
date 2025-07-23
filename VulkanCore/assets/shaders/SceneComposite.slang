@@ -1,7 +1,7 @@
 // Shader File: "SceneComposite.slang"
 
 [shader("vertex")]
-void VSMain(in uint id : SV_VertexID, out float4 position : SV_Position, out float2 texCoord : TEXCOORD0)
+void VSMain(in uint id : SV_VulkanVertexID, out float4 position : SV_Position, out float2 texCoord : TEXCOORD0)
 {
     texCoord = float2((id << 1) & 2, id & 2);
     position = float4(texCoord * 2.0f - 1.0f, 0, 1);

@@ -71,13 +71,7 @@ project "VulkanCore"
 		links { "%{Library.ShaderC_Debug}", "%{Library.SPIRV_Cross_Debug}", "%{Library.SPIRV_Cross_GLSL_Debug}", "%{Library.Slang_Debug}", "%{Library.AssimpLibDebug}", "%{Library.tracy_Debug}" }
 		symbols "On"
 
-		postbuildcommands { "{COPY} %{Library.AssimpDLLDebug} ../bin/" .. outputdir .. "/%{prj.name}" }
-		postbuildcommands { "{COPY} %{Library.optick_DLL_Release} ../bin/" .. outputdir .. "/%{prj.name}" }
-
 	filter "configurations:Release"
 		defines { "VK_RELEASE" }
 		links { "%{Library.ShaderC_Release}", "%{Library.SPIRV_Cross_Release}", "%{Library.SPIRV_Cross_GLSL_Release}", "%{Library.Slang_Release}", "%{Library.AssimpLibRelease}", "%{Library.tracy_Release}" }
 		optimize "On"
-
-		postbuildcommands { "{COPY} %{Library.AssimpDLLRelease} ../bin/" .. outputdir .. "/%{prj.name}" }
-		postbuildcommands { "{COPY} %{Library.optick_DLL_Release} ../bin/" .. outputdir .. "/%{prj.name}" }
