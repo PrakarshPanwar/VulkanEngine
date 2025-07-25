@@ -20,16 +20,16 @@ struct CascadeData
 struct VertexInput
 {
     // Vertex Bindings
-    [[vk::location(0)]] float3 Position;
-    [[vk::location(1)]] float3 Normal;
-    [[vk::location(2)]] float3 Tangent;
-    [[vk::location(3)]] float3 Binormal;
-    [[vk::location(4)]] float2 TexCoord;
+    [vk::location(0)] float3 Position;
+    [vk::location(1)] float3 Normal;
+    [vk::location(2)] float3 Tangent;
+    [vk::location(3)] float3 Binormal;
+    [vk::location(4)] float2 TexCoord;
 
     // Instance Bindings
-    [[vk::location(5)]] float4 MRow0;
-    [[vk::location(6)]] float4 MRow1;
-    [[vk::location(7)]] float4 MRow2;
+    [vk::location(5)] float4 MRow0;
+    [vk::location(6)] float4 MRow1;
+    [vk::location(7)] float4 MRow2;
 };
 
 struct VertexOutput
@@ -47,14 +47,14 @@ struct VertexStageOutput
     float4 Position : SV_Position;
 };
 
-[[vk::push_constant]] ConstantBuffer<Material> c_MaterialData;
+[vk::push_constant] ConstantBuffer<Material> c_MaterialData;
 
 // Camera and Lights Set
-[[vk::binding(0, 0)]] ConstantBuffer<Camera> c_Camera;
-[[vk::binding(1, 0)]] ConstantBuffer<PointLightData> c_PointLightData;
-[[vk::binding(2, 0)]] ConstantBuffer<SpotLightData> c_SpotLightData;
-[[vk::binding(3, 0)]] ConstantBuffer<DirectionalLightData> c_DirectionalLightData;
-[[vk::binding(4, 0)]] ConstantBuffer<CascadeData> c_CascadeData;
+[vk::binding(0, 0)] ConstantBuffer<Camera> c_Camera;
+[vk::binding(1, 0)] ConstantBuffer<PointLightData> c_PointLightData;
+[vk::binding(2, 0)] ConstantBuffer<SpotLightData> c_SpotLightData;
+[vk::binding(3, 0)] ConstantBuffer<DirectionalLightData> c_DirectionalLightData;
+[vk::binding(4, 0)] ConstantBuffer<CascadeData> c_CascadeData;
 
 [shader("vertex")]
 void VSMain(in VertexInput vertexInput, out VertexStageOutput output)
@@ -83,15 +83,15 @@ void VSMain(in VertexInput vertexInput, out VertexStageOutput output)
 } // End of Vertex Stage
 
 // Material Set
-[[vk::binding(0, 1)]] Sampler2D r_AlbedoTexture;
-[[vk::binding(1, 1)]] Sampler2D r_NormalTexture;
-[[vk::binding(2, 1)]] Sampler2D r_ARMTexture;
+[vk::binding(0, 1)] Sampler2D r_AlbedoTexture;
+[vk::binding(1, 1)] Sampler2D r_NormalTexture;
+[vk::binding(2, 1)] Sampler2D r_ARMTexture;
 
 // IBL
-[[vk::binding(6, 0)]] SamplerCube r_IrradianceMap;
-[[vk::binding(7, 0)]] Sampler2D r_BRDFLUT;
-[[vk::binding(8, 0)]] SamplerCube r_PrefilteredMap;
-[[vk::binding(9, 0)]] Sampler2DArray r_ShadowMap;
+[vk::binding(6, 0)] SamplerCube r_IrradianceMap;
+[vk::binding(7, 0)] Sampler2D r_BRDFLUT;
+[vk::binding(8, 0)] SamplerCube r_PrefilteredMap;
+[vk::binding(9, 0)] Sampler2DArray r_ShadowMap;
 
 import PBR;
 import Math;
@@ -106,12 +106,13 @@ struct PBRParams
     float Occlusion;
     float Metallic;
     float Roughness;
+    float ShadowCoefficient;
 };
 
 static PBRParams m_Params; // Thread-Local variable
 static VertexOutput Input;
 
-static const float3 Fdielectric = float3(0.04f, 0.04f, 0.04f);
+static const float3 Fdielectric = 0.04f;
 
 float3 GetNormalsFromMap()
 {
@@ -122,7 +123,7 @@ float3 GetNormalsFromMap()
 float3 Lighting(float3 F0)
 {
     // Reflectance Equation
-    float3 Lo = float3(0.0f);
+    float3 Lo = 0.0f;
     for (int i = 0; i < c_PointLightData.Count; ++i)
     {
         PointLight pointLight = c_PointLightData.PointLights[i];
@@ -151,7 +152,7 @@ float3 Lighting(float3 F0)
         // For Energy Conservation, the Diffuse and Specular Light can't
         // be above 1.0 (unless the Surface Emits Light); to preserve this
         // relationship the Diffuse Component (kD) should equal 1.0 - kS.
-        float3 kD = float3(1.0f) - kS;
+        float3 kD = 1.0f - kS;
         // Multiply kD by the Inverse Metalness such that only non-metals
         // have Diffuse Lighting, or a linear blend if partly metal (pure metals
         // have no diffuse light).
@@ -192,7 +193,7 @@ float3 Lighting(float3 F0)
         // For Energy Conservation, the Diffuse and Specular Light can't
         // be above 1.0 (unless the Surface Emits Light); to preserve this
         // relationship the Diffuse Component (kD) should equal 1.0 - kS.
-        float3 kD = float3(1.0f) - kS;
+        float3 kD = 1.0f - kS;
         // Multiply kD by the Inverse Metalness such that only non-metals
         // have Diffuse Lighting, or a linear blend if partly metal (pure metals
         // have no diffuse light).
@@ -228,13 +229,13 @@ float3 Lighting(float3 F0)
         // For Energy Conservation, the Diffuse and Specular Light can't
         // be above 1.0 (unless the Surface Emits Light); to preserve this
         // relationship the Diffuse Component (kD) should equal 1.0 - kS.
-        float3 kD = float3(1.0f) - kS;
+        float3 kD = 1.0f - kS;
         // Multiply kD by the Inverse Metalness such that only non-metals
         // have Diffuse Lighting, or a linear blend if partly metal (pure metals
         // have no diffuse light).
         kD *= 1.0f - m_Params.Metallic;
         // Add to Outgoing Radiance Lo
-        Lo += (kD * m_Params.Albedo / PI + specular) * radiance * NdotL;
+        Lo += (kD * m_Params.Albedo / PI + specular) * radiance * NdotL * m_Params.ShadowCoefficient;
     }
 
     return Lo;
@@ -329,10 +330,10 @@ float CalculateShadow()
 
     // Depth Compare for Shadowing
     float4 shadowCoord = mul(float4(Input.WorldPosition, 1.0f), mul(c_CascadeData.LightSpaceMatrices[cascadeIndex], BIAS_MATRIX));
-    shadowCoord = shadowCoord / shadowCoord.w;
+    shadowCoord = shadowCoord / shadowCoord.w; // Perspective Divide
 
     float shadow = FilterPCF(shadowCoord, cascadeIndex);
-    //float shadow = ShadowTextureProjection(shadowCoord / shadowCoord.w, float2(0.0), cascadeIndex);
+    //float shadow = ShadowTextureProjection(shadowCoord, float2(0.0), cascadeIndex);
 
     return shadow;
 }
@@ -367,14 +368,12 @@ void FSMain(VertexOutput vertexOutput : VERTEX_OUT,
     float3 F0 = lerp(Fdielectric, m_Params.Albedo, m_Params.Metallic);
 
     // Shadow
-    float shadow = CalculateShadow();
+    m_Params.ShadowCoefficient = CalculateShadow();
 
     float3 lightingContribution = Lighting(F0);
     float3 iblContribution = IBL(F0, Lr);
-
     o_LightsDataTexture = float4(lightingContribution, 1.0f); // Lights Data Texture
-    lightingContribution *= shadow; // Apply Shadow
 
     float3 color = iblContribution + lightingContribution;
-    o_Color = float4(color, c_MaterialData.Albedo.a); // Final Color
+    o_Color = float4(color, 1.0f); // Final Color
 } // End of Fragment Stage

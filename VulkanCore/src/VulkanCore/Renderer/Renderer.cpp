@@ -53,12 +53,12 @@ namespace VulkanCore {
 
 	void Renderer::BuildShaders()
 	{
-		VulkanSlangShader::CreateGlobalSession();
-
 		VK_CREATE_SLANG_SHADER("CorePBR");
+		VK_CREATE_SLANG_SHADER("CorePBR_OIT");
 		VK_CREATE_SHADER("CorePBR_Tess"); // TODO: Future support required for Vulkan Tessellation in Slang
+		VK_CREATE_SLANG_SHADER("OITBlend");
 		VK_CREATE_SLANG_SHADER("Lines");
-		VK_CREATE_SLANG_SHADER("ShadowDepth");
+		VK_CREATE_SHADER("ShadowDepth"); // TODO: Problem in ShaderLayer SPIR-V
 		VK_CREATE_SHADER("CoreEditor");
 		VK_CREATE_SHADER("LightShader");
 		VK_CREATE_SHADER("LightEditor");
@@ -158,6 +158,11 @@ namespace VulkanCore {
 		s_Renderer->SubmitFullscreenQuad(cmdBuffer, pipeline, shaderMaterial);
 	}
 
+	void Renderer::SubmitAndPresent()
+	{
+		s_Renderer->SubmitAndPresent();
+	}
+
 	std::shared_ptr<Image2D> Renderer::CreateBRDFTexture()
 	{
 		return s_Renderer->CreateBRDFTexture();
@@ -176,14 +181,6 @@ namespace VulkanCore {
 	void Renderer::Init()
 	{
 		RenderThread::Init();
-	}
-
-	void Renderer::WaitAndRender()
-	{
-		VK_CORE_PROFILE();
-
-		RenderThread::NextFrame();
-		RenderThread::WaitAndSet();
 	}
 
 	void Renderer::WaitAndExecute()

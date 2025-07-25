@@ -12,7 +12,6 @@
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
 #include <spirv_cross/spirv_glsl.hpp>
-#include "../Source/SPIRV-Reflect/spirv_reflect.h"
 
 namespace VulkanCore {
 
@@ -111,7 +110,6 @@ namespace VulkanCore {
 		CompileOrGetVulkanBinaries(Sources);
 
 		ReflectShaderData();
-		//InvalidateDescriptors();
 	}
 
 	VulkanShader::~VulkanShader()
@@ -124,61 +122,72 @@ namespace VulkanCore {
 
 		for (auto&& [stage, source] : m_VulkanSPIRV)
 		{
-			SpvReflectShaderModule shaderModule = {};
+			spirv_cross::Compiler spvCompiler(source);
+			spirv_cross::ShaderResources spvResources = spvCompiler.get_shader_resources();
 
-			SpvReflectResult result = spvReflectCreateShaderModule(
-				source.size() * sizeof(uint32_t),
-				source.data(),
-				&shaderModule);
-
-			VK_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS, "Failed to Generate Reflection Result!");
-
-			uint32_t count = 0;
-			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, nullptr);
-			VK_CORE_ASSERT(count <= 1, "More than one Descriptor Sets are not supported yet!");
-
-			std::vector<SpvReflectDescriptorSet*> DescriptorSets(count);
-			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, DescriptorSets.data());
-
-			for (uint32_t i = 0; i < count; ++i)
+			for (auto& sampledImgResource : spvResources.sampled_images)
 			{
-				const SpvReflectDescriptorSet& reflectionSet = *(DescriptorSets.at(i));
-				if (index == reflectionSet.set)
-				{
-					for (uint32_t j = 0; j < reflectionSet.binding_count; ++j)
-					{
-						const SpvReflectDescriptorBinding& reflectionBinding = *(reflectionSet.bindings[j]);
+				uint32_t set = spvCompiler.get_decoration(sampledImgResource.id, spv::DecorationDescriptorSet);
+				if (set != index)
+					continue;
 
-						uint32_t arrayCount = 1;
-						for (uint32_t k = 0; k < reflectionBinding.array.dims_count; ++k)
-							arrayCount *= reflectionBinding.array.dims[k];
+				uint32_t binding = spvCompiler.get_decoration(sampledImgResource.id, spv::DecorationBinding);
+				uint32_t arrayCount = spvCompiler.get_type(sampledImgResource.type_id).array.size() > 0
+					? spvCompiler.get_type(sampledImgResource.type_id).array[0] : 1;
 
-						VkShaderStageFlags shaderStageFlags = 0;
-
-						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-							shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-
-						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-							shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-
-						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-							shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
-
-						if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-							shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-
-						descriptorSetLayoutBuilder.AddBinding(
-							reflectionBinding.binding,
-							(VkDescriptorType)reflectionBinding.descriptor_type,
-							shaderStageFlags,
-							arrayCount);
-					}
-
-					break;
-				}
+				descriptorSetLayoutBuilder.AddBinding(
+					binding,
+					VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+					arrayCount);
 			}
 
-			spvReflectDestroyShaderModule(&shaderModule);
+			for (auto& storageImgResource : spvResources.storage_images)
+			{
+				uint32_t set = spvCompiler.get_decoration(storageImgResource.id, spv::DecorationDescriptorSet);
+				if (set != index)
+					continue;
+
+				uint32_t binding = spvCompiler.get_decoration(storageImgResource.id, spv::DecorationBinding);
+				uint32_t arrayCount = spvCompiler.get_type(storageImgResource.type_id).array.size() > 0
+					? spvCompiler.get_type(storageImgResource.type_id).array[0] : 1;
+
+				descriptorSetLayoutBuilder.AddBinding(
+					binding,
+					VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+					VK_SHADER_STAGE_COMPUTE_BIT,
+					arrayCount);
+			}
+
+			for (auto& uboResource : spvResources.uniform_buffers)
+			{
+				uint32_t set = spvCompiler.get_decoration(uboResource.id, spv::DecorationDescriptorSet);
+				if (set != index)
+					continue;
+
+				uint32_t binding = spvCompiler.get_decoration(uboResource.id, spv::DecorationBinding);
+
+				descriptorSetLayoutBuilder.AddBinding(
+					binding,
+					VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_COMPUTE_BIT,
+					1);
+			}
+
+			for (auto& ssboResource : spvResources.storage_buffers)
+			{
+				uint32_t set = spvCompiler.get_decoration(ssboResource.id, spv::DecorationDescriptorSet);
+				if (set != index)
+					continue;
+
+				uint32_t binding = spvCompiler.get_decoration(ssboResource.id, spv::DecorationBinding);
+
+				descriptorSetLayoutBuilder.AddBinding(
+					binding,
+					VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT,
+					1);
+			}
 		}
 
 		auto descriptorSetLayout = descriptorSetLayoutBuilder.Build();
@@ -190,59 +199,64 @@ namespace VulkanCore {
 	std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> VulkanShader::CreateAllDescriptorSetsLayout()
 	{
 		// Key: Set number
-		std::unordered_map<uint32_t, DescriptorSetLayoutBuilder> descriptorSetLayoutBuilderMap;
+		std::map<uint32_t, DescriptorSetLayoutBuilder> descriptorSetLayoutBuilderMap;
 
 		for (auto&& [stage, source] : m_VulkanSPIRV)
 		{
-			SpvReflectShaderModule shaderModule = {};
+			spirv_cross::Compiler spvCompiler(source);
+			spirv_cross::ShaderResources spvResources = spvCompiler.get_shader_resources();
 
-			SpvReflectResult result = spvReflectCreateShaderModule(
-				source.size() * sizeof(uint32_t),
-				source.data(),
-				&shaderModule);
-
-			VK_CORE_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS, "Failed to Generate Reflection Result!");
-
-			uint32_t count = 0;
-			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, nullptr);
-
-			std::vector<SpvReflectDescriptorSet*> DescriptorSets(count);
-			result = spvReflectEnumerateDescriptorSets(&shaderModule, &count, DescriptorSets.data());
-
-			for (uint32_t i = 0; i < count; ++i)
+			for (auto& sampledImgResource : spvResources.sampled_images)
 			{
-				const SpvReflectDescriptorSet& reflectionSet = *(DescriptorSets.at(i));
-				for (uint32_t j = 0; j < reflectionSet.binding_count; ++j)
-				{
-					const SpvReflectDescriptorBinding& reflectionBinding = *(reflectionSet.bindings[j]);
+				uint32_t set = spvCompiler.get_decoration(sampledImgResource.id, spv::DecorationDescriptorSet);
+				uint32_t binding = spvCompiler.get_decoration(sampledImgResource.id, spv::DecorationBinding);
+				uint32_t arrayCount = spvCompiler.get_type(sampledImgResource.type_id).array.empty() ? 1
+					: spvCompiler.get_type(sampledImgResource.type_id).array[0];
 
-					uint32_t arrayCount = 1;
-					for (uint32_t k = 0; k < reflectionBinding.array.dims_count; ++k)
-						arrayCount *= reflectionBinding.array.dims[k];
-
-					VkShaderStageFlags shaderStageFlags = 0;
-
-					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-
-					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-						shaderStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-
-					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-						shaderStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT;
-
-					if (reflectionBinding.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-						shaderStageFlags |= VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
-
-					descriptorSetLayoutBuilderMap[reflectionSet.set].AddBinding(
-						reflectionBinding.binding,
-						(VkDescriptorType)reflectionBinding.descriptor_type,
-						shaderStageFlags,
-						arrayCount);
-				}
+				descriptorSetLayoutBuilderMap[set].AddBinding(
+					binding,
+					VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+					arrayCount);
 			}
 
-			spvReflectDestroyShaderModule(&shaderModule);
+			for (auto& storageImgResource : spvResources.storage_images)
+			{
+				uint32_t set = spvCompiler.get_decoration(storageImgResource.id, spv::DecorationDescriptorSet);
+				uint32_t binding = spvCompiler.get_decoration(storageImgResource.id, spv::DecorationBinding);
+				uint32_t arrayCount = !spvCompiler.get_type(storageImgResource.type_id).array.empty() ? 1
+					: spvCompiler.get_type(storageImgResource.type_id).array[0];
+
+				descriptorSetLayoutBuilderMap[set].AddBinding(
+					binding,
+					VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+					VK_SHADER_STAGE_COMPUTE_BIT,
+					arrayCount);
+			}
+
+			for (auto& uboResource : spvResources.uniform_buffers)
+			{
+				uint32_t set = spvCompiler.get_decoration(uboResource.id, spv::DecorationDescriptorSet);
+				uint32_t binding = spvCompiler.get_decoration(uboResource.id, spv::DecorationBinding);
+
+				descriptorSetLayoutBuilderMap[set].AddBinding(
+					binding,
+					VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_COMPUTE_BIT,
+					1);
+			}
+
+			for (auto& ssboResource : spvResources.storage_buffers)
+			{
+				uint32_t set = spvCompiler.get_decoration(ssboResource.id, spv::DecorationDescriptorSet);
+				uint32_t binding = spvCompiler.get_decoration(ssboResource.id, spv::DecorationBinding);
+
+				descriptorSetLayoutBuilderMap[set].AddBinding(
+					binding,
+					VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT,
+					1);
+			}
 		}
 
 		for (auto&& [setID, descriptorSetLayoutBuilder] : descriptorSetLayoutBuilderMap)

@@ -15,13 +15,17 @@ Start by cloning the repository with `git clone --recursive https://github.com/P
 ```
 BUILD ASSIMP SOLUTION(Y/N)=
 ```
-3. Open `VulkanCore/vendor/Assimp/Assimp.sln` in Visual Studio and build solution.
-4. One prerequisite is the Vulkan SDK. If it is not installed, then install [VulkanSDK here](https://vulkan.lunarg.com/).
-5. After installation, create a folder **VulkanSDK** in vendor and copy all the folders of VulkanSDK in [VulkanCore/vendor/VulkanSDK](VulkanCore/vendor).
+3. One prerequisite is the Vulkan SDK. If it is not installed, then install [VulkanSDK here](https://vulkan.lunarg.com/).
+4. During SDK Setup, check Vulkan Memory Allocator Header and Shader Toolchain Debug, then proceed with installation. 
+5. After installation, create a folder **VulkanSDK** in VulkanCore/vendor and copy all the folders of VulkanSDK in [VulkanCore/vendor/VulkanSDK](VulkanCore/vendor).
 6. Again run [VkGenProjects.bat](VkGenProjects.bat) to link debug libraries in shaderc.
 
-### Big Features to Come
+## Screenshots
+1. Main Editor Layer UI
+![My Screenshot](EditorLayer/Resources/Screenshots/VulkanEngineUI.png)
+2. Full Composited Scene
+![My Screenshot](EditorLayer/Resources/Screenshots/VulkanEngineSS.png)
 
+### Big Features to Come
 - Advanced UI Features
 - Cascaded Shadow Maps
-- Integrated 3D Physics Engine like [NVIDIA-PhysX](https://github.com/NVIDIAGameWorks/PhysX), [box2d](https://github.com/erincatto/box2d)

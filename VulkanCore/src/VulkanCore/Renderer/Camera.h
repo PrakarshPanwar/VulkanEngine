@@ -1,6 +1,5 @@
 #pragma once
 #include <glm/glm.hpp>
-#include <glm/ext/quaternion_common.hpp>
 
 namespace VulkanCore {
 

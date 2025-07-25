@@ -134,7 +134,7 @@ namespace VulkanCore {
 			subresourceRange.levelCount = m_Specification.MipLevels;
 			subresourceRange.layerCount = m_Specification.Layers;
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd.CmdBuffer, m_Info.Image,
 				0, 0,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
@@ -154,7 +154,7 @@ namespace VulkanCore {
 			subresourceRange.baseArrayLayer = 0;
 			subresourceRange.layerCount = m_Specification.Layers;
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd.CmdBuffer, m_Info.Image,
 				VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -174,7 +174,7 @@ namespace VulkanCore {
 			subresourceRange.baseArrayLayer = 0;
 			subresourceRange.layerCount = m_Specification.Layers;
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, m_Info.Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd.CmdBuffer, m_Info.Image,
 				VK_ACCESS_2_NONE, VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				VK_PIPELINE_STAGE_2_NONE, VK_PIPELINE_STAGE_TRANSFER_BIT,

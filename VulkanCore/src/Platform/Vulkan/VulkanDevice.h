@@ -25,15 +25,31 @@ namespace VulkanCore {
 
 	struct QueueFamilyIndices
 	{
-		uint32_t GraphicsFamily;
-		uint32_t ComputeFamily;
-		uint32_t PresentFamily;
+		uint32_t GraphicsFamily : 8 = _UI8_MAX;
+		uint32_t TransferFamily : 8 = _UI8_MAX;
+		uint32_t ComputeFamily : 8 = _UI8_MAX;
+		uint32_t PresentFamily : 8 = _UI8_MAX;
 
-		bool GraphicsFamilyHasValue = false;
-		bool ComputeFamilyHasValue = false;
-		bool PresentFamilyHasValue = false;
+		const bool HasGraphicsFamily() const { return GraphicsFamily < _UI8_MAX; }
+		const bool HasComputeFamily() const { return ComputeFamily < _UI8_MAX; }
+		const bool HasTransferFamily() const { return TransferFamily < _UI8_MAX; }
+		const bool HasPresentFamily() const { return PresentFamily < _UI8_MAX; }
 
-		bool IsComplete() { return GraphicsFamilyHasValue && ComputeFamilyHasValue && PresentFamilyHasValue; }
+		const bool IsComplete() const { return HasGraphicsFamily() && HasTransferFamily() && HasComputeFamily() && HasPresentFamily(); }
+	};
+
+	enum class VulkanQueueType
+	{
+		None = 0,
+		Graphics,
+		Compute,
+		Transfer
+	};
+
+	struct VulkanCommandBuffer
+	{
+		VkCommandBuffer CmdBuffer = VK_NULL_HANDLE;
+		VulkanQueueType QueueType = VulkanQueueType::None;
 	};
 
 	class VulkanDevice
@@ -42,27 +58,30 @@ namespace VulkanCore {
 		VulkanDevice();
 		~VulkanDevice();
 
-		inline VkCommandPool GetCommandPool() { return m_CommandPool; }
-		inline VkCommandPool GetRenderThreadCommandPool() { return m_RTCommandPool; }
-		inline VkDevice GetVulkanDevice() { return m_LogicalDevice; }
-		inline VkPhysicalDevice GetPhysicalDevice() { return m_PhysicalDevice; }
-		inline VkQueue GetGraphicsQueue() { return m_GraphicsQueue; }
-		inline VkQueue GetPresentQueue() { return m_PresentQueue; }
-		inline VkPhysicalDeviceProperties& GetPhysicalDeviceProperties() { return m_DeviceProperties; }
-		inline VkSampleCountFlagBits GetMSAASampleCount() { return m_MSAASamples; }
+		VkCommandPool GetCommandPool() const { return m_CommandPool; }
+		VkCommandPool GetRenderThreadCommandPool() const { return m_RTCommandPool; }
+		VkDevice GetVulkanDevice() const { return m_LogicalDevice; }
+		VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
+		VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
+		VkQueue GetPresentQueue() const { return m_PresentQueue; }
+		const VkPhysicalDeviceProperties& GetPhysicalDeviceProperties() const { return m_DeviceProperties; }
+		VkSampleCountFlagBits GetMSAASampleCount() const { return m_MSAASamples; }
 
 		void Init();
 		void Destroy();
 		QueueFamilyIndices FindPhysicalQueueFamilies() { return FindQueueFamilies(m_PhysicalDevice); }
-		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 
-		bool IsExtensionSupported(const char* extensionName);
+		bool IsExtensionSupported(const char* extensionName) const;
 		bool IsInDebugMode() const;
-		VkCommandBuffer GetCommandBuffer(bool compute = false);
-		void FlushCommandBuffer(VkCommandBuffer commandBuffer, bool compute = false);
+		VulkanCommandBuffer GetCommandBuffer(VulkanQueueType queueType = VulkanQueueType::Graphics) const;
+		void FlushCommandBuffer(VulkanCommandBuffer commandBuffer) const;
 
 		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
 	private:
+		VkCommandPool VulkanCommandPool(VulkanQueueType queueType) const;
+		VkQueue VulkanQueue(VulkanQueueType queueType) const;
+
 		void CreateLogicalDevice();
 		void PickPhysicalDevice();
 		void CreateCommandPools();
@@ -71,12 +90,10 @@ namespace VulkanCore {
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 		VkPhysicalDeviceProperties m_DeviceProperties;
 		VkSampleCountFlagBits m_MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-		VkCommandPool m_CommandPool, m_RTCommandPool, m_ComputeCommandPool;
+		VkCommandPool m_CommandPool, m_RTCommandPool, m_TransferCommandPool, m_ComputeCommandPool;
 
 		VkDevice m_LogicalDevice;
-		VkQueue m_GraphicsQueue;
-		VkQueue m_ComputeQueue;
-		VkQueue m_PresentQueue;
+		VkQueue m_GraphicsQueue, m_TransferQueue, m_ComputeQueue, m_PresentQueue;
 	};
 
 }

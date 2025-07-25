@@ -12,21 +12,21 @@ namespace VulkanCore {
 
 		static VulkanSwapChain* GetSwapChain() { return s_Instance; }
 
-		inline VkFramebuffer GetFramebuffer(int index) { return m_SwapChainFramebuffers[index]; }
-		inline VkRenderPass GetRenderPass() { return m_RenderPass; }
-		inline VkImageView GetImageView(int index) { return m_SwapChainImageViews[index]; }
-		inline VkImage GetSwapChainImage(int index) { return m_SwapChainImages[index]; }
-		inline size_t GetImageCount() { return m_SwapChainImages.size(); }
-		VkFormat GetSwapChainImageFormat() { return m_SwapChainImageFormat; }
-		inline VkExtent2D GetSwapChainExtent() { return m_SwapChainExtent; }
-		inline uint32_t GetWidth() { return m_SwapChainExtent.width; }
-		inline uint32_t GetHeight() { return m_SwapChainExtent.height; }
+		VkFramebuffer GetFramebuffer(int index) const { return m_SwapChainFramebuffers[index]; }
+		VkRenderPass GetRenderPass() const { return m_RenderPass; }
+		VkImageView GetImageView(int index) const { return m_SwapChainImageViews[index]; }
+		VkImage GetSwapChainImage(int index) const { return m_SwapChainImages[index]; }
+		size_t GetImageCount() const { return m_SwapChainImages.size(); }
+		VkFormat GetSwapChainImageFormat() const { return m_SwapChainImageFormat; }
+		VkExtent2D GetSwapChainExtent() const { return m_SwapChainExtent; }
+		uint32_t GetWidth() const { return m_SwapChainExtent.width; }
+		uint32_t GetHeight() const { return m_SwapChainExtent.height; }
 
 		float ExtentAspectRatio() { return static_cast<float>(m_SwapChainExtent.width) / static_cast<float>(m_SwapChainExtent.height); }
 		VkFormat FindDepthFormat();
 
 		VkResult AcquireNextImage(uint32_t* imageIndex);
-		VkResult SubmitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
+		//VkResult SubmitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
 		VkResult SubmitCommandBuffers(const std::vector<VkCommandBuffer>& buffers, uint32_t* imageIndex);
 
 		bool CompareSwapFormats(const VulkanSwapChain& swapChain) const;
@@ -53,12 +53,12 @@ namespace VulkanCore {
 
 		// Only for MSAA
 		std::vector<VkImage> m_ColorImages;
-		std::vector<VmaAllocation> m_ColorImageMemories;
+		std::vector<VmaAllocation> m_ColorImageAllocations;
 		std::vector<VkImageView> m_ColorImageViews;
 
 		// Required for Depth
 		std::vector<VkImage> m_DepthImages;
-		std::vector<VmaAllocation> m_DepthImageMemories;
+		std::vector<VmaAllocation> m_DepthImageAllocations;
 		std::vector<VkImageView> m_DepthImageViews;
 
 		// Required to receive images from Swap Chain
@@ -71,7 +71,7 @@ namespace VulkanCore {
 		std::shared_ptr<VulkanSwapChain> m_OldSwapChain;
 
 		std::vector<VkSemaphore> m_ImageAvailableSemaphores;
-		std::vector<VkSemaphore> m_RenderFinishedSemaphores;
+		std::vector<VkSemaphore> m_ReadyToPresentSemaphores;
 		std::vector<VkFence> m_InFlightFences;
 		std::vector<VkFence> m_ImagesInFlight;
 		size_t m_CurrentFrame = 0;

@@ -18,6 +18,7 @@ project "EditorLayer"
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.entt}",
 		"%{IncludeDir.optick}",
+		"%{IncludeDir.tracy}",
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.GLAD}",
 		"%{IncludeDir.stb_image}",
@@ -27,7 +28,7 @@ project "EditorLayer"
 		"%{IncludeDir.ImGuizmo}"
 	}
 
-	defines { "SPDLOG_USE_STD_FORMAT" }
+	defines { "SPDLOG_USE_STD_FORMAT", "TRACY_ENABLE" }
 	links { "VulkanCore" }
 
 	filter "system:windows"

@@ -15,15 +15,15 @@ namespace VulkanCore {
 
 		void Release();
 
-		void Bind(VkCommandBuffer commandBuffer);
-		void Dispatch(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
-		void Execute(VkCommandBuffer cmdBuf, VkDescriptorSet dstSet, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
-		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size, size_t offset = 0);
+		void Bind(VkCommandBuffer commandBuffer) const;
+		void Dispatch(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const;
+		void Execute(VkCommandBuffer cmdBuf, VkDescriptorSet dstSet, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const;
+		void SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size, size_t offset = 0) const;
 		void ReloadPipeline() override;
 
-		inline std::shared_ptr<Shader> GetShader() const override { return m_Shader; }
-		inline VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
-		inline std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
+		std::shared_ptr<Shader> GetShader() const override { return m_Shader; }
+		VkPipelineLayout GetVulkanPipelineLayout() const { return m_PipelineLayout; }
+		std::shared_ptr<VulkanDescriptorSetLayout> GetDescriptorSetLayout() const { return m_DescriptorSetLayout; }
 	private:
 		void InvalidateComputePipeline();
 	private:

@@ -84,14 +84,30 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
+		auto activeScene = m_ActiveScene.load();
 		float time = WindowsTime::GetTime();
 		Timestep timestep = time - m_LastFrameTime;
 		m_LastFrameTime = time;
 
+		// Mouse Position relative to Viewport
+		auto [mx, my] = Input::GetMousePosition();
+		mx -= m_ViewportBounds[0].x;
+		my -= m_ViewportBounds[0].y;
+		int mouseX = (int)mx;
+		int mouseY = (int)my;
+
+		SceneEditorData sceneEditorData{};
+		sceneEditorData.CameraData = m_EditorCamera;
+		sceneEditorData.ViewportMousePos = glm::max(glm::ivec2{ mouseX, mouseY }, 0);
+		sceneEditorData.ViewportHovered = m_ViewportHovered;
+		sceneEditorData.ShowPhysicsCollider = m_ShowPhysicsCollider && activeScene->IsRunning();
+
+		m_SceneRenderer->SetSceneEditorData(sceneEditorData);
+		m_SceneRenderer->RenderScene();
+
 		if ((m_ViewportFocused && m_ViewportHovered && !ImGuizmo::IsUsing()) || m_EditorCamera.IsInFly())
 			m_EditorCamera.OnUpdate();
 
-		auto activeScene = m_ActiveScene.load();
 		switch (m_SceneState)
 		{
 		case SceneState::Edit:
@@ -107,22 +123,6 @@ namespace VulkanCore {
 			break;
 		}
 		}
-
-		// Mouse Position relative to Viewport
-		auto [mx, my] = Input::GetMousePosition();
-		mx -= m_ViewportBounds[0].x;
-		my -= m_ViewportBounds[0].y;
-		int mouseX = (int)mx;
-		int mouseY = (int)my;
-
-		SceneEditorData sceneEditorData{};
-		sceneEditorData.CameraData = m_EditorCamera;
-		sceneEditorData.ViewportMousePos = glm::max(glm::ivec2{ mouseX, mouseY }, 0);
-		sceneEditorData.ViewportHovered = m_ViewportHovered;
-		sceneEditorData.ShowPhysicsCollider = m_ShowPhysicsCollider && activeScene->IsRunning();
-		m_SceneRenderer->SetSceneEditorData(sceneEditorData);
-
-		m_SceneRenderer->RenderScene();
 	}
 
 	void EditorLayer::OnEvent(Event& e)
@@ -336,6 +336,9 @@ namespace VulkanCore {
 
 		// Button Position just at the top
 		ImGui::SetCursorPos({ viewportMinRegion.x + 5.0f, viewportMinRegion.y + 5.0f });
+		ImGui::BeginHorizontal("##ViewportUI", { region.x - 20.0f, 40.0f }, 0.35f);
+
+		ImGui::Spring(0.0f);
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 20.0f);
 		if (ImGui::ImageButton("##MenuIcon", (ImTextureID)m_MenuIconID, { 20.0f, 20.0f }, { 0, 1 }, { 1, 0 }))
 			ImGui::OpenPopup("EditorSettings");
@@ -380,19 +383,19 @@ namespace VulkanCore {
 			m_SceneHierarchyPanel.SetSelectedEntity(hoveredEntity);
 		}
 
+		ImGui::Spring();
 		if (m_ShowApplicationStats)
 		{
-			ImGui::SetCursorPos({ viewportMinRegion.x + 50.0f, viewportMinRegion.y + 10.0f });
 			SHOW_FRAMERATES;
 		}
 
 		if (m_ShowCameraData)
 		{
-			ImGui::SetCursorPos({ viewportMaxRegion.x - 350.0f, viewportMinRegion.y + 10.0f });
-
 			glm::vec3 cameraDirection = m_EditorCamera.GetForwardDirection();
 			ImGui::Text("Aspect Ratio: %.2f\t Direction: %.3f, %.3f, %.3f", m_EditorCamera.GetAspectRatio(), cameraDirection.x, cameraDirection.y, cameraDirection.z);
 		}
+
+		ImGui::EndHorizontal(); // End of Viewport Stack
 
 		RenderGizmo();
 		ImGui::End(); // End of Viewport
@@ -592,9 +595,9 @@ namespace VulkanCore {
 
 				if (ImGuizmo::IsUsing())
 				{
-					glm::vec3 translation, scale, skew;
-					glm::vec4 perspective;
-					glm::quat rotation;
+					glm::vec3 translation{}, scale{}, skew{};
+					glm::vec4 perspective{};
+					glm::quat rotation{};
 
 					glm::decompose(transform, scale, rotation, translation, skew, perspective);
 
@@ -631,8 +634,13 @@ namespace VulkanCore {
 		if (!toolbarEnabled)
 			tintColor.w = 0.5f;
 
+		auto region = ImGui::GetContentRegionAvail();
 		float size = ImGui::GetWindowHeight() - 4.0f;
-		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+		
+		// Begin Stack Layout
+		ImGui::BeginHorizontal(372846283284, { region.x, 0.0f });
+
+		ImGui::Spring(0.5f);
 
 		bool hasPlayButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play;
 		bool hasSimulateButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate;
@@ -652,9 +660,6 @@ namespace VulkanCore {
 
 		if (hasSimulateButton)
 		{
-			if (hasPlayButton)
-				ImGui::SameLine();
-
 			auto icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play) ? m_SimulateIconID : m_StopIconID;
 			if (ImGui::ImageButton("##SimulateState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
 			{
@@ -664,31 +669,26 @@ namespace VulkanCore {
 					OnSceneStop();
 			}
 		}
+
 		if (hasPauseButton)
 		{
 			bool isPaused = activeScene->IsPaused();
-			ImGui::SameLine();
-			{
-				auto icon = isPaused ? m_PlayIconID : m_PauseIconID;
-				if (ImGui::ImageButton("##PauseState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
-				{
-					activeScene->SetPaused(!isPaused);
-				}
-			}
+			auto icon = isPaused ? m_PlayIconID : m_PauseIconID;
+			if (ImGui::ImageButton("##PauseState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
+				activeScene->SetPaused(!isPaused);
 
 			// Step button
 			if (isPaused)
 			{
-				ImGui::SameLine();
-				{
-					bool isPaused = activeScene->IsPaused();
-					if (ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor, ImGuiButtonFlags_Repeat) && toolbarEnabled)
-					{
-						activeScene->StepFrames();
-					}
-				}
+				bool isPaused = activeScene->IsPaused();
+				if (ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor, ImGuiButtonFlags_Repeat) && toolbarEnabled)
+					activeScene->StepFrames();
 			}
 		}
+
+		ImGui::Spring(0.5f);
+
+		ImGui::EndHorizontal(); // End of Stack Layout
 
 		ImGui::PopStyleVar(2);
 		ImGui::PopStyleColor(3);

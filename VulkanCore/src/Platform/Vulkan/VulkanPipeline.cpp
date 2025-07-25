@@ -75,6 +75,22 @@ namespace VulkanCore {
 			return pipelineLayout;
 		}
 
+		static VkBlendFactor VulkanBlendFactor(BlendFactor blendFactor)
+		{
+			switch (blendFactor)
+			{
+			case BlendFactor::Zero:					return VK_BLEND_FACTOR_ZERO;
+			case BlendFactor::One:					return VK_BLEND_FACTOR_ONE;
+			case BlendFactor::SrcColor:				return VK_BLEND_FACTOR_SRC_COLOR;
+			case BlendFactor::OneMinusSrcColor:		return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+			case BlendFactor::SrcAlpha:				return VK_BLEND_FACTOR_SRC_ALPHA;
+			case BlendFactor::OneMinusSrcAlpha:		return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			default:
+				VK_CORE_ASSERT(false, "Blend Factor not supported!");
+				return VK_BLEND_FACTOR_MAX_ENUM;
+			}
+		}
+
 		static VkPrimitiveTopology VulkanPrimitiveTopology(PrimitiveTopology primitiveTopology)
 		{
 			switch (primitiveTopology)
@@ -94,10 +110,12 @@ namespace VulkanCore {
 			{
 			case CompareOp::None:		 return VK_COMPARE_OP_NEVER;
 			case CompareOp::Less:		 return VK_COMPARE_OP_LESS;
+			case CompareOp::Equal:		 return VK_COMPARE_OP_EQUAL;
 			case CompareOp::LessOrEqual: return VK_COMPARE_OP_LESS_OR_EQUAL;
+			case CompareOp::Always:		 return VK_COMPARE_OP_ALWAYS;
 			default:
 				VK_CORE_ASSERT(false, "Compare Op not supported!");
-				return VK_COMPARE_OP_LESS;
+				return VK_COMPARE_OP_MAX_ENUM;
 			}
 		}
 
@@ -151,38 +169,27 @@ namespace VulkanCore {
 			pipelineConfig.MultisampleInfo.alphaToCoverageEnable = VK_FALSE;
 			pipelineConfig.MultisampleInfo.alphaToOneEnable = VK_FALSE;
 
-			// TODO: We have to add multiple blending attachments as
-			// there could multiple be RenderPass attachments
-			pipelineConfig.ColorBlendAttachments.resize(Framebuffer->GetColorAttachmentsTextureSpec().size());
+			auto& FramebufferColorAttachments = Framebuffer->GetColorAttachmentsTextureSpec();
+			pipelineConfig.ColorBlendAttachments.reserve(FramebufferColorAttachments.size());
 
-			for (int i = 0; i < Framebuffer->GetColorAttachmentsTextureSpec().size(); i++)
+			for (auto& FramebufferColorAttachment : FramebufferColorAttachments)
 			{
-				pipelineConfig.ColorBlendAttachments[i].colorWriteMask =
+				VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+				colorBlendAttachment.colorWriteMask =
 					VK_COLOR_COMPONENT_R_BIT |
 					VK_COLOR_COMPONENT_G_BIT |
 					VK_COLOR_COMPONENT_B_BIT |
 					VK_COLOR_COMPONENT_A_BIT;
 
-				if (spec.Blend)
-				{
-					pipelineConfig.ColorBlendAttachments[i].blendEnable = VK_TRUE;
-					pipelineConfig.ColorBlendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-					pipelineConfig.ColorBlendAttachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-					pipelineConfig.ColorBlendAttachments[i].colorBlendOp = VK_BLEND_OP_ADD;
-					pipelineConfig.ColorBlendAttachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-					pipelineConfig.ColorBlendAttachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-					pipelineConfig.ColorBlendAttachments[i].alphaBlendOp = VK_BLEND_OP_ADD;
-				}
-				else
-				{
-					pipelineConfig.ColorBlendAttachments[i].blendEnable = VK_FALSE;
-					pipelineConfig.ColorBlendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-					pipelineConfig.ColorBlendAttachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-					pipelineConfig.ColorBlendAttachments[i].colorBlendOp = VK_BLEND_OP_ADD;              // Optional
-					pipelineConfig.ColorBlendAttachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
-					pipelineConfig.ColorBlendAttachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
-					pipelineConfig.ColorBlendAttachments[i].alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
-				}
+				colorBlendAttachment.blendEnable = FramebufferColorAttachment.IsBlended();
+				colorBlendAttachment.srcColorBlendFactor = Utils::VulkanBlendFactor(FramebufferColorAttachment.SrcColorBlendFactor);
+				colorBlendAttachment.dstColorBlendFactor = Utils::VulkanBlendFactor(FramebufferColorAttachment.DstColorBlendFactor);
+				colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;              // Optional
+				colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
+				colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional
+				colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;              // Optional
+
+				pipelineConfig.ColorBlendAttachments.emplace_back(colorBlendAttachment);
 			}
 
 			pipelineConfig.ColorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -449,12 +456,12 @@ namespace VulkanCore {
 		m_GraphicsPipeline = nullptr;
 	}
 
-	void VulkanPipeline::Bind(VkCommandBuffer commandBuffer)
+	void VulkanPipeline::Bind(VkCommandBuffer commandBuffer) const
 	{
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 	}
 
-	void VulkanPipeline::SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size)
+	void VulkanPipeline::SetPushConstants(VkCommandBuffer cmdBuf, void* pcData, size_t size) const
 	{
 		vkCmdPushConstants(cmdBuf,
 			m_PipelineLayout,

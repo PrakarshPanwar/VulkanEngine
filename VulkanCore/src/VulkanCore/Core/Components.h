@@ -141,7 +141,7 @@ namespace VulkanCore {
 	struct DirectionalLightComponent
 	{
 		glm::vec4 Color{ 1.0f };
-		glm::vec3 Direction{ 1.0f };
+		glm::vec3 Direction{ 1.0f, -1.0f, 1.0f };
 		float Falloff = 1.0f;
 	};
 

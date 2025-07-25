@@ -17,11 +17,11 @@ namespace VulkanCore {
 		VkDescriptorBufferInfo DescriptorInfo(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 		VkResult Invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
-		inline VkBuffer GetVulkanBuffer() const { return m_VulkanBuffer; }
-		inline void* GetMappedMemory() const { return m_MapDataPtr; }
-		inline VkBufferUsageFlags GetUsageFlags() const { return m_UsageFlags; }
-		inline VkMemoryPropertyFlags GetMemoryPropertyFlags() const { return m_MemoryUsageFlag; }
-		inline VkDeviceSize GetBufferSize() const { return m_Size; }
+		VkBuffer GetVulkanBuffer() const { return m_VulkanBuffer; }
+		void* GetMappedMemory() const { return m_MapDataPtr; }
+		VkBufferUsageFlags GetUsageFlags() const { return m_UsageFlags; }
+		VkMemoryPropertyFlags GetMemoryPropertyFlags() const { return m_MemoryUsageFlag; }
+		VkDeviceSize GetBufferSize() const { return m_Size; }
 	private:
 		static VkDeviceSize GetAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment);
 	private:

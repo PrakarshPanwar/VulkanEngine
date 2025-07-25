@@ -7,12 +7,10 @@
 
 namespace VulkanCore {
 
-	uint32_t VulkanFramebuffer::s_InstanceCount = 0;
-
 	VulkanFramebuffer::VulkanFramebuffer(const FramebufferSpecification& spec)
 		: m_Specification(spec)
 	{
-		for (auto specification : m_Specification.Attachments.Attachments)
+		for (auto& specification : m_Specification.Attachments.Attachments)
 		{
 			if (Utils::IsDepthFormat(specification.ImgFormat))
 				m_DepthAttachmentSpecification = specification;
@@ -24,8 +22,6 @@ namespace VulkanCore {
 		{
 			Invalidate();
 		});
-
-		s_InstanceCount++;
 	}
 
 	VulkanFramebuffer::~VulkanFramebuffer()
@@ -33,21 +29,20 @@ namespace VulkanCore {
 		if (m_Framebuffers.at(0) == nullptr)
 			return;
 
-		VK_CORE_TRACE("Framebuffers Instances: {}", s_InstanceCount);
 		Release();
 	}
 
-	const std::vector<std::shared_ptr<Image2D>>& VulkanFramebuffer::GetAttachment(uint32_t index) const
+	const std::vector<std::shared_ptr<Image2D>>& VulkanFramebuffer::GetAttachment(uint32_t index, bool resolved) const
 	{
 		bool multisampled = Utils::IsMultisampled(m_Specification);
 		uint32_t specificationSize = static_cast<uint32_t>(m_ColorAttachmentSpecifications.size());
-		return m_ColorAttachments[multisampled ? specificationSize + index : index];
+		return m_ColorAttachments[multisampled && resolved ? specificationSize + index : index];
 	}
 
-	const std::vector<std::shared_ptr<Image2D>>& VulkanFramebuffer::GetDepthAttachment() const
+	const std::vector<std::shared_ptr<Image2D>>& VulkanFramebuffer::GetDepthAttachment(bool resolved) const
 	{
 		bool multisampled = Utils::IsMultisampled(m_Specification);
-		return multisampled && m_Specification.ReadDepthTexture ? m_DepthAttachmentResolve : m_DepthAttachment;
+		return multisampled && m_Specification.ReadDepthTexture && resolved ? m_DepthAttachmentResolve : m_DepthAttachment;
 	}
 
 	void VulkanFramebuffer::Invalidate()
@@ -222,24 +217,55 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height)
+	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height, const std::bitset<11> resizeBitFlag)
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
 		m_Specification.Width = width;
 		m_Specification.Height = height;
 
-		for (auto& fbImages : m_ColorAttachments)
+		for (uint32_t i = 0; auto& fbImages : m_ColorAttachments)
 		{
-			for (auto& fbImage : fbImages)
-				fbImage->Resize(width, height);
+			if (resizeBitFlag.test(i))
+			{
+				for (auto& fbImage : fbImages)
+					fbImage->Resize(width, height);
+			}
+
+			++i;
 		}
 
-		for (auto& depthImage : m_DepthAttachment)
-			depthImage->Resize(width, height);
+		if (resizeBitFlag.test(10))
+		{
+			for (auto& depthImage : m_DepthAttachment)
+				depthImage->Resize(width, height);
+		}
 
 		for (auto& depthResolveImage : m_DepthAttachmentResolve)
 			depthResolveImage->Resize(width, height);
+	}
+
+	void VulkanFramebuffer::SetColorAttachments(uint32_t index, const std::vector<std::shared_ptr<Image2D>>& colorImages)
+	{
+		m_ColorAttachments[index] = colorImages;
+
+		bool multisampled = colorImages[0]->GetSpecification().Samples > 1;
+		if (multisampled)
+			return;
+
+		uint32_t specificationSize = static_cast<uint32_t>(m_ColorAttachmentSpecifications.size());
+		m_ColorAttachments[index + specificationSize].clear(); // Clear Resolve Attachments for this index
+	}
+
+	void VulkanFramebuffer::SetDepthAttachments(const std::vector<std::shared_ptr<Image2D>>& depthImages)
+	{
+		m_DepthAttachment = depthImages;
+
+		bool multisampled = depthImages[0]->GetSpecification().Samples > 1;
+		if (multisampled)
+			return;
+
+		m_DepthAttachmentResolve.clear();
 	}
 
 	void* VulkanFramebuffer::ReadPixel(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<IndexBuffer> imageBuffer, uint32_t index, uint32_t x, uint32_t y)

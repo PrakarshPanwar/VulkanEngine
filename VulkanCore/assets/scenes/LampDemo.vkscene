@@ -1,38 +1,10 @@
 Scene: LampDemo
 Entities:
-  - Entity: 15242862645277867730
+  - Entity: 13446849234117679010
     TagComponent:
-      Tag: Wall
-    TransformComponent:
-      Translation: [-5.0999999, 2.5, 0]
-      Rotation: [0, -0, 0]
-      Scale: [0.100000001, 2.5, 4.99762774]
-    MeshComponent:
-      MeshHandle: 9816593081404201911
-      MaterialTable:
-        0: 11134850192642027083
-  - Entity: 11083512246634496834
-    TagComponent:
-      Tag: Plane
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, -0, 0]
-      Scale: [5, 0.0500000007, 5]
-    MeshComponent:
-      MeshHandle: 9816593081404201911
-      MaterialTable:
-        0: 11134850192642027083
-  - Entity: 15512763241384639425
-    TagComponent:
-      Tag: Vintage Lamp
-    TransformComponent:
-      Translation: [2, 0, 3]
-      Rotation: [0, 0, 0]
-      Scale: [2.5, 2.49999976, 2.49999976]
-    MeshComponent:
-      MeshHandle: 5959344745003257604
-      MaterialTable:
-        0: 6952677873291693697
+      Tag: SkyLight
+    SkyLightComponent:
+      TextureHandle: 8997689789897987
   - Entity: 14374818309247147955
     TagComponent:
       Tag: Sphere
@@ -44,8 +16,38 @@ Entities:
       MeshHandle: 5887157471203535698
       MaterialTable:
         0: 16590454202587251103
-  - Entity: 13446849234117679010
+  - Entity: 15512763241384639425
     TagComponent:
-      Tag: SkyLight
-    SkyLightComponent:
-      TextureHandle: 8997689789897987
+      Tag: Vintage Lamp
+    TransformComponent:
+      Translation: [2, 0, 3]
+      Rotation: [0, 0, 0]
+      Scale: [2.5, 2.49999976, 2.49999976]
+    MeshComponent:
+      MeshHandle: 5959344745003257604
+      MaterialTable:
+        0: 6322805197742733304
+        1: 6952677873291693697
+        2: 11174909556212788810
+  - Entity: 11083512246634496834
+    TagComponent:
+      Tag: Plane
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [5, 0.0500000007, 5]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 11134850192642027083
+  - Entity: 15242862645277867730
+    TagComponent:
+      Tag: Wall
+    TransformComponent:
+      Translation: [-5.0999999, 2.5, 0]
+      Rotation: [0, -0, 0]
+      Scale: [0.100000001, 2.5, 4.99762774]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 11134850192642027083

@@ -24,7 +24,7 @@ namespace VulkanCore {
 		VulkanAllocator(const char* debugName);
 		~VulkanAllocator();
 
-		VmaAllocation AllocateBuffer(VulkanMemoryType memoryType, const VkBufferCreateInfo& bufInfo, VmaMemoryUsage usage, VkBuffer& buffer);
+		VmaAllocation AllocateBuffer(VulkanMemoryType memoryType, const VkBufferCreateInfo& bufInfo, VkBuffer& buffer, VmaMemoryUsage usage = VMA_MEMORY_USAGE_AUTO);
 		VmaAllocation AllocateImage(const VkImageCreateInfo& imgInfo, VmaMemoryUsage usage, VkImage& image);
 
 		template<typename T>
@@ -41,7 +41,7 @@ namespace VulkanCore {
 		void DestroyImage(VkImage& image, VmaAllocation allocation);
 
 		void WriteAllocatorStats() const;
-		static inline const AllocationStats& GetAllocationStats() { return s_Data; }
+		static const AllocationStats& GetAllocationStats() { return s_Data; }
 	private:
 		const VmaAllocator m_VkMemoryAllocator = VulkanContext::GetVulkanMemoryAllocator();
 		std::string_view m_DebugName;

@@ -10,11 +10,12 @@ namespace VulkanCore {
 	{
 	public:
 		JoltMesh(const JPH::DebugRenderer::Vertex* verticesPtr, int vertexCount, const JPH::uint32* indicesPtr, int indexCount);
+		JoltMesh(const JPH::DebugRenderer::Triangle* trianglesPtr, int triangleCount);
 
 		void AddRef() override { ++m_Refs; }
 		void Release() override { if (--m_Refs == 0) delete this; }
 
-		inline std::shared_ptr<Mesh> GetMesh() const { return m_JoltMesh; }
+		std::shared_ptr<Mesh> GetMesh() const { return m_JoltMesh; }
 	private:
 		void CalculateTangentBasis(std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
 	private:

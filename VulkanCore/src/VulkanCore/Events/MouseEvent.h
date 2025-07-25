@@ -9,16 +9,14 @@ namespace VulkanCore {
 		MouseMovedEvent(float x, float y)
 			: m_MouseX(x), m_MouseY(y) {}
 
-		inline float GetX() const { return m_MouseX; }
-		inline float GetY() const { return m_MouseY; }
+		float GetX() const { return m_MouseX; }
+		float GetY() const { return m_MouseY; }
 
-		inline std::pair<float, float> GetMousePosition() const { return { m_MouseX, m_MouseY }; }
+		std::pair<float, float> GetMousePosition() const { return { m_MouseX, m_MouseY }; }
 
 		std::string ToString() const override
 		{
-			std::stringstream ss;
-			ss << "Mouse Moved Event: " << m_MouseX << ", " << m_MouseY;
-			return ss.str();
+			return std::format("MouseMovedEvent: {0}, {1}", m_MouseX, m_MouseY);
 		}
 
 		EVENT_CLASS_TYPE(MouseMoved)
@@ -33,10 +31,10 @@ namespace VulkanCore {
 		MouseScrolledEvent(float xoffset, float yoffset)
 			: m_XOffset(xoffset), m_YOffset(yoffset) {}
 
-		inline float GetXOffset() const { return m_XOffset; }
-		inline float GetYOffset() const { return m_YOffset; }
+		float GetXOffset() const { return m_XOffset; }
+		float GetYOffset() const { return m_YOffset; }
 
-		inline std::pair<float, float> GetMouseScroll() const { return { m_XOffset, m_YOffset }; }
+		std::pair<float, float> GetMouseScroll() const { return { m_XOffset, m_YOffset }; }
 
 		EVENT_CLASS_TYPE(MouseScrolled)
 		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
@@ -47,7 +45,7 @@ namespace VulkanCore {
 	class MouseButtonEvent : public Event
 	{
 	public:
-		inline int GetMouseButton() const { return m_MouseButton; }
+		int GetMouseButton() const { return m_MouseButton; }
 
 		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 	protected:
@@ -65,9 +63,7 @@ namespace VulkanCore {
 
 		std::string ToString() const override
 		{
-			std::stringstream ss;
-			ss << "Mouse Button Pressed Event: " << m_MouseButton;
-			return ss.str();
+			return std::format("MouseButtonPressedEvent: {}", m_MouseButton);
 		}
 
 		EVENT_CLASS_TYPE(MouseButtonPressed)
@@ -81,9 +77,7 @@ namespace VulkanCore {
 
 		std::string ToString() const override
 		{
-			std::stringstream ss;
-			ss << "Mouse Button Released Event: " << m_MouseButton;
-			return ss.str();
+			return std::format("MouseButtonReleasedEvent: {}", m_MouseButton);
 		}
 
 		EVENT_CLASS_TYPE(MouseButtonReleased)

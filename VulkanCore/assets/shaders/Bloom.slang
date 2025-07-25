@@ -1,9 +1,9 @@
 // Shader File : "Bloom.slang"
 
-[[vk::binding(0)]] RWTexture2D o_Image;
+[vk::binding(0)] RWTexture2D<float4> o_Image;
 
-[[vk::binding(1)]] Sampler2D r_Texture;
-[[vk::binding(2)]] Sampler2D r_BloomTexture;
+[vk::binding(1)] Sampler2D r_Texture;
+[vk::binding(2)] Sampler2D r_BloomTexture;
 
 struct BloomParams
 {
@@ -12,7 +12,7 @@ struct BloomParams
     float Knee;
 };
 
-[[vk::push_constant]] ConstantBuffer<BloomParams> c_Params;
+[vk::push_constant] ConstantBuffer<BloomParams> c_Params;
 
 enum BloomMode
 {
@@ -48,7 +48,7 @@ float3 DownsampleBox13(Sampler2D tex, float lod, float2 uv, float2 texelSize)
     float3 M = tex.SampleLevel(uv + texelSize * float2(0.0f, -2.0f), lod).rgb;
 
     // Weights
-    float3 result = float3(0.0f);
+    float3 result = 0.0f;
     // Inner Box
     result += (B + C + D + E) * 0.5f;
     // Bottom-left Box
@@ -80,7 +80,7 @@ float4 Prefilter(float4 color, float2 uv)
 {
     float3 pr = float3(c_Params.Threshold - c_Params.Knee, c_Params.Knee * 2.0f, 0.25f / c_Params.Knee);
     float clampValue = 20.0f;
-    color = min(float4(clampValue), color);
+    color = min(clampValue, color);
     color = QuadraticThreshold(color, c_Params.Threshold, pr);
     return color;
 }
@@ -107,7 +107,7 @@ float3 UpsampleTent9(Sampler2D tex, float lod, float2 uv, float2 texelSize, floa
 }
 
 [shader("compute")]
-[numthreads(32, 32, 1)]
+[numthreads(32, 32)]
 void CSMain(uint3 threadID : SV_DispatchThreadID)
 {
     float imgWidth, imgHeight;
@@ -117,7 +117,7 @@ void CSMain(uint3 threadID : SV_DispatchThreadID)
     float2 texCoords = (threadID.xy + 0.5f) / imgSize;
 
     float texWidth, texHeight, texMips;
-    r_Texture.GetDimensions(int(c_Params.LodAndMode.x), texWidth, texHeight, texMips);
+    r_Texture.GetDimensions(uint(c_Params.LodAndMode.x), texWidth, texHeight, texMips);
     float2 texSize = float2(texWidth, texHeight);
 
     float4 color = float4(1.0f, 0.0f, 1.0f, 1.0f);
@@ -136,7 +136,7 @@ void CSMain(uint3 threadID : SV_DispatchThreadID)
     case BloomMode::UpsampleFirst:
     {
         float bloomTexWidth, bloomTexHeight, bloomMips;
-        r_Texture.GetDimensions(int(c_Params.LodAndMode.x + 1.0f), bloomTexWidth, bloomTexHeight, bloomMips);
+        r_Texture.GetDimensions(uint(c_Params.LodAndMode.x + 1.0f), bloomTexWidth, bloomTexHeight, bloomMips);
         float2 bloomTexSize = float2(bloomTexWidth, bloomTexHeight);
 
         float sampleScale = 1.0f;
@@ -150,7 +150,7 @@ void CSMain(uint3 threadID : SV_DispatchThreadID)
     case BloomMode::Upsample:
     {
         float bloomTexWidth, bloomTexHeight, bloomMips;
-        r_BloomTexture.GetDimensions(int(c_Params.LodAndMode.x + 1.0f), bloomTexWidth, bloomTexHeight, bloomMips);
+        r_BloomTexture.GetDimensions(uint(c_Params.LodAndMode.x + 1.0f), bloomTexWidth, bloomTexHeight, bloomMips);
         float2 bloomTexSize = float2(bloomTexWidth, bloomTexHeight);
 
         float sampleScale = 1.0f;
@@ -164,7 +164,6 @@ void CSMain(uint3 threadID : SV_DispatchThreadID)
     case BloomMode::Downsample:
     {
         color.rgb = DownsampleBox13(r_Texture, c_Params.LodAndMode.x, texCoords, 1.0f / texSize);
-
         break;
     }
     default:

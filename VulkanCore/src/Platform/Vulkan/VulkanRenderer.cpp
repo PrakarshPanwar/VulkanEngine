@@ -27,15 +27,17 @@ namespace VulkanCore {
 		{
 			switch (labelColor)
 			{
-			case DebugLabelColor::None:	  return { 0.1f, 0.1f, 0.1f, 1.0f };
-			case DebugLabelColor::Grey:	  return { 0.66f, 0.66f, 0.66f, 1.0f };
-			case DebugLabelColor::Red:	  return { 1.0f, 0.0f, 0.0f, 1.0f };
-			case DebugLabelColor::Blue:	  return { 0.0f, 0.58f, 1.0f, 1.0f };
-			case DebugLabelColor::Gold:	  return { 0.76f, 0.7f, 0.32f, 1.0f };
-			case DebugLabelColor::Orange: return { 1.0f, 0.34f, 0.2f, 1.0f };
-			case DebugLabelColor::Pink:	  return { 0.972f, 0.784f, 0.862f, 1.0f };
-			case DebugLabelColor::Aqua:	  return { 0.0f, 1.0f, 1.0f, 1.0f };
-			case DebugLabelColor::Green:  return { 0.486f, 0.988f, 0.0f, 1.0f };
+			case DebugLabelColor::None:		return { 0.1f, 0.1f, 0.1f, 1.0f };
+			case DebugLabelColor::Grey:		return { 0.66f, 0.66f, 0.66f, 1.0f };
+			case DebugLabelColor::Red:		return { 1.0f, 0.0f, 0.0f, 1.0f };
+			case DebugLabelColor::Blue:		return { 0.0f, 0.58f, 1.0f, 1.0f };
+			case DebugLabelColor::Gold:		return { 0.76f, 0.7f, 0.32f, 1.0f };
+			case DebugLabelColor::Orange:	return { 1.0f, 0.34f, 0.2f, 1.0f };
+			case DebugLabelColor::Pink:		return { 0.972f, 0.784f, 0.862f, 1.0f };
+			case DebugLabelColor::Aqua:		return { 0.0f, 1.0f, 1.0f, 1.0f };
+			case DebugLabelColor::Green:	return { 0.486f, 0.988f, 0.0f, 1.0f };
+			case DebugLabelColor::Lemon:	return { 0.988f, 0.988f, 0.2f, 1.0f };
+			case DebugLabelColor::Lavender: return { 0.839f, 0.705f, 0.988f, 1.0f };
 			default:
 				VK_CORE_ASSERT(false, "Label Color is undefined!");
 				return { 0.3f, 0.3f, 0.3f, 1.0f };
@@ -69,12 +71,11 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
-		VK_CORE_ASSERT(!IsFrameStarted, "Cannot call BeginFrame() while frame being already in progress!");
+		VK_CORE_ASSERT(!m_IsFrameStarted, "Cannot call BeginFrame() while frame being already in progress!");
 
 		Renderer::Submit([this]
 		{
 			auto result = m_SwapChain->AcquireNextImage(&m_CurrentImageIndex);
-
 			if (result == VK_ERROR_OUT_OF_DATE_KHR)
 			{
 				RecreateSwapChain();
@@ -84,20 +85,20 @@ namespace VulkanCore {
 			VK_CORE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to Acquire Swap Chain!");
 		});
 
-		IsFrameStarted = true;
+		m_IsFrameStarted = true;
 
 		m_CommandBuffer->Begin();
 	}
 
 	void VulkanRenderer::EndFrame()
 	{
-		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndFrame() while frame is not in progress!");
+		VK_CORE_ASSERT(m_IsFrameStarted, "Cannot call EndFrame() while frame is not in progress!");
 		m_CommandBuffer->End();
 	}
 
-	void VulkanRenderer::BeginSwapChainRenderPass()
+	void VulkanRenderer::BeginSCRenderPass()
 	{
-		VK_CORE_ASSERT(IsFrameStarted, "Cannot call BeginSwapChainRenderPass() if frame is not in progress!");
+		VK_CORE_ASSERT(m_IsFrameStarted, "Cannot call BeginSwapChainRenderPass() if frame is not in progress!");
 	
 		Renderer::Submit([this]
 		{
@@ -133,9 +134,9 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::EndSwapChainRenderPass()
+	void VulkanRenderer::EndSCRenderPass()
 	{
-		VK_CORE_ASSERT(IsFrameStarted, "Cannot call EndSwapChainRenderPass() if frame is not in progress!");
+		VK_CORE_ASSERT(m_IsFrameStarted, "Cannot call EndSwapChainRenderPass() if frame is not in progress!");
 
 		Renderer::Submit([this]
 		{
@@ -144,7 +145,7 @@ namespace VulkanCore {
 		});
 	}
 
-	std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> VulkanRenderer::CreateEnviromentMap(const std::shared_ptr<Texture>& envTexture)
+	std::tuple<std::shared_ptr<TextureCube>, std::shared_ptr<TextureCube>> VulkanRenderer::CreateEnvironmentMap(const std::shared_ptr<Texture>& envTexture)
 	{
 		constexpr uint32_t cubemapSize = 1024;
 		constexpr uint32_t irradianceMapSize = 32;
@@ -179,16 +180,16 @@ namespace VulkanCore {
 
 			equirectSetWriter.Build(equirectSet);
 
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
+			VulkanCommandBuffer dispatchCmd = device->GetCommandBuffer(VulkanQueueType::Compute);
 
-			vkCmdBindDescriptorSets(dispatchCmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+			vkCmdBindDescriptorSets(dispatchCmd.CmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
 				equirectangularConversionPipeline->GetVulkanPipelineLayout(), 0, 1,
 				&equirectSet, 0, nullptr);
 
-			equirectangularConversionPipeline->Bind(dispatchCmd);
-			equirectangularConversionPipeline->Dispatch(dispatchCmd, cubemapSize / 32, cubemapSize / 32, 6);
+			equirectangularConversionPipeline->Bind(dispatchCmd.CmdBuffer);
+			equirectangularConversionPipeline->Dispatch(dispatchCmd.CmdBuffer, cubemapSize / 32, cubemapSize / 32, 6);
 
-			device->FlushCommandBuffer(dispatchCmd, true);
+			device->FlushCommandBuffer(dispatchCmd);
 			
 			envUnfiltered->GenerateMipMaps(true);
 		});
@@ -221,19 +222,19 @@ namespace VulkanCore {
 			}
 
 			// Dispatch Pipeline
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
-			environmentMipFilterPipeline->Bind(dispatchCmd);
+			VulkanCommandBuffer dispatchCmd = device->GetCommandBuffer(VulkanQueueType::Compute);
+			environmentMipFilterPipeline->Bind(dispatchCmd.CmdBuffer);
 
 			const float deltaRoughness = 1.0f / glm::max((float)mipCount - 1.0f, 1.0f);
 			for (uint32_t i = 0, size = cubemapSize; i < mipCount; ++i, size /= 2)
 			{
 				uint32_t numGroups = glm::max(1u, size / 32);
 				float roughness = i * deltaRoughness;
-				environmentMipFilterPipeline->SetPushConstants(dispatchCmd, &roughness, sizeof(float));
-				environmentMipFilterPipeline->Execute(dispatchCmd, descriptorSets[i], numGroups, numGroups, 6);
+				environmentMipFilterPipeline->SetPushConstants(dispatchCmd.CmdBuffer, &roughness, sizeof(float));
+				environmentMipFilterPipeline->Execute(dispatchCmd.CmdBuffer, descriptorSets[i], numGroups, numGroups, 6);
 			}
 
-			device->FlushCommandBuffer(dispatchCmd, true);
+			device->FlushCommandBuffer(dispatchCmd);
 		});
 
 		auto environmentIrradianceShader = Renderer::GetShader("EnvironmentIrradiance");
@@ -259,12 +260,12 @@ namespace VulkanCore {
 			descriptorWriter.Build(descriptorSet);
 
 			// Dispatch Pipeline
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
+			VulkanCommandBuffer dispatchCmd = device->GetCommandBuffer(VulkanQueueType::Compute);
 
-			environmentIrradiancePipeline->Bind(dispatchCmd);
-			environmentIrradiancePipeline->Execute(dispatchCmd, descriptorSet, irradianceMapSize / 32, irradianceMapSize / 32, 6);
+			environmentIrradiancePipeline->Bind(dispatchCmd.CmdBuffer);
+			environmentIrradiancePipeline->Execute(dispatchCmd.CmdBuffer, descriptorSet, irradianceMapSize / 32, irradianceMapSize / 32, 6);
 
-			device->FlushCommandBuffer(dispatchCmd, true);
+			device->FlushCommandBuffer(dispatchCmd);
 
 			irradianceMap->GenerateMipMaps(false);
 		});
@@ -276,7 +277,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([commandBuffer, sourceImage, destImage]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::CopyVulkanImage");
+			VK_CORE_PROFILE_FN("VulkanRenderer::CopyVulkanImage", TracyZoneLabelColor::Cyan);
 			VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(commandBuffer)->RT_GetActiveCommandBuffer();
 
 			VkImage srcImage = std::static_pointer_cast<VulkanImage>(sourceImage)->GetVulkanImageInfo().Image;
@@ -328,7 +329,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([commandBuffer, image]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::BlitVulkanImage");
+			VK_CORE_PROFILE_FN("VulkanRenderer::BlitVulkanImage", TracyZoneLabelColor::Cyan);
 			VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(commandBuffer)->RT_GetActiveCommandBuffer();
 
 			VkImage vulkanImage = std::static_pointer_cast<VulkanImage>(image)->GetVulkanImageInfo().Image;
@@ -445,12 +446,12 @@ namespace VulkanCore {
 			descriptorWriter.Build(descriptorSet);
 
 			// Dispatch Pipeline
-			VkCommandBuffer dispatchCmd = device->GetCommandBuffer(true);
+			VulkanCommandBuffer dispatchCmd = device->GetCommandBuffer(VulkanQueueType::Compute);
 
-			generateBRDFPipeline->Bind(dispatchCmd);
-			generateBRDFPipeline->Execute(dispatchCmd, descriptorSet, textureSize / 32, textureSize / 32, 1);
+			generateBRDFPipeline->Bind(dispatchCmd.CmdBuffer);
+			generateBRDFPipeline->Execute(dispatchCmd.CmdBuffer, descriptorSet, textureSize / 32, textureSize / 32, 1);
 
-			device->FlushCommandBuffer(dispatchCmd, true);
+			device->FlushCommandBuffer(dispatchCmd);
 		});
 
 		return brdfTexture;
@@ -512,7 +513,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer, pipeline, skyboxMaterial, pcData]
 		{
-			VK_CORE_PROFILE_FN("Renderer::RenderSkybox");
+			VK_CORE_PROFILE_FN("Renderer::RenderSkybox", TracyZoneLabelColor::Cyan);
 
 			VkCommandBuffer vulkanDrawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
 			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
@@ -592,7 +593,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer, mesh, pipeline, material, transformBuffer, transformData, submeshIndex, instanceCount]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMesh");
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMesh", TracyZoneLabelColor::Cyan);
 
 			// Bind Vertex Buffer
 			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
@@ -637,7 +638,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer, mesh, transformBuffer, transformData, submeshIndex, instanceCount]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::RenderSelectedMesh");
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderSelectedMesh", TracyZoneLabelColor::Cyan);
 
 			// Bind Vertex Buffer
 			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
@@ -662,7 +663,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer, mesh, transformBuffer, transformData, submeshIndex, instanceCount]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMeshWithoutMaterial");
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderMeshWithoutMaterial", TracyZoneLabelColor::Cyan);
 
 			// Bind Vertex Buffer
 			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
@@ -687,7 +688,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer, linesData, drawCount]
 		{
-			VK_CORE_PROFILE_FN("VulkanRenderer::RenderLines");
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderLines", TracyZoneLabelColor::Cyan);
 
 			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
 
@@ -733,7 +734,7 @@ namespace VulkanCore {
 	{
 		Renderer::Submit([cmdBuffer, pipeline, shaderMaterial]
 		{
-			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad");
+			VK_CORE_PROFILE_FN("Renderer::SubmitFullscreenQuad", TracyZoneLabelColor::Cyan);
 
 			VkCommandBuffer vulkanDrawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
 			auto vulkanPipeline = std::static_pointer_cast<VulkanPipeline>(pipeline);
@@ -759,8 +760,7 @@ namespace VulkanCore {
 	void VulkanRenderer::CreateCommandBuffers()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-
-		m_CommandBuffer = std::make_shared<VulkanRenderCommandBuffer>(device->GetRenderThreadCommandPool());
+		m_CommandBuffer = std::make_shared<VulkanRenderCommandBuffer>("MainRenderer", device->GetRenderThreadCommandPool());
 	}
 
 	void VulkanRenderer::DeleteResources()
@@ -777,6 +777,7 @@ namespace VulkanCore {
 		descriptorPoolBuilder.SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
 		descriptorPoolBuilder.SetMaxSets(100).AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10);
 		descriptorPoolBuilder.SetMaxSets(1000).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10);
+		descriptorPoolBuilder.SetMaxSets(1000).AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10);
 		m_GlobalDescriptorPool = descriptorPoolBuilder.Build();
 	}
 
@@ -795,18 +796,14 @@ namespace VulkanCore {
 		m_SwapChain.reset();
 
 		if (m_SwapChain == nullptr)
-		{
 			m_SwapChain = std::make_unique<VulkanSwapChain>(extent);
-		}
 		else
 		{
 			std::shared_ptr<VulkanSwapChain> oldSwapChain = std::move(m_SwapChain);
 			m_SwapChain = std::make_unique<VulkanSwapChain>(extent, oldSwapChain);
 
 			if (!oldSwapChain->CompareSwapFormats(*m_SwapChain->GetSwapChain()))
-			{
 				VK_CORE_ASSERT(false, "Swap Chain Image(or Depth) Format has changed!");
-			}
 		}
 	}
 
@@ -814,10 +811,19 @@ namespace VulkanCore {
 	{
 		VulkanRenderCommandBuffer::SubmitCommandBuffersToQueue();
 
-		Renderer::WaitAndRender();
+		RenderThread::NextFrame();
+		RenderThread::SetAtomicFlag(true);
+		RenderThread::NotifyThread(); // Wakes up Render Thread
 
-		IsFrameStarted = false;
+		m_IsFrameStarted = false;
 		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
+	}
+
+	void VulkanRenderer::WaitForRenderThread()
+	{
+		VK_CORE_PROFILE();
+
+		RenderThread::WaitAndSet();
 	}
 
 	void VulkanRenderer::FinalQueueSubmit(const std::vector<VkCommandBuffer>& cmdBuffers)

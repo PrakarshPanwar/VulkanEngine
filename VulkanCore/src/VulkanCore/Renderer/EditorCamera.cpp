@@ -25,6 +25,9 @@ namespace VulkanCore {
 	void EditorCamera::UpdateView()
 	{
 		// m_Yaw = m_Pitch = 0.0f; // Lock the camera's rotation
+		if (!m_FlyMode && glm::any(glm::notEqual(m_FocalPoint, m_FinalFocalPoint, 1e-5f)))
+			m_FocalPoint = glm::mix(m_FocalPoint, m_FinalFocalPoint, 0.05f);
+
 		m_Position = CalculatePosition();
 
 		glm::quat orientation = GetOrientation();
@@ -72,6 +75,10 @@ namespace VulkanCore {
 			glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
 			m_InitialMousePosition = mouse;
 
+			auto abs_delta = glm::abs(delta);
+			if (glm::any(glm::greaterThan(abs_delta, glm::vec2{ 0.5f })))
+				delta = glm::vec2{ 0.0f };
+
 			Input::SetCursorMode(CursorMode::Locked);
 			MouseRotate(delta);
 		}
@@ -82,6 +89,10 @@ namespace VulkanCore {
 			const glm::vec2& mouse{ mousePosition.first, mousePosition.second };
 			glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
 			m_InitialMousePosition = mouse;
+
+			auto abs_delta = glm::abs(delta);
+			if (glm::any(glm::greaterThan(abs_delta, glm::vec2{ 0.5f })))
+				delta = glm::vec2{ 0.0f };
 
 			if (Input::IsMouseButtonPressed(Mouse::ButtonMiddle))
 				MousePan(delta);
@@ -112,7 +123,7 @@ namespace VulkanCore {
 
 	void EditorCamera::SetFocalPoint(const glm::vec3& focalPoint)
 	{
-		m_FocalPoint = focalPoint;
+		m_FinalFocalPoint = focalPoint;
 	}
 
 	bool EditorCamera::OnKeyEvent(KeyPressedEvent& e)
@@ -183,7 +194,6 @@ namespace VulkanCore {
 		glm::vec2 abs_delta = glm::abs(delta);
 		if (abs_delta.x < abs_delta.y)
 			m_FocalPoint += -GetForwardDirection() * delta.y * DragSpeed();
-
 		else
 		{
 			float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;

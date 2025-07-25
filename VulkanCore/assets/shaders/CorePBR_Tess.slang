@@ -5,16 +5,16 @@ import Buffers;
 struct VertexInput
 {
     // Vertex Bindings
-    [[vk::location(0)]] float3 Position;
-    [[vk::location(1)]] float3 Normal;
-    [[vk::location(2)]] float3 Tangent;
-    [[vk::location(3)]] float3 Binormal;
-    [[vk::location(4)]] float2 TexCoord;
+    [vk::location(0)] float3 Position;
+    [vk::location(1)] float3 Normal;
+    [vk::location(2)] float3 Tangent;
+    [vk::location(3)] float3 Binormal;
+    [vk::location(4)] float2 TexCoord;
 
     // Instance Bindings
-    [[vk::location(5)]] float4 MRow0;
-    [[vk::location(6)]] float4 MRow1;
-    [[vk::location(7)]] float4 MRow2;
+    [vk::location(5)] float4 MRow0;
+    [vk::location(6)] float4 MRow1;
+    [vk::location(7)] float4 MRow2;
 };
 
 struct TessellationOutput
@@ -31,7 +31,7 @@ struct VertexStageOutput
     float4 Position : SV_Position;
 }
 
-[[vk::binding(0, 0)]] ConstantBuffer<Camera> c_Camera;
+[vk::binding(0, 0)] ConstantBuffer<Camera> c_Camera;
 
 [shader("vertex")]
 void VSMain(in VertexInput vertexInput, out VertexStageOutput output)
@@ -94,7 +94,7 @@ TessellationOutput TCSMain(InputPatch<VertexStageOutput, 3> inPatch, uint contro
     return output;
 } // End of Tessellation Control(Hull) Shader
 
-[[vk::binding(3, 1)]] Sampler2D r_DisplacementMap;
+[vk::binding(3, 1)] Sampler2D r_DisplacementMap;
 
 static const float TESSELLATION_STRENGTH = 0.1f;
 
@@ -153,22 +153,22 @@ struct CascadeData
 };
 
 // Lights Set
-[[vk::binding(1, 0)]] ConstantBuffer<PointLightData> c_PointLightData;
-[[vk::binding(2, 0)]] ConstantBuffer<SpotLightData> c_SpotLightData;
-[[vk::binding(3, 0)]] ConstantBuffer<DirectionalLightData> c_DirectionalLightData;
-[[vk::binding(4, 0)]] ConstantBuffer<CascadeData> c_CascadeData;
+[vk::binding(1, 0)] ConstantBuffer<PointLightData> c_PointLightData;
+[vk::binding(2, 0)] ConstantBuffer<SpotLightData> c_SpotLightData;
+[vk::binding(3, 0)] ConstantBuffer<DirectionalLightData> c_DirectionalLightData;
+[vk::binding(4, 0)] ConstantBuffer<CascadeData> c_CascadeData;
 
 // Material Set
-[[vk::push_constant]] ConstantBuffer<Material> c_MaterialData;
-[[vk::binding(0, 1)]] Sampler2D r_AlbedoTexture;
-[[vk::binding(1, 1)]] Sampler2D r_NormalTexture;
-[[vk::binding(2, 1)]] Sampler2D r_ARMTexture;
+[vk::push_constant] ConstantBuffer<Material> c_MaterialData;
+[vk::binding(0, 1)] Sampler2D r_AlbedoTexture;
+[vk::binding(1, 1)] Sampler2D r_NormalTexture;
+[vk::binding(2, 1)] Sampler2D r_ARMTexture;
 
 // IBL
-[[vk::binding(6, 0)]] SamplerCube r_IrradianceMap;
-[[vk::binding(7, 0)]] Sampler2D r_BRDFLUT;
-[[vk::binding(8, 0)]] SamplerCube r_PrefilteredMap;
-[[vk::binding(9, 0)]] Sampler2DArray r_ShadowMap;
+[vk::binding(6, 0)] SamplerCube r_IrradianceMap;
+[vk::binding(7, 0)] Sampler2D r_BRDFLUT;
+[vk::binding(8, 0)] SamplerCube r_PrefilteredMap;
+[vk::binding(9, 0)] Sampler2DArray r_ShadowMap;
 
 import PBR;
 import Math;
@@ -188,7 +188,7 @@ struct PBRParams
 static PBRParams m_Params; // Thread-Local variable
 static TessellationOutput Input;
 
-static const float3 Fdielectric = float3(0.04f, 0.04f, 0.04f);
+static const float3 Fdielectric = 0.04f;
 
 float3 GetNormalsFromMap()
 {
@@ -199,7 +199,7 @@ float3 GetNormalsFromMap()
 float3 Lighting(float3 F0)
 {
     // Reflectance Equation
-    float3 Lo = float3(0.0f);
+    float3 Lo = 0.0f;
     for (int i = 0; i < c_PointLightData.Count; ++i)
     {
         PointLight pointLight = c_PointLightData.PointLights[i];
@@ -228,7 +228,7 @@ float3 Lighting(float3 F0)
         // For Energy Conservation, the Diffuse and Specular Light can't
         // be above 1.0 (unless the Surface Emits Light); to preserve this
         // relationship the Diffuse Component (kD) should equal 1.0 - kS.
-        float3 kD = float3(1.0f) - kS;
+        float3 kD = 1.0f - kS;
         // Multiply kD by the Inverse Metalness such that only non-metals
         // have Diffuse Lighting, or a linear blend if partly metal (pure metals
         // have no diffuse light).
@@ -269,7 +269,7 @@ float3 Lighting(float3 F0)
         // For Energy Conservation, the Diffuse and Specular Light can't
         // be above 1.0 (unless the Surface Emits Light); to preserve this
         // relationship the Diffuse Component (kD) should equal 1.0 - kS.
-        float3 kD = float3(1.0f) - kS;
+        float3 kD = 1.0f - kS;
         // Multiply kD by the Inverse Metalness such that only non-metals
         // have Diffuse Lighting, or a linear blend if partly metal (pure metals
         // have no diffuse light).
@@ -305,7 +305,7 @@ float3 Lighting(float3 F0)
         // For Energy Conservation, the Diffuse and Specular Light can't
         // be above 1.0 (unless the Surface Emits Light); to preserve this
         // relationship the Diffuse Component (kD) should equal 1.0 - kS.
-        float3 kD = float3(1.0f) - kS;
+        float3 kD = 1.0f - kS;
         // Multiply kD by the Inverse Metalness such that only non-metals
         // have Diffuse Lighting, or a linear blend if partly metal (pure metals
         // have no diffuse light).
