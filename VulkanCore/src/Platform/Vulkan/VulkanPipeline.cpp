@@ -79,12 +79,12 @@ namespace VulkanCore {
 		{
 			switch (blendFactor)
 			{
-			case BlendFactor::Zero:					return VK_BLEND_FACTOR_ZERO;
-			case BlendFactor::One:					return VK_BLEND_FACTOR_ONE;
-			case BlendFactor::SrcColor:				return VK_BLEND_FACTOR_SRC_COLOR;
-			case BlendFactor::OneMinusSrcColor:		return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-			case BlendFactor::SrcAlpha:				return VK_BLEND_FACTOR_SRC_ALPHA;
-			case BlendFactor::OneMinusSrcAlpha:		return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			case BlendFactor::Zero:				return VK_BLEND_FACTOR_ZERO;
+			case BlendFactor::One:				return VK_BLEND_FACTOR_ONE;
+			case BlendFactor::SrcColor:			return VK_BLEND_FACTOR_SRC_COLOR;
+			case BlendFactor::OneMinusSrcColor:	return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+			case BlendFactor::SrcAlpha:			return VK_BLEND_FACTOR_SRC_ALPHA;
+			case BlendFactor::OneMinusSrcAlpha:	return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 			default:
 				VK_CORE_ASSERT(false, "Blend Factor not supported!");
 				return VK_BLEND_FACTOR_MAX_ENUM;

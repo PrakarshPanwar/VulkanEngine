@@ -78,7 +78,6 @@ namespace VulkanCore {
 	{
 		const auto device = VulkanContext::GetCurrentDevice();
 		vkWaitForFences(device->GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-		//vkResetFences(device->GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame]);
 
 		return vkAcquireNextImageKHR(device->GetVulkanDevice(), m_SwapChain, std::numeric_limits<uint64_t>::max(), m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, imageIndex);
 	}
@@ -174,7 +173,7 @@ namespace VulkanCore {
 		SwapChainSupportDetails swapChainSupport = context->QuerySwapChainSupport(device->GetPhysicalDevice());
 
 		VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
-		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.PresentModes);
+		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.PresentModes, VK_PRESENT_MODE_FIFO_KHR);
 		VkExtent2D extent = ChooseSwapExtent(swapChainSupport.Capabilities);
 
 		uint32_t imageCount = swapChainSupport.Capabilities.minImageCount + 1;
@@ -489,19 +488,19 @@ namespace VulkanCore {
 		return availableFormats[0];
 	}
 
-	VkPresentModeKHR VulkanSwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+	VkPresentModeKHR VulkanSwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, VkPresentModeKHR requiredPresentMode)
 	{
 		for (const auto& availablePresentMode : availablePresentModes)
 		{
-			if (availablePresentMode == VK_PRESENT_MODE_FIFO_KHR)
+			if (availablePresentMode == requiredPresentMode)
 			{
-				VK_CORE_INFO("Present mode: V-Sync");
+				VK_CORE_INFO("Present Mode: V-Sync");
 				return availablePresentMode;
 			}
 		}
 
-		VK_CORE_INFO("Present mode: Mailbox");
-		return VK_PRESENT_MODE_MAILBOX_KHR;
+		VK_CORE_INFO("Present Mode: V-Sync");
+		return VK_PRESENT_MODE_FIFO_KHR; // Required by all implementations, so we return it as a fallback.
 	}
 
 	VkExtent2D VulkanSwapChain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
