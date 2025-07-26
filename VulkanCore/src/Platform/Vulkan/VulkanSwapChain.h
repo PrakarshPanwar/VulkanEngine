@@ -14,15 +14,15 @@ namespace VulkanCore {
 
 		VkFramebuffer GetFramebuffer(int index) const { return m_SwapChainFramebuffers[index]; }
 		VkRenderPass GetRenderPass() const { return m_RenderPass; }
-		VkImageView GetImageView(int index) const { return m_SwapChainImageViews[index]; }
-		VkImage GetSwapChainImage(int index) const { return m_SwapChainImages[index]; }
-		size_t GetImageCount() const { return m_SwapChainImages.size(); }
-		VkFormat GetSwapChainImageFormat() const { return m_SwapChainImageFormat; }
-		VkExtent2D GetSwapChainExtent() const { return m_SwapChainExtent; }
-		uint32_t GetWidth() const { return m_SwapChainExtent.width; }
-		uint32_t GetHeight() const { return m_SwapChainExtent.height; }
+		VkImageView GetImageView(int index) const { return m_SCImageViews[index]; }
+		VkImage GetSwapChainImage(int index) const { return m_SCImages[index]; }
+		size_t GetImageCount() const { return m_SCImages.size(); }
+		VkFormat GetSwapChainImageFormat() const { return m_SCImageFormat; }
+		VkExtent2D GetSwapChainExtent() const { return m_SCExtent; }
+		uint32_t GetWidth() const { return m_SCExtent.width; }
+		uint32_t GetHeight() const { return m_SCExtent.height; }
 
-		float ExtentAspectRatio() { return static_cast<float>(m_SwapChainExtent.width) / static_cast<float>(m_SwapChainExtent.height); }
+		float ExtentAspectRatio() { return static_cast<float>(m_SCExtent.width) / static_cast<float>(m_SCExtent.height); }
 		VkFormat FindDepthFormat();
 
 		VkResult AcquireNextImage(uint32_t* imageIndex);
@@ -41,39 +41,29 @@ namespace VulkanCore {
 		void CreateSyncObjects();
 
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, VkPresentModeKHR requiredPresentMode);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 	private:
-		VkFormat m_SwapChainImageFormat;
-		VkFormat m_SwapChainDepthFormat;
-		VkExtent2D m_SwapChainExtent;
+		VkFormat m_SCImageFormat, m_SCDepthFormat;
+		VkExtent2D m_SCExtent, m_WindowExtent;
 
 		std::vector<VkFramebuffer> m_SwapChainFramebuffers;
 		VkRenderPass m_RenderPass;
 
 		// Only for MSAA
-		std::vector<VkImage> m_ColorImages;
-		std::vector<VmaAllocation> m_ColorImageAllocations;
-		std::vector<VkImageView> m_ColorImageViews;
-
-		// Required for Depth
-		std::vector<VkImage> m_DepthImages;
-		std::vector<VmaAllocation> m_DepthImageAllocations;
-		std::vector<VkImageView> m_DepthImageViews;
+		std::vector<VkImage> m_ColorImages, m_DepthImages;
+		std::vector<VmaAllocation> m_ColorImageAllocations, m_DepthImageAllocations;
+		std::vector<VkImageView> m_ColorImageViews, m_DepthImageViews;
 
 		// Required to receive images from Swap Chain
-		std::vector<VkImage> m_SwapChainImages;
-		std::vector<VkImageView> m_SwapChainImageViews;
-
-		VkExtent2D m_WindowExtent;
+		std::vector<VkImage> m_SCImages;
+		std::vector<VkImageView> m_SCImageViews;
 
 		VkSwapchainKHR m_SwapChain;
 		std::shared_ptr<VulkanSwapChain> m_OldSwapChain;
 
-		std::vector<VkSemaphore> m_ImageAvailableSemaphores;
-		std::vector<VkSemaphore> m_ReadyToPresentSemaphores;
-		std::vector<VkFence> m_InFlightFences;
-		std::vector<VkFence> m_ImagesInFlight;
+		std::vector<VkSemaphore> m_ImageAvailableSemaphores, m_ReadyToPresentSemaphores;
+		std::vector<VkFence> m_InFlightFences, m_ImagesInFlight;
 		size_t m_CurrentFrame = 0;
 
 		static VulkanSwapChain* s_Instance;

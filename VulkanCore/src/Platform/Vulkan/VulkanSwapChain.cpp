@@ -31,7 +31,7 @@ namespace VulkanCore {
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		VulkanAllocator allocator("DestroySwapChain");
 
-		for (auto& swapChainImageView : m_SwapChainImageViews)
+		for (auto& swapChainImageView : m_SCImageViews)
 			vkDestroyImageView(device->GetVulkanDevice(), swapChainImageView, nullptr);
 
 		if (m_SwapChain)
@@ -78,7 +78,6 @@ namespace VulkanCore {
 	{
 		const auto device = VulkanContext::GetCurrentDevice();
 		vkWaitForFences(device->GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-		//vkResetFences(device->GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame]);
 
 		return vkAcquireNextImageKHR(device->GetVulkanDevice(), m_SwapChain, std::numeric_limits<uint64_t>::max(), m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, imageIndex);
 	}
@@ -152,8 +151,8 @@ namespace VulkanCore {
 
 	bool VulkanSwapChain::CompareSwapFormats(const VulkanSwapChain& swapChain) const
 	{
-		return swapChain.m_SwapChainImageFormat == m_SwapChainImageFormat &&
-			   swapChain.m_SwapChainDepthFormat == m_SwapChainDepthFormat;
+		return swapChain.m_SCImageFormat == m_SCImageFormat &&
+			   swapChain.m_SCDepthFormat == m_SCDepthFormat;
 	}
 
 	void VulkanSwapChain::Init()
@@ -174,7 +173,7 @@ namespace VulkanCore {
 		SwapChainSupportDetails swapChainSupport = context->QuerySwapChainSupport(device->GetPhysicalDevice());
 
 		VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
-		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.PresentModes);
+		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.PresentModes, VK_PRESENT_MODE_FIFO_KHR);
 		VkExtent2D extent = ChooseSwapExtent(swapChainSupport.Capabilities);
 
 		uint32_t imageCount = swapChainSupport.Capabilities.minImageCount + 1;
@@ -220,33 +219,33 @@ namespace VulkanCore {
 		// images with vkGetSwapchainImagesKHR, then resize the container and finally call it again to
 		// retrieve the handles.
 		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, nullptr);
-		m_SwapChainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, m_SwapChainImages.data());
+		m_SCImages.resize(imageCount);
+		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, m_SCImages.data());
 
-		m_SwapChainImageFormat = surfaceFormat.format;
-		m_SwapChainExtent = extent;
+		m_SCImageFormat = surfaceFormat.format;
+		m_SCExtent = extent;
 	}
 
 	void VulkanSwapChain::CreateImageViews()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		m_SwapChainImageViews.resize(m_SwapChainImages.size());
+		m_SCImageViews.resize(m_SCImages.size());
 
-		for (size_t i = 0; i < m_SwapChainImages.size(); i++)
+		for (size_t i = 0; i < m_SCImages.size(); i++)
 		{
 			VkImageViewCreateInfo viewInfo{};
 			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			viewInfo.image = m_SwapChainImages[i];
+			viewInfo.image = m_SCImages[i];
 			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			viewInfo.format = m_SwapChainImageFormat;
+			viewInfo.format = m_SCImageFormat;
 			viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			viewInfo.subresourceRange.baseMipLevel = 0;
 			viewInfo.subresourceRange.levelCount = 1;
 			viewInfo.subresourceRange.baseArrayLayer = 0;
 			viewInfo.subresourceRange.layerCount = 1;
 
-			VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewInfo, nullptr, &m_SwapChainImageViews[i]), "Failed to Create Texture Image View!");
+			VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewInfo, nullptr, &m_SCImageViews[i]), "Failed to Create Texture Image View!");
 		}
 	}
 
@@ -303,7 +302,7 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 
 		VkFormat depthFormat = FindDepthFormat();
-		m_SwapChainDepthFormat = depthFormat;
+		m_SCDepthFormat = depthFormat;
 		VkExtent2D swapChainExtent = GetSwapChainExtent();
 		VulkanAllocator allocator("SwapChainDepthImages");
 
@@ -431,7 +430,7 @@ namespace VulkanCore {
 
 		for (size_t i = 0; i < GetImageCount(); i++)
 		{
-			std::array<VkImageView, 3> attachments = { m_ColorImageViews[i], m_DepthImageViews[i], m_SwapChainImageViews[i] };
+			std::array<VkImageView, 3> attachments = { m_ColorImageViews[i], m_DepthImageViews[i], m_SCImageViews[i] };
 
 			VkFramebufferCreateInfo framebufferInfo = {};
 			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -489,19 +488,19 @@ namespace VulkanCore {
 		return availableFormats[0];
 	}
 
-	VkPresentModeKHR VulkanSwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+	VkPresentModeKHR VulkanSwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, VkPresentModeKHR requiredPresentMode)
 	{
 		for (const auto& availablePresentMode : availablePresentModes)
 		{
-			if (availablePresentMode == VK_PRESENT_MODE_FIFO_KHR)
+			if (availablePresentMode == requiredPresentMode)
 			{
-				VK_CORE_INFO("Present mode: V-Sync");
+				VK_CORE_INFO("Present Mode: V-Sync");
 				return availablePresentMode;
 			}
 		}
 
-		VK_CORE_INFO("Present mode: Mailbox");
-		return VK_PRESENT_MODE_MAILBOX_KHR;
+		VK_CORE_INFO("Present Mode: V-Sync");
+		return VK_PRESENT_MODE_FIFO_KHR; // Required by all implementations, so we return it as a fallback.
 	}
 
 	VkExtent2D VulkanSwapChain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
