@@ -32,4 +32,6 @@ enum class TracyZoneLabelColor
 #define VK_CORE_PROFILE() OPTICK_EVENT(__FUNCTION__)
 #define VK_CORE_PROFILE_THREAD(td) OPTICK_THREAD(td)
 #define VK_CORE_BEGIN_FRAME(fm) OPTICK_FRAME(fm)
+#define VK_CORE_START_FRAME(fm) ;
+#define VK_CORE_END_FRAME(fm) ;
 #endif

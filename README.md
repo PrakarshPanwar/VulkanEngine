@@ -5,7 +5,7 @@ I've created my own little Game/Rendering Engine using Vulkan API.
 ## Getting Started
 Visual Studio 2022 is recommended
 
-<ins>1. Downloading the repository:</ins>
+<ins>1. Downloading the repository</ins>
 
 Start by cloning the repository with `git clone --recursive https://github.com/PrakarshPanwar/VulkanEngine.git`.
 
@@ -21,18 +21,18 @@ BUILD ASSIMP SOLUTION(Y/N)=
 6. Again run [VkGenProjects.bat](VkGenProjects.bat) to link debug libraries in shaderc.
 
 <ins>3. Building Tracy Profiler</ins>
-1. Goto [Tracy](VulkanCore/vendor) folder.
+1. Goto [Tracy](VulkanCore/vendor) folder then goto profiler subdirectory.
 2. Open the terminal in this directory and make sure you have latest version of CMake installed.
 3. Run the following command to build Tracy:
 ```
-cmake -S . -B build 
+cmake -S . -B build
 ```
-4. `-G "Visual Studio 17 2022" -A x64` is optional or just open the `Tracy.sln` file in Visual Studio and build it and skip the next step.
+4. `-G "Visual Studio 17 2022" -A x64` is optional or just open the `tracy-profiler.sln` file in Visual Studio and build it and skip the next step.
 5. Then after building all projects and solution file, type
 ```
 cmake --build build --config Release --target tracy-profiler --parallel
 ```
-This will build the Tracy Profiler Executable. I have also included a Simple Batch Script [TracyLaunchProfiler](TracyLaunchProfiler.bat) to launch the profiler without any hassle.
+This will build the Tracy Profiler Executable. Repeat similar steps but in base tracy directory to build TracyClient.lib. I have also included a Simple Batch Script [TracyLaunchProfiler](TracyLaunchProfiler.bat) to launch the profiler without any hassle. If you don't want tracy profiler just disable `VK_SET_TRACY_PROFILER` in [Core.h](VulkanCore/src/VulkanCore/Core/Core.h)
 
 ## Screenshots
 1. Main Editor Layer UI
