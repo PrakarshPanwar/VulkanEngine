@@ -31,38 +31,33 @@ namespace VulkanCore {
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		VulkanAllocator allocator("DestroySwapChain");
 
-		for (auto& swapChainImageView : m_SwapChainImageViews)
-			vkDestroyImageView(device->GetVulkanDevice(), swapChainImageView, nullptr);
+		for (size_t i = 0; i < framesInFlight; i++)
+		{
+			// Cleanup Images
+			vkDestroyImageView(device->GetVulkanDevice(), m_SCImageViews[i], nullptr);
+			vkDestroyImageView(device->GetVulkanDevice(), m_ColorImageViews[i], nullptr);
+			vkDestroyImageView(device->GetVulkanDevice(), m_DepthImageViews[i], nullptr);
 
+			allocator.DestroyImage(m_ColorImages[i], m_ColorImageAllocations[i]);
+			allocator.DestroyImage(m_DepthImages[i], m_DepthImageAllocations[i]);
+
+			// Cleanup Framebuffers
+			vkDestroyFramebuffer(device->GetVulkanDevice(), m_SCFramebuffers[i], nullptr);
+
+			// Cleanup Synchronization Objects
+			vkDestroySemaphore(device->GetVulkanDevice(), m_ReadyToPresentSemaphores[i], nullptr);
+			vkDestroySemaphore(device->GetVulkanDevice(), m_ImageAvailableSemaphores[i], nullptr);
+			vkDestroyFence(device->GetVulkanDevice(), m_InFlightFences[i], nullptr);
+		}
+
+		// Cleanup Render Pass
+		vkDestroyRenderPass(device->GetVulkanDevice(), m_SCRenderPass, nullptr);
+
+		// Cleanup Swap Chain
 		if (m_SwapChain)
 		{
 			vkDestroySwapchainKHR(device->GetVulkanDevice(), m_SwapChain, nullptr);
 			m_SwapChain = nullptr;
-		}
-
-		for (uint32_t i = 0; i < framesInFlight; i++)
-		{
-			vkDestroyImageView(device->GetVulkanDevice(), m_ColorImageViews[i], nullptr);
-			allocator.DestroyImage(m_ColorImages[i], m_ColorImageAllocations[i]);
-		}
-
-		for (uint32_t i = 0; i < framesInFlight; i++)
-		{
-			vkDestroyImageView(device->GetVulkanDevice(), m_DepthImageViews[i], nullptr);
-			allocator.DestroyImage(m_DepthImages[i], m_DepthImageAllocations[i]);
-		}
-
-		for (auto& framebuffer : m_SwapChainFramebuffers)
-			vkDestroyFramebuffer(device->GetVulkanDevice(), framebuffer, nullptr);
-
-		vkDestroyRenderPass(device->GetVulkanDevice(), m_RenderPass, nullptr);
-
-		// Cleanup Synchronization Objects
-		for (size_t i = 0; i < framesInFlight; i++)
-		{
-			vkDestroySemaphore(device->GetVulkanDevice(), m_ReadyToPresentSemaphores[i], nullptr);
-			vkDestroySemaphore(device->GetVulkanDevice(), m_ImageAvailableSemaphores[i], nullptr);
-			vkDestroyFence(device->GetVulkanDevice(), m_InFlightFences[i], nullptr);
 		}
 	}
 
@@ -151,8 +146,8 @@ namespace VulkanCore {
 
 	bool VulkanSwapChain::CompareSwapFormats(const VulkanSwapChain& swapChain) const
 	{
-		return swapChain.m_SwapChainImageFormat == m_SwapChainImageFormat &&
-			   swapChain.m_SwapChainDepthFormat == m_SwapChainDepthFormat;
+		return swapChain.m_SCImageFormat == m_SCImageFormat &&
+			   swapChain.m_SCDepthFormat == m_SCDepthFormat;
 	}
 
 	void VulkanSwapChain::Init()
@@ -219,33 +214,33 @@ namespace VulkanCore {
 		// images with vkGetSwapchainImagesKHR, then resize the container and finally call it again to
 		// retrieve the handles.
 		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, nullptr);
-		m_SwapChainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, m_SwapChainImages.data());
+		m_SCImages.resize(imageCount);
+		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, m_SCImages.data());
 
-		m_SwapChainImageFormat = surfaceFormat.format;
-		m_SwapChainExtent = extent;
+		m_SCImageFormat = surfaceFormat.format;
+		m_SCExtent = extent;
 	}
 
 	void VulkanSwapChain::CreateImageViews()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		m_SwapChainImageViews.resize(m_SwapChainImages.size());
+		m_SCImageViews.resize(m_SCImages.size());
 
-		for (size_t i = 0; i < m_SwapChainImages.size(); i++)
+		for (size_t i = 0; i < m_SCImages.size(); i++)
 		{
 			VkImageViewCreateInfo viewInfo{};
 			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			viewInfo.image = m_SwapChainImages[i];
+			viewInfo.image = m_SCImages[i];
 			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			viewInfo.format = m_SwapChainImageFormat;
+			viewInfo.format = m_SCImageFormat;
 			viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			viewInfo.subresourceRange.baseMipLevel = 0;
 			viewInfo.subresourceRange.levelCount = 1;
 			viewInfo.subresourceRange.baseArrayLayer = 0;
 			viewInfo.subresourceRange.layerCount = 1;
 
-			VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewInfo, nullptr, &m_SwapChainImageViews[i]), "Failed to Create Texture Image View!");
+			VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &viewInfo, nullptr, &m_SCImageViews[i]), "Failed to Create Texture Image View!");
 		}
 	}
 
@@ -302,7 +297,7 @@ namespace VulkanCore {
 		auto device = VulkanContext::GetCurrentDevice();
 
 		VkFormat depthFormat = FindDepthFormat();
-		m_SwapChainDepthFormat = depthFormat;
+		m_SCDepthFormat = depthFormat;
 		VkExtent2D swapChainExtent = GetSwapChainExtent();
 		VulkanAllocator allocator("SwapChainDepthImages");
 
@@ -418,30 +413,30 @@ namespace VulkanCore {
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		VK_CHECK_RESULT(vkCreateRenderPass(device->GetVulkanDevice(), &renderPassInfo, nullptr, &m_RenderPass), "Failed to Create Render Pass!");
+		VK_CHECK_RESULT(vkCreateRenderPass(device->GetVulkanDevice(), &renderPassInfo, nullptr, &m_SCRenderPass), "Failed to Create Render Pass!");
 	}
 
 	void VulkanSwapChain::CreateFramebuffers()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
 
-		m_SwapChainFramebuffers.resize(GetImageCount());
+		m_SCFramebuffers.resize(GetImageCount());
 		VkExtent2D swapChainExtent = GetSwapChainExtent();
 
 		for (size_t i = 0; i < GetImageCount(); i++)
 		{
-			std::array<VkImageView, 3> attachments = { m_ColorImageViews[i], m_DepthImageViews[i], m_SwapChainImageViews[i] };
+			std::array<VkImageView, 3> attachments = { m_ColorImageViews[i], m_DepthImageViews[i], m_SCImageViews[i] };
 
 			VkFramebufferCreateInfo framebufferInfo = {};
 			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = m_RenderPass;
+			framebufferInfo.renderPass = m_SCRenderPass;
 			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 			framebufferInfo.pAttachments = attachments.data();
 			framebufferInfo.width = swapChainExtent.width;
 			framebufferInfo.height = swapChainExtent.height;
 			framebufferInfo.layers = 1;
 
-			VK_CHECK_RESULT(vkCreateFramebuffer(device->GetVulkanDevice(), &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i]), "Failed to Create Framebuffer!");
+			VK_CHECK_RESULT(vkCreateFramebuffer(device->GetVulkanDevice(), &framebufferInfo, nullptr, &m_SCFramebuffers[i]), "Failed to Create Framebuffer!");
 		}
 	}
 
