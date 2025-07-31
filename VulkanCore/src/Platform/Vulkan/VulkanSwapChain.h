@@ -12,8 +12,8 @@ namespace VulkanCore {
 
 		static VulkanSwapChain* GetSwapChain() { return s_Instance; }
 
-		VkFramebuffer GetFramebuffer(int index) const { return m_SwapChainFramebuffers[index]; }
-		VkRenderPass GetRenderPass() const { return m_RenderPass; }
+		VkFramebuffer GetFramebuffer(int index) const { return m_SCFramebuffers[index]; }
+		VkRenderPass GetRenderPass() const { return m_SCRenderPass; }
 		VkImageView GetImageView(int index) const { return m_SCImageViews[index]; }
 		VkImage GetSwapChainImage(int index) const { return m_SCImages[index]; }
 		size_t GetImageCount() const { return m_SCImages.size(); }
@@ -47,8 +47,8 @@ namespace VulkanCore {
 		VkFormat m_SCImageFormat, m_SCDepthFormat;
 		VkExtent2D m_SCExtent, m_WindowExtent;
 
-		std::vector<VkFramebuffer> m_SwapChainFramebuffers;
-		VkRenderPass m_RenderPass;
+		std::vector<VkFramebuffer> m_SCFramebuffers;
+		VkRenderPass m_SCRenderPass;
 
 		// Only for MSAA
 		std::vector<VkImage> m_ColorImages, m_DepthImages;
