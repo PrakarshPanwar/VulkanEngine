@@ -9,6 +9,7 @@
 *.user
 *.sln
 *.filters
+*.idea
 /VulkanCore/assets/cache
 /VulkanCore/vendor/VulkanSDK
 /VulkanCore/vendor/tinyobjloader
