@@ -33,7 +33,7 @@ namespace VulkanCore {
 
 		static void SetImageLayout(VkCommandBuffer layoutCmd, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkImageSubresourceRange subresourceRange)
 		{
-			Utils::InsertImageMemoryBarrier(layoutCmd, image, 0, 0,
+			InsertImageMemoryBarrier(layoutCmd, image, 0, 0,
 				oldLayout, newLayout,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				subresourceRange);

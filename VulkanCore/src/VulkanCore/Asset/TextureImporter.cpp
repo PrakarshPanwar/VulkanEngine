@@ -1,12 +1,10 @@
 #include "vulkanpch.h"
-#include "VulkanCore\Core\Log.h"
+#include "VulkanCore/Core/Log.h"
 #include "TextureImporter.h"
 #include "AssetManager.h"
 
-#include <windows.h>
 #include <stb_image.h>
 #include <algorithm>
-#include <winioctl.h>
 
 namespace VulkanCore {
 
@@ -58,53 +56,6 @@ namespace VulkanCore {
 				spec.Format = ImageFormat::RGBA8_UNORM;
 			else if (pathStr.find("disp") != std::string::npos)
 				spec.Format = ImageFormat::R8_UNORM;
-
-#if 0
-			{
-				HANDLE fileHandle = CreateFileA(path.c_str(),
-					GENERIC_READ,
-					FILE_SHARE_READ,
-					nullptr,
-					OPEN_EXISTING,
-					FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING,
-					nullptr
-				);
-
-				if (fileHandle == INVALID_HANDLE_VALUE)
-				{
-					VK_CORE_ERROR("Failed to open file: {0}, {1}", path, GetLastError());
-					__debugbreak();
-				}
-
-				STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR alignmentDescriptor = {};
-				alignmentDescriptor.
-
-				OVERLAPPED overlapped = {};
-				overlapped.Offset = 0;
-				overlapped.hEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
-
-				const DWORD bufferSize = 64 * 1024; // 64KB buffer
-				BYTE* buffer = (BYTE*)_aligned_malloc(bufferSize, 4096);
-
-				bool readResult = ReadFile(fileHandle, buffer, bufferSize, nullptr, &overlapped);
-				if (!readResult && GetLastError() != ERROR_IO_PENDING)
-				{
-					VK_CORE_ERROR("ReadFile failed: {}", GetLastError());
-					__debugbreak();
-				}
-
-				DWORD bytesRead = 0;
-				if (!GetOverlappedResult(fileHandle, &overlapped, &bytesRead, TRUE))
-				{
-					VK_CORE_ERROR("GetOverlappedResult failed: {}", GetLastError());
-					__debugbreak();
-				}
-
-				CloseHandle(fileHandle);
-				CloseHandle(overlapped.hEvent);
-				_aligned_free(buffer);
-			}
-#endif
 
 			data = stbi_load(path.c_str(), &width, &height, &channels, spec.Format == ImageFormat::R8_UNORM ? STBI_grey : STBI_rgb_alpha);
 		}

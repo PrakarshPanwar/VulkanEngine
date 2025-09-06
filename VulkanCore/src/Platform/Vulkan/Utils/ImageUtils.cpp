@@ -86,7 +86,7 @@ namespace VulkanCore {
 
 		uint32_t CalculateMipCount(uint32_t width, uint32_t height)
 		{
-			return (uint32_t)std::_Floor_of_log_2(std::max(width, height)) + 1;
+			return (uint32_t)std::floor(std::log2(std::max(width, height))) + 1;
 		}
 
 		bool IsDepthFormat(ImageFormat format)

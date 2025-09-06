@@ -4,9 +4,9 @@
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/Timer.h"
 
-#include <slang/slang-com-helper.h>
+#include <slang-com-helper.h>
 #include <spirv_cross/spirv_cross.hpp>
-#include "../Source/SPIRV-Reflect/spirv_reflect.h"
+//#include "../Source/SPIRV-Reflect/spirv_reflect.h"
 
 #define SLANG_PREPROCESSOR_SUPPORT 0
 
@@ -14,7 +14,7 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		static constexpr std::array<ShaderType, 6> s_ShaderTypes = {
+		static constexpr std::array s_ShaderTypes = {
 			ShaderType::Compute,
 			ShaderType::Vertex,
 			ShaderType::Fragment,
@@ -73,7 +73,7 @@ namespace VulkanCore {
 
 		static consteval const char* GetCacheDirectory()
 		{
-			return "cache\\slang";
+			return "cache/slang";
 		}
 
 		static void CreateCacheDirectoryIfRequired()

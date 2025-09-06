@@ -1,6 +1,8 @@
 #pragma once
 #include "VulkanCore/Events/Event.h"
 
+#include <format>
+
 namespace VulkanCore {
 
 	class KeyEvent : public Event

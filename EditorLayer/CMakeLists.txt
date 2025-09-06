@@ -14,4 +14,13 @@ target_include_directories(EditorLayer PRIVATE
 		${CMAKE_SOURCE_DIR}/VulkanCore/src
 		${CMAKE_SOURCE_DIR}/VulkanCore/vendor/entt
 		${CMAKE_SOURCE_DIR}/VulkanCore/vendor/glm
+		${CMAKE_SOURCE_DIR}/VulkanCore/vendor/imgui
+		${CMAKE_SOURCE_DIR}/VulkanCore/vendor/ImGuizmo
+		${CMAKE_SOURCE_DIR}/VulkanCore/vendor/tracy/public
 	)
+
+# Link VulkanCore Library
+target_link_libraries(EditorLayer PRIVATE VulkanCore)
+
+# Enable SIMD flags
+target_compile_options(EditorLayer PRIVATE -msse4.1)

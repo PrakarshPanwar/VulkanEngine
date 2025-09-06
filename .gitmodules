@@ -2,21 +2,9 @@
 [submodule "VulkanCore/vendor/imgui"]
 	path = VulkanCore/vendor/imgui
 	url = https://github.com/PrakarshPanwar/imgui.git
-[submodule "VulkanCore/vendor/glfw"]
-	path = VulkanCore/vendor/glfw
-	url = https://github.com/PrakarshPanwar/glfw.git
-[submodule "VulkanCore/vendor/spdlog"]
-	path = VulkanCore/vendor/spdlog
-	url = https://github.com/PrakarshPanwar/spdlog.git
 [submodule "VulkanCore/vendor/ImGuizmo"]
 	path = VulkanCore/vendor/ImGuizmo
 	url = https://github.com/PrakarshPanwar/ImGuizmo.git
-[submodule "VulkanCore/vendor/Assimp"]
-	path = VulkanCore/vendor/Assimp
-	url = https://github.com/assimp/assimp.git
-[submodule "VulkanCore/vendor/yaml-cpp"]
-	path = VulkanCore/vendor/yaml-cpp
-	url = https://github.com/PrakarshPanwar/yaml-cpp.git
 [submodule "VulkanCore/vendor/JoltPhysics"]
 	path = VulkanCore/vendor/JoltPhysics
 	url = https://github.com/PrakarshPanwar/JoltPhysics.git

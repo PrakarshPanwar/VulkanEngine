@@ -1,6 +1,7 @@
 #include <unordered_map>
 #include <memory>
 #include <filesystem>
+#include <vector>
 
 #include "MaterialEditor.h"
 #include "VulkanCore/Asset/AssetManager.h"

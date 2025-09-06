@@ -25,15 +25,15 @@ namespace VulkanCore {
 
 	struct QueueFamilyIndices
 	{
-		uint32_t GraphicsFamily : 8 = _UI8_MAX;
-		uint32_t TransferFamily : 8 = _UI8_MAX;
-		uint32_t ComputeFamily : 8 = _UI8_MAX;
-		uint32_t PresentFamily : 8 = _UI8_MAX;
+		uint32_t GraphicsFamily : 8 = UINT8_MAX;
+		uint32_t TransferFamily : 8 = UINT8_MAX;
+		uint32_t ComputeFamily : 8 = UINT8_MAX;
+		uint32_t PresentFamily : 8 = UINT8_MAX;
 
-		const bool HasGraphicsFamily() const { return GraphicsFamily < _UI8_MAX; }
-		const bool HasComputeFamily() const { return ComputeFamily < _UI8_MAX; }
-		const bool HasTransferFamily() const { return TransferFamily < _UI8_MAX; }
-		const bool HasPresentFamily() const { return PresentFamily < _UI8_MAX; }
+		const bool HasGraphicsFamily() const { return GraphicsFamily < UINT8_MAX; }
+		const bool HasComputeFamily() const { return ComputeFamily < UINT8_MAX; }
+		const bool HasTransferFamily() const { return TransferFamily < UINT8_MAX; }
+		const bool HasPresentFamily() const { return PresentFamily < UINT8_MAX; }
 
 		const bool IsComplete() const { return HasGraphicsFamily() && HasTransferFamily() && HasComputeFamily() && HasPresentFamily(); }
 	};

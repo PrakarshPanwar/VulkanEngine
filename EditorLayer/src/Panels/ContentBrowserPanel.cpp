@@ -1,4 +1,5 @@
 #include <vector>
+#include <list>
 #include <memory>
 #include <filesystem>
 #include <map>
@@ -135,8 +136,8 @@ namespace VulkanCore {
 				if (ImGui::BeginDragDropSource())
 				{
 					auto relativePath = std::filesystem::relative(path);
-					const wchar_t* itemPath = relativePath.c_str();
-					ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
+					const char* itemPath = relativePath.c_str();
+					ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (strlen(itemPath) + 1) * sizeof(wchar_t));
 					ImGui::EndDragDropSource();
 				}
 
@@ -179,8 +180,8 @@ namespace VulkanCore {
 				if (ImGui::BeginDragDropSource())
 				{
 					auto relativePath = std::filesystem::relative(path);
-					const wchar_t* itemPath = relativePath.c_str();
-					ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
+					const char* itemPath = relativePath.c_str();
+					ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (strlen(itemPath) + 1) * sizeof(wchar_t));
 					ImGui::EndDragDropSource();
 				}
 

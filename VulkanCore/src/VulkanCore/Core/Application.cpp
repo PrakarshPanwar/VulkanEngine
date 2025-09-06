@@ -3,7 +3,6 @@
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
-#include "optick.h"
 
 namespace VulkanCore {
 

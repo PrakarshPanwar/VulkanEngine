@@ -176,8 +176,6 @@ namespace VulkanCore {
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
 			VK_CORE_ERROR("Validation Layer: {0} message: \n\t{1}\n {2} {3}", Utils::VkDebugUtilsMessageSeverity(messageSeverity), pCallbackData->pMessage, labels, objects);
 			break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
-			break;
 		default:
 			break;
 		}
@@ -277,7 +275,7 @@ namespace VulkanCore {
 		allocatorInfo.instance = m_VulkanInstance;
 		allocatorInfo.physicalDevice = m_Device->GetPhysicalDevice();
 		allocatorInfo.pVulkanFunctions = &vulkanFunctions;
-		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_4;
+		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
 		allocatorInfo.pAllocationCallbacks = nullptr;
 		allocatorInfo.pDeviceMemoryCallbacks = nullptr;
 		allocatorInfo.pHeapSizeLimit = nullptr;

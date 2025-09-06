@@ -17,7 +17,6 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/integer.hpp>
-#include "optick.h"
 
 namespace VulkanCore {
 
@@ -201,7 +200,7 @@ namespace VulkanCore {
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 
-			const uint32_t mipCount = std::_Floor_of_log_2(cubemapSize) + 1;
+			const uint32_t mipCount = (uint32_t)std::floor(std::log2(cubemapSize)) + 1;
 			auto vulkanDescriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
 
 			// Building Descriptor Sets

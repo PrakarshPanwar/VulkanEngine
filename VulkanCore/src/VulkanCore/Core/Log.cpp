@@ -14,9 +14,11 @@ namespace VulkanCore {
 		std::vector<spdlog::sink_ptr> logSinks;
 
 		auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+#ifdef _WIN32
 		consoleSink->set_color(spdlog::level::trace, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 		consoleSink->set_color(spdlog::level::info, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
 		consoleSink->set_color(spdlog::level::debug, FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+#endif
 
 		logSinks.emplace_back(consoleSink);
 		logSinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("VulkanEngine.log", true));

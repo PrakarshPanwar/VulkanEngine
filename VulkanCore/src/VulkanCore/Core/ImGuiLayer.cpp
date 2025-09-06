@@ -15,7 +15,6 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/color_space.hpp>
-#include "optick.h"
 
 #define IMGUI_VIEWPORTS 0
 

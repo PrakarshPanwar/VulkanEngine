@@ -17,7 +17,7 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		static constexpr std::array<ShaderType, 6> s_ShaderTypes = {
+		static constexpr std::array s_ShaderTypes = {
 			ShaderType::Compute,
 			ShaderType::Vertex,
 			ShaderType::Fragment,
@@ -345,38 +345,34 @@ namespace VulkanCore {
 	// NOTE: It currently supports single depth headers(i.e. no header within header)
 	std::string VulkanShader::ParsePreprocessIncludes(std::stringstream& sourceCode)
 	{
-		constexpr const char* shaderPath = "shaders";
+	    std::regex includeRegex(R"(^\s*#\s*include\s+["<](.*)[">])");
+	    std::smatch matches{};
+	    std::string sourceStr{}, line{};
 
-		std::string sourceStr = sourceCode.str();
-		std::regex includeRegex("^[ ]*#[ ]*include[ ]+[\"<](.*)[\">].*");
+	    while (std::getline(sourceCode, line))
+	    {
+	        if (std::regex_search(line, matches, includeRegex))
+	        {
+	            constexpr const char* shaderPath = "shaders";
+	            std::filesystem::path includeFilePath = matches[1].str();
+	            includeFilePath = shaderPath / includeFilePath;
 
-		std::smatch matches{};
-		std::string line{};
-		while (std::getline(sourceCode, line))
-		{
-			if (std::regex_search(line, matches, includeRegex))
-			{
-				std::filesystem::path includeFilePath = matches[1].str();
-				includeFilePath = shaderPath / includeFilePath;
+	            if (std::filesystem::exists(includeFilePath))
+	            {
+	                std::ifstream includeFileSource(includeFilePath, std::ios::binary);
+	                std::stringstream includeFileStream;
+	                includeFileStream << includeFileSource.rdbuf();
 
-				if (std::filesystem::exists(includeFilePath))
-				{
-					std::ifstream includeFileSource(includeFilePath, std::ios::binary);
+	                sourceStr += includeFileStream.str();
+	            }
+	            else
+	                VK_CORE_ASSERT(false, "{} header doesn't exist!", includeFilePath.generic_string());
+	        }
+	        else
+	            sourceStr += line + '\n';
+	    }
 
-					std::stringstream includeFileStream;
-					includeFileStream << includeFileSource.rdbuf();
-
-					sourceStr = std::regex_replace(sourceStr, includeRegex, includeFileStream.str(), std::regex_constants::format_first_only);
-				}
-				else
-				{
-					VK_CORE_CRITICAL("{} header doesn't exist!", includeFilePath.generic_string());
-					__debugbreak();
-				}
-			}
-		}
-
-		return sourceStr;
+	    return sourceStr;
 	}
 
 	void VulkanShader::CompileOrGetVulkanBinaries(std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>>& shaderSources)
@@ -413,13 +409,13 @@ namespace VulkanCore {
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 			{
 				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
-				__debugbreak();
+				DEBUG_BREAK;
 			}
 
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
 
 			std::scoped_lock ShaderMutexLock(MapMutexLock);
-			shaderData[(uint32_t)stage] = std::vector<uint32_t>(module.cbegin(), module.cend());
+			shaderData[(uint32_t)stage] = std::vector(module.cbegin(), module.cend());
 
 			std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
 			if (out.is_open())
@@ -445,7 +441,7 @@ namespace VulkanCore {
 				auto& source = shaderSources[(uint32_t)stage];
 
 				std::filesystem::path shaderFilePath = std::get<0>(source);
-				ShaderType shaderType = (ShaderType)stage;
+				ShaderType shaderType = stage;
 
 				m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderFilePath, std::get<1>(source), shaderType));
 
@@ -540,13 +536,13 @@ namespace VulkanCore {
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 			{
 				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
-				__debugbreak();
+				DEBUG_BREAK;
 			}
 
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
 
 			std::scoped_lock ShaderMutexLock(MapMutexLock);
-			shaderData[(uint32_t)stage] = std::vector<uint32_t>(module.cbegin(), module.cend());
+			shaderData[(uint32_t)stage] = std::vector(module.cbegin(), module.cend());
 
 			std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
 			if (out.is_open())
