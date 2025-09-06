@@ -642,7 +642,7 @@ namespace VulkanCore {
 		float size = ImGui::GetWindowHeight() - 4.0f;
 		
 		// Begin Stack Layout
-		ImGui::BeginHorizontal(372846283284, { region.x, 0.0f });
+		ImGui::BeginHorizontal(376283284, { region.x, 0.0f });
 
 		ImGui::Spring(0.5f);
 

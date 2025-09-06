@@ -33,22 +33,27 @@ namespace VulkanCore {
 
 		for (size_t i = 0; i < framesInFlight; i++)
 		{
-			// Cleanup Images
-			vkDestroyImageView(device->GetVulkanDevice(), m_SCImageViews[i], nullptr);
-			vkDestroyImageView(device->GetVulkanDevice(), m_ColorImageViews[i], nullptr);
-			vkDestroyImageView(device->GetVulkanDevice(), m_DepthImageViews[i], nullptr);
+			// Cleanup Synchronization Objects
+			vkDestroySemaphore(device->GetVulkanDevice(), m_ImageAvailableSemaphores[i], nullptr);
+			vkDestroyFence(device->GetVulkanDevice(), m_InFlightFences[i], nullptr);
+		}
 
-			allocator.DestroyImage(m_ColorImages[i], m_ColorImageAllocations[i]);
-			allocator.DestroyImage(m_DepthImages[i], m_DepthImageAllocations[i]);
+	    for (size_t i = 0; i < GetImageCount(); ++i)
+	    {
+	        // Cleanup Images
+	        vkDestroyImageView(device->GetVulkanDevice(), m_SCImageViews[i], nullptr);
+	        vkDestroyImageView(device->GetVulkanDevice(), m_ColorImageViews[i], nullptr);
+	        vkDestroyImageView(device->GetVulkanDevice(), m_DepthImageViews[i], nullptr);
+
+	        allocator.DestroyImage(m_ColorImages[i], m_ColorImageAllocations[i]);
+	        allocator.DestroyImage(m_DepthImages[i], m_DepthImageAllocations[i]);
 
 			// Cleanup Framebuffers
 			vkDestroyFramebuffer(device->GetVulkanDevice(), m_SCFramebuffers[i], nullptr);
 
-			// Cleanup Synchronization Objects
+	        // Cleanup Presentation Semaphores
 			vkDestroySemaphore(device->GetVulkanDevice(), m_ReadyToPresentSemaphores[i], nullptr);
-			vkDestroySemaphore(device->GetVulkanDevice(), m_ImageAvailableSemaphores[i], nullptr);
-			vkDestroyFence(device->GetVulkanDevice(), m_InFlightFences[i], nullptr);
-		}
+	    }
 
 		// Cleanup Render Pass
 		vkDestroyRenderPass(device->GetVulkanDevice(), m_SCRenderPass, nullptr);
@@ -446,7 +451,7 @@ namespace VulkanCore {
 
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		m_ImageAvailableSemaphores.resize(framesInFlight);
-		m_ReadyToPresentSemaphores.resize(framesInFlight);
+	    m_ReadyToPresentSemaphores.resize(GetImageCount());
 		m_InFlightFences.resize(framesInFlight);
 		m_ImagesInFlight.resize(GetImageCount(), VK_NULL_HANDLE);
 
@@ -457,17 +462,24 @@ namespace VulkanCore {
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
+	    // Acquire Image Semaphores(Frames in Flight)
 		for (size_t i = 0; i < framesInFlight; i++)
 		{
-			VK_CORE_ASSERT(
-				vkCreateSemaphore(device->GetVulkanDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) == VK_SUCCESS &&
-				vkCreateSemaphore(device->GetVulkanDevice(), &semaphoreInfo, nullptr, &m_ReadyToPresentSemaphores[i]) == VK_SUCCESS &&
+			VK_CORE_ASSERT(vkCreateSemaphore(device->GetVulkanDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) == VK_SUCCESS &&
 				vkCreateFence(device->GetVulkanDevice(), &fenceInfo, nullptr, &m_InFlightFences[i]) == VK_SUCCESS, 
 				"Failed to Create Synchronization Objects for a Frame!");
 
 			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_SEMAPHORE, std::format("ImageAvailableSemaphore: {}", i), m_ImageAvailableSemaphores[i]);
-			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_SEMAPHORE, std::format("RenderFinishedSemaphore: {}", i), m_ReadyToPresentSemaphores[i]);
 		}
+
+	    // Presentation Semaphores(SwapChain Image Count)
+	    for (size_t i = 0; i < GetImageCount(); i++)
+	    {
+	        VK_CORE_ASSERT(vkCreateSemaphore(device->GetVulkanDevice(), &semaphoreInfo, nullptr, &m_ReadyToPresentSemaphores[i]) == VK_SUCCESS,
+	            "Failed to Create Synchronization Objects for a Frame!");
+
+			VKUtils::SetDebugUtilsObjectName(device->GetVulkanDevice(), VK_OBJECT_TYPE_SEMAPHORE, std::format("RenderFinishedSemaphore: {}", i), m_ReadyToPresentSemaphores[i]);
+	    }
 	}
 
 	VkSurfaceFormatKHR VulkanSwapChain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)

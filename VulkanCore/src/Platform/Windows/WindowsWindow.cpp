@@ -111,14 +111,12 @@ namespace VulkanCore {
 				data.EventCallback(event);
 				break;
 			}
-
 			case GLFW_RELEASE:
 			{
 				KeyReleasedEvent event(key);
 				data.EventCallback(event);
 				break;
 			}
-
 			case GLFW_REPEAT:
 			{
 				KeyPressedEvent event(key, 1);
@@ -140,7 +138,6 @@ namespace VulkanCore {
 				data.EventCallback(event);
 				break;
 			}
-
 			case GLFW_RELEASE:
 			{
 				MouseButtonReleasedEvent event(button);
