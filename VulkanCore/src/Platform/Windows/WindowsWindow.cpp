@@ -52,6 +52,7 @@ namespace VulkanCore {
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+	    glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GLFW_FALSE);
 
 		if (Application::Get()->GetSpecification().Fullscreen)
 		{
@@ -76,6 +77,22 @@ namespace VulkanCore {
 
 		VK_CORE_INFO("Creating Window '{0}' ({1}, {2})", m_WindowSpecs.Name, m_WindowSpecs.Width, m_WindowSpecs.Height);
 		glfwMakeContextCurrent(m_Window);
+
+	    switch (glfwGetPlatform())
+	    {
+	    case GLFW_PLATFORM_WIN32:
+	        VK_CORE_INFO("GLFW Platform: Windows");
+	        break;
+	    case GLFW_PLATFORM_WAYLAND:
+	        VK_CORE_INFO("GLFW Platform: Wayland");
+	        break;
+	    case GLFW_PLATFORM_X11:
+	        VK_CORE_INFO("GLFW Platform: X11");
+	        break;
+	    default:
+	        VK_CORE_INFO("GLFW Platform: Unknown");
+	        break;
+	    }
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 		glfwSetFramebufferSizeCallback(m_Window, FramebufferResizeCallback);

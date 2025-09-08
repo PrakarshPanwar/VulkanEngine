@@ -308,7 +308,7 @@ namespace VulkanCore {
 		const char** glfwExtensions;
 		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+		std::vector extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
 		if (m_EnableValidation)
 			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -383,7 +383,7 @@ namespace VulkanCore {
 		for (const auto& required : requiredExtensions)
 		{
 			VK_CORE_WARN("\t {0}", required);
-			VK_CORE_ASSERT(available.find(required) != available.end(), "Missing Required GLFW Extension!");
+			VK_CORE_ASSERT(available.contains(required), "Missing Required GLFW Extension!");
 		}
 	}
 

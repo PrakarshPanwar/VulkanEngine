@@ -26,8 +26,8 @@ target_link_libraries(VulkanCore
 		Vulkan::Vulkan
         shaderc_shared
         spirv-cross-core
-        glfw
 		ImGui
+		glfw
         JoltLib
         assimp
         ${YAML_CPP_LIBRARIES}
