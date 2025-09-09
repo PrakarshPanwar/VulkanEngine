@@ -331,7 +331,7 @@ namespace VulkanCore {
 		{
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 			{
-				std::filesystem::path scenePath = (const wchar_t*)payload->Data;
+				std::filesystem::path scenePath = (const char*)payload->Data;
 				OpenScene(scenePath.string());
 			}
 

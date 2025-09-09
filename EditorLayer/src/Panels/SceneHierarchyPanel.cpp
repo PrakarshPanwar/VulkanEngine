@@ -342,7 +342,7 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
+						std::filesystem::path assetPath = (const char*)payload->Data;
 						std::string filepath = assetPath.generic_string();
 
 						auto newSkybox = AssetManager::GetAsset<Texture2D>(filepath);
@@ -367,7 +367,7 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
+						std::filesystem::path assetPath = (const char*)payload->Data;
 						std::string filepath = assetPath.generic_string();
 
 						auto newSkybox = AssetManager::GetAsset<Texture2D>(filepath);
@@ -400,7 +400,7 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
+						std::filesystem::path assetPath = (const char*)payload->Data;
 
 						sceneRenderer->UpdateMeshInstanceData(mesh, materialTable);
 
@@ -443,7 +443,7 @@ namespace VulkanCore {
 					{
 						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 						{
-							std::filesystem::path assetPath = (const wchar_t*)payload->Data;
+							std::filesystem::path assetPath = (const char*)payload->Data;
 
 							std::shared_ptr<MaterialAsset> newMaterialAsset = AssetManager::GetAsset<MaterialAsset>(assetPath.string());
 							materialTable->SetMaterial(materialIndex, newMaterialAsset);
@@ -470,7 +470,7 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						std::filesystem::path assetPath = (const wchar_t*)payload->Data;
+						std::filesystem::path assetPath = (const char*)payload->Data;
 
 						std::shared_ptr<Mesh> newMesh = AssetManager::GetAsset<Mesh>(assetPath.string());
 						component.MeshHandle = newMesh->Handle;
