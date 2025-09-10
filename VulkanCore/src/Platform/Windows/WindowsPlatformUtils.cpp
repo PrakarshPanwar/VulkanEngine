@@ -61,79 +61,52 @@ namespace VulkanCore {
 #elif defined(__linux__)
     std::string FileDialogs::OpenFile(const char* filter)
     {
-	    std::string command = "zenity --file-selection --title=\"Open File\"";
-
-	    // Add file filter
-	    if (filter) {
-	        command += " --file-filter=\"";
-	        command += filter;
-	        command += "\"";
-	    }
+	    std::string command = std::format("zenity --file-selection --title=\"Open File\" --file-filter='{}'", filter);
 
 	    // Execute command and capture output
 	    FILE* pipe = popen(command.c_str(), "r");
-	    if (!pipe) {
+	    if (!pipe)
 	        return {}; // Failed to open pipe
-	    }
 
-	    char buffer[1024];
 	    std::string result;
-
-	    if (fgets(buffer, sizeof(buffer), pipe)) {
+	    char buffer[1024];
+	    if (fgets(buffer, sizeof(buffer), pipe))
+	    {
 	        result = buffer;
-	        // Remove trailing newline
-	        if (!result.empty() && result.back() == '\n') {
+	        if (!result.empty() && result.back() == '\n')
 	            result.pop_back();
-	        }
 	    }
 
+	    // Check if user cancelled (exit code 1) or error occurred
 	    int exit_code = pclose(pipe);
-
-	    // Check if user canceled (exit code 1) or error occurred
-	    if (exit_code != 0) {
-	        return {}; // User canceled or error
-	    }
+	    if (exit_code != 0)
+	        return {}; // User cancelled or error
 
 	    return result;
 	}
 
     std::string FileDialogs::SaveFile(const char* filter)
 	{
-	    std::string command = "zenity --file-selection --save --title=\"Save File\"";
-
-	    // Add file filter if provided
-	    if (filter) {
-	        command += " --file-filter=\"";
-	        command += filter;
-	        command += "\"";
-	    }
-
-	    // Add confirmation for overwrite (zenity handles this automatically for --save)
-	    command += " --confirm-overwrite";
+	    std::string command = std::format("zenity --file-selection --save --title=\"Save File\" --file-filter='{}' --confirm-overwrite", filter);
 
 	    // Execute command and capture output
 	    FILE* pipe = popen(command.c_str(), "r");
-	    if (!pipe) {
+	    if (!pipe)
 	        return {}; // Failed to open pipe
-	    }
 
-	    char buffer[1024];
 	    std::string result;
-
-	    if (fgets(buffer, sizeof(buffer), pipe)) {
+	    char buffer[1024];
+	    if (fgets(buffer, sizeof(buffer), pipe))
+	    {
 	        result = buffer;
-	        // Remove trailing newline
-	        if (!result.empty() && result.back() == '\n') {
+	        if (!result.empty() && result.back() == '\n')
 	            result.pop_back();
-	        }
 	    }
 
+	    // Check if user cancelled (exit code 1) or error occurred
 	    int exit_code = pclose(pipe);
-
-	    // Check if user canceled (exit code 1) or error occurred
-	    if (exit_code != 0) {
-	        return {}; // User canceled or error
-	    }
+	    if (exit_code != 0)
+	        return {}; // User cancelled or error
 
 	    return result;
 	}

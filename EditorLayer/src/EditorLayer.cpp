@@ -70,6 +70,8 @@ namespace VulkanCore {
 			std::string sceneFilePath = commandLineArgs[1];
 			OpenScene(sceneFilePath);
 		}
+	    else
+	        OpenScene();
 
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
 	}
@@ -242,13 +244,13 @@ namespace VulkanCore {
 					if (edited || ImGui::IsKeyPressed(ImGuiKey_X) || ImGui::IsKeyPressed(ImGuiKey_Y) || ImGui::IsKeyPressed(ImGuiKey_Z))
 					{
 						// Transfer Input Data using bit flag
-					    __m128 mask = _mm_set_ps((m_TransformInputMask & 0b0100) ? -1.0f : 0.0f,
+					    __m128 mask = _mm_setr_ps((m_TransformInputMask & 0b0001) ? -1.0f : 0.0f,
 					                            (m_TransformInputMask & 0b0010) ? -1.0f : 0.0f,
-                                                (m_TransformInputMask & 0b0001) ? -1.0f : 0.0f,
+                                                (m_TransformInputMask & 0b0100) ? -1.0f : 0.0f,
                                                 (m_TransformInputMask & 0b1000) ? -1.0f : 0.0f);
 
 					    __m128 value = _mm_blendv_ps(_mm_setzero_ps(), _mm_set1_ps(m_TransformScalarInput), mask);
-						_mm_store_ps(glm::value_ptr(m_TransformInput), value);
+						_mm_storeu_ps(glm::value_ptr(m_TransformInput), value);
 
 						auto& transform = selectedEntity.GetComponent<TransformComponent>();
 						transform = m_EntityTransform;
@@ -268,7 +270,7 @@ namespace VulkanCore {
 						case ImGuizmo::OPERATION::SCALE:
 						{
 					        __m128 scale = _mm_blendv_ps(_mm_setzero_ps(), _mm_set1_ps(1.0f), mask);
-							_mm_store_ps(glm::value_ptr(m_TransformInput), scale);
+							_mm_storeu_ps(glm::value_ptr(m_TransformInput), scale);
 
 							transform.Scale *= glm::vec3(m_TransformInput);
 							break;
@@ -389,9 +391,7 @@ namespace VulkanCore {
 
 		ImGui::Spring();
 		if (m_ShowApplicationStats)
-		{
 			SHOW_FRAMERATES;
-		}
 
 		if (m_ShowCameraData)
 		{
@@ -681,13 +681,9 @@ namespace VulkanCore {
 			if (ImGui::ImageButton("##PauseState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
 				activeScene->SetPaused(!isPaused);
 
-			// Step button
-			if (isPaused)
-			{
-				bool isPaused = activeScene->IsPaused();
-				if (ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor, ImGuiButtonFlags_Repeat) && toolbarEnabled)
-					activeScene->StepFrames();
-			}
+			// Step Button
+			if (isPaused && ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor, ImGuiButtonFlags_Repeat) && toolbarEnabled)
+			    activeScene->StepFrames();
 		}
 
 		ImGui::Spring(0.5f);
@@ -710,22 +706,21 @@ namespace VulkanCore {
 
 	void EditorLayer::OpenScene()
 	{
-		std::string filepath = FileDialogs::OpenFile("VulkanEngine Scene (*.vkscene)\0*.vkscene\0");
+		std::string filepath = FileDialogs::OpenFile("VulkanEngine Scene (*.vksc) | *.vksc");
 		if (!filepath.empty())
 			OpenScene(filepath);
 	}
 
 	void EditorLayer::OpenScene(const std::string& path)
 	{
-		std::filesystem::path filepath(path);
-
-		if (filepath.extension().string() != ".vkscene")
+		std::filesystem::path filepath = std::filesystem::relative(path);
+		if (filepath.extension().string() != ".vksc")
 		{
 			VK_WARN("Could not load {0} - not a scene file", filepath.filename().string());
 			return;
 		}
 
-		auto newScene = AssetManager::GetAsset<Scene>(path);
+		auto newScene = AssetManager::GetAsset<Scene>(filepath);
 		if (newScene)
 		{
 			m_ActiveScene = newScene;
@@ -733,7 +728,7 @@ namespace VulkanCore {
 
 			m_SceneRenderer->SetActiveScene(m_ActiveScene);
 			m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-			m_EditorScenePath = path;
+			m_EditorScenePath = filepath;
 		}
 	}
 
@@ -747,7 +742,7 @@ namespace VulkanCore {
 
 	void EditorLayer::SaveSceneAs()
 	{
-		std::string filepath = FileDialogs::SaveFile("VulkanEngine Scene (*.vkscene)\0*.vkscene\0");
+		std::string filepath = FileDialogs::SaveFile("VulkanEngine Scene (*.vksc) | *.vksc");
 		if (!filepath.empty())
 		{
 			SerializeScene(m_ActiveScene, filepath);

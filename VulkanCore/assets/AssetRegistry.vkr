@@ -229,7 +229,7 @@ Asset Registry:
       Type: Texture2D
   - Handle: 339593974948457
     Metadata:
-      Filepath: scenes/ClosedSpace.vkscene
+      Filepath: scenes/ClosedSpace.vksc
       Type: Scene
   - Handle: 3620384474883821673
     Metadata:
@@ -425,15 +425,15 @@ Asset Registry:
       Type: Texture2D
   - Handle: 923874947522838273
     Metadata:
-      Filepath: scenes/FirstScene.vkscene
+      Filepath: scenes/FirstScene.vksc
       Type: Scene
   - Handle: 896876980868865
     Metadata:
-      Filepath: scenes/ShadowDemo.vkscene
+      Filepath: scenes/ShadowDemo.vksc
       Type: Scene
   - Handle: 718726387624872
     Metadata:
-      Filepath: scenes/LampDemo.vkscene
+      Filepath: scenes/LampDemo.vksc
       Type: Scene
   - Handle: 18152442800595508283
     Metadata:
@@ -473,11 +473,11 @@ Asset Registry:
       Type: Mesh
   - Handle: 43539827938472945
     Metadata:
-      Filepath: scenes/TessellationDemo.vkscene
+      Filepath: scenes/TessellationDemo.vksc
       Type: Scene
   - Handle: 89283744953943652
     Metadata:
-      Filepath: scenes/PhysicsDemo.vkscene
+      Filepath: scenes/PhysicsDemo.vksc
       Type: Scene
   - Handle: 17042868248572563900
     Metadata:

@@ -278,7 +278,6 @@ namespace VulkanCore {
 			if (ImGui::Button("OK"))
 			{
 				std::string pathStr = { buffer };
-				std::replace(pathStr.begin(), pathStr.end(), '/', '\\');
 				std::filesystem::path filepath = pathStr;
 				filepath.replace_extension(".vkmesh");
 
@@ -380,7 +379,6 @@ namespace VulkanCore {
 			if (ImGui::Button("OK"))
 			{
 				std::string pathStr = { buffer };
-				std::replace(pathStr.begin(), pathStr.end(), '/', '\\');
 				std::filesystem::path filepath = pathStr;
 				filepath.replace_extension(".vkmat");
 
