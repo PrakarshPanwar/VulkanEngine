@@ -1,4 +1,5 @@
 #pragma once
+#include "VulkanCore/Core/glfw_vulkan.h"
 #include "VulkanCore/Events/Event.h"
 
 namespace VulkanCore {
@@ -25,11 +26,16 @@ namespace VulkanCore {
 
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
+	    virtual VkExtent2D GetExtent() const = 0;
+	    virtual const std::string& GetWindowName() const = 0;
+
+	    virtual bool IsWindowResize() const = 0;
+	    virtual void ResetWindowResizeFlag() = 0;
 
 		virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
 		virtual void* GetNativeWindow() { return nullptr; }
 
-		static Window* Create(const WindowSpecs& specs = WindowSpecs());
+		static std::shared_ptr<Window> Create(const WindowSpecs& specs = WindowSpecs());
 	};
 
 }

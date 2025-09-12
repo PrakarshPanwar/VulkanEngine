@@ -1,4 +1,5 @@
 #include <memory>
+#include <vector>
 
 #include "VulkanCore/Core/Application.h"
 #include "EditorLayer.h"

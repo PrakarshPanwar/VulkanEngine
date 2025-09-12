@@ -1,5 +1,4 @@
 #pragma once
-#include "Platform/Windows/WindowsWindow.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "VulkanCore/Mesh/Mesh.h"
@@ -19,7 +18,7 @@ namespace VulkanCore {
 	class VulkanRenderer
 	{
 	public:
-		VulkanRenderer(std::shared_ptr<WindowsWindow> window);
+		VulkanRenderer(std::shared_ptr<Window> window);
 		~VulkanRenderer();
 
 		void Init();
@@ -73,7 +72,7 @@ namespace VulkanCore {
 		void DeleteResources();
 		void InitDescriptorPool();
 	private:
-		std::shared_ptr<WindowsWindow> m_Window;
+		std::shared_ptr<Window> m_Window;
 		std::unique_ptr<VulkanSwapChain> m_SwapChain;
 		std::shared_ptr<VulkanDescriptorPool> m_GlobalDescriptorPool;
 

@@ -86,7 +86,7 @@ namespace VulkanCore {
 		VK_CORE_PROFILE();
 
 		auto activeScene = m_ActiveScene.load();
-		float time = WindowsTime::GetTime();
+		float time = PlatformTime::GetTime();
 		Timestep timestep = time - m_LastFrameTime;
 		m_LastFrameTime = time;
 
@@ -227,8 +227,7 @@ namespace VulkanCore {
 
 			if (std::popcount(m_TransformInputMask))
 			{
-				auto selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-				if (selectedEntity)
+                if (auto selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity())
 				{
 					ImGui::PushItemWidth(45.0f);
 					ImGui::SetKeyboardFocusHere();
@@ -520,6 +519,7 @@ namespace VulkanCore {
 		{
 			if (shiftKey)
 				m_EditorCamera.SetFly(true);
+
 			break;
 		}
 		}
@@ -535,7 +535,11 @@ namespace VulkanCore {
 		{
 			if (m_EditorCamera.IsInFly())
 				m_EditorCamera.SetFly(false);
+
+		    break;
 		}
+		default:
+		    break;
 		}
 
 		return false;

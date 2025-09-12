@@ -1,5 +1,5 @@
 #include "vulkanpch.h"
-#include "WindowsWindow.h"
+#include "LinuxWindow.h"
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/Application.h"
@@ -10,43 +10,47 @@
 
 namespace VulkanCore {
 
-	WindowsWindow::WindowsWindow(const WindowSpecs& specs)
-		: m_WindowSpecs(specs)
-	{
-		Init(specs);
-	}
+    LinuxWindow::LinuxWindow(const WindowSpecs &specs)
+        : m_WindowSpecs(specs)
+    {
+        Init(specs);
+    }
 
-	WindowsWindow::~WindowsWindow()
-	{
-		Shutdown();
-	}
+    LinuxWindow::~LinuxWindow()
+    {
+        Shutdown();
+    }
 
-	void WindowsWindow::OnUpdate()
-	{
-		VK_CORE_PROFILE();
-		glfwPollEvents();
-	}
+    void LinuxWindow::OnUpdate()
+    {
+        VK_CORE_PROFILE();
+        glfwPollEvents();
+    }
 
-	void WindowsWindow::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
-	{
-		auto vkWindow = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
+    void LinuxWindow::FramebufferResizeCallback(GLFWwindow *window, int width, int height)
+    {
+        auto vkWindow = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
-		vkWindow->FramebufferResize = true;
-		vkWindow->Width = width;
-		vkWindow->Height = height;
-	}
+        vkWindow->FramebufferResize = true;
+        vkWindow->Width = width;
+        vkWindow->Height = height;
+    }
 
-	void WindowsWindow::Init(const WindowSpecs& specs)
-	{
-		m_Data.Title = specs.Name;
+    void LinuxWindow::Init(const WindowSpecs &specs)
+    {
+        m_Data.Title = specs.Name;
 		m_Data.Width = specs.Width;
 		m_Data.Height = specs.Height;
+
+	    setenv("XCURSOR_THEME", "Breeze_Light", 1);
+	    setenv("XCURSOR_SIZE", "24", 1);
 
 		int status = glfwInit();
 		VK_CORE_ASSERT(status, "Failed to Initialize GLFW!");
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+	    glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GLFW_FALSE);
 
 		if (Application::Get()->GetSpecification().Fullscreen)
 		{
@@ -69,7 +73,7 @@ namespace VulkanCore {
 		else
 			m_Window = glfwCreateWindow(m_WindowSpecs.Width, m_WindowSpecs.Height, m_WindowSpecs.Name.c_str(), nullptr, nullptr);
 
-		VK_CORE_INFO("Creating Windows Window '{0}' ({1}, {2})", m_WindowSpecs.Name, m_WindowSpecs.Width, m_WindowSpecs.Height);
+		VK_CORE_INFO("Creating Linux Wayland Window '{0}' ({1}, {2})", m_WindowSpecs.Name, m_WindowSpecs.Width, m_WindowSpecs.Height);
 		glfwMakeContextCurrent(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
@@ -157,12 +161,12 @@ namespace VulkanCore {
 			MouseMovedEvent event((float)xPos, (float)yPos);
 			data.EventCallback(event);
 		});
-	}
+    }
 
-	void WindowsWindow::Shutdown()
-	{
-		glfwDestroyWindow(m_Window);
-		glfwTerminate();
-	}
+    void LinuxWindow::Shutdown() const
+    {
+        glfwDestroyWindow(m_Window);
+        glfwTerminate();
+    }
 
 }

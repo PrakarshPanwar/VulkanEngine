@@ -48,7 +48,7 @@ namespace VulkanCore {
 	VulkanRenderer* VulkanRenderer::s_Instance;
 	RendererStats VulkanRenderer::s_Data;
 
-	VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowsWindow> window)
+	VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window)
 		: m_Window(window)
 	{
 		s_Instance = this;
