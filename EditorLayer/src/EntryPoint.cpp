@@ -22,7 +22,7 @@ namespace VulkanCore {
 	{
 		ApplicationSpecification spec{};
 		spec.Name = "Vulkan Application";
-		spec.WorkingDirectory = "../../VulkanCore/assets";
+		spec.WorkingDirectory = "../VulkanCore/assets";
 		spec.Fullscreen = true;
 		spec.CommandLineArgs = args;
 

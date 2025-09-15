@@ -310,7 +310,7 @@ namespace VulkanCore {
 		auto view = scene->GetAllEntitiesWith<TransformComponent, Rigidbody3DComponent>();
 		for (auto ent : view)
 		{
-			auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(ent);
+			//auto [transform, rb3d] = view.get<TransformComponent, Rigidbody3DComponent>(ent);
 			auto bodyID = JPH::BodyID{ (uint32_t)ent };
 
 			bodyInterface.RemoveBody(bodyID);  // Remove Body

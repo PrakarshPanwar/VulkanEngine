@@ -19,7 +19,7 @@ add_subdirectory(vendor/tracy)
 add_library(VulkanCore
         ${VK_PROJECT_SOURCES}
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor/stb_image/stb_image.cpp
-)
+	)
 
 # Linking using find_package
 target_link_libraries(VulkanCore
@@ -56,12 +56,12 @@ target_precompile_headers(VulkanCore PRIVATE
 	)
 
 target_compile_definitions(VulkanCore
-			PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1
-			PUBLIC SPDLOG_USE_STD_FORMAT=1
-			PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE=1
-			PUBLIC JPH_DEBUG_RENDERER=1
-			PUBLIC TRACY_ENABLE
-		)
+		PRIVATE IMGUI_DEFINE_MATH_OPERATORS=1
+		PUBLIC SPDLOG_USE_STD_FORMAT=1
+		PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE=1
+		PUBLIC JPH_DEBUG_RENDERER=1
+		PUBLIC TRACY_ENABLE
+	)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
 	target_compile_definitions(VulkanCore

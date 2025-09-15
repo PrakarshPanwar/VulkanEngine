@@ -227,18 +227,22 @@ namespace VulkanCore {
 
 			if (std::popcount(m_TransformInputMask))
 			{
-                if (auto selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity())
+				if (auto selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity())
 				{
+                    ImGui::BeginHorizontal("##TransformToolbar", ImVec2{ 250.0f, 20.0f });
+
 					ImGui::PushItemWidth(45.0f);
 					ImGui::SetKeyboardFocusHere();
 					bool edited = ImGui::InputFloat("##TransformInput", &m_TransformScalarInput, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_CharsDecimal);
 					ImGui::PopItemWidth();
 
+					ImGui::Spring(0.2f);
+
 					ImGui::TextColored(m_TransformInputMask & 0x1 ? ImVec4{ 0.8f, 0.0f, 0.0f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "X = %.3f", m_TransformInput.x);
-					ImGui::SameLine();
-					ImGui::TextColored(m_TransformInputMask & 0x2 ? ImVec4{ 0.0f, 0.8f, 0.0f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "\tY = %.3f", m_TransformInput.y);
-					ImGui::SameLine();
-					ImGui::TextColored(m_TransformInputMask & 0x4 ? ImVec4{ 0.0f, 0.0f, 0.8f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "\tZ = %.3f", m_TransformInput.z);
+					ImGui::TextColored(m_TransformInputMask & 0x2 ? ImVec4{ 0.0f, 0.8f, 0.0f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "Y = %.3f", m_TransformInput.y);
+					ImGui::TextColored(m_TransformInputMask & 0x4 ? ImVec4{ 0.0f, 0.0f, 0.8f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "Z = %.3f", m_TransformInput.z);
+
+					ImGui::EndHorizontal();
 
 					if (edited || ImGui::IsKeyPressed(ImGuiKey_X) || ImGui::IsKeyPressed(ImGuiKey_Y) || ImGui::IsKeyPressed(ImGuiKey_Z))
 					{
@@ -268,7 +272,7 @@ namespace VulkanCore {
 						}
 						case ImGuizmo::OPERATION::SCALE:
 						{
-					        __m128 scale = _mm_blendv_ps(_mm_setzero_ps(), _mm_set1_ps(1.0f), mask);
+					        __m128 scale = _mm_blendv_ps(_mm_set1_ps(1.0f), _mm_set1_ps(m_TransformScalarInput), mask);
 							_mm_storeu_ps(glm::value_ptr(m_TransformInput), scale);
 
 							transform.Scale *= glm::vec3(m_TransformInput);
@@ -497,8 +501,7 @@ namespace VulkanCore {
 		{
 			if (shiftKey)
 			{
-				auto duplicateEntity = m_EditorScene->DuplicateEntity(m_SceneHierarchyPanel.GetSelectedEntity());
-				if (duplicateEntity)
+                if (auto duplicateEntity = m_EditorScene->DuplicateEntity(m_SceneHierarchyPanel.GetSelectedEntity()))
 					m_SceneHierarchyPanel.SetSelectedEntity(duplicateEntity);
 			}
 
