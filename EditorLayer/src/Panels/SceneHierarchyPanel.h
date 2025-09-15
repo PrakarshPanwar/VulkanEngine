@@ -28,10 +28,10 @@ namespace VulkanCore {
 		Entity m_SelectionContext;
 	};
 
-    template<>
-    void SceneHierarchyPanel::DisplayAddComponentEntry<SkyLightComponent>(const std::string& entryName);
+	template<>
+	void SceneHierarchyPanel::DisplayAddComponentEntry<SkyLightComponent>(const std::string& entryName);
 
-    template<>
-    void SceneHierarchyPanel::DisplayAddComponentEntry<DirectionalLightComponent>(const std::string& entryName);
+	template<>
+	void SceneHierarchyPanel::DisplayAddComponentEntry<DirectionalLightComponent>(const std::string& entryName);
 
 }

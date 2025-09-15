@@ -6,13 +6,13 @@
 
 namespace VulkanCore {
 
-    std::shared_ptr<Window> Window::Create(const WindowSpecs& specs)
-    {
+	std::shared_ptr<Window> Window::Create(const WindowSpecs& specs)
+	{
 #if defined(_WIN32)
-        return std::make_shared<WindowsWindow>(specs);
+		return std::make_shared<WindowsWindow>(specs);
 #elif defined(__linux__)
-        return std::make_shared<LinuxWindow>(specs);
+		return std::make_shared<LinuxWindow>(specs);
 #endif
-    }
+	}
 
 }

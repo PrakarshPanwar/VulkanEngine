@@ -10,47 +10,47 @@
 
 namespace VulkanCore {
 
-    LinuxWindow::LinuxWindow(const WindowSpecs &specs)
-        : m_WindowSpecs(specs)
-    {
-        Init(specs);
-    }
+	LinuxWindow::LinuxWindow(const WindowSpecs &specs)
+		: m_WindowSpecs(specs)
+	{
+		Init(specs);
+	}
 
-    LinuxWindow::~LinuxWindow()
-    {
-        Shutdown();
-    }
+	LinuxWindow::~LinuxWindow()
+	{
+		Shutdown();
+	}
 
-    void LinuxWindow::OnUpdate()
-    {
-        VK_CORE_PROFILE();
-        glfwPollEvents();
-    }
+	void LinuxWindow::OnUpdate()
+	{
+		VK_CORE_PROFILE();
+		glfwPollEvents();
+	}
 
-    void LinuxWindow::FramebufferResizeCallback(GLFWwindow *window, int width, int height)
-    {
-        auto vkWindow = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
+	void LinuxWindow::FramebufferResizeCallback(GLFWwindow *window, int width, int height)
+	{
+		auto vkWindow = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
-        vkWindow->FramebufferResize = true;
-        vkWindow->Width = width;
-        vkWindow->Height = height;
-    }
+		vkWindow->FramebufferResize = true;
+		vkWindow->Width = width;
+		vkWindow->Height = height;
+	}
 
-    void LinuxWindow::Init(const WindowSpecs &specs)
-    {
-        m_Data.Title = specs.Name;
+	void LinuxWindow::Init(const WindowSpecs &specs)
+	{
+		m_Data.Title = specs.Name;
 		m_Data.Width = specs.Width;
 		m_Data.Height = specs.Height;
 
-	    setenv("XCURSOR_THEME", "Breeze_Light", 1);
-	    setenv("XCURSOR_SIZE", "24", 1);
+		setenv("XCURSOR_THEME", "Breeze_Light", 1);
+		setenv("XCURSOR_SIZE", "24", 1);
 
 		int status = glfwInit();
 		VK_CORE_ASSERT(status, "Failed to Initialize GLFW!");
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-	    glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GLFW_FALSE);
+		glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GLFW_FALSE);
 
 		if (Application::Get()->GetSpecification().Fullscreen)
 		{
@@ -161,12 +161,12 @@ namespace VulkanCore {
 			MouseMovedEvent event((float)xPos, (float)yPos);
 			data.EventCallback(event);
 		});
-    }
+	}
 
-    void LinuxWindow::Shutdown() const
-    {
-        glfwDestroyWindow(m_Window);
-        glfwTerminate();
-    }
+	void LinuxWindow::Shutdown() const
+	{
+		glfwDestroyWindow(m_Window);
+		glfwTerminate();
+	}
 
 }

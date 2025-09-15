@@ -345,34 +345,34 @@ namespace VulkanCore {
 	// NOTE: It currently supports single depth headers(i.e. no header within header)
 	std::string VulkanShader::ParsePreprocessIncludes(std::stringstream& sourceCode)
 	{
-	    std::regex includeRegex(R"(^\s*#\s*include\s+["<](.*)[">])");
-	    std::smatch matches{};
-	    std::string sourceStr{}, line{};
+		std::regex includeRegex(R"(^\s*#\s*include\s+["<](.*)[">])");
+		std::smatch matches{};
+		std::string sourceStr{}, line{};
 
-	    while (std::getline(sourceCode, line))
-	    {
-	        if (std::regex_search(line, matches, includeRegex))
-	        {
-	            constexpr const char* shaderPath = "shaders";
-	            std::filesystem::path includeFilePath = matches[1].str();
-	            includeFilePath = shaderPath / includeFilePath;
+		while (std::getline(sourceCode, line))
+		{
+			if (std::regex_search(line, matches, includeRegex))
+			{
+				constexpr const char* shaderPath = "shaders";
+				std::filesystem::path includeFilePath = matches[1].str();
+				includeFilePath = shaderPath / includeFilePath;
 
-	            if (std::filesystem::exists(includeFilePath))
-	            {
-	                std::ifstream includeFileSource(includeFilePath, std::ios::binary);
-	                std::stringstream includeFileStream;
-	                includeFileStream << includeFileSource.rdbuf();
+				if (std::filesystem::exists(includeFilePath))
+				{
+					std::ifstream includeFileSource(includeFilePath, std::ios::binary);
+					std::stringstream includeFileStream;
+					includeFileStream << includeFileSource.rdbuf();
 
-	                sourceStr += includeFileStream.str();
-	            }
-	            else
-	                VK_CORE_ASSERT(false, "{} header doesn't exist!", includeFilePath.generic_string());
-	        }
-	        else
-	            sourceStr += line + '\n';
-	    }
+					sourceStr += includeFileStream.str();
+				}
+				else
+					VK_CORE_ASSERT(false, "{} header doesn't exist!", includeFilePath.generic_string());
+			}
+			else
+				sourceStr += line + '\n';
+		}
 
-	    return sourceStr;
+		return sourceStr;
 	}
 
 	void VulkanShader::CompileOrGetVulkanBinaries(std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>>& shaderSources)

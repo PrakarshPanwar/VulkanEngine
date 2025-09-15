@@ -70,8 +70,8 @@ namespace VulkanCore {
 			std::string sceneFilePath = commandLineArgs[1];
 			OpenScene(sceneFilePath);
 		}
-	    else
-	        OpenScene();
+		else
+			OpenScene();
 
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
 	}
@@ -211,8 +211,8 @@ namespace VulkanCore {
 				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
 					SaveSceneAs();
 
- 				//if (ImGui::MenuItem("Exit"))
- 				//	Application::Get()->Close();
+				//if (ImGui::MenuItem("Exit"))
+				//	Application::Get()->Close();
 
 				ImGui::EndMenu();
 			}
@@ -229,7 +229,7 @@ namespace VulkanCore {
 			{
 				if (auto selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity())
 				{
-                    ImGui::BeginHorizontal("##TransformToolbar", ImVec2{ 250.0f, 20.0f });
+					ImGui::BeginHorizontal("##TransformToolbar", ImVec2{ 250.0f, 20.0f });
 
 					ImGui::PushItemWidth(45.0f);
 					ImGui::SetKeyboardFocusHere();
@@ -247,12 +247,12 @@ namespace VulkanCore {
 					if (edited || ImGui::IsKeyPressed(ImGuiKey_X) || ImGui::IsKeyPressed(ImGuiKey_Y) || ImGui::IsKeyPressed(ImGuiKey_Z))
 					{
 						// Transfer Input Data using bit flag
-					    __m128 mask = _mm_setr_ps((m_TransformInputMask & 0b0001) ? -1.0f : 0.0f,
-					                            (m_TransformInputMask & 0b0010) ? -1.0f : 0.0f,
-                                                (m_TransformInputMask & 0b0100) ? -1.0f : 0.0f,
-                                                (m_TransformInputMask & 0b1000) ? -1.0f : 0.0f);
+						__m128 mask = _mm_setr_ps((m_TransformInputMask & 0b0001) ? -1.0f : 0.0f,
+												(m_TransformInputMask & 0b0010) ? -1.0f : 0.0f,
+												(m_TransformInputMask & 0b0100) ? -1.0f : 0.0f,
+												(m_TransformInputMask & 0b1000) ? -1.0f : 0.0f);
 
-					    __m128 value = _mm_blendv_ps(_mm_setzero_ps(), _mm_set1_ps(m_TransformScalarInput), mask);
+						__m128 value = _mm_blendv_ps(_mm_setzero_ps(), _mm_set1_ps(m_TransformScalarInput), mask);
 						_mm_storeu_ps(glm::value_ptr(m_TransformInput), value);
 
 						auto& transform = selectedEntity.GetComponent<TransformComponent>();
@@ -272,7 +272,7 @@ namespace VulkanCore {
 						}
 						case ImGuizmo::OPERATION::SCALE:
 						{
-					        __m128 scale = _mm_blendv_ps(_mm_set1_ps(1.0f), _mm_set1_ps(m_TransformScalarInput), mask);
+							__m128 scale = _mm_blendv_ps(_mm_set1_ps(1.0f), _mm_set1_ps(m_TransformScalarInput), mask);
 							_mm_storeu_ps(glm::value_ptr(m_TransformInput), scale);
 
 							transform.Scale *= glm::vec3(m_TransformInput);
@@ -501,7 +501,7 @@ namespace VulkanCore {
 		{
 			if (shiftKey)
 			{
-                if (auto duplicateEntity = m_EditorScene->DuplicateEntity(m_SceneHierarchyPanel.GetSelectedEntity()))
+				if (auto duplicateEntity = m_EditorScene->DuplicateEntity(m_SceneHierarchyPanel.GetSelectedEntity()))
 					m_SceneHierarchyPanel.SetSelectedEntity(duplicateEntity);
 			}
 
@@ -539,10 +539,10 @@ namespace VulkanCore {
 			if (m_EditorCamera.IsInFly())
 				m_EditorCamera.SetFly(false);
 
-		    break;
+			break;
 		}
 		default:
-		    break;
+			break;
 		}
 
 		return false;
@@ -690,7 +690,7 @@ namespace VulkanCore {
 
 			// Step Button
 			if (isPaused && ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor, ImGuiButtonFlags_Repeat) && toolbarEnabled)
-			    activeScene->StepFrames();
+				activeScene->StepFrames();
 		}
 
 		ImGui::Spring(0.5f);
