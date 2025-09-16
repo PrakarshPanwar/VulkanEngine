@@ -42,9 +42,6 @@ namespace VulkanCore {
 		m_Data.Width = specs.Width;
 		m_Data.Height = specs.Height;
 
-		setenv("XCURSOR_THEME", "Breeze_Light", 1);
-		setenv("XCURSOR_SIZE", "24", 1);
-
 		int status = glfwInit();
 		VK_CORE_ASSERT(status, "Failed to Initialize GLFW!");
 

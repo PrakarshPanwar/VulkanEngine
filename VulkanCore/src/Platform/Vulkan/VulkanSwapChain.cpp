@@ -7,6 +7,25 @@
 
 namespace VulkanCore {
 
+	namespace Utils {
+
+		static const char* VulkanPresentMode(VkPresentModeKHR presentMode)
+		{
+			switch (presentMode)
+			{
+			case VK_PRESENT_MODE_IMMEDIATE_KHR:			return "Immediate";
+			case VK_PRESENT_MODE_MAILBOX_KHR:			return "Mailbox";
+			case VK_PRESENT_MODE_FIFO_KHR:				return "FIFO(V-Sync)";
+			case VK_PRESENT_MODE_FIFO_RELAXED_KHR:		return "FIFO(Relaxed)";
+			case VK_PRESENT_MODE_FIFO_LATEST_READY_EXT: return "FIFO(Latest)";
+			default:
+				VK_CORE_ASSERT(false, "Present Mode is undefined!");
+				return "Unknown";
+			}
+		}
+
+	}
+
 	VulkanSwapChain* VulkanSwapChain::s_Instance;
 
 	VulkanSwapChain::VulkanSwapChain(VkExtent2D windowExtent)
@@ -501,12 +520,12 @@ namespace VulkanCore {
 		{
 			if (availablePresentMode == requiredPresentMode)
 			{
-				VK_CORE_INFO("Present Mode: V-Sync");
+				VK_CORE_INFO("Present Mode: {}", Utils::VulkanPresentMode(availablePresentMode));
 				return availablePresentMode;
 			}
 		}
 
-		VK_CORE_INFO("Present Mode: V-Sync");
+		VK_CORE_INFO("Present Mode: {}", Utils::VulkanPresentMode(VK_PRESENT_MODE_FIFO_KHR));
 		return VK_PRESENT_MODE_FIFO_KHR; // Required by all implementations, so we return it as a fallback.
 	}
 
