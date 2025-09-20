@@ -330,7 +330,7 @@ namespace VulkanCore {
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
 		ImGui::SetNextItemAllowOverlap();
-		ImGui::Image(m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGui::Image((ImTextureID)m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		if (ImGui::BeginDragDropTarget())
 		{
@@ -689,7 +689,7 @@ namespace VulkanCore {
 				activeScene->SetPaused(!isPaused);
 
 			// Step Button
-			if (isPaused && ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor, ImGuiButtonFlags_Repeat) && toolbarEnabled)
+			if (isPaused && ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
 				activeScene->StepFrames();
 		}
 

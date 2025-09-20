@@ -20,14 +20,14 @@ namespace VulkanCore {
 		static void SubmitToThread(FuncT&& func)
 		{
 			std::scoped_lock submitLock(m_ThreadMutex);
-			m_RenderCommandQueue.emplace_back(std::move(func));
+			m_RenderCommandQueue.emplace_back(std::forward<FuncT>(func));
 		}
 
 		template<SubmitLambdaConcept FuncT>
 		static void SubmitToDeletion(FuncT&& func)
 		{
 			std::scoped_lock deletionLock(m_DeletionMutex);
-			m_DeletionCommandQueue.emplace_back(std::move(func));
+			m_DeletionCommandQueue.emplace_back(std::forward<FuncT>(func));
 		}
 
 		static void NextFrame();

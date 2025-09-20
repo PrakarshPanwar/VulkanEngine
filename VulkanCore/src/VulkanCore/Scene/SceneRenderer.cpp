@@ -1036,7 +1036,7 @@ namespace VulkanCore {
 
 		if (m_SceneSettings.Fog)
 		{
-			ImGui::BeginChild("##FogSettings", { 0, 0 }, ImGuiChildFlags_Border | ImGuiChildFlags_AutoResizeY);
+			ImGui::BeginChild("##FogSettings", { 0, 0 }, ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY);
 			
 			ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - 100.0f);
 			ImGui::DragFloat("Start Distance", &m_SceneSettings.FogStartDistance, 0.01f, 0.01f);
@@ -1075,7 +1075,7 @@ namespace VulkanCore {
 			ImGui::Checkbox("Cascade Offset", (bool*)&m_CSMSettings.CascadeOffset);
 
 			ImVec2 quadSize = { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x };
-			ImGui::Image(m_ShadowDepthPassImages[m_DepthPassIndex][Renderer::RT_GetCurrentFrameIndex()], quadSize);
+			ImGui::Image((ImTextureID)m_ShadowDepthPassImages[m_DepthPassIndex][Renderer::RT_GetCurrentFrameIndex()], quadSize);
 
 			ImGui::TreePop();
 		}

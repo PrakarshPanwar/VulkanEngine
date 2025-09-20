@@ -29,13 +29,13 @@ namespace VulkanCore {
 		ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
 
-		float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+		float lineHeight = GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
 		ImVec2 buttonSize = { lineHeight + 3.0f, lineHeight };
 
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.6022f, 0.00533f, 0.0134f, 1.0f });
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.787f, 0.0257f, 0.0257f, 1.0f });
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.6022f, 0.00533f, 0.0134f, 1.0f });
-		ImGui::PushFont(boldFont);
+		ImGui::PushFont(boldFont, 0.0f);
 		if (ImGui::Button("X", buttonSize))
 			values.x = resetValue;
 		ImGui::PopFont();
@@ -49,7 +49,7 @@ namespace VulkanCore {
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.0257f, 0.4445f, 0.0257f, 1.0f });
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.0648f, 0.6022f, 0.0648f, 1.0f });
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.0257f, 0.4445f, 0.0257f, 1.0f });
-		ImGui::PushFont(boldFont);
+		ImGui::PushFont(boldFont, 0.0f);
 		if (ImGui::Button("Y", buttonSize))
 			values.y = resetValue;
 		ImGui::PopFont();
@@ -63,7 +63,7 @@ namespace VulkanCore {
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.00533f, 0.0428f, 0.6022f, 1.0f });
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.0257f, 0.092f, 0.787f, 1.0f });
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.00533f, 0.0428f, 0.6022f, 1.0f });
-		ImGui::PushFont(boldFont);
+		ImGui::PushFont(boldFont, 0.0f);
 		if (ImGui::Button("Z", buttonSize))
 			values.z = resetValue;
 		ImGui::PopFont();
@@ -119,9 +119,7 @@ namespace VulkanCore {
 
 		ImGui::Begin("Properties");
 		if (m_SelectionContext)
-		{
 			DrawComponents(m_SelectionContext);
-		}
 
 		ImGui::End(); // End of Properties Panel
 	}
@@ -144,9 +142,7 @@ namespace VulkanCore {
 		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
 		bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.c_str());
 		if (ImGui::IsItemClicked())
-		{
 			m_SelectionContext = entity;
-		}
 
 		bool entityDeleted = false;
 		if (ImGui::BeginPopupContextItem())
@@ -196,14 +192,14 @@ namespace VulkanCore {
 		requires IsComponentType<T> && std::regular_invocable<UIFunction, T&>
 	static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction)
 	{
-		const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+		const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_FramePadding;
 		if (entity.HasComponent<T>())
 		{
 			auto& component = entity.GetComponent<T>();
 			ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
 
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
-			float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+			float lineHeight = GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
 			ImGui::Separator();
 			bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, name.c_str());
 			ImGui::PopStyleVar();
@@ -244,9 +240,7 @@ namespace VulkanCore {
 			memset(buffer, 0, sizeof(buffer));
 			std::strncpy(buffer, tag.c_str(), sizeof(buffer));
 			if (ImGui::InputText("##Tag", buffer, sizeof(buffer)))
-			{
 				tag = std::string(buffer);
-			}
 		}
 
 		ImGui::SameLine();
@@ -331,7 +325,7 @@ namespace VulkanCore {
 			auto skyboxAsset = AssetManager::GetAsset<Texture2D>(component.TextureHandle);
 			if (skyboxAsset)
 			{
-				ImTextureID iconID = SceneRenderer::GetTextureCubeID();
+				ImTextureID iconID = reinterpret_cast<ImTextureID>(SceneRenderer::GetTextureCubeID());
 				ImGui::Image(iconID, { 100.0f, 100.0f });
 
 				auto& skyboxMetadata = AssetManager::GetMetadata(skyboxAsset->Handle);
