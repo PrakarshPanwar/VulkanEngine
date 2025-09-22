@@ -50,7 +50,7 @@ namespace VulkanCore {
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
 		VulkanAllocator allocator("DestroySwapChain");
 
-		for (size_t i = 0; i < framesInFlight; i++)
+		for (size_t i = 0; i < framesInFlight; ++i)
 		{
 			// Cleanup Synchronization Objects
 			vkDestroySemaphore(device->GetVulkanDevice(), m_ImageAvailableSemaphores[i], nullptr);
@@ -251,7 +251,7 @@ namespace VulkanCore {
 
 		m_SCImageViews.resize(m_SCImages.size());
 
-		for (size_t i = 0; i < m_SCImages.size(); i++)
+		for (size_t i = 0; i < m_SCImages.size(); ++i)
 		{
 			VkImageViewCreateInfo viewInfo{};
 			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -280,7 +280,7 @@ namespace VulkanCore {
 		m_ColorImageAllocations.resize(GetImageCount());
 		m_ColorImageViews.resize(GetImageCount());
 
-		for (int i = 0; i < m_ColorImages.size(); i++)
+		for (int i = 0; i < m_ColorImages.size(); ++i)
 		{
 			VkImageCreateInfo imageInfo{};
 			imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -329,7 +329,7 @@ namespace VulkanCore {
 		m_DepthImageAllocations.resize(GetImageCount());
 		m_DepthImageViews.resize(GetImageCount());
 
-		for (int i = 0; i < m_DepthImages.size(); i++)
+		for (int i = 0; i < m_DepthImages.size(); ++i)
 		{
 			VkImageCreateInfo imageInfo{};
 			imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -447,7 +447,7 @@ namespace VulkanCore {
 		m_SCFramebuffers.resize(GetImageCount());
 		VkExtent2D swapChainExtent = GetSwapChainExtent();
 
-		for (size_t i = 0; i < GetImageCount(); i++)
+		for (size_t i = 0; i < GetImageCount(); ++i)
 		{
 			std::array attachments = { m_ColorImageViews[i], m_DepthImageViews[i], m_SCImageViews[i] };
 
@@ -482,7 +482,7 @@ namespace VulkanCore {
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 		// Acquire Image Semaphores(Frames in Flight)
-		for (size_t i = 0; i < framesInFlight; i++)
+		for (size_t i = 0; i < framesInFlight; ++i)
 		{
 			VK_CORE_ASSERT(vkCreateSemaphore(device->GetVulkanDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) == VK_SUCCESS &&
 				vkCreateFence(device->GetVulkanDevice(), &fenceInfo, nullptr, &m_InFlightFences[i]) == VK_SUCCESS, 
@@ -492,7 +492,7 @@ namespace VulkanCore {
 		}
 
 		// Presentation Semaphores(SwapChain Image Count)
-		for (size_t i = 0; i < GetImageCount(); i++)
+		for (size_t i = 0; i < GetImageCount(); ++i)
 		{
 			VK_CORE_ASSERT(vkCreateSemaphore(device->GetVulkanDevice(), &semaphoreInfo, nullptr, &m_ReadyToPresentSemaphores[i]) == VK_SUCCESS,
 				"Failed to Create Synchronization Objects for a Frame!");

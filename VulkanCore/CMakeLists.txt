@@ -19,6 +19,7 @@ add_subdirectory(vendor/tracy)
 add_library(VulkanCore
 		${VK_PROJECT_SOURCES}
 		${CMAKE_CURRENT_SOURCE_DIR}/vendor/stb_image/stb_image.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/vendor/tracy/public/TracyClient.cpp
 	)
 
 # Linking using find_package
@@ -32,7 +33,6 @@ target_link_libraries(VulkanCore
 		assimp
 		${YAML_CPP_LIBRARIES}
 		${CMAKE_CURRENT_SOURCE_DIR}/vendor/shader-slang/lib/libslang.so
-		${CMAKE_CURRENT_SOURCE_DIR}/vendor/tracy/cmake-build-release/libTracyClient.a
 	)
 
 target_include_directories(VulkanCore PRIVATE

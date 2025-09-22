@@ -55,13 +55,16 @@ cmake -S . -B build
 ```
 cmake --build build --config Release --target tracy-profiler --parallel
 ```
-This will build the Tracy Profiler Executable. Repeat similar steps but in base tracy directory to build TracyClient.lib. I have also included a Simple Batch Script [TracyLaunchProfiler](TracyLaunchProfiler.bat) to launch the profiler without any hassle. If you don't want tracy profiler just disable `VK_SET_TRACY_PROFILER` in [Core.h](VulkanCore/src/VulkanCore/Core/Core.h)
+This will build the Tracy Profiler Executable. I have also included a Simple Batch Script [TracyLaunchProfiler](TracyLaunchProfiler.bat) to launch the profiler without any hassle. If you don't want tracy profiler just disable `VK_SET_TRACY_PROFILER` in [Core.h](VulkanCore/src/VulkanCore/Core/Core.h)
 
 ### Linux
-1. Open Tracy submodule folder in CLion.
-2. Right Click on root CMakeLists.txt and click on **Load CMake Project**.
-3. Add Release Config using CLion and hit build.
-4. Alternative method can also be removing [libTracyClient.a](VulkanCore/CMakeLists.txt) and adding **TracyClient.cpp** from submodule.
+1. Make sure to install these packages
+
+Fedora/RHEL Distributions
+```
+sudo dnf install patch dbus-devel wayland-devel
+```
+2. Type same commands in terminal as given in steps 3 and 5 in Windows version.(**NOTE:** remove `--parallel` from step 5 command if memory shortage issues occur)
 
 ## Screenshots
 1. Main Editor Layer UI
