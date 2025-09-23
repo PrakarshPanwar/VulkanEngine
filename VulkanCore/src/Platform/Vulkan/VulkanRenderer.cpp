@@ -799,7 +799,7 @@ namespace VulkanCore {
 			m_SwapChain = std::make_unique<VulkanSwapChain>(extent);
 		else
 		{
-			std::shared_ptr<VulkanSwapChain> oldSwapChain = std::move(m_SwapChain);
+			std::shared_ptr oldSwapChain = std::move(m_SwapChain);
 			m_SwapChain = std::make_unique<VulkanSwapChain>(extent, oldSwapChain);
 
 			if (!oldSwapChain->CompareSwapFormats(*m_SwapChain->GetSwapChain()))

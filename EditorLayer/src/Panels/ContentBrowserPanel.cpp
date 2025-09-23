@@ -75,19 +75,19 @@ namespace VulkanCore {
 
 		static TreeNode* tempNode = m_RootNode;
 		if (m_AssetMode && tempNode != m_RootNode &&
-			ImGui::ImageButton("##BackIcon", m_BackIconID, { 18.5f, 18.5f }, { 0, 0 }, { 1, 1 }))
+			ImGui::ImageButton("##BackIcon", (ImTextureID)m_BackIconID, { 18.5f, 18.5f }, { 0, 0 }, { 1, 1 }))
 		{
 			tempNode = tempNode->ParentNode;
 		}
 		else if (m_CurrentDirectory != std::filesystem::current_path() &&
-			ImGui::ImageButton("##BackIcon", m_BackIconID, { 18.5f, 18.5f }, { 0, 0 }, { 1, 1 }))
+			ImGui::ImageButton("##BackIcon", (ImTextureID)m_BackIconID, { 18.5f, 18.5f }, { 0, 0 }, { 1, 1 }))
 		{
 			m_CurrentDirectory = m_CurrentDirectory.parent_path();
 		}
 
 		ImGui::SetItemTooltip("Back");
 
-		if (ImGui::ImageButton("##RefreshButton", m_RefreshIconID, { 18.5f, 18.5f }, { 0, 0 }, { 1, 1 }))
+		if (ImGui::ImageButton("##RefreshButton", (ImTextureID)m_RefreshIconID, { 18.5f, 18.5f }, { 0, 0 }, { 1, 1 }))
 		{
 			auto oldNode = m_RootNode;
 			m_RootNode = new TreeNode;
@@ -127,7 +127,7 @@ namespace VulkanCore {
 				std::string filenameString = path.filename().string();
 
 				ImGui::PushID(filenameString.c_str());
-				ImTextureID icon = std::filesystem::is_directory(path) ? m_DirectoryIconID : m_FileIconID;
+				ImTextureID icon = std::filesystem::is_directory(path) ? (ImTextureID)m_DirectoryIconID : (ImTextureID)m_FileIconID;
 
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 				ImGui::ImageButton(filenameString.c_str(), icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });
@@ -171,7 +171,7 @@ namespace VulkanCore {
 				std::string filenameString = path.filename().string();
 
 				ImGui::PushID(filenameString.c_str());
-				ImTextureID icon = directoryEntry.is_directory() ? m_DirectoryIconID : m_FileIconID;
+				ImTextureID icon = directoryEntry.is_directory() ? (ImTextureID)m_DirectoryIconID : (ImTextureID)m_FileIconID;
 
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 				ImGui::ImageButton(filenameString.c_str(), icon, { m_ThumbnailSize, m_ThumbnailSize }, { 0, 0 }, { 1, 1 });

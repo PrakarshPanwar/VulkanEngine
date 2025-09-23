@@ -474,7 +474,7 @@ namespace VulkanCore {
 		}
 
 		// Normal Texture
- 		{
+		{
 			std::shared_ptr<VulkanTexture> normalTexture = std::dynamic_pointer_cast<VulkanTexture>(m_NormalTexture);
 
 			// Update Material Texture

@@ -85,7 +85,7 @@ namespace VulkanCore {
 		VK_CORE_PROFILE();
 
 		auto activeScene = m_ActiveScene.load();
-		float time = WindowsTime::GetTime();
+		float time = PlatformTime::GetTime();
 		Timestep timestep = time - m_LastFrameTime;
 		m_LastFrameTime = time;
 
@@ -210,8 +210,8 @@ namespace VulkanCore {
 				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
 					SaveSceneAs();
 
- 				//if (ImGui::MenuItem("Exit"))
- 				//	Application::Get()->Close();
+				//if (ImGui::MenuItem("Exit"))
+				//	Application::Get()->Close();
 
 				ImGui::EndMenu();
 			}
@@ -226,19 +226,24 @@ namespace VulkanCore {
 
 			if (std::popcount(m_TransformInputMask))
 			{
-				auto selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-				if (selectedEntity)
+				if (auto selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity())
 				{
+					ImGui::BeginHorizontal("##TransformToolbar", ImVec2{ 250.0f, 20.0f });
+
 					ImGui::PushItemWidth(45.0f);
 					ImGui::SetKeyboardFocusHere();
 					bool edited = ImGui::InputFloat("##TransformInput", &m_TransformScalarInput, 0.0f, 0.0f, "%.3f", ImGuiInputTextFlags_CharsDecimal);
 					ImGui::PopItemWidth();
 
+					ImGui::Spring(0.2f);
+
 					ImGui::TextColored(m_TransformInputMask & 0x1 ? ImVec4{ 0.8f, 0.0f, 0.0f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "X = %.3f", m_TransformInput.x);
 					ImGui::SameLine();
-					ImGui::TextColored(m_TransformInputMask & 0x2 ? ImVec4{ 0.0f, 0.8f, 0.0f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "\tY = %.3f", m_TransformInput.y);
+					ImGui::TextColored(m_TransformInputMask & 0x2 ? ImVec4{ 0.0f, 0.8f, 0.0f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "Y = %.3f", m_TransformInput.y);
 					ImGui::SameLine();
-					ImGui::TextColored(m_TransformInputMask & 0x4 ? ImVec4{ 0.0f, 0.0f, 0.8f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "\tZ = %.3f", m_TransformInput.z);
+					ImGui::TextColored(m_TransformInputMask & 0x4 ? ImVec4{ 0.0f, 0.0f, 0.8f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "Z = %.3f", m_TransformInput.z);
+
+					ImGui::EndHorizontal();
 
 					if (edited || ImGui::IsKeyPressed(ImGuiKey_X) || ImGui::IsKeyPressed(ImGuiKey_Y) || ImGui::IsKeyPressed(ImGuiKey_Z))
 					{
@@ -321,7 +326,7 @@ namespace VulkanCore {
 		Application::Get()->GetImGuiLayer()->BlockEvents(!m_ViewportHovered && !m_ViewportFocused);
 
 		ImGui::SetNextItemAllowOverlap();
-		ImGui::Image(m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGui::Image((ImTextureID)m_SceneRenderer->GetSceneImage(Renderer::RT_GetCurrentFrameIndex()), region, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		if (ImGui::BeginDragDropTarget())
 		{
@@ -385,9 +390,7 @@ namespace VulkanCore {
 
 		ImGui::Spring();
 		if (m_ShowApplicationStats)
-		{
 			SHOW_FRAMERATES;
-		}
 
 		if (m_ShowCameraData)
 		{
@@ -494,8 +497,7 @@ namespace VulkanCore {
 		{
 			if (shiftKey)
 			{
-				auto duplicateEntity = m_EditorScene->DuplicateEntity(m_SceneHierarchyPanel.GetSelectedEntity());
-				if (duplicateEntity)
+				if (auto duplicateEntity = m_EditorScene->DuplicateEntity(m_SceneHierarchyPanel.GetSelectedEntity()))
 					m_SceneHierarchyPanel.SetSelectedEntity(duplicateEntity);
 			}
 
@@ -638,7 +640,7 @@ namespace VulkanCore {
 		float size = ImGui::GetWindowHeight() - 4.0f;
 		
 		// Begin Stack Layout
-		ImGui::BeginHorizontal(372846283284, { region.x, 0.0f });
+		ImGui::BeginHorizontal(376283284, { region.x, 0.0f });
 
 		ImGui::Spring(0.5f);
 
@@ -678,12 +680,8 @@ namespace VulkanCore {
 				activeScene->SetPaused(!isPaused);
 
 			// Step button
-			if (isPaused)
-			{
-				bool isPaused = activeScene->IsPaused();
-				if (ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor, ImGuiButtonFlags_Repeat) && toolbarEnabled)
+			if (isPaused && ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
 					activeScene->StepFrames();
-			}
 		}
 
 		ImGui::Spring(0.5f);

@@ -28,7 +28,7 @@ project "EditorLayer"
 		"%{IncludeDir.ImGuizmo}"
 	}
 
-	defines { "SPDLOG_USE_STD_FORMAT", "TRACY_ENABLE" }
+	defines { "SPDLOG_USE_STD_FORMAT", "IMGUI_DISABLE_OBSOLETE_FUNCTIONS", "TRACY_ENABLE" }
 	links { "VulkanCore" }
 
 	filter "system:windows"

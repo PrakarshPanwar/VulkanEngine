@@ -465,7 +465,7 @@ Asset Registry:
       Type: Texture2D
   - Handle: 3533140946116970567
     Metadata:
-      Filepath: D:/Graphics/VulkanEngine/VulkanCore/assets/meshes/Source/Standard/DensePlane.fbx
+      Filepath: meshes/Source/Standard/DensePlane.fbx
       Type: MeshAsset
   - Handle: 2677317853970780333
     Metadata:
@@ -481,7 +481,7 @@ Asset Registry:
       Type: Scene
   - Handle: 17042868248572563900
     Metadata:
-      Filepath: D:/Graphics/VulkanEngine/VulkanCore/assets/meshes/Source/Standard/Box.fbx
+      Filepath: meshes/Source/Standard/Box.fbx
       Type: MeshAsset
   - Handle: 13298553466856253940
     Metadata:

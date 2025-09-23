@@ -32,7 +32,7 @@ cmake -S . -B build
 ```
 cmake --build build --config Release --target tracy-profiler --parallel
 ```
-This will build the Tracy Profiler Executable. Repeat similar steps but in base tracy directory to build TracyClient.lib. I have also included a Simple Batch Script [TracyLaunchProfiler](TracyLaunchProfiler.bat) to launch the profiler without any hassle. If you don't want tracy profiler just disable `VK_SET_TRACY_PROFILER` in [Core.h](VulkanCore/src/VulkanCore/Core/Core.h)
+This will build the Tracy Profiler Executable. I have also included a Simple Batch Script [TracyLaunchProfiler](TracyLaunchProfiler.bat) to launch the profiler without any hassle. If you don't want tracy profiler just disable `VK_SET_TRACY_PROFILER` in [Core.h](VulkanCore/src/VulkanCore/Core/Core.h)
 
 ## Screenshots
 1. Main Editor Layer UI
