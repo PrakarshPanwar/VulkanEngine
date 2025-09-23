@@ -119,9 +119,7 @@ namespace VulkanCore {
 
 		ImGui::Begin("Properties");
 		if (m_SelectionContext)
-		{
 			DrawComponents(m_SelectionContext);
-		}
 
 		ImGui::End(); // End of Properties Panel
 	}
@@ -144,9 +142,7 @@ namespace VulkanCore {
 		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
 		bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.c_str());
 		if (ImGui::IsItemClicked())
-		{
 			m_SelectionContext = entity;
-		}
 
 		bool entityDeleted = false;
 		if (ImGui::BeginPopupContextItem())
@@ -210,9 +206,7 @@ namespace VulkanCore {
 
 			ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
 			if (ImGui::Button("-", ImVec2{ lineHeight, lineHeight }))
-			{
 				ImGui::OpenPopup("ComponentSettings");
-			}
 
 			bool removeComponent = false;
 			if (ImGui::BeginPopup("ComponentSettings"))
@@ -386,12 +380,12 @@ namespace VulkanCore {
 			auto sceneRenderer = SceneRenderer::GetSceneRenderer();
 
 			std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(component.MeshHandle);
-			std::shared_ptr<MeshSource> meshSource = mesh->GetMeshSource();
 			std::shared_ptr<MaterialTable> materialTable = component.MaterialTableHandle;
 
 			if (mesh && materialTable)
 			{
 				// Mesh Asset
+				auto meshSource = mesh->GetMeshSource();
 				auto& meshAssetMetadata = AssetManager::GetMetadata(meshSource->Handle);
 				const auto& meshAssetPath = meshAssetMetadata.FilePath.generic_string();
 				ImGui::InputText("Mesh", (char*)meshAssetPath.data(), meshAssetPath.size(), ImGuiInputTextFlags_ReadOnly);

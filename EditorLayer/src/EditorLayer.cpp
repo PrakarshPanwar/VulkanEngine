@@ -238,9 +238,7 @@ namespace VulkanCore {
 					ImGui::Spring(0.2f);
 
 					ImGui::TextColored(m_TransformInputMask & 0x1 ? ImVec4{ 0.8f, 0.0f, 0.0f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "X = %.3f", m_TransformInput.x);
-					ImGui::SameLine();
 					ImGui::TextColored(m_TransformInputMask & 0x2 ? ImVec4{ 0.0f, 0.8f, 0.0f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "Y = %.3f", m_TransformInput.y);
-					ImGui::SameLine();
 					ImGui::TextColored(m_TransformInputMask & 0x4 ? ImVec4{ 0.0f, 0.0f, 0.8f, 1.0f } : ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f }, "Z = %.3f", m_TransformInput.z);
 
 					ImGui::EndHorizontal();
