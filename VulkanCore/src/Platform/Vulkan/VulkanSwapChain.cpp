@@ -234,7 +234,7 @@ namespace VulkanCore {
 
 		m_SCImageViews.resize(m_SCImages.size());
 
-		for (size_t i = 0; i < m_SCImages.size(); i++)
+		for (size_t i = 0; i < m_SCImages.size(); ++i)
 		{
 			VkImageViewCreateInfo viewInfo{};
 			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -263,7 +263,7 @@ namespace VulkanCore {
 		m_ColorImageAllocations.resize(GetImageCount());
 		m_ColorImageViews.resize(GetImageCount());
 
-		for (int i = 0; i < m_ColorImages.size(); i++)
+		for (int i = 0; i < m_ColorImages.size(); ++i)
 		{
 			VkImageCreateInfo imageInfo{};
 			imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -312,7 +312,7 @@ namespace VulkanCore {
 		m_DepthImageAllocations.resize(GetImageCount());
 		m_DepthImageViews.resize(GetImageCount());
 
-		for (int i = 0; i < m_DepthImages.size(); i++)
+		for (int i = 0; i < m_DepthImages.size(); ++i)
 		{
 			VkImageCreateInfo imageInfo{};
 			imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -430,7 +430,7 @@ namespace VulkanCore {
 		m_SCFramebuffers.resize(GetImageCount());
 		VkExtent2D swapChainExtent = GetSwapChainExtent();
 
-		for (size_t i = 0; i < GetImageCount(); i++)
+		for (size_t i = 0; i < GetImageCount(); ++i)
 		{
 			std::array<VkImageView, 3> attachments = { m_ColorImageViews[i], m_DepthImageViews[i], m_SCImageViews[i] };
 
