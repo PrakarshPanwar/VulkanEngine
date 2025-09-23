@@ -99,7 +99,7 @@ namespace VulkanCore {
 			data.EventCallback(event);
 		});
 
-		glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
+		glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int modes)
 		{
 			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
@@ -111,14 +111,12 @@ namespace VulkanCore {
 				data.EventCallback(event);
 				break;
 			}
-
 			case GLFW_RELEASE:
 			{
 				KeyReleasedEvent event(key);
 				data.EventCallback(event);
 				break;
 			}
-
 			case GLFW_REPEAT:
 			{
 				KeyPressedEvent event(key, 1);
@@ -140,7 +138,6 @@ namespace VulkanCore {
 				data.EventCallback(event);
 				break;
 			}
-
 			case GLFW_RELEASE:
 			{
 				MouseButtonReleasedEvent event(button);

@@ -57,7 +57,7 @@ namespace VulkanCore {
 		return {};
 	}
 
-	float WindowsTime::GetTime()
+	float PlatformTime::GetTime()
 	{
 		return static_cast<float>(glfwGetTime());
 	}

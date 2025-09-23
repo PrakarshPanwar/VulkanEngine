@@ -100,11 +100,6 @@ namespace VulkanCore {
 #endif
 
 		SetDarkThemeColor();
-
-		bool createFont = ImGui_ImplVulkan_CreateFontsTexture();
-		VK_CORE_ASSERT(createFont, "Failed to Create Font Textures");
-
-		ImGui_ImplVulkan_DestroyFontsTexture();
 	}
 
 	void ImGuiLayer::OnDetach()
@@ -311,9 +306,9 @@ namespace VulkanCore {
 
 		colors[ImGuiCol_Tab] = ImVec4{ colorCode3.x, colorCode3.y, colorCode3.z, 1.0f };
 		colors[ImGuiCol_TabHovered] = ImVec4{ colorCode5.x, colorCode5.y, colorCode5.z, 1.0f };
-		colors[ImGuiCol_TabActive] = ImVec4{ colorCode6.x, colorCode6.y, colorCode6.z, 1.0f };
-		colors[ImGuiCol_TabUnfocused] = ImVec4{ colorCode3.x, colorCode3.y, colorCode3.z, 1.0f };
-		colors[ImGuiCol_TabUnfocusedActive] = ImVec4{ colorCode4.x, colorCode4.y, colorCode4.z, 1.0f };
+		colors[ImGuiCol_TabSelected] = ImVec4{ colorCode6.x, colorCode6.y, colorCode6.z, 1.0f };
+		colors[ImGuiCol_TabDimmed] = ImVec4{ colorCode3.x, colorCode3.y, colorCode3.z, 1.0f };
+		colors[ImGuiCol_TabDimmedSelected] = ImVec4{ colorCode4.x, colorCode4.y, colorCode4.z, 1.0f };
 
 		colors[ImGuiCol_TitleBg] = ImVec4{ colorCode3.x, colorCode3.y, colorCode3.z, 1.0f };
 		colors[ImGuiCol_TitleBgActive] = ImVec4{ colorCode3.x, colorCode3.y, colorCode3.z, 1.0f };

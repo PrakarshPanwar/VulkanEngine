@@ -21,7 +21,6 @@ LibraryDir["VulkanSDK"] = "%{wks.location}/VulkanCore/vendor/VulkanSDK/Lib"
 LibraryDir["Assimp"] = "%{wks.location}/VulkanCore/vendor/Assimp/build/lib"
 LibraryDir["AssimpBin"] = "%{wks.location}/VulkanCore/vendor/Assimp/build/bin"
 LibraryDir["optick"] = "%{wks.location}/VulkanCore/vendor/Optick/lib/x64"
-LibraryDir["tracy"] = "%{wks.location}/VulkanCore/vendor/tracy/build"
 
 Library = {}
 Library["Vulkan"] = "%{LibraryDir.VulkanSDK}/vulkan-1.lib"
@@ -41,9 +40,6 @@ Library["optick_Debug"] = "%{LibraryDir.optick}/debug/OptickCore.lib"
 Library["optick_Release"] = "%{LibraryDir.optick}/release/OptickCore.lib"
 Library["optick_DLL_Debug"] = "%{LibraryDir.optick}/debug/OptickCore.dll"
 Library["optick_DLL_Release"] = "%{LibraryDir.optick}/release/OptickCore.dll"
-
-Library["tracy_Debug"] = "%{LibraryDir.tracy}/Debug/TracyClient.lib"
-Library["tracy_Release"] = "%{LibraryDir.tracy}/Release/TracyClient.lib"
 
 Library["AssimpLibDebug"] = "%{LibraryDir.Assimp}/Debug/assimp-vc143-mtd.lib"
 Library["AssimpZlibDebug"] = "%{LibraryDir.Assimp}/Debug/zlibd.lib"
