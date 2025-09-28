@@ -96,7 +96,7 @@ namespace VulkanCore {
 			{ "Kinematic", Rigidbody3DComponent::BodyType::Kinematic }
 		};
 
-		static std::string RigidBody3DBodyTypeToString(Rigidbody3DComponent::BodyType bodyType)
+		static const char* RigidBody3DBodyTypeToString(Rigidbody3DComponent::BodyType bodyType)
 		{
 			switch (bodyType)
 			{
@@ -105,7 +105,7 @@ namespace VulkanCore {
 			case Rigidbody3DComponent::BodyType::Kinematic: return "Kinematic";
 			default:
 				VK_CORE_ASSERT(false, "Unknown body type");
-				return {};
+				return "";
 			}
 		}
 
