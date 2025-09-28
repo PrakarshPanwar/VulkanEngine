@@ -23,7 +23,7 @@ namespace VulkanCore {
 			ShaderType::Geometry
 		};
 
-		static std::string GLShaderTypeToString(ShaderType stage)
+		static const char* GLShaderTypeToString(ShaderType stage)
 		{
 			switch (stage)
 			{
@@ -36,7 +36,7 @@ namespace VulkanCore {
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
-			return {};
+			return "";
 		}
 
 		static ShaderType SlangShaderTypeToGLShaderType(SlangStage slangType)

@@ -51,7 +51,7 @@ namespace VulkanCore {
 			return (shaderc_shader_kind)0;
 		}
 
-		static std::string GLShaderTypeToString(ShaderType stage)
+		static const char* GLShaderTypeToString(ShaderType stage)
 		{
 			switch (stage)
 			{
@@ -64,7 +64,7 @@ namespace VulkanCore {
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
-			return {};
+			return "";
 		}
 
 		static consteval const char* GetCacheDirectory()
@@ -345,10 +345,8 @@ namespace VulkanCore {
 	// NOTE: It currently supports single depth headers(i.e. no header within header)
 	std::string VulkanShader::ParsePreprocessIncludes(std::stringstream& sourceCode)
 	{
-		constexpr const char* shaderPath = "shaders";
-
-		std::string sourceStr = sourceCode.str();
 		std::regex includeRegex("^[ ]*#[ ]*include[ ]+[\"<](.*)[\">].*");
+		std::string sourceStr = sourceCode.str();
 
 		std::smatch matches{};
 		std::string line{};
@@ -356,6 +354,7 @@ namespace VulkanCore {
 		{
 			if (std::regex_search(line, matches, includeRegex))
 			{
+				constexpr const char* shaderPath = "shaders";
 				std::filesystem::path includeFilePath = matches[1].str();
 				includeFilePath = shaderPath / includeFilePath;
 
@@ -407,7 +406,7 @@ namespace VulkanCore {
 
 		auto CreateShader = [&](const std::filesystem::path& shaderFilePath, const std::string& source, ShaderType stage)
 		{
-			Timer timer(Utils::GLShaderTypeToString(stage) + " Shader Creation");
+			Timer stimer(std::format("{} Shader Creation", Utils::GLShaderTypeToString(stage)));
 
 			shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, Utils::GLShaderStageToShaderC(stage), shaderFilePath.string().c_str(), options);
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
@@ -533,10 +532,9 @@ namespace VulkanCore {
 
 		auto CreateShader = [&](const std::filesystem::path& shaderFilePath, const std::string& source, ShaderType stage)
 		{
-			Timer timer(Utils::GLShaderTypeToString(stage) + " Shader Creation");
+			Timer stimer(std::format("{} Shader Creation", Utils::GLShaderTypeToString(stage)));
 
 			shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, Utils::GLShaderStageToShaderC(stage), shaderFilePath.string().c_str(), options);
-
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 			{
 				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());

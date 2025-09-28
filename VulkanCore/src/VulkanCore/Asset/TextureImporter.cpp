@@ -111,6 +111,7 @@ namespace VulkanCore {
 
 		spec.Width = width;
 		spec.Height = height;
+		spec.GenerateMips = false;
 
 		std::shared_ptr<Texture2D> texture = Texture2D::Create(data, spec);
 		return texture;
