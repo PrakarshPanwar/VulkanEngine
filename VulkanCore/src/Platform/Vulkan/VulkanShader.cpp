@@ -51,7 +51,7 @@ namespace VulkanCore {
 			return (shaderc_shader_kind)0;
 		}
 
-		static std::string GLShaderTypeToString(ShaderType stage)
+		static const char* GLShaderTypeToString(ShaderType stage)
 		{
 			switch (stage)
 			{
@@ -64,7 +64,7 @@ namespace VulkanCore {
 			}
 
 			VK_CORE_ASSERT(false, "Cannot find Shader Type!");
-			return {};
+			return "";
 		}
 
 		static consteval const char* GetCacheDirectory()
@@ -406,7 +406,7 @@ namespace VulkanCore {
 
 		auto CreateShader = [&](const std::filesystem::path& shaderFilePath, const std::string& source, ShaderType stage)
 		{
-			Timer timer(Utils::GLShaderTypeToString(stage) + " Shader Creation");
+			Timer stimer(std::format("{} Shader Creation", Utils::GLShaderTypeToString(stage)));
 
 			shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, Utils::GLShaderStageToShaderC(stage), shaderFilePath.string().c_str(), options);
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
@@ -532,7 +532,7 @@ namespace VulkanCore {
 
 		auto CreateShader = [&](const std::filesystem::path& shaderFilePath, const std::string& source, ShaderType stage)
 		{
-			Timer timer(Utils::GLShaderTypeToString(stage) + " Shader Creation");
+			Timer stimer(std::format("{} Shader Creation", Utils::GLShaderTypeToString(stage)));
 
 			shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, Utils::GLShaderStageToShaderC(stage), shaderFilePath.string().c_str(), options);
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)

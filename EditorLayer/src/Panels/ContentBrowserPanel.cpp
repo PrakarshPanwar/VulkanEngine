@@ -26,7 +26,7 @@ namespace VulkanCore {
 			{ ".fbx", AssetType::MeshAsset },
 			{ ".gltf", AssetType::MeshAsset },
 			{ ".obj", AssetType::MeshAsset },
-			{ ".vkmesh", AssetType::Mesh },
+			{ ".vkmsh", AssetType::Mesh },
 			{ ".vkmat", AssetType::Material }
 		};
 
@@ -272,14 +272,14 @@ namespace VulkanCore {
 			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 25.0f);
 			ImGui::InputText("##InputPath", buffer, sizeof(buffer));
 			ImGui::SameLine();
-			ImGui::Text(".vkmesh");
+			ImGui::Text(".vkmsh");
 
 			ImGui::Separator();
 			if (ImGui::Button("OK"))
 			{
 				std::string pathStr = { buffer };
 				std::filesystem::path filepath = pathStr;
-				filepath.replace_extension(".vkmesh");
+				filepath.replace_extension(".vkmsh");
 
 				filepath = "meshes" / filepath;
 

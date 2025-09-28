@@ -713,7 +713,7 @@ namespace VulkanCore {
 
 	void EditorLayer::OpenScene()
 	{
-		std::string filepath = FileDialogs::OpenFile("VulkanEngine Scene (*.vksc) | *.vksc");
+		std::string filepath = FileDialogs::OpenFile("VulkanEngine Scene (*.vkscn) | *.vkscn");
 		if (!filepath.empty())
 			OpenScene(filepath);
 	}
@@ -721,7 +721,7 @@ namespace VulkanCore {
 	void EditorLayer::OpenScene(const std::string& path)
 	{
 		std::filesystem::path filepath = std::filesystem::relative(path);
-		if (filepath.extension().string() != ".vksc")
+		if (filepath.extension().string() != ".vkscn")
 		{
 			VK_WARN("Could not load {0} - not a scene file", filepath.filename().string());
 			return;
@@ -749,7 +749,7 @@ namespace VulkanCore {
 
 	void EditorLayer::SaveSceneAs()
 	{
-		std::string filepath = FileDialogs::SaveFile("VulkanEngine Scene (*.vksc) | *.vksc");
+		std::string filepath = FileDialogs::SaveFile("VulkanEngine Scene (*.vkscn) | *.vkscn");
 		if (!filepath.empty())
 		{
 			SerializeScene(m_ActiveScene, filepath);

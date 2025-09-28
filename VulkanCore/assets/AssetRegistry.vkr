@@ -33,7 +33,7 @@ Asset Registry:
       Type: Texture2D
   - Handle: 11844912818719243279
     Metadata:
-      Filepath: meshes/CeramicVase.vkmesh
+      Filepath: meshes/CeramicVase.vkmsh
       Type: Mesh
   - Handle: 15662263919763271311
     Metadata:
@@ -229,7 +229,7 @@ Asset Registry:
       Type: Texture2D
   - Handle: 339593974948457
     Metadata:
-      Filepath: scenes/ClosedSpace.vksc
+      Filepath: scenes/ClosedSpace.vkscn
       Type: Scene
   - Handle: 3620384474883821673
     Metadata:
@@ -313,35 +313,35 @@ Asset Registry:
       Type: MeshAsset
   - Handle: 12839587798147330480
     Metadata:
-      Filepath: meshes/BrassVase.vkmesh
+      Filepath: meshes/BrassVase.vkmsh
       Type: Mesh
   - Handle: 9816593081404201911
     Metadata:
-      Filepath: meshes/Cube.vkmesh
+      Filepath: meshes/Cube.vkmsh
       Type: Mesh
   - Handle: 8792136178901605223
     Metadata:
-      Filepath: meshes/Cone.vkmesh
+      Filepath: meshes/Cone.vkmsh
       Type: Mesh
   - Handle: 11704756426639671982
     Metadata:
-      Filepath: meshes/Torus.vkmesh
+      Filepath: meshes/Torus.vkmsh
       Type: Mesh
   - Handle: 6944358963220749138
     Metadata:
-      Filepath: meshes/Rock2K.vkmesh
+      Filepath: meshes/Rock2K.vkmsh
       Type: Mesh
   - Handle: 5887157471203535698
     Metadata:
-      Filepath: meshes/Sphere.vkmesh
+      Filepath: meshes/Sphere.vkmsh
       Type: Mesh
   - Handle: 85510852047851852
     Metadata:
-      Filepath: meshes/Cylinder.vkmesh
+      Filepath: meshes/Cylinder.vkmsh
       Type: Mesh
   - Handle: 13937184743255731819
     Metadata:
-      Filepath: meshes/Sponza.vkmesh
+      Filepath: meshes/Sponza.vkmsh
       Type: Mesh
   - Handle: 18198936774292638234
     Metadata:
@@ -373,7 +373,7 @@ Asset Registry:
       Type: MeshAsset
   - Handle: 5959344745003257604
     Metadata:
-      Filepath: meshes/VintageLamp.vkmesh
+      Filepath: meshes/VintageLamp.vkmsh
       Type: Mesh
   - Handle: 13537048670194803758
     Metadata:
@@ -425,15 +425,15 @@ Asset Registry:
       Type: Texture2D
   - Handle: 923874947522838273
     Metadata:
-      Filepath: scenes/FirstScene.vksc
+      Filepath: scenes/FirstScene.vkscn
       Type: Scene
   - Handle: 896876980868865
     Metadata:
-      Filepath: scenes/ShadowDemo.vksc
+      Filepath: scenes/ShadowDemo.vkscn
       Type: Scene
   - Handle: 718726387624872
     Metadata:
-      Filepath: scenes/LampDemo.vksc
+      Filepath: scenes/LampDemo.vkscn
       Type: Scene
   - Handle: 18152442800595508283
     Metadata:
@@ -469,15 +469,15 @@ Asset Registry:
       Type: MeshAsset
   - Handle: 2677317853970780333
     Metadata:
-      Filepath: meshes/DensePlane.vkmesh
+      Filepath: meshes/DensePlane.vkmsh
       Type: Mesh
   - Handle: 43539827938472945
     Metadata:
-      Filepath: scenes/TessellationDemo.vksc
+      Filepath: scenes/TessellationDemo.vkscn
       Type: Scene
   - Handle: 89283744953943652
     Metadata:
-      Filepath: scenes/PhysicsDemo.vksc
+      Filepath: scenes/PhysicsDemo.vkscn
       Type: Scene
   - Handle: 17042868248572563900
     Metadata:
@@ -485,7 +485,7 @@ Asset Registry:
       Type: MeshAsset
   - Handle: 13298553466856253940
     Metadata:
-      Filepath: meshes/Box.vkmesh
+      Filepath: meshes/Box.vkmsh
       Type: Mesh
   - Handle: 6322805197742733304
     Metadata:
