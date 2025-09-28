@@ -61,6 +61,12 @@ namespace VulkanCore {
 
 	VulkanAllocator::~VulkanAllocator()
 	{
+#ifndef VK_RELEASE
+		VmaBudget budgetInfo{};
+		vmaGetHeapBudgets(m_VkMemoryAllocator, &budgetInfo);
+
+		VK_CORE_DEBUG("VMA Budget: {}", budgetInfo.budget > budgetInfo.usage ? budgetInfo.budget - budgetInfo.usage : 0);
+#endif
 	}
 
 	VmaAllocation VulkanAllocator::AllocateBuffer(VulkanMemoryType memoryType, const VkBufferCreateInfo& bufInfo, VkBuffer& buffer, VmaMemoryUsage usage)

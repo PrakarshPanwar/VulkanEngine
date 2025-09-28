@@ -345,10 +345,11 @@ namespace VulkanCore {
 	// NOTE: It currently supports single depth headers(i.e. no header within header)
 	std::string VulkanShader::ParsePreprocessIncludes(std::stringstream& sourceCode)
 	{
-		std::regex includeRegex(R"(^\s*#\s*include\s+["<](.*)[">])");
-		std::smatch matches{};
-		std::string sourceStr{}, line{};
+		std::regex includeRegex("^[ ]*#[ ]*include[ ]+[\"<](.*)[\">].*", std::regex_constants::multiline);
+		std::string sourceStr = sourceCode.str();
 
+		std::smatch matches{};
+		std::string line{};
 		while (std::getline(sourceCode, line))
 		{
 			if (std::regex_search(line, matches, includeRegex))
@@ -360,16 +361,18 @@ namespace VulkanCore {
 				if (std::filesystem::exists(includeFilePath))
 				{
 					std::ifstream includeFileSource(includeFilePath, std::ios::binary);
+
 					std::stringstream includeFileStream;
 					includeFileStream << includeFileSource.rdbuf();
 
-					sourceStr += includeFileStream.str();
+					sourceStr = std::regex_replace(sourceStr, includeRegex, includeFileStream.str(), std::regex_constants::format_first_only);
 				}
 				else
-					VK_CORE_ASSERT(false, "{} header doesn't exist!", includeFilePath.generic_string());
+				{
+					VK_CORE_CRITICAL("{} header doesn't exist!", includeFilePath.generic_string());
+					DEBUG_BREAK;
+				}
 			}
-			else
-				sourceStr += line + '\n';
 		}
 
 		return sourceStr;
@@ -532,7 +535,6 @@ namespace VulkanCore {
 			Timer timer(Utils::GLShaderTypeToString(stage) + " Shader Creation");
 
 			shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, Utils::GLShaderStageToShaderC(stage), shaderFilePath.string().c_str(), options);
-
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 			{
 				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
