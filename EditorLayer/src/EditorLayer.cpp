@@ -713,7 +713,7 @@ namespace VulkanCore {
 
 	void EditorLayer::OpenScene()
 	{
-		std::string filepath = FileDialogs::OpenFile("VulkanEngine Scene (*.vkscn) | *.vkscn");
+		std::string filepath = FileDialogs::OpenFile("VulkanEngine Scene (*.vkscn)\0*.vkscn\0");
 		if (!filepath.empty())
 			OpenScene(filepath);
 	}
@@ -749,7 +749,7 @@ namespace VulkanCore {
 
 	void EditorLayer::SaveSceneAs()
 	{
-		std::string filepath = FileDialogs::SaveFile("VulkanEngine Scene (*.vkscn) | *.vkscn");
+		std::string filepath = FileDialogs::SaveFile("VulkanEngine Scene (*.vkscn)\0*.vkscn\0");
 		if (!filepath.empty())
 		{
 			SerializeScene(m_ActiveScene, filepath);

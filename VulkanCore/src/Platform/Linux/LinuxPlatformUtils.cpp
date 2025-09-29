@@ -7,7 +7,12 @@ namespace VulkanCore {
 
 	std::string FileDialogs::OpenFile(const char* filter)
 	{
-		std::string command = std::format("zenity --file-selection --title='Open File' --file-filter='{}'", filter);
+		// First we must split file type and file extension
+		std::string_view file_type = filter;
+		std::string_view file_ext = filter + file_type.size() + 1;
+
+		// Create zenity command
+		std::string command = std::format("zenity --file-selection --title='Open File' --file-filter='{0} | {1}'", file_type, file_ext);
 
 		// Execute command and capture output
 		FILE* pipe = popen(command.c_str(), "r");
@@ -33,7 +38,12 @@ namespace VulkanCore {
 
 	std::string FileDialogs::SaveFile(const char* filter)
 	{
-		std::string command = std::format("zenity --file-selection --save --title='Save File' --file-filter='{}' --confirm-overwrite", filter);
+		// First we must split file type and file extension
+		std::string_view file_type = filter;
+		std::string_view file_ext = filter + file_type.size() + 1;
+
+		// Create zenity command
+		std::string command = std::format("zenity --file-selection --save --title='Save File' --file-filter='{0} | {1}' --confirm-overwrite", file_type, file_ext);
 
 		// Execute command and capture output
 		FILE* pipe = popen(command.c_str(), "r");
