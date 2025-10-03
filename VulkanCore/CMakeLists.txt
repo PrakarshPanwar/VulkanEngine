@@ -32,22 +32,22 @@ target_link_libraries(VulkanCore
 		JoltLib
 		assimp
 		${YAML_CPP_LIBRARIES}
-		${CMAKE_CURRENT_SOURCE_DIR}/vendor/shader-slang/lib/libslang.so
+		${SLANG_LIB}
 	)
 
 target_include_directories(VulkanCore PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/src
 		${VULKAN_INCLUDE_DIRS}
 		${VMA_INCLUDE_DIRS}
 		${SPDLOD_INCLUDE_DIRS}
-		${CMAKE_CURRENT_SOURCE_DIR}/src
-		${CMAKE_CURRENT_SOURCE_DIR}/vendor/entt
-		${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm
-		${CMAKE_CURRENT_SOURCE_DIR}/vendor/JoltPhysics
-		${CMAKE_CURRENT_SOURCE_DIR}/vendor/stb_image
-		${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
-		${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo
-		${CMAKE_CURRENT_SOURCE_DIR}/vendor/shader-slang/include
-		${CMAKE_CURRENT_SOURCE_DIR}/vendor/tracy/public
+		${ENTT_INCLUDE_DIRS}
+		${GLM_INCLUDE_DIRS}
+		${JOLT_INCLUDE_DIRS}
+		${STB_INCLUDE_DIRS}
+		${IMGUI_INCLUDE_DIRS}
+		${IMGUIZMO_INCLUDE_DIRS}
+		${SLANG_INCLUDE_DIRS}
+		${TRACY_INCLUDE_DIRS}
 	)
 
 # Add Precompiled Headers

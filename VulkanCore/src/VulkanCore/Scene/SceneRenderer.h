@@ -55,7 +55,7 @@ namespace VulkanCore {
 			uint64_t MaterialHandle;
 			uint32_t SubmeshIndex;
 
-			bool operator==(const MeshKey& other)
+			bool operator==(const MeshKey& other) const
 			{
 				return MeshHandle == other.MeshHandle &&
 					SubmeshIndex == other.SubmeshIndex &&

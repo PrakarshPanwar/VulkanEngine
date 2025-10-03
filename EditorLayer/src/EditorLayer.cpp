@@ -229,7 +229,7 @@ namespace VulkanCore {
 			{
 				if (auto selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity())
 				{
-					ImGui::BeginHorizontal("##TransformToolbar", ImVec2{ 250.0f, 20.0f });
+					ImGui::BeginHorizontal("##TransformToolbar", ImVec2{ 250.0f, 22.5f });
 
 					ImGui::PushItemWidth(45.0f);
 					ImGui::SetKeyboardFocusHere();

@@ -12,11 +12,11 @@ add_executable(EditorLayer ${EL_PROJECT_SOURCES})
 target_include_directories(EditorLayer PRIVATE
 #		${CMAKE_CURRENT_SOURCE_DIR}/src
 		${CMAKE_SOURCE_DIR}/VulkanCore/src
-		${CMAKE_SOURCE_DIR}/VulkanCore/vendor/entt
-		${CMAKE_SOURCE_DIR}/VulkanCore/vendor/glm
-		${CMAKE_SOURCE_DIR}/VulkanCore/vendor/imgui
-		${CMAKE_SOURCE_DIR}/VulkanCore/vendor/ImGuizmo
-		${CMAKE_SOURCE_DIR}/VulkanCore/vendor/tracy/public
+		${ENTT_INCLUDE_DIRS}
+		${GLM_INCLUDE_DIRS}
+		${IMGUI_INCLUDE_DIRS}
+		${IMGUIZMO_INCLUDE_DIRS}
+		${TRACY_INCLUDE_DIRS}
 	)
 
 # Link VulkanCore Library
