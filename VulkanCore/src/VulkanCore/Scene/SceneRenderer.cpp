@@ -831,18 +831,8 @@ namespace VulkanCore {
 	void SceneRenderer::CreateResources()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
-		Renderer::WaitAndExecute();
-
-		// Set Transparent Pipeline Depth Attachment
-		auto geomFramebuffer = m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer;
-		m_GeometryTransparentPipeline->GetSpecification().pRenderPass->SetDepthAttachment(geomFramebuffer->GetDepthAttachment(false));
-		m_GeometryCompositePipeline->GetSpecification().pRenderPass->SetColorAttachment(0, geomFramebuffer->GetAttachment(0, false));
-
-		// Create Physics Debug Renderer
-		m_PhysicsDebugRenderer = PhysicsDebugRenderer::Create();
-
+		
 		m_SceneImages.resize(framesInFlight);
 		for (auto&& shadowDepthImages : m_ShadowDepthPassImages)
 			shadowDepthImages.resize(framesInFlight);
@@ -868,17 +858,6 @@ namespace VulkanCore {
 
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
-			// ImGui Images
-			std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
-			m_SceneImages[i] = ImGuiLayer::AddTexture(*finalPassImage);
-
-			auto shadowMapImage = m_ShadowMapPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[i];
-			for (uint32_t j = 0; auto&& shadowDepthImage : m_ShadowDepthPassImages)
-			{
-				shadowDepthImage[i] = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanImage>(shadowMapImage), j);
-				++j;
-			}
-
 			// Uniform Buffers
 			m_UBCamera.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBCamera)));
 			m_UBPointLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBPointLights)));
@@ -966,6 +945,31 @@ namespace VulkanCore {
 		m_BRDFTexture = Renderer::CreateBRDFTexture();
 		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/PointLightIcon.png");
 		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/SpotLightIcon.png");
+
+		// Wait for Pipelines and Framebuffers to finish
+		Renderer::WaitAndExecute();
+
+		// Set Transparent Pipeline Depth Attachment
+		auto geomFramebuffer = m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer;
+		m_GeometryTransparentPipeline->GetSpecification().pRenderPass->SetDepthAttachment(geomFramebuffer->GetDepthAttachment(false));
+		m_GeometryCompositePipeline->GetSpecification().pRenderPass->SetColorAttachment(0, geomFramebuffer->GetAttachment(0, false));
+
+		// Create Physics Debug Renderer
+		m_PhysicsDebugRenderer = PhysicsDebugRenderer::Create();
+
+		// ImGui Images
+		for (uint32_t i = 0; i < framesInFlight; ++i)
+		{
+			std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
+			m_SceneImages[i] = ImGuiLayer::AddTexture(*finalPassImage);
+
+			auto shadowMapImage = m_ShadowMapPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[i];
+			for (uint32_t j = 0; auto&& shadowDepthImage : m_ShadowDepthPassImages)
+			{
+				shadowDepthImage[i] = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanImage>(shadowMapImage), j);
+				++j;
+			}
+		}
 	}
 
 	void SceneRenderer::Release()

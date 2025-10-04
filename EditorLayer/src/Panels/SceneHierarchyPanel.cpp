@@ -23,7 +23,7 @@ namespace VulkanCore {
 
 		ImGui::Columns(2);
 		ImGui::SetColumnWidth(0, columnWidth);
-		ImGui::Text(label.c_str());
+		ImGui::Text("%s", label.c_str());
 		ImGui::NextColumn();
 
 		ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
@@ -140,7 +140,7 @@ namespace VulkanCore {
 
 		ImGuiTreeNodeFlags flags = ((m_SelectionContext == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
 		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
-		bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.c_str());
+		bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, "%s", tag.c_str());
 		if (ImGui::IsItemClicked())
 			m_SelectionContext = entity;
 
@@ -158,8 +158,8 @@ namespace VulkanCore {
 
 		if (opened)
 		{
-			ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-			bool opened = ImGui::TreeNodeEx((void*)9817239, flags, tag.c_str());
+			flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+			opened = ImGui::TreeNodeEx((void*)9817239, flags, "%s", tag.c_str());
 			if (opened)
 			{
 				if (entity.HasComponent<MeshComponent>())
@@ -169,7 +169,7 @@ namespace VulkanCore {
 					std::shared_ptr<Mesh> mesh = AssetManager::GetAsset<Mesh>(meshComponent.MeshHandle);
 					for (const Submesh& submesh : mesh->GetMeshSource()->GetSubmeshes())
 					{
-						if (ImGui::TreeNodeEx((void*)submesh.BaseVertex, 0, submesh.NodeName.c_str()))
+						if (ImGui::TreeNodeEx((void*)(uint64_t)submesh.BaseVertex, 0, "%s", submesh.NodeName.c_str()))
 							ImGui::TreePop();
 					}
 				}
@@ -201,7 +201,7 @@ namespace VulkanCore {
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
 			float lineHeight = GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
 			ImGui::Separator();
-			bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, name.c_str());
+			bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, "%s", name.c_str());
 			ImGui::PopStyleVar();
 
 			ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
@@ -551,11 +551,11 @@ namespace VulkanCore {
 	}
 
 	template<typename T> requires IsComponentType<T>
-	void SceneHierarchyPanel::DisplayAddComponentEntry(const std::string& entryName)
+	void SceneHierarchyPanel::DisplayAddComponentEntry(const char* entryName)
 	{
 		if (!m_SelectionContext.HasComponent<T>())
 		{
-			if (ImGui::MenuItem(entryName.c_str()))
+			if (ImGui::MenuItem(entryName))
 			{
 				m_SelectionContext.AddComponent<T>();
 				ImGui::CloseCurrentPopup();
@@ -564,9 +564,9 @@ namespace VulkanCore {
 	}
 
 	template<>
-	void SceneHierarchyPanel::DisplayAddComponentEntry<SkyLightComponent>(const std::string& entryName)
+	void SceneHierarchyPanel::DisplayAddComponentEntry<SkyLightComponent>(const char* entryName)
 	{
-		if (ImGui::MenuItem(entryName.c_str()))
+		if (ImGui::MenuItem(entryName))
 		{
 			m_SelectionContext.AddComponent<SkyLightComponent>();
 			m_SelectionContext.RemoveComponent<TransformComponent>();
@@ -576,9 +576,9 @@ namespace VulkanCore {
 	}
 
 	template<>
-	void SceneHierarchyPanel::DisplayAddComponentEntry<DirectionalLightComponent>(const std::string& entryName)
+	void SceneHierarchyPanel::DisplayAddComponentEntry<DirectionalLightComponent>(const char* entryName)
 	{
-		if (ImGui::MenuItem(entryName.c_str()))
+		if (ImGui::MenuItem(entryName))
 		{
 			m_SelectionContext.AddComponent<DirectionalLightComponent>();
 			m_SelectionContext.RemoveComponent<TransformComponent>();

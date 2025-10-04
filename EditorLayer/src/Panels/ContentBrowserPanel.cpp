@@ -157,7 +157,7 @@ namespace VulkanCore {
 					}
 				}
 
-				ImGui::TextWrapped(filenameString.c_str());
+				ImGui::TextWrapped("%s", filenameString.c_str());
 				ImGui::NextColumn();
 
 				ImGui::PopID();
@@ -233,7 +233,7 @@ namespace VulkanCore {
 				RemoveAssetDialog(openRemoveAssetDialog, path);
 				MeshImportDialog(openMeshImportDialog, path);
 
-				ImGui::TextWrapped(filenameString.c_str());
+				ImGui::TextWrapped("%s", filenameString.c_str());
 				ImGui::NextColumn();
 
 				ImGui::PopID();
