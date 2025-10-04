@@ -19,7 +19,7 @@ namespace VulkanCore {
 		void SetContext(std::shared_ptr<Scene> context);
 	private:
 		template<typename T> requires IsComponentType<T>
-		void DisplayAddComponentEntry(const std::string& entryName);
+		void DisplayAddComponentEntry(const char* entryName);
 
 		void DrawEntityNode(Entity entity);
 		void DrawComponents(Entity entity);
@@ -29,9 +29,9 @@ namespace VulkanCore {
 	};
 
 	template<>
-	void SceneHierarchyPanel::DisplayAddComponentEntry<SkyLightComponent>(const std::string& entryName);
+	void SceneHierarchyPanel::DisplayAddComponentEntry<SkyLightComponent>(const char* entryName);
 
 	template<>
-	void SceneHierarchyPanel::DisplayAddComponentEntry<DirectionalLightComponent>(const std::string& entryName);
+	void SceneHierarchyPanel::DisplayAddComponentEntry<DirectionalLightComponent>(const char* entryName);
 
 }

@@ -228,7 +228,7 @@ namespace VulkanCore {
 			{
 				if (auto selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity())
 				{
-					ImGui::BeginHorizontal("##TransformToolbar", ImVec2{ 250.0f, 20.0f });
+					ImGui::BeginHorizontal("##TransformToolbar", ImVec2{ 250.0f, 22.5f });
 
 					ImGui::PushItemWidth(45.0f);
 					ImGui::SetKeyboardFocusHere();
@@ -313,7 +313,7 @@ namespace VulkanCore {
 
 		if (glm::ivec2 sceneViewportSize = m_SceneRenderer->GetViewportSize();
 			m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
-			(sceneViewportSize.x != m_ViewportSize.x || sceneViewportSize.y != m_ViewportSize.y))
+			(sceneViewportSize.x != (int)m_ViewportSize.x || sceneViewportSize.y != (int)m_ViewportSize.y))
 		{
 			m_SceneRenderer->SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 			m_EditorCamera.SetViewportSize(region.x, region.y);
@@ -518,6 +518,8 @@ namespace VulkanCore {
 				m_EditorCamera.SetFly(true);
 			break;
 		}
+		default:
+			break;
 		}
 
 		return false;
@@ -532,6 +534,8 @@ namespace VulkanCore {
 			if (m_EditorCamera.IsInFly())
 				m_EditorCamera.SetFly(false);
 		}
+		default:
+			break;
 		}
 
 		return false;
