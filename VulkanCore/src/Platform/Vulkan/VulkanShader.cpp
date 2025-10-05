@@ -5,13 +5,11 @@
 #include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/Timer.h"
 #include "VulkanCore/Renderer/Renderer.h"
-#include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 
 #include <regex>
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
-#include <spirv_cross/spirv_glsl.hpp>
 
 namespace VulkanCore {
 
@@ -345,7 +343,7 @@ namespace VulkanCore {
 	// NOTE: It currently supports single depth headers(i.e. no header within header)
 	std::string VulkanShader::ParsePreprocessIncludes(std::stringstream& sourceCode)
 	{
-		std::regex includeRegex("^[ ]*#[ ]*include[ ]+[\"<](.*)[\">].*");
+		std::regex includeRegex("^[ ]*#[ ]*include[ ]+[\"<](.*)[\">].*", std::regex_constants::multiline);
 		std::string sourceStr = sourceCode.str();
 
 		std::smatch matches{};
@@ -370,7 +368,7 @@ namespace VulkanCore {
 				else
 				{
 					VK_CORE_CRITICAL("{} header doesn't exist!", includeFilePath.generic_string());
-					__debugbreak();
+					DEBUG_BREAK;
 				}
 			}
 		}
@@ -412,7 +410,7 @@ namespace VulkanCore {
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 			{
 				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
-				__debugbreak();
+				DEBUG_BREAK;
 			}
 
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
@@ -538,7 +536,7 @@ namespace VulkanCore {
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 			{
 				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
-				__debugbreak();
+				DEBUG_BREAK;
 			}
 
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));

@@ -1,5 +1,4 @@
 #pragma once
-#include "ImageUtils.h"
 
 namespace VulkanCore {
 

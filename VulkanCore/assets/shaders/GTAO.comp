@@ -11,7 +11,7 @@ layout(binding = 1) uniform Camera
 } u_Camera;
 
 layout(binding = 2) uniform sampler2D u_DepthTexture; // Depth with Mips
-layout(binding = 3) uniform sampler2D u_ViewsNormalTexture; // Normals
+layout(binding = 3) uniform sampler2D u_ViewNormalsTexture; // Normals
 layout(binding = 4) uniform sampler2D u_LightScreenTexture; // Light
 
 // Ground truth-based ambient occlusion
@@ -100,7 +100,7 @@ void main()
     vec2 aspect = imgSize.yx / imgSize.x;
     vec3 position = ViewPositionFromDepth(texCoords);
     vec3 camRay = normalize(-position);
-    vec3 normal = normalize(texture(u_ViewsNormalTexture, texCoords).rgb);
+    vec3 normal = normalize(texture(u_ViewNormalsTexture, texCoords).rgb);
 
     float sliceRotation = (2.0 * PI) / (SSAO_SLICE - 1.0);
     float sampleScale = (-SSAO_RADIUS * u_Camera.Projection[0][0]) / position.z;
@@ -126,7 +126,7 @@ void main()
             float sampleStep = (currentSample + jitter) / SSAO_SAMPLES + sampleOffset;
             vec2 sampleUV = texCoords - sampleStep * sampleScale * omega * aspect;
             vec3 samplePosition = ViewPositionFromDepth(sampleUV);
-            vec3 sampleNormal = normalize(texture(u_ViewsNormalTexture, sampleUV).rgb);
+            vec3 sampleNormal = normalize(texture(u_ViewNormalsTexture, sampleUV).rgb);
             vec3 sampleLight = texture(u_LightScreenTexture, sampleUV).rgb;
             vec3 sampleDistance = samplePosition - position;
             float sampleLength = length(sampleDistance);
