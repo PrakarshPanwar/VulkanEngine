@@ -286,7 +286,7 @@ namespace VulkanCore {
 	{
 		constexpr const char* cacheDirectory = "cache/", *shaderDirectory = "shaders/";
 
-		const std::array<std::pair<std::string, std::string>, 6> shaderPaths = {
+		const std::array shaderPaths = {
 			std::make_pair(shaderDirectory + m_ShaderName + ".comp", cacheDirectory + m_ShaderName + ".comp.spv"),
 			std::make_pair(shaderDirectory + m_ShaderName + ".vert", cacheDirectory + m_ShaderName + ".vert.spv"),
 			std::make_pair(shaderDirectory + m_ShaderName + ".frag", cacheDirectory + m_ShaderName + ".frag.spv"),
@@ -312,7 +312,7 @@ namespace VulkanCore {
 
 		std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>> Sources;
 
-		const std::array<std::pair<ShaderType, std::string>, 6> shaderPaths = {
+		const std::array shaderPaths = {
 			std::make_pair(ShaderType::Compute,				   shaderDirectory + m_ShaderName + ".comp"),
 			std::make_pair(ShaderType::Vertex,				   shaderDirectory + m_ShaderName + ".vert"),
 			std::make_pair(ShaderType::Fragment,			   shaderDirectory + m_ShaderName + ".frag"),

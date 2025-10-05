@@ -335,8 +335,8 @@ namespace VulkanCore {
 			const uint32_t mipLevels = image->GetSpecification().MipLevels;
 			const glm::uvec2 imgSize = { image->GetSpecification().Width, image->GetSpecification().Height };
 
-			VkImageAspectFlags aspectMask = Utils::IsDepthFormat(image->GetSpecification().Format) ? VK_IMAGE_ASPECT_DEPTH_BIT
-				: VK_IMAGE_ASPECT_COLOR_BIT;
+			VkImageAspectFlags aspectMask = Utils::IsDepthFormat(image->GetSpecification().Format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+			VkFilter filter = Utils::VulkanFilterMode(image->GetSpecification().SamplerFilter);
 
 			// Setting Base Mip(Oth) to Source
 			VkImageSubresourceRange baseMipSubRange{};
@@ -392,7 +392,7 @@ namespace VulkanCore {
 					vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 					vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 					1, &imageBlit,
-					VK_FILTER_LINEAR);
+					filter);
 
 				Utils::InsertImageMemoryBarrier(vulkanCmdBuffer, vulkanImage,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,

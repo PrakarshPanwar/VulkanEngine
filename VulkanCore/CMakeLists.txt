@@ -13,7 +13,6 @@ find_package(spirv_cross_c_shared REQUIRED)
 # Add vendor libraries
 add_subdirectory(vendor/imgui)
 add_subdirectory(vendor/JoltPhysics)
-add_subdirectory(vendor/tracy)
 
 # Create library
 add_library(VulkanCore

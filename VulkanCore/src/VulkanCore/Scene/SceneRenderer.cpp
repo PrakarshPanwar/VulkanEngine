@@ -444,10 +444,12 @@ namespace VulkanCore {
 		{
 			m_GTAOMaterial = std::make_shared<VulkanMaterial>(m_GTAOPipeline->GetShader(), "GTAO Material");
 
-			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
+			const auto geomFB = m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer;
+			const auto geomDepth = m_GeometryTransparentPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment();
+
 			m_GTAOMaterial->SetImages(0, m_AOTextures);
 			m_GTAOMaterial->SetBuffers(1, m_UBCamera);
-			m_GTAOMaterial->SetImages(2, geomFB->GetDepthAttachment());
+			m_GTAOMaterial->SetImages(2, geomDepth);
 			m_GTAOMaterial->SetImages(3, geomFB->GetAttachment(1));
 			m_GTAOMaterial->SetImages(4, geomFB->GetAttachment(2));
 			m_GTAOMaterial->PrepareShaderMaterial();
@@ -600,11 +602,12 @@ namespace VulkanCore {
 #if VK_FEATURE_GTAO
 		// AO Material
 		{
-			auto geomFB = std::dynamic_pointer_cast<VulkanFramebuffer>(m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer);
+			const auto geomFB = m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer;
+			const auto geomDepth = m_GeometryTransparentPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment();
 
 			m_GTAOMaterial->SetImages(0, m_AOTextures);
 			m_GTAOMaterial->SetBuffers(1, m_UBCamera);
-			m_GTAOMaterial->SetImages(2, geomFB->GetDepthAttachment());
+			m_GTAOMaterial->SetImages(2, geomDepth);
 			m_GTAOMaterial->SetImages(3, geomFB->GetAttachment(1));
 			m_GTAOMaterial->SetImages(4, geomFB->GetAttachment(2));
 			m_GTAOMaterial->PrepareShaderMaterial();
@@ -822,17 +825,7 @@ namespace VulkanCore {
 	void SceneRenderer::CreateResources()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-
 		uint32_t framesInFlight = Renderer::GetConfig().FramesInFlight;
-		Renderer::WaitAndExecute();
-
-		// Set Transparent Pipeline Depth Attachment
-		auto geomFramebuffer = m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer;
-		m_GeometryTransparentPipeline->GetSpecification().pRenderPass->SetDepthAttachment(geomFramebuffer->GetDepthAttachment(false));
-		m_GeometryCompositePipeline->GetSpecification().pRenderPass->SetColorAttachment(0, geomFramebuffer->GetAttachment(0, false));
-
-		// Create Physics Debug Renderer
-		m_PhysicsDebugRenderer = PhysicsDebugRenderer::Create();
 
 		m_SceneImages.resize(framesInFlight);
 		for (auto&& shadowDepthImages : m_ShadowDepthPassImages)
@@ -859,17 +852,6 @@ namespace VulkanCore {
 
 		for (uint32_t i = 0; i < framesInFlight; ++i)
 		{
-			// ImGui Images
-			std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
-			m_SceneImages[i] = ImGuiLayer::AddTexture(*finalPassImage);
-
-			auto shadowMapImage = m_ShadowMapPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[i];
-			for (uint32_t j = 0; auto&& shadowDepthImage : m_ShadowDepthPassImages)
-			{
-				shadowDepthImage[i] = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanImage>(shadowMapImage), j);
-				++j;
-			}
-
 			// Uniform Buffers
 			m_UBCamera.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBCamera)));
 			m_UBPointLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBPointLights)));
@@ -933,7 +915,7 @@ namespace VulkanCore {
 			auto SceneDepthTexture = std::static_pointer_cast<VulkanImage>(m_SceneDepthTextures.emplace_back(std::make_shared<VulkanImage>(sceneDepthSpec)));
 			SceneDepthTexture->Invalidate();
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, SceneDepthTexture->GetVulkanImageInfo().Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd.CmdBuffer, SceneDepthTexture->GetVulkanImageInfo().Image,
 				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -957,6 +939,31 @@ namespace VulkanCore {
 		m_BRDFTexture = Renderer::CreateBRDFTexture();
 		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/PointLightIcon.png");
 		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/SpotLightIcon.png");
+
+		// Waits for Pipelines and Framebuffers to finish
+		Renderer::WaitAndExecute();
+
+		// Create Physics Debug Renderer
+		m_PhysicsDebugRenderer = PhysicsDebugRenderer::Create();
+
+		// ImGui Images
+		for (uint32_t i = 0; i < framesInFlight; ++i)
+		{
+			std::shared_ptr<VulkanImage> finalPassImage = std::dynamic_pointer_cast<VulkanImage>(GetFinalPassImage(i));
+			m_SceneImages[i] = ImGuiLayer::AddTexture(*finalPassImage);
+
+			auto shadowMapImage = m_ShadowMapPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[i];
+			for (uint32_t j = 0; auto&& shadowDepthImage : m_ShadowDepthPassImages)
+			{
+				shadowDepthImage[i] = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanImage>(shadowMapImage), j);
+				++j;
+			}
+		}
+
+		// Set Transparent Pipeline Depth Attachment
+		auto geomFramebuffer = m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer;
+		m_GeometryTransparentPipeline->GetSpecification().pRenderPass->SetDepthAttachment(geomFramebuffer->GetDepthAttachment(false));
+		m_GeometryCompositePipeline->GetSpecification().pRenderPass->SetColorAttachment(0, geomFramebuffer->GetAttachment(0, false));
 	}
 
 	void SceneRenderer::Release()
@@ -1000,7 +1007,7 @@ namespace VulkanCore {
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, vulkanSceneTexture->GetSpecification().MipLevels, 0, 1 });
 #if VK_FEATURE_GTAO
-				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanDepthTexture->GetVulkanImageInfo().Image,
+				Utils::InsertImageMemoryBarrier(barrierCmd.CmdBuffer, vulkanDepthTexture->GetVulkanImageInfo().Image,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -1551,7 +1558,7 @@ namespace VulkanCore {
 		Renderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneRenderTextures[frameIndex]);
 #if VK_FEATURE_GTAO
 		Renderer::CopyVulkanImage(m_SceneCommandBuffer,
-			m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[frameIndex],
+			m_GeometryTransparentPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment()[frameIndex],
 			m_SceneDepthTextures[frameIndex]);
 
 		Renderer::BlitVulkanImage(m_SceneCommandBuffer, m_SceneDepthTextures[frameIndex]);
@@ -1646,7 +1653,7 @@ namespace VulkanCore {
 			for (uint32_t i = 1; i < mips; i++)
 			{
 				int currentIdx = i - 1;
-				m_LodAndMode.LOD = float(i - 1);
+				m_LodAndMode.LOD = (float)currentIdx;
 				m_LodAndMode.Mode = 1.0f;
 
 				m_BloomComputeMaterials.PingMaterials[currentIdx]->RT_BindMaterial(m_SceneCommandBuffer, m_BloomPipeline);
