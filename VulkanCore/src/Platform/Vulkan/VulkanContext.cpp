@@ -288,7 +288,7 @@ namespace VulkanCore {
 
 	bool VulkanContext::IsDeviceSuitable(VkPhysicalDevice device)
 	{
-		QueueFamilyIndices indices = m_Device->FindQueueFamilies(device);
+		QueueFamilyIndices indices = m_Device->FindQueueIndices(device);
 
 		bool swapChainAdequate = false, extensionsSupported = CheckDeviceExtensionSupport(device);
 		if (extensionsSupported)
