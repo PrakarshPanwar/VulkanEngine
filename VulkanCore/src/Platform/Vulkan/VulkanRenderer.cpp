@@ -832,7 +832,7 @@ namespace VulkanCore {
 		if (!RenderThread::IsDeletionQueueEmpty())
 			DeleteResources();
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResized())
 		{
 			m_Window->ResetWindowResizeFlag();
 			RecreateSwapChain();

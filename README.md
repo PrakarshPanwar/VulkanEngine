@@ -30,7 +30,11 @@ BUILD ASSIMP SOLUTION(Y/N)=
 
 Fedora/RHEL Distributions
 ```
-sudo dnf install vulkan-loader-devel vulkan-tools glfw-devel assimp-devel spdlog-devel yaml-cpp-devel libshaderc-devel
+sudo dnf install vulkan-loader-devel vulkan-tools VulkanMemoryAllocator-devel glfw-devel assimp-devel spdlog-devel yaml-cpp-devel libshaderc-devel
+```
+Ubuntu/Debian Distributions
+```
+sudo apt-get install libvulkan-dev vulkan-tools libvulkan-memory-allocator-dev libglfw3-dev libassimp-dev libspdlog-dev libyaml-cpp-dev libshaderc-dev libspirv-cross-c-shared-dev
 ```
 These packages are provided by default on most mainstream distros.
 
@@ -64,6 +68,11 @@ Fedora/RHEL Distributions
 ```
 sudo dnf install patch dbus-devel wayland-devel
 ```
+Ubuntu/Debian Distributions
+```
+sudo apt-get install patch libdbus-1-dev libwayland-dev
+```
+
 2. Type same commands in terminal as given in steps 3 and 5 in Windows version.(**NOTE:** remove `--parallel` from step 5 command if memory shortage issues occur)
 
 ## Screenshots

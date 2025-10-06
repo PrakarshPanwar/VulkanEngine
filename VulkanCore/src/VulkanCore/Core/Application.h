@@ -1,5 +1,4 @@
 #pragma once
-
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Platform/Vulkan/VulkanRenderer.h"
 

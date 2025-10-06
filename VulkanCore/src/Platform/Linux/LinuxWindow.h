@@ -15,7 +15,7 @@ namespace VulkanCore {
 		void OnUpdate() override;
 
 		const std::string& GetWindowName() const override { return m_WindowSpecs.Name; }
-		bool IsWindowResize() const override { return m_WindowSpecs.FramebufferResize; }
+		bool IsWindowResized() const override { return m_WindowSpecs.FramebufferResize; }
 		void ResetWindowResizeFlag() override { m_WindowSpecs.FramebufferResize = false; };
 		void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; };
 
