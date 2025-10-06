@@ -10,11 +10,6 @@
 
 namespace VulkanCore {
 
-	Window* Window::Create(const WindowSpecs& specs)
-	{
-		return new WindowsWindow(specs);
-	}
-
 	WindowsWindow::WindowsWindow(const WindowSpecs& specs)
 		: m_WindowSpecs(specs)
 	{

@@ -1,5 +1,4 @@
 #pragma once
-#include "VulkanCore/Core/glfw_vulkan.h"
 #include "Platform/Window.h"
 
 namespace VulkanCore {
@@ -16,14 +15,14 @@ namespace VulkanCore {
 
 		void OnUpdate() override;
 
-		std::string& GetWindowName() { return m_WindowSpecs.Name; }
-		bool IsWindowResize() const { return m_WindowSpecs.FramebufferResize; }
-		void ResetWindowResizeFlag() { m_WindowSpecs.FramebufferResize = false; };
+		const std::string& GetWindowName() const override { return m_WindowSpecs.Name; }
+		bool IsWindowResized() const override { return m_WindowSpecs.FramebufferResize; }
+		void ResetWindowResizeFlag() override { m_WindowSpecs.FramebufferResize = false; };
 		void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; };
 
 		uint32_t GetWidth() const override { return m_WindowSpecs.Width; }
 		uint32_t GetHeight() const override { return m_WindowSpecs.Height; }
-		VkExtent2D GetExtent() { return { (uint32_t)m_WindowSpecs.Width, (uint32_t)m_WindowSpecs.Height }; }
+		VkExtent2D GetExtent() const override { return { (uint32_t)m_WindowSpecs.Width, (uint32_t)m_WindowSpecs.Height }; }
 		void* GetNativeWindow() override { return m_Window; }
 	private:
 		static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);

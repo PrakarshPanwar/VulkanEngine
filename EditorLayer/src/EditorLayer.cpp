@@ -15,7 +15,6 @@
 
 #include <ImGuizmo.h>
 #include <imgui_internal.h>
-#include <optick.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>

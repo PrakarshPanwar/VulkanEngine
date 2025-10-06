@@ -187,7 +187,7 @@ namespace VulkanCore {
 
 	VulkanContext* VulkanContext::s_Instance = nullptr;
 
-	VulkanContext::VulkanContext(std::shared_ptr<WindowsWindow> window)
+	VulkanContext::VulkanContext(std::shared_ptr<Window> window)
 		: m_Window(window)
 	{
 		s_Instance = this;
