@@ -17,7 +17,6 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/integer.hpp>
-#include "optick.h"
 
 namespace VulkanCore {
 

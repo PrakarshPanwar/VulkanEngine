@@ -36,11 +36,6 @@ Library["SPIRV_Cross_Release"] = "%{LibraryDir.VulkanSDK}/spirv-cross-core.lib"
 Library["SPIRV_Cross_GLSL_Release"] = "%{LibraryDir.VulkanSDK}/spirv-cross-glsl.lib"
 Library["Slang_Release"] = "%{LibraryDir.VulkanSDK}/slang.lib"
 
-Library["optick_Debug"] = "%{LibraryDir.optick}/debug/OptickCore.lib"
-Library["optick_Release"] = "%{LibraryDir.optick}/release/OptickCore.lib"
-Library["optick_DLL_Debug"] = "%{LibraryDir.optick}/debug/OptickCore.dll"
-Library["optick_DLL_Release"] = "%{LibraryDir.optick}/release/OptickCore.dll"
-
 Library["AssimpLibDebug"] = "%{LibraryDir.Assimp}/Debug/assimp-vc143-mtd.lib"
 Library["AssimpZlibDebug"] = "%{LibraryDir.Assimp}/Debug/zlibd.lib"
 

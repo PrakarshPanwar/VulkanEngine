@@ -35,7 +35,6 @@ project "VulkanCore"
 		"%{IncludeDir.VulkanSDK}",
 		"%{IncludeDir.TinyObjLoader}",
 		"%{IncludeDir.entt}",
-		"%{IncludeDir.optick}",
 		"%{IncludeDir.tracy}",
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.ImGuizmo}",
@@ -59,8 +58,7 @@ project "VulkanCore"
 		"%{Library.Vulkan}",
 		"ImGui",
 		"yaml-cpp",
-		"JoltPhysics",
-		"%{Library.optick_Release}"
+		"JoltPhysics"
 	}
 
 	filter "system:windows"
