@@ -1,6 +1,6 @@
 #pragma once
 #include "VulkanDevice.h"
-#include "Platform/Windows/WindowsWindow.h"
+#include "Platform/Window.h"
 
 namespace VulkanCore {
 
@@ -17,7 +17,7 @@ namespace VulkanCore {
 	class VulkanContext
 	{
 	public:
-		VulkanContext(std::shared_ptr<WindowsWindow> window);
+		VulkanContext(std::shared_ptr<Window> window);
 		~VulkanContext();
 
 #ifdef VK_RELEASE
@@ -60,7 +60,7 @@ namespace VulkanCore {
 		};
 
 		std::unique_ptr<VulkanDevice> m_Device;
-		std::shared_ptr<WindowsWindow> m_Window;
+		std::shared_ptr<Window> m_Window;
 
 		static VulkanContext* s_Instance;
 

@@ -3,7 +3,6 @@
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
-#include "optick.h"
 
 namespace VulkanCore {
 
@@ -18,7 +17,7 @@ namespace VulkanCore {
 		Log::Init();
 
 		std::filesystem::current_path(m_Specification.WorkingDirectory);
-		m_Window = std::make_shared<WindowsWindow>(WindowSpecs(1920, 1080, m_Specification.Name));
+		m_Window = Window::Create({ 1920, 1080, m_Specification.Name });
 		m_Window->SetEventCallback(VK_CORE_BIND_EVENT_FN(Application::OnEvent));
 
 		Init();
@@ -33,8 +32,8 @@ namespace VulkanCore {
 
 	void Application::Init()
 	{
-		m_Context = std::make_unique<VulkanContext>(std::dynamic_pointer_cast<WindowsWindow>(m_Window));
-		m_Renderer = std::make_unique<VulkanRenderer>(std::dynamic_pointer_cast<WindowsWindow>(m_Window));
+		m_Context = std::make_unique<VulkanContext>(m_Window);
+		m_Renderer = std::make_unique<VulkanRenderer>(m_Window);
 
 		m_ImGuiLayer = std::make_shared<ImGuiLayer>();
 		m_ImGuiLayer->OnAttach();

@@ -1,6 +1,4 @@
 #pragma once
-
-#include "Platform/Windows/WindowsWindow.h"
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Platform/Vulkan/VulkanRenderer.h"
 
@@ -53,7 +51,6 @@ namespace VulkanCore {
 		void SubmitToMainThread(std::function<void()>&& func);
 
 		Window* GetWindow() { return m_Window.get(); }
-		WindowsWindow* GetWindowsWindow() { return std::dynamic_pointer_cast<WindowsWindow>(m_Window).get(); }
 		std::shared_ptr<ImGuiLayer> GetImGuiLayer() { return m_ImGuiLayer; }
 		static Application* Get() { return s_Instance; }
 

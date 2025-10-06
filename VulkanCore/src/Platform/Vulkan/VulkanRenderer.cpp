@@ -49,7 +49,7 @@ namespace VulkanCore {
 	VulkanRenderer* VulkanRenderer::s_Instance;
 	RendererStats VulkanRenderer::s_Data;
 
-	VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowsWindow> window)
+	VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window)
 		: m_Window(window)
 	{
 		s_Instance = this;
@@ -833,7 +833,7 @@ namespace VulkanCore {
 		if (!RenderThread::IsDeletionQueueEmpty())
 			DeleteResources();
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResize())
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResized())
 		{
 			m_Window->ResetWindowResizeFlag();
 			RecreateSwapChain();
