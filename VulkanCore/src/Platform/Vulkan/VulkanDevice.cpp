@@ -266,16 +266,16 @@ namespace VulkanCore {
 	void VulkanDevice::CreateLogicalDevice()
 	{
 		auto context = VulkanContext::GetCurrentContext();
-		QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
+		QueueFamilyIndices indices = FindQueueIndices(m_PhysicalDevice);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
 		// Key: Queue Family Index, Value: Queue Count
 		std::map<uint32_t, uint32_t> queueFamilyCounts{};
-		++queueFamilyCounts[indices.GraphicsFamily];
-		//++queueFamilyCounts[indices.TransferFamily];
-		//++queueFamilyCounts[indices.ComputeFamily];
-		//++queueFamilyCounts[indices.PresentFamily];
+		queueFamilyCounts[indices.GraphicsFamily] = indices.GraphicsQueueIndex + 1;
+		queueFamilyCounts[indices.TransferFamily] = indices.TransferQueueIndex + 1;
+		queueFamilyCounts[indices.ComputeFamily] = indices.ComputeQueueIndex + 1;
+		queueFamilyCounts[indices.PresentFamily] = indices.PresentQueueIndex + 1;
 
 		float queuePriority[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 		for (auto&& [queueFamily, queueCount] : queueFamilyCounts)
@@ -321,15 +321,15 @@ namespace VulkanCore {
 
 		VK_CHECK_RESULT(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_LogicalDevice), "Failed to Create Logical Device!");
 
-		vkGetDeviceQueue(m_LogicalDevice, indices.GraphicsFamily, 0, &m_GraphicsQueue);
-		vkGetDeviceQueue(m_LogicalDevice, indices.TransferFamily, 0, &m_TransferQueue);
-		vkGetDeviceQueue(m_LogicalDevice, indices.ComputeFamily, 0, &m_ComputeQueue);
-		vkGetDeviceQueue(m_LogicalDevice, indices.PresentFamily, 0, &m_PresentQueue);
+		vkGetDeviceQueue(m_LogicalDevice, indices.GraphicsFamily, indices.GraphicsQueueIndex, &m_GraphicsQueue);
+		vkGetDeviceQueue(m_LogicalDevice, indices.TransferFamily, indices.TransferQueueIndex, &m_TransferQueue);
+		vkGetDeviceQueue(m_LogicalDevice, indices.ComputeFamily, indices.ComputeQueueIndex, &m_ComputeQueue);
+		vkGetDeviceQueue(m_LogicalDevice, indices.PresentFamily, indices.PresentQueueIndex, &m_PresentQueue);
 
+		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_QUEUE, "Present Queue", m_PresentQueue);
+		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_QUEUE, "Transfer Queue", m_TransferQueue);
+		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_QUEUE, "Compute Queue", m_ComputeQueue);
 		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_QUEUE, "Graphics Queue", m_GraphicsQueue);
-		//VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_QUEUE, "Transfer Queue", m_TransferQueue);
-		//VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_QUEUE, "Compute Queue", m_ComputeQueue);
-		//VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_QUEUE, "Present Queue", m_PresentQueue);
 	}
 
 	void VulkanDevice::CreateCommandPools()
@@ -359,7 +359,7 @@ namespace VulkanCore {
 		VKUtils::SetDebugUtilsObjectName(m_LogicalDevice, VK_OBJECT_TYPE_COMMAND_POOL, "Compute Command Pool", m_ComputeCommandPool);
 	}
 
-	QueueFamilyIndices VulkanDevice::FindQueueFamilies(VkPhysicalDevice device)
+	QueueFamilyIndices VulkanDevice::FindQueueIndices(VkPhysicalDevice device)
 	{
 		QueueFamilyIndices indices{};
 
@@ -372,20 +372,36 @@ namespace VulkanCore {
 		const auto vulkanSurface = VulkanContext::GetCurrentContext()->m_VulkanSurface;
 		for (int i = 0; const auto& queueFamily : queueFamilies)
 		{
+			uint32_t queueIndex = 0;
 			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			{
 				indices.GraphicsFamily = i;
+				indices.GraphicsQueueIndex = std::min(queueIndex, queueFamily.queueCount - 1);
+				queueIndex++;
+			}
 
 			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
+			{
 				indices.TransferFamily = i;
+				indices.TransferQueueIndex = std::min(queueIndex, queueFamily.queueCount - 1);
+				queueIndex++;
+			}
 
 			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
+			{
 				indices.ComputeFamily = i;
+				indices.ComputeQueueIndex = std::min(queueIndex, queueFamily.queueCount - 1);
+				queueIndex++;
+			}
 
 			VkBool32 presentSupport = false;
 			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, vulkanSurface, &presentSupport);
 
 			if (queueFamily.queueCount > 0 && presentSupport)
+			{
 				indices.PresentFamily = i;
+				indices.PresentQueueIndex = std::min(queueIndex, queueFamily.queueCount - 1);
+			}
 
 			if (indices.IsComplete())
 				break;

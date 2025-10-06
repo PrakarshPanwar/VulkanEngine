@@ -940,8 +940,13 @@ namespace VulkanCore {
 		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/PointLightIcon.png");
 		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/SpotLightIcon.png");
 
-		// Waits for Pipelines and Framebuffers to finish
+		// Wait for Pipelines and Framebuffers to finish
 		Renderer::WaitAndExecute();
+
+		// Set Transparent Pipeline Depth Attachment
+		auto geomFramebuffer = m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer;
+		m_GeometryTransparentPipeline->GetSpecification().pRenderPass->SetDepthAttachment(geomFramebuffer->GetDepthAttachment(false));
+		m_GeometryCompositePipeline->GetSpecification().pRenderPass->SetColorAttachment(0, geomFramebuffer->GetAttachment(0, false));
 
 		// Create Physics Debug Renderer
 		m_PhysicsDebugRenderer = PhysicsDebugRenderer::Create();
@@ -959,11 +964,6 @@ namespace VulkanCore {
 				++j;
 			}
 		}
-
-		// Set Transparent Pipeline Depth Attachment
-		auto geomFramebuffer = m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer;
-		m_GeometryTransparentPipeline->GetSpecification().pRenderPass->SetDepthAttachment(geomFramebuffer->GetDepthAttachment(false));
-		m_GeometryCompositePipeline->GetSpecification().pRenderPass->SetColorAttachment(0, geomFramebuffer->GetAttachment(0, false));
 	}
 
 	void SceneRenderer::Release()

@@ -29,11 +29,15 @@ namespace VulkanCore {
 		uint32_t TransferFamily : 8 = UINT8_MAX;
 		uint32_t ComputeFamily : 8 = UINT8_MAX;
 		uint32_t PresentFamily : 8 = UINT8_MAX;
+		uint32_t GraphicsQueueIndex : 8 = UINT8_MAX;
+		uint32_t TransferQueueIndex : 8 = UINT8_MAX;
+		uint32_t ComputeQueueIndex : 8 = UINT8_MAX;
+		uint32_t PresentQueueIndex : 8 = UINT8_MAX;
 
-		const bool HasGraphicsFamily() const { return GraphicsFamily < UINT8_MAX; }
-		const bool HasComputeFamily() const { return ComputeFamily < UINT8_MAX; }
-		const bool HasTransferFamily() const { return TransferFamily < UINT8_MAX; }
-		const bool HasPresentFamily() const { return PresentFamily < UINT8_MAX; }
+		const bool HasGraphicsFamily() const { return GraphicsFamily < UINT8_MAX && GraphicsQueueIndex < UINT8_MAX; }
+		const bool HasComputeFamily() const { return ComputeFamily < UINT8_MAX && ComputeQueueIndex < UINT8_MAX; }
+		const bool HasTransferFamily() const { return TransferFamily < UINT8_MAX && TransferQueueIndex < UINT8_MAX; }
+		const bool HasPresentFamily() const { return PresentFamily < UINT8_MAX && PresentQueueIndex < UINT8_MAX; }
 
 		const bool IsComplete() const { return HasGraphicsFamily() && HasTransferFamily() && HasComputeFamily() && HasPresentFamily(); }
 	};
@@ -69,7 +73,7 @@ namespace VulkanCore {
 
 		void Init();
 		void Destroy();
-		QueueFamilyIndices FindPhysicalQueueFamilies() { return FindQueueFamilies(m_PhysicalDevice); }
+		QueueFamilyIndices FindPhysicalQueueFamilies() { return FindQueueIndices(m_PhysicalDevice); }
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 
 		bool IsExtensionSupported(const char* extensionName) const;
@@ -77,7 +81,7 @@ namespace VulkanCore {
 		VulkanCommandBuffer GetCommandBuffer(VulkanQueueType queueType = VulkanQueueType::Graphics) const;
 		void FlushCommandBuffer(VulkanCommandBuffer commandBuffer) const;
 
-		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+		QueueFamilyIndices FindQueueIndices(VkPhysicalDevice device);
 	private:
 		VkCommandPool VulkanCommandPool(VulkanQueueType queueType) const;
 		VkQueue VulkanQueue(VulkanQueueType queueType) const;
