@@ -245,8 +245,13 @@ namespace VulkanCore {
 					if (edited || ImGui::IsKeyPressed(ImGuiKey_X) || ImGui::IsKeyPressed(ImGuiKey_Y) || ImGui::IsKeyPressed(ImGuiKey_Z))
 					{
 						// Transfer Input Data using bit flag
-						__m128 value = _mm_mask_mov_ps(_mm_setzero_ps(), m_TransformInputMask, _mm_set1_ps(m_TransformScalarInput));
-						_mm_store_ps(glm::value_ptr(m_TransformInput), value);
+						__m128 mask = _mm_setr_ps((m_TransformInputMask & 0b0001) ? -1.0f : 0.0f,
+												(m_TransformInputMask & 0b0010) ? -1.0f : 0.0f,
+												(m_TransformInputMask & 0b0100) ? -1.0f : 0.0f,
+												(m_TransformInputMask & 0b1000) ? -1.0f : 0.0f);
+
+						__m128 value = _mm_blendv_ps(_mm_setzero_ps(), _mm_set1_ps(m_TransformScalarInput), mask);
+						_mm_storeu_ps(glm::value_ptr(m_TransformInput), value);
 
 						auto& transform = selectedEntity.GetComponent<TransformComponent>();
 						transform = m_EntityTransform;
@@ -265,8 +270,8 @@ namespace VulkanCore {
 						}
 						case ImGuizmo::OPERATION::SCALE:
 						{
-							__m128 scale = _mm_mask_mov_ps(_mm_set1_ps(1.0f), m_TransformInputMask, value);
-							_mm_store_ps(glm::value_ptr(m_TransformInput), scale);
+							__m128 scale = _mm_blendv_ps(_mm_set1_ps(1.0f), _mm_set1_ps(m_TransformScalarInput), mask);
+							_mm_storeu_ps(glm::value_ptr(m_TransformInput), scale);
 
 							transform.Scale *= glm::vec3(m_TransformInput);
 							break;
@@ -712,8 +717,7 @@ namespace VulkanCore {
 
 	void EditorLayer::OpenScene(const std::string& path)
 	{
-		std::filesystem::path filepath(path);
-
+		std::filesystem::path filepath = std::filesystem::relative(path);
 		if (filepath.extension().string() != ".vkscn")
 		{
 			VK_WARN("Could not load {0} - not a scene file", filepath.filename().string());
@@ -728,7 +732,7 @@ namespace VulkanCore {
 
 			m_SceneRenderer->SetActiveScene(m_ActiveScene);
 			m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-			m_EditorScenePath = path;
+			m_EditorScenePath = filepath;
 		}
 	}
 
