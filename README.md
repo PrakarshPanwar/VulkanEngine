@@ -37,6 +37,7 @@ Ubuntu/Debian Distributions(Not tested)
 sudo apt-get install libvulkan-dev vulkan-validationlayers vulkan-tools libglfw3-dev libassimp-dev libspdlog-dev libyaml-cpp-dev libshaderc-dev
 ```
 These packages are provided by default on most mainstream distros.
+
 4. Give shell scripts permission to execute
 ```
 chmod +x run_editor.sh run_tracy.sh run_gdb.sh install_vulkan_sdk.sh
@@ -79,6 +80,6 @@ sudo apt-get install patch libdbus-1-dev libwayland-dev
 2. Full Composited Scene
 ![My Screenshot](EditorLayer/Resources/Screenshots/VulkanEngineSS.png)
 
-### Big Features to Come
+### Features to Add
 - Advanced UI Features
 - Cascaded Shadow Maps
