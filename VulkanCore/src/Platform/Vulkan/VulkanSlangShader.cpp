@@ -13,7 +13,7 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		static constexpr std::array<ShaderType, 6> s_ShaderTypes = {
+		static constexpr std::array s_ShaderTypes = {
 			ShaderType::Compute,
 			ShaderType::Vertex,
 			ShaderType::Fragment,

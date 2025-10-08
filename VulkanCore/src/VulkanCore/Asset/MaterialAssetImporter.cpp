@@ -135,11 +135,11 @@ namespace VulkanCore {
 		std::ifstream stream(filepath);
 		std::stringstream strStream;
 		strStream << stream.rdbuf();
- 
+
 		YAML::Node data = YAML::Load(strStream.str());
 		if (!data["Material"])
 			return false;
- 
+
 		YAML::Node materialNode = data["Material"];
 		bool isTessellated = (bool)materialNode["DisplacementHandle"];
 
@@ -154,12 +154,12 @@ namespace VulkanCore {
 		uint32_t useNormalMap = materialNode["UseNormalMap"].as<uint32_t>();
 		material->SetMaterialData({ albedoColor, emission, roughness, metallic, useNormalMap });
 		materialAsset->SetTransparent(albedoColor.w < 1.0f);
- 
+
 		AssetHandle albedoHandle = materialNode["AlbedoHandle"].as<uint64_t>();
 		AssetHandle normalHandle = materialNode["NormalHandle"].as<uint64_t>();
 		AssetHandle armHandle = materialNode["ARMHandle"].as<uint64_t>();
 		AssetHandle displacementHandle = isTessellated ? materialNode["DisplacementHandle"].as<uint64_t>() : 0;
- 
+
 		// Set Textures
 		bool hasAlbedo = AssetManager::GetAssetManager()->IsAssetHandleValid(albedoHandle);
 		bool hasNormal = AssetManager::GetAssetManager()->IsAssetHandleValid(normalHandle);

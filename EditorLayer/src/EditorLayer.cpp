@@ -70,6 +70,8 @@ namespace VulkanCore {
 			std::string sceneFilePath = commandLineArgs[1];
 			OpenScene(sceneFilePath);
 		}
+		else
+			OpenScene();
 
 		m_EditorCamera = EditorCamera(glm::radians(45.0f), 1.635005f, 0.1f, 1000.0f);
 	}
@@ -689,7 +691,7 @@ namespace VulkanCore {
 
 			// Step Button
 			if (isPaused && ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
-					activeScene->StepFrames();
+				activeScene->StepFrames();
 		}
 
 		ImGui::Spring(0.5f);

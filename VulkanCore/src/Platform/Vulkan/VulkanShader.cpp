@@ -17,7 +17,7 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		static constexpr std::array<ShaderType, 6> s_ShaderTypes = {
+		static constexpr std::array s_ShaderTypes = {
 			ShaderType::Compute,
 			ShaderType::Vertex,
 			ShaderType::Fragment,
@@ -286,7 +286,7 @@ namespace VulkanCore {
 	{
 		constexpr const char* cacheDirectory = "cache/", *shaderDirectory = "shaders/";
 
-		const std::array<std::pair<std::string, std::string>, 6> shaderPaths = {
+		const std::array shaderPaths = {
 			std::make_pair(shaderDirectory + m_ShaderName + ".comp", cacheDirectory + m_ShaderName + ".comp.spv"),
 			std::make_pair(shaderDirectory + m_ShaderName + ".vert", cacheDirectory + m_ShaderName + ".vert.spv"),
 			std::make_pair(shaderDirectory + m_ShaderName + ".frag", cacheDirectory + m_ShaderName + ".frag.spv"),
@@ -312,7 +312,7 @@ namespace VulkanCore {
 
 		std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>> Sources;
 
-		const std::array<std::pair<ShaderType, std::string>, 6> shaderPaths = {
+		const std::array shaderPaths = {
 			std::make_pair(ShaderType::Compute,				   shaderDirectory + m_ShaderName + ".comp"),
 			std::make_pair(ShaderType::Vertex,				   shaderDirectory + m_ShaderName + ".vert"),
 			std::make_pair(ShaderType::Fragment,			   shaderDirectory + m_ShaderName + ".frag"),
@@ -412,7 +412,7 @@ namespace VulkanCore {
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 			{
 				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
-				__debugbreak();
+				DEBUG_BREAK;
 			}
 
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
@@ -538,7 +538,7 @@ namespace VulkanCore {
 			if (module.GetCompilationStatus() != shaderc_compilation_status_success)
 			{
 				VK_CORE_CRITICAL("{0} Shader: {1}", Utils::GLShaderTypeToString(stage), module.GetErrorMessage());
-				__debugbreak();
+				DEBUG_BREAK;
 			}
 
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
