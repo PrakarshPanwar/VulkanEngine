@@ -12,6 +12,7 @@ add_executable(EditorLayer ${EL_PROJECT_SOURCES})
 target_include_directories(EditorLayer PRIVATE
 #		${CMAKE_CURRENT_SOURCE_DIR}/src
 		${CMAKE_SOURCE_DIR}/VulkanCore/src
+		${VULKAN_EXTRA_INCLUDE_DIRS}
 		${ENTT_INCLUDE_DIRS}
 		${GLM_INCLUDE_DIRS}
 		${IMGUI_INCLUDE_DIRS}

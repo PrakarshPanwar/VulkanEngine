@@ -8,7 +8,6 @@ file(GLOB_RECURSE VK_PROJECT_SOURCES
 find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(yaml-cpp REQUIRED)
-find_package(spirv_cross_c_shared REQUIRED)
 
 # Add vendor libraries
 add_subdirectory(vendor/imgui)
@@ -25,18 +24,22 @@ add_library(VulkanCore
 target_link_libraries(VulkanCore
 		Vulkan::Vulkan
 		shaderc_shared
-		spirv-cross-core
 		ImGui
 		glfw
 		JoltLib
 		assimp
 		${YAML_CPP_LIBRARIES}
 		${SLANG_LIB}
+		${SLANG_GLSLANG_LIB}
+		${SPIRV_CROSS_CORE_LIB}
+		${SPIRV_CROSS_CPP_LIB}
+		${SPIRV_CROSS_GLSL_LIB}
 	)
 
 target_include_directories(VulkanCore PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/src
 		${VULKAN_INCLUDE_DIRS}
+		${VULKAN_EXTRA_INCLUDE_DIRS}
 		${VMA_INCLUDE_DIRS}
 		${SPDLOD_INCLUDE_DIRS}
 		${ENTT_INCLUDE_DIRS}

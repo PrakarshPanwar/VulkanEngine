@@ -1,0 +1,10 @@
+/x86_64/bin/vkconfig-gui
+/x86_64/bin/vulkanCapsViewer
+/x86_64/include/slang
+/x86_64/include/spirv_cross
+/x86_64/include/vma
+/x86_64/lib/libslang.so
+/x86_64/lib/libslang-glslang.so
+/x86_64/lib/libspirv-cross-core.a
+/x86_64/lib/libspirv-cross-cpp.a
+/x86_64/lib/libspirv-cross-glsl.a

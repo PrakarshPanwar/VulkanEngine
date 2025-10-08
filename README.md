@@ -30,20 +30,19 @@ BUILD ASSIMP SOLUTION(Y/N)=
 
 Fedora/RHEL Distributions
 ```
-sudo dnf install vulkan-loader-devel vulkan-tools VulkanMemoryAllocator-devel glfw-devel assimp-devel spdlog-devel yaml-cpp-devel libshaderc-devel
+sudo dnf install vulkan-loader-devel vulkan-validation-layers vulkan-tools glfw-devel assimp-devel spdlog-devel yaml-cpp-devel libshaderc-devel
 ```
-Ubuntu/Debian Distributions
+Ubuntu/Debian Distributions(Not tested)
 ```
-sudo apt-get install libvulkan-dev vulkan-tools libvulkan-memory-allocator-dev libglfw3-dev libassimp-dev libspdlog-dev libyaml-cpp-dev libshaderc-dev libspirv-cross-c-shared-dev
+sudo apt-get install libvulkan-dev vulkan-validationlayers vulkan-tools libglfw3-dev libassimp-dev libspdlog-dev libyaml-cpp-dev libshaderc-dev
 ```
 These packages are provided by default on most mainstream distros.
 
-4. For SPIRV-Cross on Fedora Distribution requires some extra steps to install its package.
+4. Give shell scripts permission to execute
 ```
-sudo dnf copr enable nfrizzel/spirv-cross
-sudo dnf install spirv-cross-devel
+chmod +x run_editor.sh run_tracy.sh run_gdb.sh install_vulkan_sdk.sh
 ```
-Here we are enabling COPR to install spirv-cross-devel package, or you could install latest repository from [Khronos Group](https://github.com/KhronosGroup/SPIRV-Cross) but make sure to store it in [vendor](VulkanCore/vendor) directory.
+5. Execute `install_vulkan_sdk.sh` and wait for additional Vulkan dependencies to install.
 
 <ins>3. Building Tracy Profiler</ins>
 
@@ -68,7 +67,7 @@ Fedora/RHEL Distributions
 ```
 sudo dnf install patch dbus-devel wayland-devel
 ```
-Ubuntu/Debian Distributions
+Ubuntu/Debian Distributions(Not tested)
 ```
 sudo apt-get install patch libdbus-1-dev libwayland-dev
 ```

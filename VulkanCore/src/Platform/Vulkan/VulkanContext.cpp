@@ -275,7 +275,7 @@ namespace VulkanCore {
 		allocatorInfo.instance = m_VulkanInstance;
 		allocatorInfo.physicalDevice = m_Device->GetPhysicalDevice();
 		allocatorInfo.pVulkanFunctions = &vulkanFunctions;
-		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_4;
 		allocatorInfo.pAllocationCallbacks = nullptr;
 		allocatorInfo.pDeviceMemoryCallbacks = nullptr;
 		allocatorInfo.pHeapSizeLimit = nullptr;

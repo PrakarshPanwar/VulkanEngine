@@ -342,8 +342,8 @@ namespace VulkanCore {
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 		// Graphics Command Pool(One for Main, another for Render)
-		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_RTCommandPool), "Failed to Create Command Pool!");
-		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_CommandPool), "Failed to Create Command Pool!");
+		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_CommandPool), "Failed to Create Graphics(Main) Command Pool!");
+		VK_CHECK_RESULT(vkCreateCommandPool(m_LogicalDevice, &poolInfo, nullptr, &m_RTCommandPool), "Failed to Create Graphics(RT) Command Pool!");
 
 		// Transfer Command Pool
 		poolInfo.queueFamilyIndex = queueFamilyIndices.TransferFamily;
