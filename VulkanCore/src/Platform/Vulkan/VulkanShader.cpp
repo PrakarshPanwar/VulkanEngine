@@ -370,7 +370,7 @@ namespace VulkanCore {
 				else
 				{
 					VK_CORE_CRITICAL("{} header doesn't exist!", includeFilePath.generic_string());
-					__debugbreak();
+					DEBUG_BREAK;
 				}
 			}
 		}

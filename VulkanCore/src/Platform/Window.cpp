@@ -3,8 +3,8 @@
 
 #include "Windows/WindowsWindow.h"
 
-namespace VulkanCore
-{
+namespace VulkanCore {
+
 	std::shared_ptr<Window> Window::Create(const WindowSpecs& specs)
 	{
 #if defined(_WIN32)

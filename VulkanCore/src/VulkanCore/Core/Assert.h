@@ -3,7 +3,7 @@
 #if defined(_MSC_VER)
 #define DEBUG_BREAK __debugbreak()
 #elif defined(__GNUC__)
-#define DEBUG_BREAK __builtin_debugtrap()
+#define DEBUG_BREAK __builtin_trap()
 #endif
 
 #define VK_CORE_ASSERT(check, ...) if (!(check)) { VK_CORE_ERROR(__VA_ARGS__); DEBUG_BREAK; }

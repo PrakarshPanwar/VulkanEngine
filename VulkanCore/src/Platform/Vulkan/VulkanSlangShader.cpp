@@ -6,7 +6,6 @@
 
 #include <slang/slang-com-helper.h>
 #include <spirv_cross/spirv_cross.hpp>
-#include "../Source/SPIRV-Reflect/spirv_reflect.h"
 
 #define SLANG_PREPROCESSOR_SUPPORT 0
 

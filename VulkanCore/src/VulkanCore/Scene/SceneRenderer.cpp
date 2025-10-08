@@ -912,7 +912,7 @@ namespace VulkanCore {
 			auto SceneDepthTexture = std::static_pointer_cast<VulkanImage>(m_SceneDepthTextures.emplace_back(std::make_shared<VulkanImage>(sceneDepthSpec)));
 			SceneDepthTexture->Invalidate();
 
-			Utils::InsertImageMemoryBarrier(barrierCmd, SceneDepthTexture->GetVulkanImageInfo().Image,
+			Utils::InsertImageMemoryBarrier(barrierCmd.CmdBuffer, SceneDepthTexture->GetVulkanImageInfo().Image,
 				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -1004,7 +1004,7 @@ namespace VulkanCore {
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 					VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, vulkanSceneTexture->GetSpecification().MipLevels, 0, 1 });
 #if VK_FEATURE_GTAO
-				Utils::InsertImageMemoryBarrier(barrierCmd, vulkanDepthTexture->GetVulkanImageInfo().Image,
+				Utils::InsertImageMemoryBarrier(barrierCmd.CmdBuffer, vulkanDepthTexture->GetVulkanImageInfo().Image,
 					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
 					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL,
 					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
