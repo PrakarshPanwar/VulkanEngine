@@ -176,8 +176,6 @@ namespace VulkanCore {
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
 			VK_CORE_ERROR("Validation Layer: {0} message: \n\t{1}\n {2} {3}", Utils::VkDebugUtilsMessageSeverity(messageSeverity), pCallbackData->pMessage, labels, objects);
 			break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
-			break;
 		default:
 			break;
 		}
@@ -385,7 +383,7 @@ namespace VulkanCore {
 		for (const auto& required : requiredExtensions)
 		{
 			VK_CORE_WARN("\t {0}", required);
-			VK_CORE_ASSERT(available.find(required) != available.end(), "Missing Required GLFW Extension!");
+			VK_CORE_ASSERT(available.contains(required), "Missing Required GLFW Extension!");
 		}
 	}
 

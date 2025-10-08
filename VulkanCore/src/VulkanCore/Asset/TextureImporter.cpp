@@ -3,10 +3,8 @@
 #include "TextureImporter.h"
 #include "AssetManager.h"
 
-#include <windows.h>
 #include <stb_image.h>
 #include <algorithm>
-#include <winioctl.h>
 
 namespace VulkanCore {
 

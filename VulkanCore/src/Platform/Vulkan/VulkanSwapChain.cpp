@@ -7,6 +7,25 @@
 
 namespace VulkanCore {
 
+	namespace Utils {
+
+		static const char* VulkanPresentMode(VkPresentModeKHR presentMode)
+		{
+			switch (presentMode)
+			{
+			case VK_PRESENT_MODE_IMMEDIATE_KHR:			return "Immediate";
+			case VK_PRESENT_MODE_MAILBOX_KHR:			return "Mailbox";
+			case VK_PRESENT_MODE_FIFO_KHR:				return "FIFO(V-Sync)";
+			case VK_PRESENT_MODE_FIFO_RELAXED_KHR:		return "FIFO(Relaxed)";
+			case VK_PRESENT_MODE_FIFO_LATEST_READY_KHR: return "FIFO(Latest)";
+			default:
+				VK_CORE_ASSERT(false, "Present Mode is undefined!");
+				return "Unknown";
+			}
+		}
+
+	}
+
 	VulkanSwapChain* VulkanSwapChain::s_Instance;
 
 	VulkanSwapChain::VulkanSwapChain(VkExtent2D windowExtent)
@@ -51,7 +70,7 @@ namespace VulkanCore {
 			// Cleanup Framebuffers
 			vkDestroyFramebuffer(device->GetVulkanDevice(), m_SCFramebuffers[i], nullptr);
 
-			// Cleaup Presentation Semaphores
+			// Cleanup Presentation Semaphores
 			vkDestroySemaphore(device->GetVulkanDevice(), m_ReadyToPresentSemaphores[i], nullptr);
 		}
 
@@ -76,8 +95,6 @@ namespace VulkanCore {
 
 	VkResult VulkanSwapChain::AcquireNextImage(uint32_t* imageIndex)
 	{
-		VK_CORE_PROFILE_FN("VulkanSwapChain::AcquireNextImage", TracyZoneLabelColor::Purple);
-
 		const auto device = VulkanContext::GetCurrentDevice();
 		vkWaitForFences(device->GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
@@ -464,7 +481,7 @@ namespace VulkanCore {
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		// Acquire Images Semaphores(Frames in Flight)
+		// Acquire Image Semaphores(Frames in Flight)
 		for (size_t i = 0; i < framesInFlight; ++i)
 		{
 			VK_CORE_ASSERT(vkCreateSemaphore(device->GetVulkanDevice(), &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) == VK_SUCCESS &&
@@ -503,12 +520,12 @@ namespace VulkanCore {
 		{
 			if (availablePresentMode == requiredPresentMode)
 			{
-				VK_CORE_INFO("Present Mode: V-Sync");
+				VK_CORE_INFO("Present Mode: {}", Utils::VulkanPresentMode(availablePresentMode));
 				return availablePresentMode;
 			}
 		}
 
-		VK_CORE_INFO("Present Mode: V-Sync");
+		VK_CORE_INFO("Present Mode: {}", Utils::VulkanPresentMode(VK_PRESENT_MODE_FIFO_KHR));
 		return VK_PRESENT_MODE_FIFO_KHR; // Required by all implementations, so we return it as a fallback.
 	}
 

@@ -1,5 +1,4 @@
 #pragma once
-#include "Platform/Window.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 #include "Platform/Vulkan/VulkanSwapChain.h"
 #include "VulkanCore/Mesh/Mesh.h"

@@ -537,6 +537,8 @@ namespace VulkanCore {
 		{
 			if (m_EditorCamera.IsInFly())
 				m_EditorCamera.SetFly(false);
+
+			break;
 		}
 		default:
 			break;
@@ -685,7 +687,7 @@ namespace VulkanCore {
 			if (ImGui::ImageButton("##PauseState", (ImTextureID)icon, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
 				activeScene->SetPaused(!isPaused);
 
-			// Step button
+			// Step Button
 			if (isPaused && ImGui::ImageButtonEx((ImGuiID)7826836835, (ImTextureID)m_StepIconID, ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
 					activeScene->StepFrames();
 		}
