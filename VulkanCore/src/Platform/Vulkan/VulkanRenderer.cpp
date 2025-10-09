@@ -200,7 +200,7 @@ namespace VulkanCore {
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 
-			const uint32_t mipCount = (uint32_t)std::floor(std::log2(cubemapSize)) + 1;
+			const uint32_t mipCount = Utils::CalculateMipCount(cubemapSize);
 			auto vulkanDescriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
 
 			// Building Descriptor Sets
