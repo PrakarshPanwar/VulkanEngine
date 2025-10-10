@@ -98,9 +98,9 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						std::filesystem::path assetPath = (const char*)payload->Data;
+						std::string assetPath = (const char*)payload->Data;
 
-						std::shared_ptr<Texture2D> diffuseTex = AssetManager::GetAsset<Texture2D>(assetPath.string());
+						std::shared_ptr<Texture2D> diffuseTex = AssetManager::GetAsset<Texture2D>(assetPath);
 						vulkanMaterial->SetDiffuseTexture(diffuseTex);
 					}
 
@@ -129,9 +129,9 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						std::filesystem::path assetPath = (const char*)payload->Data;
+						std::string assetPath = (const char*)payload->Data;
 
-						std::shared_ptr<Texture2D> normalTex = AssetManager::GetAsset<Texture2D>(assetPath.string());
+						std::shared_ptr<Texture2D> normalTex = AssetManager::GetAsset<Texture2D>(assetPath);
 						vulkanMaterial->SetNormalTexture(normalTex);
 					}
 
@@ -157,9 +157,9 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						std::filesystem::path assetPath = (const char*)payload->Data;
+						std::string assetPath = (const char*)payload->Data;
 
-						std::shared_ptr<Texture2D> armTex = AssetManager::GetAsset<Texture2D>(assetPath.string());
+						std::shared_ptr<Texture2D> armTex = AssetManager::GetAsset<Texture2D>(assetPath);
 						vulkanMaterial->SetARMTexture(armTex);
 					}
 
@@ -185,9 +185,9 @@ namespace VulkanCore {
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 					{
-						std::filesystem::path assetPath = (const char*)payload->Data;
+						std::string assetPath = (const char*)payload->Data;
 
-						std::shared_ptr<Texture2D> displacementTex = AssetManager::GetAsset<Texture2D>(assetPath.string());
+						std::shared_ptr<Texture2D> displacementTex = AssetManager::GetAsset<Texture2D>(assetPath);
 						vulkanMaterial->SetDisplacementTexture(displacementTex);
 
 						m_MaterialAsset->SetDisplacement(true);
