@@ -18,6 +18,7 @@ IncludeDir["Jolt"] = "%{wks.location}/VulkanCore/vendor/JoltPhysics"
 
 LibraryDir = {}
 LibraryDir["VulkanSDK"] = "%{wks.location}/VulkanCore/vendor/VulkanSDK/Lib"
+LibraryDir["VulkanSDKBin"] = "%{wks.location}/VulkanCore/vendor/VulkanSDK/Bin"
 LibraryDir["Assimp"] = "%{wks.location}/VulkanCore/vendor/Assimp/build/lib"
 LibraryDir["AssimpBin"] = "%{wks.location}/VulkanCore/vendor/Assimp/build/bin"
 LibraryDir["optick"] = "%{wks.location}/VulkanCore/vendor/Optick/lib/x64"
@@ -35,6 +36,9 @@ Library["ShaderC_Release"] = "%{LibraryDir.VulkanSDK}/shaderc_shared.lib"
 Library["SPIRV_Cross_Release"] = "%{LibraryDir.VulkanSDK}/spirv-cross-core.lib"
 Library["SPIRV_Cross_GLSL_Release"] = "%{LibraryDir.VulkanSDK}/spirv-cross-glsl.lib"
 Library["Slang_Release"] = "%{LibraryDir.VulkanSDK}/slang.lib"
+
+Library["SlangGLSL_DLLDebug"] = "%{LibraryDir.VulkanSDKBin}/slang-glslangd.dll"
+Library["SlangGLSL_DLLRelease"] = "%{LibraryDir.VulkanSDKBin}/slang-glslang.dll"
 
 Library["AssimpLibDebug"] = "%{LibraryDir.Assimp}/Debug/assimp-vc143-mtd.lib"
 Library["AssimpZlibDebug"] = "%{LibraryDir.Assimp}/Debug/zlibd.lib"

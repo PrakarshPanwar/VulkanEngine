@@ -39,6 +39,7 @@ project "EditorLayer"
 		symbols "on"
 
 		postbuildcommands { "{COPY} %{Library.AssimpDLLDebug} ../bin/" .. outputdir .. "/%{prj.name}" }
+		postbuildcommands { "{COPY} %{Library.SlangGLSL_DLLDebug} ../bin/" .. outputdir .. "/%{prj.name}" }
 
 	filter "configurations:Release"
 		defines "VK_RELEASE"
@@ -46,3 +47,4 @@ project "EditorLayer"
 		optimize "on"
 
 		postbuildcommands { "{COPY} %{Library.AssimpDLLRelease} ../bin/" .. outputdir .. "/%{prj.name}" }
+		postbuildcommands { "{COPY} %{Library.SlangGLSL_DLLRelease} ../bin/" .. outputdir .. "/%{prj.name}" }
