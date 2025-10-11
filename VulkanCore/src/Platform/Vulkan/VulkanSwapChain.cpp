@@ -194,7 +194,6 @@ namespace VulkanCore {
 		VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
 		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.PresentModes, VK_PRESENT_MODE_FIFO_KHR);
 		VkExtent2D extent = ChooseSwapExtent(swapChainSupport.Capabilities);
-		extent = { std::max(extent.width, 1u), std::max(extent.height, 1u) };
 
 		uint32_t imageCount = swapChainSupport.Capabilities.minImageCount + 1;
 		if (swapChainSupport.Capabilities.maxImageCount > 0 && imageCount > swapChainSupport.Capabilities.maxImageCount)
@@ -243,7 +242,7 @@ namespace VulkanCore {
 		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, m_SCImages.data());
 
 		m_SCImageFormat = surfaceFormat.format;
-		m_SCExtent = extent;
+		m_SCExtent = { std::max(extent.width, 1u), std::max(extent.height, 1u) };
 	}
 
 	void VulkanSwapChain::CreateImageViews()

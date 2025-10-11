@@ -2,11 +2,12 @@
 #include "VulkanCore/Utils/PlatformUtils.h"
 #include "VulkanCore/Core/Application.h"
 
+#include <GLFW/glfw3.h>
+
+#ifdef _WIN64
 #include <Windows.h>
 #include <commdlg.h>
-#include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
+#endif
 
 namespace VulkanCore {
 

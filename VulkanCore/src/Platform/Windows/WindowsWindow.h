@@ -26,6 +26,7 @@ namespace VulkanCore {
 		void* GetNativeWindow() override { return m_Window; }
 	private:
 		static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
+		void SetWindowTitleDarkMode();
 
 		void Init(const WindowSpecs& specs);
 		void Shutdown();
