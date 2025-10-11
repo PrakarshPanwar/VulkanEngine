@@ -112,7 +112,6 @@ namespace VulkanCore {
 
 	bool Application::OnWindowResize(WindowResizeEvent& window)
 	{
-		m_Renderer->RecreateSwapChain();
 		return true;
 	}
 
