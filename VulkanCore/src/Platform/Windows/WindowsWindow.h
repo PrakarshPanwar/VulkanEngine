@@ -17,7 +17,7 @@ namespace VulkanCore {
 
 		const std::string& GetWindowName() const override { return m_WindowSpecs.Name; }
 		bool IsWindowResized() const override { return m_WindowSpecs.FramebufferResize; }
-		void ResetWindowResizeFlag() override { m_WindowSpecs.FramebufferResize = false; };
+		void ResetResizeFlag() override { m_WindowSpecs.FramebufferResize = false; };
 		void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; };
 
 		uint32_t GetWidth() const override { return m_WindowSpecs.Width; }

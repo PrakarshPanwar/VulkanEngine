@@ -45,11 +45,11 @@ namespace VulkanCore {
 
 	void LinuxWindow::FramebufferResizeCallback(GLFWwindow *window, int width, int height)
 	{
-		auto vkWindow = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		auto windowData = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
-		vkWindow->FramebufferResize = true;
-		vkWindow->Width = width;
-		vkWindow->Height = height;
+		windowData->Width = width;
+		windowData->Height = height;
+		windowData->FramebufferResize = true;
 	}
 
 	void LinuxWindow::Init(const WindowSpecs &specs)
