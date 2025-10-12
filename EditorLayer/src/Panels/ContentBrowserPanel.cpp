@@ -135,8 +135,10 @@ namespace VulkanCore {
 				if (ImGui::BeginDragDropSource())
 				{
 					auto relativePath = std::filesystem::relative(path);
-					const wchar_t* itemPath = relativePath.c_str();
-					ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
+					auto relativePathStr = relativePath.generic_string();
+					const char* itemPath = relativePathStr.c_str();
+
+					ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, relativePathStr.size() + 1);
 					ImGui::EndDragDropSource();
 				}
 
@@ -179,8 +181,10 @@ namespace VulkanCore {
 				if (ImGui::BeginDragDropSource())
 				{
 					auto relativePath = std::filesystem::relative(path);
-					const wchar_t* itemPath = relativePath.c_str();
-					ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
+					auto relativePathStr = relativePath.generic_string();
+					const char* itemPath = relativePathStr.c_str();
+
+					ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, relativePathStr.size() + 1);
 					ImGui::EndDragDropSource();
 				}
 
@@ -277,7 +281,9 @@ namespace VulkanCore {
 			if (ImGui::Button("OK"))
 			{
 				std::string pathStr = { buffer };
+#if defined(_WIN32)
 				std::replace(pathStr.begin(), pathStr.end(), '/', '\\');
+#endif
 				std::filesystem::path filepath = pathStr;
 				filepath.replace_extension(".vkmsh");
 
@@ -379,7 +385,9 @@ namespace VulkanCore {
 			if (ImGui::Button("OK"))
 			{
 				std::string pathStr = { buffer };
+#if defined(_WIN32)
 				std::replace(pathStr.begin(), pathStr.end(), '/', '\\');
+#endif
 				std::filesystem::path filepath = pathStr;
 				filepath.replace_extension(".vkmat");
 

@@ -37,12 +37,12 @@ namespace VulkanCore {
 			}
 		}
 
-		static VkImageLayout VulkanAttachmentInitialLayout(AttachmentLoadOp loadOp)
+		static VkImageLayout VulkanAttachmentInitialLayout(AttachmentLoadOp loadOp, bool multisampled)
 		{
 			switch (loadOp)
 			{
 				case AttachmentLoadOp::DontCare: return VK_IMAGE_LAYOUT_UNDEFINED;
-				case AttachmentLoadOp::Load:     return VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+				case AttachmentLoadOp::Load:     return multisampled ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 				case AttachmentLoadOp::Clear:    return VK_IMAGE_LAYOUT_UNDEFINED;
 				default:
 					VK_CORE_ASSERT(false, "Invalid Attachment Load Operation for layout determination!");
@@ -103,7 +103,7 @@ namespace VulkanCore {
 			colorAttachment.storeOp = Utils::VulkanAttachmentStoreOp(m_Specification.ColorStoreOps[i]);
 			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			colorAttachment.initialLayout = Utils::VulkanAttachmentInitialLayout(m_Specification.ColorLoadOps[i]);
+			colorAttachment.initialLayout = Utils::VulkanAttachmentInitialLayout(m_Specification.ColorLoadOps[i], multisampled);
 			colorAttachment.finalLayout = multisampled ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 
 			attachmentDescriptions.push_back(colorAttachment);
@@ -142,7 +142,7 @@ namespace VulkanCore {
 			depthAttachment.storeOp = Utils::VulkanAttachmentStoreOp(m_Specification.DepthStoreOp);
 			depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			depthAttachment.initialLayout = Utils::VulkanAttachmentInitialLayout(m_Specification.DepthLoadOp);
+			depthAttachment.initialLayout = Utils::VulkanAttachmentInitialLayout(m_Specification.DepthLoadOp, multisampled);
 			depthAttachment.finalLayout = multisampled ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
 			attachmentDescriptions.push_back(depthAttachment);
 

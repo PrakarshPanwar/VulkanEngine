@@ -76,7 +76,7 @@ namespace VulkanCore {
 	{
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(VK_CORE_BIND_EVENT_FN(Application::OnWindowClose));
-		dispatcher.Dispatch<WindowResizeEvent>(VK_CORE_BIND_EVENT_FN(Application::OnWindowResize));
+		//dispatcher.Dispatch<WindowResizeEvent>(VK_CORE_BIND_EVENT_FN(Application::OnWindowResize));
 
 		for (auto it = m_LayerStack.end(); it != m_LayerStack.begin(); )
 		{
@@ -107,12 +107,6 @@ namespace VulkanCore {
 	bool Application::OnWindowClose(WindowCloseEvent& window)
 	{
 		m_Running = false;
-		return true;
-	}
-
-	bool Application::OnWindowResize(WindowResizeEvent& window)
-	{
-		m_Renderer->RecreateSwapChain();
 		return true;
 	}
 

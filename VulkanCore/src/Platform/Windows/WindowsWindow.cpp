@@ -8,6 +8,17 @@
 #include "VulkanCore/Events/MouseEvent.h"
 #include "VulkanCore/Events/KeyEvent.h"
 
+#ifdef _WIN64
+#include <Windows.h>
+#include <CommCtrl.h>
+#include <dwmapi.h>
+
+typedef HRESULT(WINAPI* pFnDwmSetWindowAttribute)(HWND hwnd, DWORD dwAttribute, LPCVOID pvAttribute, DWORD cbAttribute);
+
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#endif
+
 namespace VulkanCore {
 
 	WindowsWindow::WindowsWindow(const WindowSpecs& specs)
@@ -29,11 +40,32 @@ namespace VulkanCore {
 
 	void WindowsWindow::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
 	{
-		auto vkWindow = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		auto windowData = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
-		vkWindow->FramebufferResize = true;
-		vkWindow->Width = width;
-		vkWindow->Height = height;
+		windowData->Width = width;
+		windowData->Height = height;
+		windowData->FramebufferResize = true;
+	}
+
+	void WindowsWindow::SetWindowTitleDarkMode()
+	{
+		// Get Windows Handle
+		HWND hwnd = glfwGetWin32Window(m_Window);
+
+		// Load DWM Library
+		HMODULE dwmmod = LoadLibrary(L"dwmapi.dll");
+		if (dwmmod)
+		{
+			pFnDwmSetWindowAttribute DwmSetWindowAttribute;
+			DwmSetWindowAttribute = (pFnDwmSetWindowAttribute)GetProcAddress(dwmmod, "DwmSetWindowAttribute");
+
+			// Title Color
+			BOOL useDarkMode = TRUE;
+
+			HRESULT hr = DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
+			if (hr != S_OK)
+				VK_CORE_WARN("Failed to Set Windows Window Title Bar Color!");
+		}
 	}
 
 	void WindowsWindow::Init(const WindowSpecs& specs)
@@ -157,6 +189,8 @@ namespace VulkanCore {
 			MouseMovedEvent event((float)xPos, (float)yPos);
 			data.EventCallback(event);
 		});
+
+		SetWindowTitleDarkMode();
 	}
 
 	void WindowsWindow::Shutdown()

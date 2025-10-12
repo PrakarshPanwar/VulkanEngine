@@ -72,7 +72,11 @@ namespace VulkanCore {
 
 		static consteval const char* GetCacheDirectory()
 		{
+#if defined(_WIN32)
 			return "cache\\slang";
+#elif defined(__linux__)
+			return "cache/slang";
+#endif
 		}
 
 		static void CreateCacheDirectoryIfRequired()

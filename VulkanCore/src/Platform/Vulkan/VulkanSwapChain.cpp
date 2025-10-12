@@ -242,7 +242,7 @@ namespace VulkanCore {
 		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, m_SCImages.data());
 
 		m_SCImageFormat = surfaceFormat.format;
-		m_SCExtent = extent;
+		m_SCExtent = { std::max(extent.width, 1u), std::max(extent.height, 1u) };
 	}
 
 	void VulkanSwapChain::CreateImageViews()

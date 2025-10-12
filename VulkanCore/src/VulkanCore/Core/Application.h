@@ -57,7 +57,7 @@ namespace VulkanCore {
 		const ApplicationSpecification& GetSpecification() const { return m_Specification; }
 	private:
 		bool OnWindowClose(WindowCloseEvent& window);
-		bool OnWindowResize(WindowResizeEvent& window);
+		//bool OnWindowResize(WindowResizeEvent& window);
 
 		void ExecuteMainThreadQueue();
 	private:

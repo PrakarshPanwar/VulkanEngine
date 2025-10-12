@@ -11,6 +11,7 @@ namespace VulkanCore {
 		VkSamplerMipmapMode VulkanMipmapMode(FilterMode filter);
 		VkSampleCountFlagBits VulkanSampleCount(uint32_t sampleCount);
 		uint32_t CalculateMipCount(uint32_t width, uint32_t height);
+		uint32_t CalculateMipCount(uint32_t size);
 		bool IsDepthFormat(ImageFormat format);
 		bool IsMultisampled(ImageSpecification spec);
 		bool IsMultisampled(FramebufferSpecification spec);

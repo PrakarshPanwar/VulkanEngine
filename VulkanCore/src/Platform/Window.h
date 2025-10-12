@@ -30,7 +30,7 @@ namespace VulkanCore {
 		virtual const std::string& GetWindowName() const = 0;
 
 		virtual bool IsWindowResized() const = 0;
-		virtual void ResetWindowResizeFlag() = 0;
+		virtual void ResetResizeFlag() = 0;
 
 		virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
 		virtual void* GetNativeWindow() { return nullptr; }

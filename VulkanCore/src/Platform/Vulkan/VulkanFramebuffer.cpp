@@ -124,6 +124,7 @@ namespace VulkanCore {
 				spec.Height = m_Specification.Height;
 				spec.Samples = m_Specification.Samples;
 				spec.Layers = m_Specification.Layers;
+				spec.Transfer = m_Specification.Transfer && !multisampled;
 				spec.Format = m_DepthAttachmentSpecification.ImgFormat;
 				spec.Usage = multisampled ? ImageUsage::Attachment : ImageUsage::ReadAttachment;
 
@@ -248,24 +249,11 @@ namespace VulkanCore {
 	void VulkanFramebuffer::SetColorAttachments(uint32_t index, const std::vector<std::shared_ptr<Image2D>>& colorImages)
 	{
 		m_ColorAttachments[index] = colorImages;
-
-		bool multisampled = colorImages[0]->GetSpecification().Samples > 1;
-		if (multisampled)
-			return;
-
-		uint32_t specificationSize = static_cast<uint32_t>(m_ColorAttachmentSpecifications.size());
-		m_ColorAttachments[index + specificationSize].clear(); // Clear Resolve Attachments for this index
 	}
 
 	void VulkanFramebuffer::SetDepthAttachments(const std::vector<std::shared_ptr<Image2D>>& depthImages)
 	{
 		m_DepthAttachment = depthImages;
-
-		bool multisampled = depthImages[0]->GetSpecification().Samples > 1;
-		if (multisampled)
-			return;
-
-		m_DepthAttachmentResolve.clear();
 	}
 
 	void* VulkanFramebuffer::ReadPixel(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<IndexBuffer> imageBuffer, uint32_t index, uint32_t x, uint32_t y)

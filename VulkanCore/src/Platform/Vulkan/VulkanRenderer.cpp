@@ -201,7 +201,7 @@ namespace VulkanCore {
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 
-			const uint32_t mipCount = std::_Floor_of_log_2(cubemapSize) + 1;
+			const uint32_t mipCount = Utils::CalculateMipCount(cubemapSize);
 			auto vulkanDescriptorPool = VulkanRenderer::Get()->GetDescriptorPool();
 
 			// Building Descriptor Sets
@@ -793,17 +793,13 @@ namespace VulkanCore {
 		}
 
 		vkDeviceWaitIdle(device->GetVulkanDevice());
-		m_SwapChain.reset();
 
-		if (m_SwapChain == nullptr)
+		if (!m_SwapChain)
 			m_SwapChain = std::make_unique<VulkanSwapChain>(extent);
 		else
 		{
 			std::shared_ptr oldSwapChain = std::move(m_SwapChain);
 			m_SwapChain = std::make_unique<VulkanSwapChain>(extent, oldSwapChain);
-
-			if (!oldSwapChain->CompareSwapFormats(*m_SwapChain->GetSwapChain()))
-				VK_CORE_ASSERT(false, "Swap Chain Image(or Depth) Format has changed!");
 		}
 	}
 
@@ -835,7 +831,7 @@ namespace VulkanCore {
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_Window->IsWindowResized())
 		{
-			m_Window->ResetWindowResizeFlag();
+			m_Window->ResetResizeFlag();
 			RecreateSwapChain();
 		}
 		else if (result != VK_SUCCESS)
