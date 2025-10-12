@@ -793,7 +793,7 @@ namespace VulkanCore {
 
 		vkDeviceWaitIdle(device->GetVulkanDevice());
 
-		if (m_SwapChain == nullptr)
+		if (!m_SwapChain)
 			m_SwapChain = std::make_unique<VulkanSwapChain>(extent);
 		else
 		{

@@ -24,4 +24,4 @@ target_include_directories(EditorLayer PRIVATE
 target_link_libraries(EditorLayer PRIVATE VulkanCore)
 
 # Enable SIMD flags
-target_compile_options(EditorLayer PRIVATE -msse4.1)
+target_compile_options(EditorLayer PRIVATE -mavx)

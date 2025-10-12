@@ -233,10 +233,9 @@ namespace VulkanCore {
 
 		VK_CHECK_RESULT(vkCreateSwapchainKHR(device->GetVulkanDevice(), &createInfo, nullptr, &m_SwapChain), "Failed to Create Swap Chain!");
 
-		// We only specified a minimum number of Images in the SwapChain, so the implementation is
-		// allowed to create a SwapChain with more. That's why we'll first query the final number of
-		// images with vkGetSwapchainImagesKHR, then resize the container and finally call it again to
-		// retrieve the handles.
+		// We only specified a minimum number of Images in the SwapChain, so the implementation is allowed
+		// to create a SwapChain with more. That's why we'll first query the final number of images with
+		// vkGetSwapchainImagesKHR, then resize the container and finally call it again to retrieve the handles.
 		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, nullptr);
 		m_SCImages.resize(imageCount);
 		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, m_SCImages.data());

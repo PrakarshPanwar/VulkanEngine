@@ -12,7 +12,7 @@ namespace VulkanCore {
 
 	namespace Utils {
 
-		static const char* LinuxGLFWPlatform(uint32_t platform)
+		static const char* LinuxWSIPlatform(uint32_t platform)
 		{
 			switch (platform)
 			{
@@ -86,7 +86,7 @@ namespace VulkanCore {
 		else
 			m_Window = glfwCreateWindow(m_WindowSpecs.Width, m_WindowSpecs.Height, m_WindowSpecs.Name.c_str(), nullptr, nullptr);
 
-		VK_CORE_INFO("Creating Linux {0} Window '{1}' ({2}, {3})", Utils::LinuxGLFWPlatform(glfwGetPlatform()), m_WindowSpecs.Name, m_WindowSpecs.Width, m_WindowSpecs.Height);
+		VK_CORE_INFO("Creating Linux {0} Window '{1}' ({2}, {3})", Utils::LinuxWSIPlatform(glfwGetPlatform()), m_WindowSpecs.Name, m_WindowSpecs.Width, m_WindowSpecs.Height);
 		glfwMakeContextCurrent(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
