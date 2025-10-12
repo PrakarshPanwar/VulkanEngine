@@ -8,6 +8,7 @@
 *.vcxproj
 *.user
 *.sln
+*.slnx
 *.filters
 /VulkanCore/assets/cache
 /VulkanCore/vendor/VulkanSDK

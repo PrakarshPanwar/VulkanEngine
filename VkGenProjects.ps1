@@ -1,5 +1,5 @@
 # Call the Premake executable
-& "VulkanCore\vendor\premake\premake5.exe" vs2022
+& "VulkanCore\vendor\premake\premake5.exe" vs2026
 
 # Check if the Assimp solution exists
 if (Test-Path "VulkanCore\vendor\assimp\build\Assimp.sln") {

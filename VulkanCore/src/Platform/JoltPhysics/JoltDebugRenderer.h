@@ -1,9 +1,6 @@
 #pragma once
 #include "Jolt/Jolt.h"
-
-#define JPH_DEBUG_RENDERER_EXPORT
 #include "Jolt/Renderer/DebugRenderer.h"
-#undef JPH_DEBUG_RENDERER_EXPORT
 #include "Jolt/Core/Mutex.h"
 
 #include "VulkanCore/Renderer/VertexBuffer.h"
