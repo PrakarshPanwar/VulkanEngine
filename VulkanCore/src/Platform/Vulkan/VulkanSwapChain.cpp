@@ -95,6 +95,8 @@ namespace VulkanCore {
 
 	VkResult VulkanSwapChain::AcquireNextImage(uint32_t* imageIndex)
 	{
+		VK_CORE_PROFILE_FN("VulkanSwapChain::AcquireNextImage", TracyZoneLabelColor::Purple);
+
 		const auto device = VulkanContext::GetCurrentDevice();
 		vkWaitForFences(device->GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
