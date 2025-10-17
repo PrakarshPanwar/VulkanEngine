@@ -281,9 +281,11 @@ namespace VulkanCore {
 		}
 
 		// Ground Truth Ambient Occlusion
+#if VK_FEATURE_GTAO
 		{
 			m_GTAOPipeline = std::make_shared<VulkanComputePipeline>(Renderer::GetShader("GTAO"), "GTAO");
 		}
+#endif
 	}
 
 	void SceneRenderer::CreateMaterials()

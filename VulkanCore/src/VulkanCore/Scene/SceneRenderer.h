@@ -9,9 +9,6 @@
 #include "Scene.h"
 #include "PhysicsDebugRenderer.h"
 
-#define VK_FEATURE_GTAO 0
-#define VK_FEATURE_OIT 1
-
 namespace VulkanCore {
 
 	class SceneRenderer

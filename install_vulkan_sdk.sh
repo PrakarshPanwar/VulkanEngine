@@ -26,5 +26,5 @@ fi
 # Libraries(spirv_cross, slang, vma)
 # Bin(vulkanCapsViewer, vkconfig, vkconfig-gui)
 cd VulkanSDK
-sed "s|^|${VULKAN_SDK_VERSION}|"  ../../../vulkan_sdk_configs.txt > vulkan_sdk_config_paths.txt
-tar -xvf ~/Downloads/vulkan_sdk.tar.xz -T vulkan_sdk_config_paths.txt --strip-components=2 
+sed "s|^|${VULKAN_SDK_VERSION}|"  ../../../vulkan_sdk_utils.txt > vulkan_sdk_utils_paths.txt
+tar -xvf ~/Downloads/vulkan_sdk.tar.xz -T vulkan_sdk_utils_paths.txt --strip-components=2 

@@ -775,8 +775,8 @@ namespace VulkanCore {
 		DescriptorPoolBuilder descriptorPoolBuilder = DescriptorPoolBuilder();
 		descriptorPoolBuilder.SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
 		descriptorPoolBuilder.SetMaxSets(100).AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10);
-		descriptorPoolBuilder.SetMaxSets(1000).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10);
-		descriptorPoolBuilder.SetMaxSets(1000).AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10);
+		descriptorPoolBuilder.SetMaxSets(500).AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10);
+		descriptorPoolBuilder.SetMaxSets(500).AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10);
 		m_GlobalDescriptorPool = descriptorPoolBuilder.Build();
 	}
 

@@ -27,7 +27,7 @@ Entities:
         0: 18198936774292638234
   - Entity: 309879778789
     TagComponent:
-      Tag: Wall1
+      Tag: Wall
     TransformComponent:
       Translation: [-10.2060223, 1.3801918, -0.0160584822]
       Rotation: [1.11806941e-09, -1.57045102, 1.11710485e-09]

@@ -1,3 +1,4 @@
+/x86_64/bin/vkconfig
 /x86_64/bin/vkconfig-gui
 /x86_64/bin/vulkanCapsViewer
 /x86_64/include/slang

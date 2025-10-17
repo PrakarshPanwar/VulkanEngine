@@ -38,9 +38,9 @@ namespace VulkanCore {
 
 		DescriptorPoolBuilder descriptorPoolBuilder = {};
 		descriptorPoolBuilder.SetPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
-		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000);
-		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000);
-		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000);
+		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100);
+		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100);
+		descriptorPoolBuilder.AddPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100);
 
 		m_ImGuiGlobalPool = descriptorPoolBuilder.Build();
 
@@ -60,12 +60,12 @@ namespace VulkanCore {
 		init_info.PhysicalDevice = device->GetPhysicalDevice();
 		init_info.Device = device->GetVulkanDevice();
 		init_info.Queue = device->GetGraphicsQueue();
-		init_info.RenderPass = VulkanSwapChain::GetSwapChain()->GetRenderPass();
+		init_info.PipelineInfoMain.RenderPass = VulkanSwapChain::GetSwapChain()->GetRenderPass();
 		init_info.DescriptorPool = m_ImGuiGlobalPool->GetVulkanDescriptorPool();
 		init_info.MinImageCount = 2;
 		init_info.ImageCount = 3;
 		init_info.CheckVkResultFn = CheckVkResult;
-		init_info.MSAASamples = device->GetMSAASampleCount();
+		init_info.PipelineInfoMain.MSAASamples = device->GetMSAASampleCount();
 
 		ImGuiStyle& style = ImGui::GetStyle();
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
