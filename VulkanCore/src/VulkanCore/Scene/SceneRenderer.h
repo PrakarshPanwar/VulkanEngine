@@ -262,7 +262,7 @@ namespace VulkanCore {
 		std::map<MeshKey, DrawSelectCommand> m_SelectedMeshDrawList;
 		std::map<MeshKey, MeshSelectTransform> m_SelectedMeshTransformMap;
 
-		glm::ivec2 m_ViewportSize = { 1920, 1080 };
+		glm::ivec2 m_ViewportSize = { 1, 1 };
 		glm::uvec2 m_BloomMipSize;
 		int m_HoveredEntity, m_DepthPassIndex = 0;
 

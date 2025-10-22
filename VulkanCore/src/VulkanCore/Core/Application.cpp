@@ -17,7 +17,7 @@ namespace VulkanCore {
 		Log::Init();
 
 		std::filesystem::current_path(m_Specification.WorkingDirectory);
-		m_Window = Window::Create({ 1920, 1080, m_Specification.Name });
+		m_Window = Window::Create({ 1920, 1105, m_Specification.Name });
 		m_Window->SetEventCallback(VK_CORE_BIND_EVENT_FN(Application::OnEvent));
 
 		Init();

@@ -69,9 +69,7 @@ namespace VulkanCore {
 
 		// Geometry and Point Light Pipeline
 		{
-			FramebufferSpecification geomFramebufferSpec; // Opaque Geometry Pipeline
-			geomFramebufferSpec.Width = 1920;
-			geomFramebufferSpec.Height = 1080;
+			FramebufferSpecification geomFramebufferSpec{}; // Opaque Geometry Pipeline
 			geomFramebufferSpec.Attachments = {
 				ImageFormat::RGBA32F, // Albedo Output
 				ImageFormat::RGBA16F, // Lighting Texture
@@ -82,15 +80,13 @@ namespace VulkanCore {
 			geomFramebufferSpec.Samples = 4;
 			geomFramebufferSpec.Transfer = true; // Enables Attachments to Copy/Blit Operations
 
-			RenderPassSpecification geomRenderPassSpec;
+			RenderPassSpecification geomRenderPassSpec{};
 			geomRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(geomFramebufferSpec);
 			geomRenderPassSpec.ColorStoreOps = { AttachmentStoreOp::Store };
 			geomRenderPassSpec.DepthLoadOp = AttachmentLoadOp::Clear;
 			geomRenderPassSpec.DepthStoreOp = AttachmentStoreOp::Store;
 #if VK_FEATURE_OIT
-			FramebufferSpecification geomTransparentFramebufferSpec; // Transparent Geometry Pipeline
-			geomTransparentFramebufferSpec.Width = 1920;
-			geomTransparentFramebufferSpec.Height = 1080;
+			FramebufferSpecification geomTransparentFramebufferSpec{}; // Transparent Geometry Pipeline
 			geomTransparentFramebufferSpec.Attachments = {
 				{ ImageFormat::RGBA16F,  BlendFactor::One,  BlendFactor::One }, // Accumulation
 				{ ImageFormat::R8_UNORM, BlendFactor::Zero, BlendFactor::OneMinusSrcColor, 1.0f }, // Revealage
@@ -101,19 +97,19 @@ namespace VulkanCore {
 			geomTransparentFramebufferSpec.Transfer = true;
 			geomTransparentFramebufferSpec.Samples = 4;
 
-			RenderPassSpecification	geomTransparentRenderPassSpec;
+			RenderPassSpecification geomTransparentRenderPassSpec{};
 			geomTransparentRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(geomTransparentFramebufferSpec);
 			geomTransparentRenderPassSpec.DepthLoadOp = AttachmentLoadOp::Load; // Load Depth from Geometry Pipeline
 			geomTransparentRenderPassSpec.DepthStoreOp = AttachmentStoreOp::DontCare; // After Rendering Transparent Geometry, we don't need to Store the Multisampled Depth only Resolved Depth
 #endif
-			PipelineSpecification geomPipelineSpec;
+			PipelineSpecification geomPipelineSpec{};
 			geomPipelineSpec.DebugName = "Geometry Pipeline";
 			geomPipelineSpec.pShader = Renderer::GetShader("CorePBR");
 			geomPipelineSpec.pRenderPass = std::make_shared<VulkanRenderPass>(geomRenderPassSpec);
 			geomPipelineSpec.Layout = vertexLayout;
 			geomPipelineSpec.InstanceLayout = instanceLayout;
 #if VK_FEATURE_OIT
-			PipelineSpecification geomTransparentPipelineSpec;
+			PipelineSpecification geomTransparentPipelineSpec{};
 			geomTransparentPipelineSpec.DebugName = "Geometry Transparent Pipeline";
 			geomTransparentPipelineSpec.pShader = Renderer::GetShader("CorePBR_OIT");
 			geomTransparentPipelineSpec.pRenderPass = std::make_shared<VulkanRenderPass>(geomTransparentRenderPassSpec);
@@ -121,7 +117,7 @@ namespace VulkanCore {
 			geomTransparentPipelineSpec.InstanceLayout = instanceLayout;
 			geomTransparentPipelineSpec.DepthWrite = false; // Only Enable Depth Testing but not Depth Writing
 #endif
-			PipelineSpecification geomTessellatedPipelineSpec;
+			PipelineSpecification geomTessellatedPipelineSpec{};
 			geomTessellatedPipelineSpec.DebugName = "Geometry Tessellated Pipeline";
 			geomTessellatedPipelineSpec.pShader = Renderer::GetShader("CorePBR_Tess");
 			geomTessellatedPipelineSpec.Topology = PrimitiveTopology::PatchList;
@@ -130,7 +126,7 @@ namespace VulkanCore {
 			geomTessellatedPipelineSpec.Layout = vertexLayout;
 			geomTessellatedPipelineSpec.InstanceLayout = instanceLayout;
 
-			PipelineSpecification lightPipelineSpec;
+			PipelineSpecification lightPipelineSpec{};
 			lightPipelineSpec.DebugName = "Light Pipeline";
 			lightPipelineSpec.pShader = Renderer::GetShader("LightShader");
 			lightPipelineSpec.pRenderPass = geomPipelineSpec.pRenderPass;
@@ -145,9 +141,7 @@ namespace VulkanCore {
 
 		// Geometry OIT Pipeline(Composite)
 		{
-			FramebufferSpecification geomCompFramebufferSpec;
-			geomCompFramebufferSpec.Width = 1920;
-			geomCompFramebufferSpec.Height = 1080;
+			FramebufferSpecification geomCompFramebufferSpec{};
 			geomCompFramebufferSpec.Attachments = {
 				{ ImageFormat::RGBA32F, BlendFactor::SrcAlpha, BlendFactor::OneMinusSrcAlpha }, // Same Attachment as Opaque Albedo Output
 			};
@@ -155,11 +149,11 @@ namespace VulkanCore {
 			geomCompFramebufferSpec.Transfer = true; // Enables Attachments to Copy/Blit Operations
 			geomCompFramebufferSpec.Samples = 4;
 
-			RenderPassSpecification geomCompRenderPassSpec;
+			RenderPassSpecification geomCompRenderPassSpec{};
 			geomCompRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(geomCompFramebufferSpec);
 			geomCompRenderPassSpec.ColorLoadOps = { AttachmentLoadOp::Load }; // Load Opaque Albedo Output
 
-			PipelineSpecification geomCompPipelineSpec;
+			PipelineSpecification geomCompPipelineSpec{};
 			geomCompPipelineSpec.DebugName = "Geometry OIT Pipeline(Composite)";
 			geomCompPipelineSpec.pShader = Renderer::GetShader("OITBlend");
 			geomCompPipelineSpec.pRenderPass = std::make_shared<VulkanRenderPass>(geomCompRenderPassSpec);
@@ -171,17 +165,15 @@ namespace VulkanCore {
 
 		// Geometry/Light Selection Pipeline(Editor Only)
 		{
-			FramebufferSpecification geomSelectFramebufferSpec;
-			geomSelectFramebufferSpec.Width = 1920;
-			geomSelectFramebufferSpec.Height = 1080;
+			FramebufferSpecification geomSelectFramebufferSpec{};
 			geomSelectFramebufferSpec.Attachments = { ImageFormat::R32I, ImageFormat::DEPTH24STENCIL8 };
 			geomSelectFramebufferSpec.Transfer = true;
 			memset(&geomSelectFramebufferSpec.Attachments.Attachments[0].ClearColor, -1, sizeof(float));
 
-			RenderPassSpecification geomSelectRenderPassSpec;
+			RenderPassSpecification geomSelectRenderPassSpec{};
 			geomSelectRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(geomSelectFramebufferSpec);
 
-			PipelineSpecification geomSelectPipelineSpec;
+			PipelineSpecification geomSelectPipelineSpec{};
 			geomSelectPipelineSpec.DebugName = "Geometry Select Pipeline";
 			geomSelectPipelineSpec.pShader = Renderer::GetShader("CoreEditor");
 			geomSelectPipelineSpec.pRenderPass = std::make_shared<VulkanRenderPass>(geomSelectRenderPassSpec);
@@ -195,7 +187,7 @@ namespace VulkanCore {
 
 			m_GeometrySelectPipeline = std::make_shared<VulkanPipeline>(geomSelectPipelineSpec);
 
-			PipelineSpecification lightSelectPipelineSpec;
+			PipelineSpecification lightSelectPipelineSpec{};
 			lightSelectPipelineSpec.DebugName = "Light Select Pipeline";
 			lightSelectPipelineSpec.pShader = Renderer::GetShader("LightEditor");
 			lightSelectPipelineSpec.pRenderPass = geomSelectPipelineSpec.pRenderPass;
@@ -205,7 +197,7 @@ namespace VulkanCore {
 
 		// Lines Pipeline
 		{
-			PipelineSpecification linesPipelineSpec;
+			PipelineSpecification linesPipelineSpec{};
 			linesPipelineSpec.DebugName = "Lines Pipeline";
 			linesPipelineSpec.pShader = Renderer::GetShader("Lines");
 			linesPipelineSpec.Topology = PrimitiveTopology::LineList;
@@ -220,7 +212,7 @@ namespace VulkanCore {
 
 		// Shadow Map Pipeline(NOTE: Currently not working properly)
 		{
-			FramebufferSpecification shadowMapFramebufferSpec;
+			FramebufferSpecification shadowMapFramebufferSpec{};
 			shadowMapFramebufferSpec.Width = m_CSMSettings.MapSize;
 			shadowMapFramebufferSpec.Height = m_CSMSettings.MapSize;
 			shadowMapFramebufferSpec.Attachments = { ImageFormat::DEPTH32F };
@@ -245,16 +237,14 @@ namespace VulkanCore {
 
 		// Composite Pipeline
 		{
-			FramebufferSpecification compFramebufferSpec;
-			compFramebufferSpec.Width = 1920;
-			compFramebufferSpec.Height = 1080;
+			FramebufferSpecification compFramebufferSpec{};
 			compFramebufferSpec.Attachments = { ImageFormat::RGBA8_SRGB };
 
-			RenderPassSpecification compRenderPassSpec;
+			RenderPassSpecification compRenderPassSpec{};
 			compRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(compFramebufferSpec);
 			m_SceneFramebuffer = compRenderPassSpec.TargetFramebuffer;
 
-			PipelineSpecification compPipelineSpec;
+			PipelineSpecification compPipelineSpec{};
 			compPipelineSpec.DebugName = "Composite Pipeline";
 			compPipelineSpec.pShader = Renderer::GetShader("SceneComposite");
 			compPipelineSpec.pRenderPass = std::make_shared<VulkanRenderPass>(compRenderPassSpec);
@@ -266,7 +256,7 @@ namespace VulkanCore {
 
 		// Skybox Pipeline
 		{
-			PipelineSpecification skyboxPipelineSpec;
+			PipelineSpecification skyboxPipelineSpec{};
 			skyboxPipelineSpec.DebugName = "Skybox Pipeline";
 			skyboxPipelineSpec.pShader = Renderer::GetShader("Skybox");
 			skyboxPipelineSpec.pRenderPass = m_GeometryPipeline->GetSpecification().pRenderPass;
@@ -860,7 +850,7 @@ namespace VulkanCore {
 			m_UBSpotLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBSpotLights)));
 			m_UBDirectionalLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBDirectionalLights)));
 			m_UBCascadeLightMatrices.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(CascadeMapData)));
-			m_ImageBuffer.emplace_back(std::make_shared<VulkanIndexBuffer>(m_ViewportSize.x * m_ViewportSize.y * sizeof(int)));
+			m_ImageBuffer.emplace_back(std::make_shared<VulkanIndexBuffer>(1920 * 1200 * sizeof(int)));
 
 			// Bloom Compute Textures
 			ImageSpecification bloomRTSpec{};
