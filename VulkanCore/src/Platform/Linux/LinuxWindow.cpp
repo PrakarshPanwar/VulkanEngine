@@ -54,6 +54,8 @@ namespace VulkanCore {
 
 	void LinuxWindow::Init(const WindowSpecs &specs)
 	{
+		auto& appSpec = Application::Get()->GetSpecification();
+
 		m_Data.Title = specs.Name;
 		m_Data.Width = specs.Width;
 		m_Data.Height = specs.Height;
@@ -63,17 +65,24 @@ namespace VulkanCore {
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-		glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GLFW_FALSE);
 
-		if (Application::Get()->GetSpecification().Fullscreen)
+		if (appSpec.Fullscreen)
 		{
 			GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 			const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
 			m_Data.Width = mode->width;
 			m_Data.Height = mode->height;
-			m_WindowSpecs.Width = mode->width;
-			m_WindowSpecs.Height = mode->height;
+
+			// NOTE: This is required in display protocols like Wayland where incorrect framebuffer size can cause problems
+			// like blurry scaled window due to mismatch in window and framebuffer sizes at different DPI
+			if (!appSpec.UseSpecDims)
+			{
+				m_WindowSpecs.Width = mode->width;
+				m_WindowSpecs.Height = mode->height;
+
+				glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GLFW_FALSE);
+			}
 
 			glfwWindowHint(GLFW_RED_BITS, mode->redBits);
 			glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
