@@ -6,12 +6,12 @@ file(GLOB_RECURSE VK_PROJECT_SOURCES
 	)
 
 find_package(Vulkan REQUIRED)
-find_package(glfw3 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 # Add vendor libraries
 add_subdirectory(vendor/imgui)
 add_subdirectory(vendor/JoltPhysics)
+add_subdirectory(vendor/glfw)
 
 # Create library
 add_library(VulkanCore

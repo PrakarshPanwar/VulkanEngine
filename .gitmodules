@@ -11,3 +11,6 @@
 [submodule "VulkanCore/vendor/tracy"]
 	path = VulkanCore/vendor/tracy
 	url = https://github.com/wolfpld/tracy.git
+[submodule "VulkanCore/vendor/glfw"]
+	path = VulkanCore/vendor/glfw
+	url = git@github.com:PrakarshPanwar/glfw.git
