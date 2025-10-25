@@ -27,7 +27,6 @@ namespace VulkanCore {
 	}
 
 	LinuxWindow::LinuxWindow(const WindowSpecs &specs)
-		: m_WindowSpecs(specs)
 	{
 		Init(specs);
 	}
@@ -47,8 +46,8 @@ namespace VulkanCore {
 	{
 		auto windowData = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
-		windowData->Width = width;
-		windowData->Height = height;
+		windowData->FramebufferWidth = width;
+		windowData->FramebufferHeight = height;
 		windowData->FramebufferResize = true;
 	}
 
@@ -57,8 +56,8 @@ namespace VulkanCore {
 		auto& appSpec = Application::Get()->GetSpecification();
 
 		m_Data.Title = specs.Name;
-		m_Data.Width = specs.Width;
-		m_Data.Height = specs.Height;
+		m_Data.WindowWidth = specs.Width;
+		m_Data.WindowHeight = specs.Height;
 
 		int status = glfwInit();
 		VK_CORE_ASSERT(status, "Failed to Initialize GLFW!");
@@ -66,23 +65,13 @@ namespace VulkanCore {
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-		if (appSpec.Fullscreen)
+		if (appSpec.Fullscreen) // Maximized one
 		{
 			GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 			const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
-			m_Data.Width = mode->width;
-			m_Data.Height = mode->height;
-
-			// NOTE: This is required in display protocols like Wayland where incorrect framebuffer size can cause problems
-			// like blurry scaled window due to mismatch in window and framebuffer sizes at different DPI
-			if (!appSpec.UseSpecDims)
-			{
-				m_WindowSpecs.Width = mode->width;
-				m_WindowSpecs.Height = mode->height;
-
-				glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GLFW_FALSE);
-			}
+			m_Data.WindowWidth = mode->width;
+			m_Data.WindowHeight = mode->height;
 
 			glfwWindowHint(GLFW_RED_BITS, mode->redBits);
 			glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
@@ -90,23 +79,26 @@ namespace VulkanCore {
 			glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 			glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
-			m_Window = glfwCreateWindow(m_WindowSpecs.Width, m_WindowSpecs.Height, m_WindowSpecs.Name.c_str(), nullptr, nullptr);
+			m_Window = glfwCreateWindow(m_Data.WindowWidth, m_Data.WindowHeight, m_Data.Title.c_str(), nullptr, nullptr);
 		}
 		else
-			m_Window = glfwCreateWindow(m_WindowSpecs.Width, m_WindowSpecs.Height, m_WindowSpecs.Name.c_str(), nullptr, nullptr);
+			m_Window = glfwCreateWindow(m_Data.WindowWidth, m_Data.WindowHeight, m_Data.Title.c_str(), nullptr, nullptr);
 
-		VK_CORE_INFO("Creating Linux {0} Window '{1}' ({2}, {3})", Utils::LinuxWSIPlatform(glfwGetPlatform()), m_WindowSpecs.Name, m_WindowSpecs.Width, m_WindowSpecs.Height);
+		VK_CORE_INFO("Creating Linux {0} Window '{1}' ({2}, {3})", Utils::LinuxWSIPlatform(glfwGetPlatform()), m_Data.Title, m_Data.WindowWidth, m_Data.WindowHeight);
 		glfwMakeContextCurrent(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 		glfwSetFramebufferSizeCallback(m_Window, FramebufferResizeCallback);
 
+		// Get Framebuffer Size
+		glfwGetFramebufferSize(m_Window, &m_Data.FramebufferWidth, &m_Data.FramebufferHeight);
+
 		// Set GLFW Callbacks
 		glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
 		{
 			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-			data.Width = width;
-			data.Height = height;
+			data.WindowWidth = width;
+			data.WindowHeight = height;
 
 			WindowResizeEvent event(width, height);
 			data.EventCallback(event);

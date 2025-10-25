@@ -16,13 +16,13 @@ namespace VulkanCore {
 		void OnUpdate() override;
 
 		const std::string& GetWindowName() const override { return m_WindowSpecs.Name; }
-		bool IsWindowResized() const override { return m_WindowSpecs.FramebufferResize; }
-		void ResetResizeFlag() override { m_WindowSpecs.FramebufferResize = false; };
+		bool IsWindowResized() const override { return m_Data.FramebufferResize; }
+		void ResetResizeFlag() override { m_Data.FramebufferResize = false; };
 		void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; };
 
-		uint32_t GetWidth() const override { return m_WindowSpecs.Width; }
-		uint32_t GetHeight() const override { return m_WindowSpecs.Height; }
-		VkExtent2D GetExtent() const override { return { (uint32_t)m_WindowSpecs.Width, (uint32_t)m_WindowSpecs.Height }; }
+		uint32_t GetWindowWidth() const override { return m_WindowSpecs.Width; }
+		uint32_t GetWindowHeight() const override { return m_WindowSpecs.Height; }
+		VkExtent2D GetWindowExtent() const override { return { (uint32_t)m_WindowSpecs.Width, (uint32_t)m_WindowSpecs.Height }; }
 		void* GetNativeWindow() override { return m_Window; }
 	private:
 		static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);

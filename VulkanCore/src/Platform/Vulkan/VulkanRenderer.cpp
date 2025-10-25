@@ -783,11 +783,11 @@ namespace VulkanCore {
 	void VulkanRenderer::RecreateSwapChain()
 	{
 		auto device = VulkanContext::GetCurrentDevice();
-		auto extent = m_Window->GetExtent();
+		auto extent = m_Window->GetFramebufferExtent();
 
 		while (extent.width == 0 || extent.height == 0)
 		{
-			extent = m_Window->GetExtent();
+			extent = m_Window->GetFramebufferExtent();
 			glfwWaitEvents();
 		}
 
