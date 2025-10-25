@@ -24,7 +24,6 @@ namespace VulkanCore {
 		spec.Name = "Vulkan Application";
 		spec.WorkingDirectory = "../VulkanCore/assets";
 		spec.Fullscreen = true;
-		spec.UseSpecDims = true;
 		spec.CommandLineArgs = args;
 
 		return new EditorApp(spec);

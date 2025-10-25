@@ -14,14 +14,18 @@ namespace VulkanCore {
 
 		void OnUpdate() override;
 
-		const std::string& GetWindowName() const override { return m_WindowSpecs.Name; }
-		bool IsWindowResized() const override { return m_WindowSpecs.FramebufferResize; }
-		void ResetResizeFlag() override { m_WindowSpecs.FramebufferResize = false; };
-		void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; };
+		const std::string& GetWindowName() const override { return m_Data.Title; }
+		bool IsWindowResized() const override { return m_Data.FramebufferResize; }
+		void ResetResizeFlag() override { m_Data.FramebufferResize = false; };
+		void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; }
 
-		uint32_t GetWidth() const override { return m_WindowSpecs.Width; }
-		uint32_t GetHeight() const override { return m_WindowSpecs.Height; }
-		VkExtent2D GetExtent() const override { return { (uint32_t)m_WindowSpecs.Width, (uint32_t)m_WindowSpecs.Height }; }
+		uint32_t GetWindowWidth() const override { return m_Data.WindowWidth; }
+		uint32_t GetWindowHeight() const override { return m_Data.WindowHeight; }
+		VkExtent2D GetWindowExtent() const override { return { (uint32_t)m_Data.WindowWidth, (uint32_t)m_Data.WindowHeight }; }
+
+		uint32_t GetFramebufferWidth() const override { return m_Data.FramebufferWidth; }
+		uint32_t GetFramebufferHeight() const override { return m_Data.FramebufferHeight; }
+		VkExtent2D GetFramebufferExtent() const override { return { (uint32_t)m_Data.FramebufferWidth, (uint32_t)m_Data.FramebufferHeight }; }
 		void* GetNativeWindow() override { return m_Window; }
 	private:
 		static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
@@ -34,15 +38,14 @@ namespace VulkanCore {
 		struct WindowData
 		{
 			std::string Title;
-			uint32_t Width;
-			uint32_t Height;
+			int WindowWidth, WindowHeight;
+			int FramebufferWidth, FramebufferHeight;
 			bool FramebufferResize;
 
 			EventCallbackFn EventCallback;
 		};
 
 		WindowData m_Data;
-		WindowSpecs m_WindowSpecs;
 	};
 
 }
