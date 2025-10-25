@@ -3,7 +3,7 @@
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
-#if defined(_WIN32)
+#ifdef _WIN32
 #include <Windows.h>
 #endif
 

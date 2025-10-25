@@ -22,7 +22,6 @@ typedef HRESULT(WINAPI* pFnDwmSetWindowAttribute)(HWND hwnd, DWORD dwAttribute, 
 namespace VulkanCore {
 
 	WindowsWindow::WindowsWindow(const WindowSpecs& specs)
-		: m_WindowSpecs(specs)
 	{
 		Init(specs);
 	}
@@ -87,8 +86,6 @@ namespace VulkanCore {
 
 			m_Data.Width = mode->width;
 			m_Data.Height = mode->height;
-			m_WindowSpecs.Width = mode->width;
-			m_WindowSpecs.Height = mode->height;
 
 			glfwWindowHint(GLFW_RED_BITS, mode->redBits);
 			glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
@@ -96,16 +93,19 @@ namespace VulkanCore {
 			glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 			glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
-			m_Window = glfwCreateWindow(m_WindowSpecs.Width, m_WindowSpecs.Height, m_WindowSpecs.Name.c_str(), nullptr, nullptr);
+			m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title.c_str(), nullptr, nullptr);
 		}
 		else
-			m_Window = glfwCreateWindow(m_WindowSpecs.Width, m_WindowSpecs.Height, m_WindowSpecs.Name.c_str(), nullptr, nullptr);
+			m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title.c_str(), nullptr, nullptr);
 
-		VK_CORE_INFO("Creating Windows Window '{0}' ({1}, {2})", m_WindowSpecs.Name, m_WindowSpecs.Width, m_WindowSpecs.Height);
+		VK_CORE_INFO("Creating Windows Window '{0}' ({1}, {2})", m_Data.Title, m_Data.Width, m_Data.Height);
 		glfwMakeContextCurrent(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 		glfwSetFramebufferSizeCallback(m_Window, FramebufferResizeCallback);
+
+		// Get Framebuffer Size
+		glfwGetFramebufferSize(m_Window, &m_Data.Width, &m_Data.Height);
 
 		// Set GLFW Callbacks
 		glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)

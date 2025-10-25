@@ -69,7 +69,9 @@ namespace VulkanCore {
 		VK_CREATE_SHADER("EnvironmentMipFilter");
 		VK_CREATE_SHADER("EnvironmentIrradiance");
 		VK_CREATE_SHADER("GenerateBRDF");
+#if VK_FEATURE_GTAO
 		VK_CREATE_SHADER("GTAO");
+#endif
 	}
 
 	void Renderer::ShutDown()

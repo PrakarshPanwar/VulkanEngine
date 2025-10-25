@@ -17,7 +17,7 @@ namespace VulkanCore {
 			case VK_PRESENT_MODE_MAILBOX_KHR:			return "Mailbox";
 			case VK_PRESENT_MODE_FIFO_KHR:				return "FIFO(V-Sync)";
 			case VK_PRESENT_MODE_FIFO_RELAXED_KHR:		return "FIFO(Relaxed)";
-			case VK_PRESENT_MODE_FIFO_LATEST_READY_KHR: return "FIFO(Latest)";
+			case VK_PRESENT_MODE_FIFO_LATEST_READY_EXT: return "FIFO(Latest)";
 			default:
 				VK_CORE_ASSERT(false, "Present Mode is undefined!");
 				return "Unknown";

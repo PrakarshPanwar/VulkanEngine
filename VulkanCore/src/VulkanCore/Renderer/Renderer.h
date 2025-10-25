@@ -4,6 +4,9 @@
 #include "VulkanCore/Renderer/Shader.h"
 #include "VulkanCore/Renderer/RenderThread.h"
 
+#define VK_FEATURE_GTAO 0
+#define VK_FEATURE_OIT 1
+
 namespace VulkanCore {
 
 	class VulkanRenderer;

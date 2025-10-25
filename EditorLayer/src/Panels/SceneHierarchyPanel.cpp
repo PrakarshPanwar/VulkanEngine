@@ -323,7 +323,7 @@ namespace VulkanCore {
 			auto skyboxAsset = AssetManager::GetAsset<Texture2D>(component.TextureHandle);
 			if (skyboxAsset)
 			{
-				ImTextureRef iconID = (ImTextureID)SceneRenderer::GetTextureCubeID();
+				ImTextureID iconID = reinterpret_cast<ImTextureID>(SceneRenderer::GetTextureCubeID());
 				ImGui::Image(iconID, { 100.0f, 100.0f });
 
 				auto& skyboxMetadata = AssetManager::GetMetadata(skyboxAsset->Handle);
