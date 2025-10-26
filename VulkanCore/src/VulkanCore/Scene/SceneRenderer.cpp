@@ -97,7 +97,7 @@ namespace VulkanCore {
 			geomTransparentFramebufferSpec.Transfer = true;
 			geomTransparentFramebufferSpec.Samples = 4;
 
-			RenderPassSpecification	geomTransparentRenderPassSpec{};
+			RenderPassSpecification geomTransparentRenderPassSpec{};
 			geomTransparentRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(geomTransparentFramebufferSpec);
 			geomTransparentRenderPassSpec.DepthLoadOp = AttachmentLoadOp::Load; // Load Depth from Geometry Pipeline
 			geomTransparentRenderPassSpec.DepthStoreOp = AttachmentStoreOp::DontCare; // After Rendering Transparent Geometry, we don't need to Store the Multisampled Depth only Resolved Depth

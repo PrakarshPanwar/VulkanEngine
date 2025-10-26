@@ -87,7 +87,7 @@ namespace VulkanCore {
 
 	void VulkanDevice::Init()
 	{
-		PickPhysicalDevice();
+		PickPhysicalDevice(VulkanDeviceType::DiscreteGPU);
 		CreateLogicalDevice();
 		CreateCommandPools();
 	}
@@ -160,17 +160,18 @@ namespace VulkanCore {
 		return false; // RenderDoc layer not found
 	}
 
-	VkCommandPool VulkanDevice::VulkanCommandPool(VulkanQueueType queueType) const
+	VkPhysicalDeviceType VulkanDevice::VulkanPhysicalDeviceType(VulkanDeviceType deviceType) const
 	{
-		switch (queueType)
+		switch (deviceType)
 		{
-		case VulkanQueueType::Graphics: return m_CommandPool;
-		case VulkanQueueType::Compute:  return m_ComputeCommandPool;
-		case VulkanQueueType::Transfer: return m_TransferCommandPool;
+		case VulkanDeviceType::IntegratedGPU: return VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+		case VulkanDeviceType::DiscreteGPU:   return VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+		case VulkanDeviceType::VirtualGPU:    return VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU;
+		case VulkanDeviceType::CPU:           return VK_PHYSICAL_DEVICE_TYPE_CPU;
 		default:
-			VK_CORE_ASSERT(false, "Invalid Command Buffer Type!");
-			return m_CommandPool; // Default to Graphics Command Pool
-		};
+			VK_CORE_ASSERT(false, "Invalid Physical Device Type!");
+			return VK_PHYSICAL_DEVICE_TYPE_OTHER;
+		}
 	}
 
 	VkQueue VulkanDevice::VulkanQueue(VulkanQueueType queueType) const
@@ -183,6 +184,19 @@ namespace VulkanCore {
 		default:
 			VK_CORE_ASSERT(false, "Invalid Queue Type!");
 			return m_GraphicsQueue; // Default to Graphics Queue
+		}
+	}
+
+	VkCommandPool VulkanDevice::VulkanCommandPool(VulkanQueueType queueType) const
+	{
+		switch (queueType)
+		{
+		case VulkanQueueType::Graphics: return m_CommandPool;
+		case VulkanQueueType::Compute:  return m_ComputeCommandPool;
+		case VulkanQueueType::Transfer: return m_TransferCommandPool;
+		default:
+			VK_CORE_ASSERT(false, "Invalid Command Buffer Type!");
+			return m_CommandPool; // Default to Graphics Command Pool
 		}
 	}
 
@@ -232,7 +246,7 @@ namespace VulkanCore {
 		vkFreeCommandBuffers(m_LogicalDevice, VulkanCommandPool(commandBuffer.QueueType), 1, &commandBuffer.CmdBuffer);
 	}
 
-	void VulkanDevice::PickPhysicalDevice()
+	void VulkanDevice::PickPhysicalDevice(VulkanDeviceType deviceType)
 	{
 		auto context = VulkanContext::GetCurrentContext();
 
@@ -248,7 +262,7 @@ namespace VulkanCore {
 		{
 			vkGetPhysicalDeviceProperties(device, &m_DeviceProperties);
 
-			if (m_DeviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && context->IsDeviceSuitable(device))
+			if (m_DeviceProperties.deviceType == VulkanPhysicalDeviceType(deviceType) && context->IsDeviceSuitable(device))
 			{
 				m_PhysicalDevice = device;
 				break;
