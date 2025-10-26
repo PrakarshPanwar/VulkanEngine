@@ -237,7 +237,7 @@ namespace VulkanCore {
 			m_AOTextures,
 			m_SceneRenderTextures; // For Bloom
 #if VK_FEATURE_GTAO
-		m_SceneDepthTextures; // For AO
+			m_SceneDepthTextures; // For AO
 #endif
 		std::shared_ptr<Texture2D> m_BloomDirtTexture,
 			m_PointLightTextureIcon, m_SpotLightTextureIcon;
