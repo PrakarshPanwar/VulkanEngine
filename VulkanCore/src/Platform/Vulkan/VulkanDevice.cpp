@@ -248,6 +248,7 @@ namespace VulkanCore {
 	void VulkanDevice::PickPhysicalDevice(VulkanDeviceType deviceType)
 	{
 		auto context = VulkanContext::GetCurrentContext();
+		auto physicalDeviceType = VulkanPhysicalDeviceType(deviceType);
 
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(context->m_VulkanInstance, &deviceCount, nullptr);
@@ -260,8 +261,7 @@ namespace VulkanCore {
 		for (const auto& device : devices)
 		{
 			vkGetPhysicalDeviceProperties(device, &m_DeviceProperties);
-
-			if (m_DeviceProperties.deviceType == VulkanPhysicalDeviceType(deviceType) && context->IsDeviceSuitable(device))
+			if (m_DeviceProperties.deviceType == physicalDeviceType && context->IsDeviceSuitable(device))
 			{
 				m_PhysicalDevice = device;
 				break;
