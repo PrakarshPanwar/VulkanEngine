@@ -42,6 +42,15 @@ namespace VulkanCore {
 		const bool IsComplete() const { return HasGraphicsFamily() && HasTransferFamily() && HasComputeFamily() && HasPresentFamily(); }
 	};
 
+	enum class VulkanDeviceType
+	{
+		None = 0,
+		IntegratedGPU,
+		DiscreteGPU,
+		VirtualGPU,
+		CPU
+	};
+
 	enum class VulkanQueueType
 	{
 		None = 0,
@@ -83,11 +92,12 @@ namespace VulkanCore {
 
 		QueueFamilyIndices FindQueueIndices(VkPhysicalDevice device);
 	private:
-		VkCommandPool VulkanCommandPool(VulkanQueueType queueType) const;
+		VkPhysicalDeviceType VulkanPhysicalDeviceType(VulkanDeviceType deviceType) const;
 		VkQueue VulkanQueue(VulkanQueueType queueType) const;
+		VkCommandPool VulkanCommandPool(VulkanQueueType queueType) const;
 
 		void CreateLogicalDevice();
-		void PickPhysicalDevice();
+		void PickPhysicalDevice(VulkanDeviceType deviceType);
 		void CreateCommandPools();
 	private:
 		VkAllocationCallbacks m_AllocationCallbacks;

@@ -220,10 +220,10 @@ namespace VulkanCore {
 			shadowMapFramebufferSpec.Transfer = true;
 			shadowMapFramebufferSpec.Layers = SHADOW_MAP_CASCADE_COUNT;
 
-			RenderPassSpecification shadowMapRenderPassSpec;
+			RenderPassSpecification shadowMapRenderPassSpec{};
 			shadowMapRenderPassSpec.TargetFramebuffer = std::make_shared<VulkanFramebuffer>(shadowMapFramebufferSpec);
 
-			PipelineSpecification shadowMapPipelineSpec;
+			PipelineSpecification shadowMapPipelineSpec{};
 			shadowMapPipelineSpec.DebugName = "Shadow Map Pipeline";
 			shadowMapPipelineSpec.pShader = Renderer::GetShader("ShadowDepth");
 			shadowMapPipelineSpec.pRenderPass = std::make_shared<VulkanRenderPass>(shadowMapRenderPassSpec);
