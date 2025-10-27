@@ -47,7 +47,7 @@ namespace VulkanCore {
 
 	struct FramebufferSpecification
 	{
-		uint32_t Width = 0, Height = 0;
+		uint32_t Width = 1, Height = 1;
 		FramebufferAttachmentSpecification Attachments;
 		uint32_t Samples = 1, Layers = 1;
 		bool Transfer = false, ReadDepthTexture = false;

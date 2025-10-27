@@ -7,8 +7,7 @@ namespace VulkanCore {
 	struct WindowSpecs
 	{
 		int Width, Height;
-		std::string Name;
-		bool FramebufferResize = false;
+		std::string Name{};
 
 		WindowSpecs() = default;
 		WindowSpecs(int width, int height, const std::string& name)
@@ -24,10 +23,14 @@ namespace VulkanCore {
 
 		virtual void OnUpdate() = 0;
 
-		virtual uint32_t GetWidth() const = 0;
-		virtual uint32_t GetHeight() const = 0;
-		virtual VkExtent2D GetExtent() const = 0;
 		virtual const std::string& GetWindowName() const = 0;
+		virtual uint32_t GetWindowWidth() const = 0;
+		virtual uint32_t GetWindowHeight() const = 0;
+		virtual VkExtent2D GetWindowExtent() const = 0;
+
+		virtual uint32_t GetFramebufferWidth() const = 0;
+		virtual uint32_t GetFramebufferHeight() const = 0;
+		virtual VkExtent2D GetFramebufferExtent() const = 0;
 
 		virtual bool IsWindowResized() const = 0;
 		virtual void ResetResizeFlag() = 0;

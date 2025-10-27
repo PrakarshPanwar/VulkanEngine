@@ -1,4 +1,5 @@
 #pragma once
+#include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
 #include "VulkanCore/Renderer/ComputePipeline.h"
 #include "VulkanCore/Renderer/UniformBuffer.h"
@@ -8,9 +9,6 @@
 #include <glm/glm.hpp>
 #include "Scene.h"
 #include "PhysicsDebugRenderer.h"
-
-#define VK_FEATURE_GTAO 0
-#define VK_FEATURE_OIT 1
 
 namespace VulkanCore {
 
@@ -240,7 +238,7 @@ namespace VulkanCore {
 			m_AOTextures,
 			m_SceneRenderTextures; // For Bloom
 #if VK_FEATURE_GTAO
-		m_SceneDepthTextures; // For AO
+			m_SceneDepthTextures; // For AO
 #endif
 		std::shared_ptr<Texture2D> m_BloomDirtTexture,
 			m_PointLightTextureIcon, m_SpotLightTextureIcon;
@@ -265,7 +263,7 @@ namespace VulkanCore {
 		std::map<MeshKey, DrawSelectCommand> m_SelectedMeshDrawList;
 		std::map<MeshKey, MeshSelectTransform> m_SelectedMeshTransformMap;
 
-		glm::ivec2 m_ViewportSize = { 1920, 1080 };
+		glm::ivec2 m_ViewportSize = { 1, 1 };
 		glm::uvec2 m_BloomMipSize;
 		int m_HoveredEntity, m_DepthPassIndex = 0;
 
