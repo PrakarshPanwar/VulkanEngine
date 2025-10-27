@@ -40,14 +40,14 @@ Library["Slang_Release"] = "%{LibraryDir.VulkanSDK}/slang.lib"
 Library["SlangGLSL_DLLDebug"] = "%{LibraryDir.VulkanSDKBin}/slang-glslangd.dll"
 Library["SlangGLSL_DLLRelease"] = "%{LibraryDir.VulkanSDKBin}/slang-glslang.dll"
 
-Library["AssimpLibDebug"] = "%{LibraryDir.Assimp}/Debug/assimp-vc143-mtd.lib"
+Library["AssimpLibDebug"] = "%{LibraryDir.Assimp}/Debug/assimp-vc145-mtd.lib"
 Library["AssimpZlibDebug"] = "%{LibraryDir.Assimp}/Debug/zlibd.lib"
 
-Library["AssimpLibRelease"] = "%{LibraryDir.Assimp}/Release/assimp-vc143-mt.lib"
+Library["AssimpLibRelease"] = "%{LibraryDir.Assimp}/Release/assimp-vc145-mt.lib"
 Library["AssimpZlibRelease"] = "%{LibraryDir.Assimp}/Release/zlib.lib"
 
-Library["AssimpDLLDebug"] = "%{LibraryDir.AssimpBin}/Debug/assimp-vc143-mtd.dll"
-Library["AssimpDLLRelease"] = "%{LibraryDir.AssimpBin}/Release/assimp-vc143-mt.dll"
+Library["AssimpDLLDebug"] = "%{LibraryDir.AssimpBin}/Debug/assimp-vc145-mtd.dll"
+Library["AssimpDLLRelease"] = "%{LibraryDir.AssimpBin}/Release/assimp-vc145-mt.dll"
 
 Library["ZlibDLLDebug"] = "%{LibraryDir.AssimpBin}/Debug/zlibd.dll"
 Library["ZlibDLLRelease"] = "%{LibraryDir.AssimpBin}/Release/zlib.dll"
