@@ -42,15 +42,6 @@ namespace VulkanCore {
 		glfwPollEvents();
 	}
 
-	void LinuxWindow::FramebufferResizeCallback(GLFWwindow *window, int width, int height)
-	{
-		auto windowData = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
-
-		windowData->FramebufferWidth = width;
-		windowData->FramebufferHeight = height;
-		windowData->FramebufferResize = true;
-	}
-
 	void LinuxWindow::Init(const WindowSpecs &specs)
 	{
 		auto& appSpec = Application::Get()->GetSpecification();
@@ -88,7 +79,6 @@ namespace VulkanCore {
 		glfwMakeContextCurrent(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
-		glfwSetFramebufferSizeCallback(m_Window, FramebufferResizeCallback);
 
 		// Get Framebuffer Size
 		glfwGetFramebufferSize(m_Window, &m_Data.FramebufferWidth, &m_Data.FramebufferHeight);
@@ -102,6 +92,15 @@ namespace VulkanCore {
 
 			WindowResizeEvent event(width, height);
 			data.EventCallback(event);
+		});
+
+		glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
+		{
+			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+
+			data.FramebufferWidth = width;
+			data.FramebufferHeight = height;
+			data.FramebufferResize = true;
 		});
 
 		glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window)

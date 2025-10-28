@@ -28,8 +28,6 @@ namespace VulkanCore {
 		VkExtent2D GetFramebufferExtent() const override { return { (uint32_t)m_Data.FramebufferWidth, (uint32_t)m_Data.FramebufferHeight }; }
 		void* GetNativeWindow() override { return m_Window; }
 	private:
-		static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
-
 		void Init(const WindowSpecs& specs);
 		void Shutdown() const;
 	private:
