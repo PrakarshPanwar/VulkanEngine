@@ -1049,10 +1049,10 @@ namespace VulkanCore {
 		{
 			auto vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(m_SceneCommandBuffer);
 
-			ImGui::Text("Geometry Pass: %lluns", vulkanCmdBuffer->GetQueryTime(0));
-			ImGui::Text("Transparent Pass: %lluns", vulkanCmdBuffer->GetQueryTime(1));
-			ImGui::Text("Composite Pass: %lluns", vulkanCmdBuffer->GetQueryTime(3));
-			ImGui::Text("Bloom Compute Pass: %lluns", vulkanCmdBuffer->GetQueryTime(2));
+			ImGui::Text("Geometry Pass: %luns", vulkanCmdBuffer->GetQueryTime(0));
+			ImGui::Text("Transparent Pass: %luns", vulkanCmdBuffer->GetQueryTime(1));
+			ImGui::Text("Composite Pass: %luns", vulkanCmdBuffer->GetQueryTime(3));
+			ImGui::Text("Bloom Compute Pass: %luns", vulkanCmdBuffer->GetQueryTime(2));
 			ImGui::TreePop();
 		}
 

@@ -83,7 +83,7 @@ namespace VulkanCore {
 	public:
 		static void Init();
 		static void ShutDown();
-		static void SetRendererAPI(VulkanRenderer* vkRenderer);
+		static void SetRendererAPI(VulkanRenderer* renderer);
 		static void BuildShaders();
 		static void WaitAndExecute();
 	private:

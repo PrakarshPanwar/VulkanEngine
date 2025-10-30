@@ -132,8 +132,8 @@ namespace VulkanCore {
 					continue;
 
 				uint32_t binding = spvCompiler.get_decoration(sampledImgResource.id, spv::DecorationBinding);
-				uint32_t arrayCount = spvCompiler.get_type(sampledImgResource.type_id).array.size() > 0
-					? spvCompiler.get_type(sampledImgResource.type_id).array[0] : 1;
+				uint32_t arrayCount = spvCompiler.get_type(sampledImgResource.type_id).array.empty() ? 1 :
+					spvCompiler.get_type(sampledImgResource.type_id).array[0];
 
 				descriptorSetLayoutBuilder.AddBinding(
 					binding,
@@ -149,8 +149,8 @@ namespace VulkanCore {
 					continue;
 
 				uint32_t binding = spvCompiler.get_decoration(storageImgResource.id, spv::DecorationBinding);
-				uint32_t arrayCount = spvCompiler.get_type(storageImgResource.type_id).array.size() > 0
-					? spvCompiler.get_type(storageImgResource.type_id).array[0] : 1;
+				uint32_t arrayCount = spvCompiler.get_type(storageImgResource.type_id).array.empty() ? 1 :
+					spvCompiler.get_type(storageImgResource.type_id).array[0];
 
 				descriptorSetLayoutBuilder.AddBinding(
 					binding,

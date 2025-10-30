@@ -1,4 +1,4 @@
-// Shader File: "CorePBR.slang"
+// Shader File: "CorePBR_OIT.slang"
 
 import Buffers;
 
