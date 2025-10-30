@@ -138,7 +138,7 @@ namespace VulkanCore {
 			PipelineConfiguration pipelineConfig{};
 
 			pipelineConfig.InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-			pipelineConfig.InputAssemblyInfo.topology = Utils::VulkanPrimitiveTopology(spec.Topology);
+			pipelineConfig.InputAssemblyInfo.topology = VulkanPrimitiveTopology(spec.Topology);
 			pipelineConfig.InputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
 
 			pipelineConfig.ViewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -152,7 +152,7 @@ namespace VulkanCore {
 			pipelineConfig.RasterizationInfo.rasterizerDiscardEnable = VK_FALSE;
 			pipelineConfig.RasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;
 			pipelineConfig.RasterizationInfo.lineWidth = 1.0f;
-			pipelineConfig.RasterizationInfo.cullMode = Utils::VulkanCullModeFlags(spec.CullingMode);
+			pipelineConfig.RasterizationInfo.cullMode = VulkanCullModeFlags(spec.CullingMode);
 			pipelineConfig.RasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
 			pipelineConfig.RasterizationInfo.depthBiasEnable = VK_FALSE;
 			pipelineConfig.RasterizationInfo.depthBiasConstantFactor = 0.0f;
@@ -182,8 +182,8 @@ namespace VulkanCore {
 					VK_COLOR_COMPONENT_A_BIT;
 
 				colorBlendAttachment.blendEnable = FramebufferColorAttachment.IsBlended();
-				colorBlendAttachment.srcColorBlendFactor = Utils::VulkanBlendFactor(FramebufferColorAttachment.SrcColorBlendFactor);
-				colorBlendAttachment.dstColorBlendFactor = Utils::VulkanBlendFactor(FramebufferColorAttachment.DstColorBlendFactor);
+				colorBlendAttachment.srcColorBlendFactor = VulkanBlendFactor(FramebufferColorAttachment.SrcColorBlendFactor);
+				colorBlendAttachment.dstColorBlendFactor = VulkanBlendFactor(FramebufferColorAttachment.DstColorBlendFactor);
 				colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;              // Optional
 				colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;   // Optional
 				colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;  // Optional

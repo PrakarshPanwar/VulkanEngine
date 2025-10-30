@@ -16,9 +16,9 @@ namespace VulkanCore {
 	VulkanRenderer* Renderer::s_Renderer = nullptr;
 	RendererConfig Renderer::s_RendererConfig = {};
 
-	void Renderer::SetRendererAPI(VulkanRenderer* vkRenderer)
+	void Renderer::SetRendererAPI(VulkanRenderer* renderer)
 	{
-		s_Renderer = vkRenderer;
+		s_Renderer = renderer;
 	}
 
 	int Renderer::GetCurrentFrameIndex()
