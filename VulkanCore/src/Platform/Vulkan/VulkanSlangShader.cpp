@@ -72,7 +72,7 @@ namespace VulkanCore {
 
 		static consteval const char* GetCacheDirectory()
 		{
-#if defined(_WIN32)
+#ifdef _WIN64
 			return "cache\\slang";
 #elif defined(__linux__)
 			return "cache/slang";
@@ -361,48 +361,6 @@ namespace VulkanCore {
 
 		// Required to Signal Pipeline Recreation
 		SetReloadFlag();
-	}
-
-	void VulkanSlangShader::ReflectShaderData()
-	{
-		VK_CORE_INFO("In {0}:", m_ShaderName);
-
-		for (auto&& [stage, shader] : m_VulkanSPIRV)
-		{
-			spirv_cross::Compiler compiler(shader);
-			spirv_cross::ShaderResources resources = compiler.get_shader_resources();
-
-			std::string ShaderStageType = Utils::GLShaderTypeToString((ShaderType)stage);
-			VK_CORE_TRACE("  {0} Shader Reflection:", ShaderStageType);
-			VK_CORE_TRACE("\t  {0} uniform buffers", resources.uniform_buffers.size());
-			VK_CORE_TRACE("\t  {0} resources", resources.sampled_images.size());
-
-			VK_CORE_TRACE("\tUniform buffers:");
-			for (const auto& resource : resources.uniform_buffers)
-			{
-				const auto& bufferType = compiler.get_type(resource.base_type_id);
-				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
-				uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
-				size_t memberCount = bufferType.member_types.size();
-
-				VK_CORE_TRACE("\t{0}", resource.name);
-				VK_CORE_TRACE("\t  Size = {0}", bufferSize);
-				VK_CORE_TRACE("\t  Binding = {0}", binding);
-				VK_CORE_TRACE("\t  Members = {0}", memberCount);
-			}
-
-			VK_CORE_TRACE("\tPush Constant Data:");
-			for (const auto& resource : resources.push_constant_buffers)
-			{
-				const auto& bufferType = compiler.get_type(resource.base_type_id);
-				size_t bufferSize = compiler.get_declared_struct_size(bufferType);
-				size_t memberCount = bufferType.member_types.size();
-				m_PushConstantSize = bufferSize;
-
-				VK_CORE_TRACE("\t  Size = {0}", bufferSize);
-				VK_CORE_TRACE("\t  Members = {0}", memberCount);
-			}
-		}
 	}
 
 }

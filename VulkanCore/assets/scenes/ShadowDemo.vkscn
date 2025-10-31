@@ -1,48 +1,16 @@
 Scene: ShadowDemo
 Entities:
-  - Entity: 16958800799877704611
+  - Entity: 3734969641798180592
     TagComponent:
-      Tag: Wall
+      Tag: Pole
     TransformComponent:
-      Translation: [0, 13.9798756, 0]
-      Rotation: [0, 0, 0]
-      Scale: [5, 4.99999475, 0.0999999568]
+      Translation: [-49.5040245, 40, -48.9857407]
+      Rotation: [0, -0, 0]
+      Scale: [5, 40, 5]
     MeshComponent:
-      MeshHandle: 9816593081404201911
+      MeshHandle: 85510852047851852
       MaterialTable:
         0: 17021666477382963620
-  - Entity: 2853675886232205505
-    TagComponent:
-      Tag: SunLight
-    DirectionalLightComponent:
-      Direction: [6, -25.2000008, 19.6000004]
-      Color: [1, 0.860869646, 0.409266412, 5]
-      Falloff: 1
-  - Entity: 14194850663338953971
-    TagComponent:
-      Tag: Plane
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [150, 0.100000001, 150]
-    MeshComponent:
-      MeshHandle: 9816593081404201911
-      MaterialTable:
-        0: 11134850192642027083
-    Rigidbody3DComponent:
-      BodyType: Static
-      FixedRotation: false
-    BoxCollider3DComponent:
-      Offset: [0, 0, 0]
-      Size: [150, 0.100000001, 150]
-      Density: 1
-      Friction: 0.5
-      Restitution: 1
-  - Entity: 10787812640715436720
-    TagComponent:
-      Tag: SkyLight
-    SkyLightComponent:
-      TextureHandle: 8997689789897987
   - Entity: 7909029207917827167
     TagComponent:
       Tag: Sphere
@@ -63,3 +31,46 @@ Entities:
       Density: 1
       Friction: 0.5
       Restitution: 0.5
+  - Entity: 10787812640715436720
+    TagComponent:
+      Tag: SkyLight
+    SkyLightComponent:
+      TextureHandle: 8997689789897987
+  - Entity: 14194850663338953971
+    TagComponent:
+      Tag: Plane
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [150, 0.100000001, 150]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 11134850192642027083
+    Rigidbody3DComponent:
+      BodyType: Static
+      FixedRotation: false
+    BoxCollider3DComponent:
+      Offset: [0, 0, 0]
+      Size: [150, 0.100000001, 150]
+      Density: 1
+      Friction: 0.5
+      Restitution: 1
+  - Entity: 2853675886232205505
+    TagComponent:
+      Tag: SunLight
+    DirectionalLightComponent:
+      Direction: [6, -25.2000008, 19.6000004]
+      Color: [1, 0.860869646, 0.409266412, 5]
+      Falloff: 1
+  - Entity: 16958800799877704611
+    TagComponent:
+      Tag: Wall
+    TransformComponent:
+      Translation: [0, 13.9798756, 0]
+      Rotation: [0, 0, 0]
+      Scale: [5, 4.99999475, 0.0999999568]
+    MeshComponent:
+      MeshHandle: 9816593081404201911
+      MaterialTable:
+        0: 17021666477382963620
