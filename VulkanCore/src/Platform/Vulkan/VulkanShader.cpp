@@ -625,9 +625,4 @@ namespace VulkanCore {
 		}
 	}
 
-	void VulkanShader::InvalidateDescriptors()
-	{
-
-	}
-
 }

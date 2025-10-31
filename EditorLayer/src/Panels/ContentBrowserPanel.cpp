@@ -282,7 +282,7 @@ namespace VulkanCore {
 			if (ImGui::Button("OK"))
 			{
 				std::string pathStr = { buffer };
-#if defined(_WIN32)
+#ifdef _WIN64
 				std::replace(pathStr.begin(), pathStr.end(), '/', '\\');
 #endif
 				std::filesystem::path filepath = pathStr;
@@ -386,7 +386,7 @@ namespace VulkanCore {
 			if (ImGui::Button("OK"))
 			{
 				std::string pathStr = { buffer };
-#if defined(_WIN32)
+#ifdef _WIN64
 				std::replace(pathStr.begin(), pathStr.end(), '/', '\\');
 #endif
 				std::filesystem::path filepath = pathStr;

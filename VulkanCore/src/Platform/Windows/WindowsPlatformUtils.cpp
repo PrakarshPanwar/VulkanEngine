@@ -2,7 +2,7 @@
 #include "VulkanCore/Utils/PlatformUtils.h"
 #include "VulkanCore/Core/Application.h"
 
-#ifdef _WIN32
+#ifdef _WIN64
 #include <Windows.h>
 #include <commdlg.h>
 #include <GLFW/glfw3.h>

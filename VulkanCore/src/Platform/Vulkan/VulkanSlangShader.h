@@ -18,7 +18,6 @@ namespace VulkanCore {
 		void Reload() override;
 	private:
 		void CompileOrGetSlangBinaries();
-		void ReflectShaderData();
 
 		static Slang::ComPtr<slang::IGlobalSession> s_GlobalSession;
 	private:

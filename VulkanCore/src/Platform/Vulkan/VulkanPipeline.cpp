@@ -27,30 +27,7 @@ namespace VulkanCore {
 			return shaderModule;
 		}
 
-		static VkPipelineLayout CreatePipelineLayout(VulkanDescriptorSetLayout& descriptorLayout, size_t pushConstantSize = 0)
-		{
-			auto device = VulkanContext::GetCurrentDevice();
-
-			VkPushConstantRange pushConstantRange{};
-			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-			pushConstantRange.offset = 0;
-			pushConstantRange.size = (uint32_t)pushConstantSize;
-
-			std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ descriptorLayout.GetVulkanDescriptorSetLayout() };
-
-			VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-			pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-			pipelineLayoutInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
-			pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
-			pipelineLayoutInfo.pushConstantRangeCount = pushConstantSize == 0 ? 0 : 1;
-			pipelineLayoutInfo.pPushConstantRanges = pushConstantSize == 0 ? nullptr : &pushConstantRange;
-
-			VkPipelineLayout pipelineLayout;
-			VK_CHECK_RESULT(vkCreatePipelineLayout(device->GetVulkanDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout), "Failed to Create Pipeline Layout!");
-			return pipelineLayout;
-		}
-
-		static VkPipelineLayout CreatePipelineLayout(std::vector<std::shared_ptr<VulkanDescriptorSetLayout>> descriptorSetLayouts, size_t pushConstantSize = 0)
+		static VkPipelineLayout CreatePipelineLayout(const std::vector<std::shared_ptr<VulkanDescriptorSetLayout>>& descriptorSetLayouts, size_t pushConstantSize = 0)
 		{
 			auto device = VulkanContext::GetCurrentDevice();
 
@@ -208,7 +185,7 @@ namespace VulkanCore {
 			pipelineConfig.DepthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 			pipelineConfig.DepthStencilInfo.depthTestEnable = spec.DepthTest ? VK_TRUE : VK_FALSE;
 			pipelineConfig.DepthStencilInfo.depthWriteEnable = spec.DepthWrite ? VK_TRUE : VK_FALSE;
-			pipelineConfig.DepthStencilInfo.depthCompareOp = Utils::VulkanCompareOp(spec.DepthCompareOp);
+			pipelineConfig.DepthStencilInfo.depthCompareOp = VulkanCompareOp(spec.DepthCompareOp);
 			pipelineConfig.DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;
 			pipelineConfig.DepthStencilInfo.minDepthBounds = 0.0f;  // Optional
 			pipelineConfig.DepthStencilInfo.maxDepthBounds = 1.0f;  // Optional
