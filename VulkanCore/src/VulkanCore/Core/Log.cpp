@@ -1,5 +1,6 @@
 #include "vulkanpch.h"
 #include "Log.h"
+#include "VulkanCore/Core/Core.h"
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -19,7 +20,6 @@ namespace VulkanCore {
 		consoleSink->set_color(spdlog::level::info, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
 		consoleSink->set_color(spdlog::level::debug, FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 #endif
-
 		logSinks.emplace_back(consoleSink);
 		logSinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("VulkanEngine.log", true));
 

@@ -113,7 +113,6 @@ namespace VulkanCore {
 
 			for (const auto& layer : layers)
 			{
-				VK_CORE_DEBUG("\t {}", layer.layerName);
 				if (strcmp(layer.layerName, "VK_LAYER_RENDERDOC_Capture") == 0)
 					return true; // RenderDoc layer is active
 			}
