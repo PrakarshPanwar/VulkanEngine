@@ -388,7 +388,7 @@ namespace VulkanCore {
 		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
 		options.SetTargetSpirv(shaderc_spirv_version_1_4);
 
-		const bool optimize = !device->IsInDebugMode();
+		const bool optimize = !VKUtils::IsInCaptureMode();
 		if (optimize)
 			options.SetOptimizationLevel(shaderc_optimization_level_performance);
 		else
@@ -509,7 +509,7 @@ namespace VulkanCore {
 		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
 		options.SetTargetSpirv(shaderc_spirv_version_1_4);
 
-		const bool optimize = !device->IsInDebugMode();
+		const bool optimize = !VKUtils::IsInCaptureMode();
 		if (optimize)
 		{
 			options.SetOptimizationLevel(shaderc_optimization_level_performance);

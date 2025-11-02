@@ -3,7 +3,7 @@
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Renderer/Renderer.h"
 
-#ifdef _WIN64
+#ifdef VK_PLATFORM_WINDOWS
 #include <Windows.h>
 #endif
 
@@ -25,9 +25,9 @@ namespace VulkanCore {
 		m_RenderThread = std::jthread(std::bind(&RenderThread::ThreadEntryPoint));
 
 		auto threadHandle = m_RenderThread.native_handle();
-#if defined(_MSC_VER)
+#ifdef VK_PLATFORM_WINDOWS
 		SetThreadDescription(threadHandle, L"Render Thread");
-#elif defined(__GNUC__)
+#elif defined(VK_PLATFORM_LINUX)
 		pthread_setname_np(threadHandle, "Render Thread");
 #endif
 	}

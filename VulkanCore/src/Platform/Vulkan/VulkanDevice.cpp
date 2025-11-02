@@ -143,23 +143,6 @@ namespace VulkanCore {
 		return false;
 	}
 
-	bool VulkanDevice::IsInDebugMode() const
-	{
-		uint32_t layerCount = 0;
-		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-		std::vector<VkLayerProperties> layers(layerCount);
-		vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
-
-		for (const auto& layer : layers)
-		{
-			if (strcmp(layer.layerName, "VK_LAYER_RENDERDOC_Capture") == 0)
-				return true; // RenderDoc layer is active
-		}
-
-		return false; // RenderDoc layer not found
-	}
-
 	VkPhysicalDeviceType VulkanDevice::VulkanPhysicalDeviceType(VulkanDeviceType deviceType) const
 	{
 		switch (deviceType)

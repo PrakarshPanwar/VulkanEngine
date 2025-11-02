@@ -89,6 +89,39 @@ namespace VulkanCore {
 				vkQueueEndDebugUtilsLabelEXT(queue);
 		}
 
+		// Capture tool is being used(e.g. RenderDoc, NSight)
+		bool IsInCaptureMode()
+		{
+#ifdef VK_PLATFORM_LINUX
+			// TODO: As RenderDoc uses X11, so this is a workaround for now
+			int platform = glfwGetPlatform();
+			switch (platform)
+			{
+			case GLFW_PLATFORM_X11:		return true;
+			case GLFW_PLATFORM_WAYLAND: return false;
+			default:
+				VK_CORE_ASSERT(false, "Undefined Linux Display Protocol!");
+				return false;
+			}
+#else
+			// TODO: This is not working currently as expected
+			uint32_t layerCount = 0;
+			vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+			std::vector<VkLayerProperties> layers(layerCount);
+			vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
+
+			for (const auto& layer : layers)
+			{
+				VK_CORE_DEBUG("\t {}", layer.layerName);
+				if (strcmp(layer.layerName, "VK_LAYER_RENDERDOC_Capture") == 0)
+					return true; // RenderDoc layer is active
+			}
+
+			return false; // RenderDoc layer not found
+#endif
+		}
+
 	}
 
 	namespace Utils {
@@ -368,22 +401,22 @@ namespace VulkanCore {
 		std::vector<VkExtensionProperties> extensions(extensionCount);
 		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
-		VK_CORE_INFO("Available Extensions:");
+		std::unordered_set<std::string> availableExtensions{};
 
-		std::unordered_set<std::string> available;
+		VK_CORE_INFO("Available Extensions:");
 		for (const auto& extension : extensions)
 		{
-			VK_CORE_TRACE("\t {0}", extension.extensionName);
-			available.insert(extension.extensionName);
+			VK_CORE_TRACE("\t {}", extension.extensionName);
+			availableExtensions.insert(extension.extensionName);
 		}
 
-		VK_CORE_INFO("Required Extensions:");
-
 		auto requiredExtensions = GetRequiredExtensions();
+
+		VK_CORE_INFO("Required Extensions:");
 		for (const auto& required : requiredExtensions)
 		{
-			VK_CORE_WARN("\t {0}", required);
-			VK_CORE_ASSERT(available.contains(required), "Missing Required GLFW Extension!");
+			VK_CORE_WARN("\t {}", required);
+			VK_CORE_ASSERT(availableExtensions.contains(required), "Missing Required GLFW Extension!");
 		}
 	}
 

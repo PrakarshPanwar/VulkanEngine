@@ -2,7 +2,7 @@
 #include "VulkanCore/Utils/PlatformUtils.h"
 #include "VulkanCore/Core/Application.h"
 
-#if defined(__linux__)
+#ifdef VK_PLATFORM_LINUX
 namespace VulkanCore {
 
 	std::string FileDialogs::OpenFile(const char* filter)
