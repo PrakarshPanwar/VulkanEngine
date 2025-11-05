@@ -4,6 +4,7 @@
 #include "VulkanCore/Renderer/UniformBuffer.h"
 #include "VulkanCore/Renderer/StorageBuffer.h"
 #include "VulkanCore/Renderer/RenderCommandBuffer.h"
+#include "VulkanCore/Renderer/Font.h"
 
 #include <glm/glm.hpp>
 #include "Scene.h"
@@ -185,6 +186,7 @@ namespace VulkanCore {
 		std::vector<VkDescriptorSet> m_SceneImages;
 		std::array<std::vector<VkDescriptorSet>, SHADOW_MAP_CASCADE_COUNT> m_ShadowDepthPassImages;
 		std::shared_ptr<PhysicsDebugRenderer> m_PhysicsDebugRenderer;
+		std::shared_ptr<Font> m_Font;
 
 		// Pipelines
 		std::shared_ptr<Pipeline> m_GeometryPipeline,
@@ -193,6 +195,7 @@ namespace VulkanCore {
 			m_GeometryCompositePipeline,
 			m_GeometrySelectPipeline,
 			m_LinesPipeline,
+			m_TextPipeline,
 			m_ShadowMapPipeline,
 			m_LightPipeline,
 			m_LightSelectPipeline,
@@ -208,6 +211,7 @@ namespace VulkanCore {
 			m_GeometryCompositeMaterial,
 			m_GeometrySelectMaterial,
 			m_LinesMaterial,
+			m_TextMaterial,
 			m_ShadowMapMaterial,
 			m_PointLightShaderMaterial,
 			m_SpotLightShaderMaterial,
@@ -245,7 +249,7 @@ namespace VulkanCore {
 		// Skybox Resources
 		std::shared_ptr<TextureCube> m_CubemapTexture, m_IrradianceTexture, m_PrefilteredTexture;
 		std::shared_ptr<Image2D> m_BRDFTexture;
-		VkDescriptorSet m_SkyboxTextureID;
+		VkDescriptorSet m_FontTextureID, m_SkyboxTextureID;
 
 		std::map<MeshKey, DrawCommand> m_MeshDrawList,
 			m_MeshTransparentDrawList,

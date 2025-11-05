@@ -14,7 +14,8 @@ namespace VulkanCore {
 		TextureCube,
 		Mesh,	   // For Runtime YAML Mesh File(class Mesh)
 		MeshAsset, // For Native Mesh File(class MeshSource)
-		Material
+		Material,
+		Font
 	};
 
 	namespace Utils {

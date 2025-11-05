@@ -210,6 +210,21 @@ namespace VulkanCore {
 			m_LinesPipeline = std::make_shared<VulkanPipeline>(linesPipelineSpec);
 		}
 
+		// Text Pipeline
+		{
+			PipelineSpecification textPipelineSpec{};
+			textPipelineSpec.DebugName = "Text Pipeline";
+			textPipelineSpec.pShader = Renderer::GetShader("Text2D");
+			textPipelineSpec.pRenderPass = m_GeometryPipeline->GetSpecification().pRenderPass;
+			textPipelineSpec.Layout = {
+				{ ShaderDataType::Float3, "a_Position" },
+				{ ShaderDataType::Float4, "a_Color" },
+				{ ShaderDataType::Float2, "a_TexCoord" }
+			};
+
+			m_TextPipeline = std::make_shared<VulkanPipeline>(textPipelineSpec);
+		}
+
 		// Shadow Map Pipeline(NOTE: Currently not working properly)
 		{
 			FramebufferSpecification shadowMapFramebufferSpec{};
@@ -320,6 +335,14 @@ namespace VulkanCore {
 
 			m_LinesMaterial->SetBuffers(0, m_UBCamera);
 			m_LinesMaterial->PrepareShaderMaterial();
+		}
+
+		{
+			m_TextMaterial = std::make_shared<VulkanMaterial>(m_TextPipeline->GetSpecification().pShader, "Text Material");
+
+			m_TextMaterial->SetBuffers(0, m_UBCamera);
+			m_TextMaterial->SetTexture(1, m_Font->GetAtlasTexture());
+			m_TextMaterial->PrepareShaderMaterial();
 		}
 
 		// Light Materials
@@ -917,8 +940,10 @@ namespace VulkanCore {
 
 		device->FlushCommandBuffer(barrierCmd);
 
+		// Load Demo Texture
 		m_BloomDirtTexture = AssetManager::GetAsset<Texture2D>("textures/LensDirt.png");
 
+		// Load Cubemaps
 		auto blackTextureCube = std::dynamic_pointer_cast<VulkanTextureCube>(Renderer::GetBlackTextureCube(ImageFormat::RGBA8_UNORM));
 		blackTextureCube->Invalidate();
 
@@ -931,6 +956,10 @@ namespace VulkanCore {
 		m_BRDFTexture = Renderer::CreateBRDFTexture();
 		m_PointLightTextureIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/PointLightIcon.png");
 		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/SpotLightIcon.png");
+
+		// Load Font Data
+		m_Font = std::make_shared<Font>("fonts/opensans/OpenSans-Bold.ttf");
+		m_FontTextureID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_Font->GetAtlasTexture()));
 
 		// Wait for Pipelines and Framebuffers to finish
 		Renderer::WaitAndExecute();
@@ -1075,6 +1104,7 @@ namespace VulkanCore {
 
 			ImVec2 quadSize = { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x };
 			ImGui::Image((ImTextureID)m_ShadowDepthPassImages[m_DepthPassIndex][Renderer::RT_GetCurrentFrameIndex()], quadSize);
+			ImGui::Image((ImTextureID)m_FontTextureID, quadSize);
 
 			ImGui::TreePop();
 		}

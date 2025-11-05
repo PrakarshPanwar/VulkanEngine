@@ -12,6 +12,7 @@ find_package(yaml-cpp REQUIRED)
 add_subdirectory(vendor/imgui)
 add_subdirectory(vendor/JoltPhysics)
 add_subdirectory(vendor/glfw)
+add_subdirectory(vendor/msdf-atlas-gen)
 
 # Create library
 add_library(VulkanCore
@@ -28,6 +29,7 @@ target_link_libraries(VulkanCore
 		glfw
 		JoltLib
 		assimp
+		msdf-atlas-gen
 		${YAML_CPP_LIBRARIES}
 		${SLANG_LIB}
 		${SLANG_GLSLANG_LIB}
@@ -50,6 +52,8 @@ target_include_directories(VulkanCore PRIVATE
 		${IMGUIZMO_INCLUDE_DIRS}
 		${SLANG_INCLUDE_DIRS}
 		${TRACY_INCLUDE_DIRS}
+		${MSDF_INCLUDE_DIRS}
+		${MSDF_GEN_INCLUDE_DIRS}
 	)
 
 # Add Precompiled Headers
@@ -63,6 +67,7 @@ target_compile_definitions(VulkanCore
 		PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE
 		PUBLIC JPH_DEBUG_RENDERER
 		PUBLIC TRACY_ENABLE
+		PUBLIC MSDFGEN_PUBLIC=
 	)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")

@@ -10,6 +10,8 @@ set(IMGUIZMO_INCLUDE_DIRS ${VENDOR_DIR}/ImGuizmo)
 set(JOLT_INCLUDE_DIRS ${VENDOR_DIR}/JoltPhysics)
 set(TRACY_INCLUDE_DIRS ${VENDOR_DIR}/tracy/public)
 set(VULKAN_EXTRA_INCLUDE_DIRS ${VENDOR_DIR}/VulkanSDK/include)
+set(MSDF_INCLUDE_DIRS ${VENDOR_DIR}/msdf-atlas-gen)
+set(MSDF_GEN_INCLUDE_DIRS ${VENDOR_DIR}/msdf-atlas-gen/msdfgen)
 
 # Libraries
 set(SLANG_LIB ${VENDOR_DIR}/VulkanSDK/lib/libslang.so)

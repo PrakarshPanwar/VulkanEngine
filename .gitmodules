@@ -14,3 +14,6 @@
 [submodule "VulkanCore/vendor/glfw"]
 	path = VulkanCore/vendor/glfw
 	url = git@github.com:PrakarshPanwar/glfw.git
+[submodule "VulkanCore/vendor/msdf-atlas-gen"]
+	path = VulkanCore/vendor/msdf-atlas-gen
+	url = git@github.com:PrakarshPanwar/msdf-atlas-gen.git

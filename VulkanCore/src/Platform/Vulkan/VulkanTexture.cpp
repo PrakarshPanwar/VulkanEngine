@@ -119,7 +119,7 @@ namespace VulkanCore {
 			region.imageSubresource.baseArrayLayer = 0;
 			region.imageSubresource.layerCount = 1;
 			region.imageOffset = { 0, 0, 0 };
-			region.imageExtent = { (uint32_t)m_Specification.Width, (uint32_t)m_Specification.Height, 1 };
+			region.imageExtent = { m_Specification.Width, m_Specification.Height, 1 };
 
 			vkCmdCopyBufferToImage(copyCmd.CmdBuffer,
 				stagingBuffer,
