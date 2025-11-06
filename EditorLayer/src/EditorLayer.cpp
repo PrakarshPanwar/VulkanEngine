@@ -222,6 +222,14 @@ namespace VulkanCore {
 				ImGui::Checkbox("Show Application Stats", &m_ShowApplicationStats);
 				ImGui::Checkbox("Show Camera Data", &m_ShowCameraData);
 
+				if (ImGui::BeginMenu("Options"))
+				{
+					auto& globalStyle = ImGui::GetStyle();
+					ImGui::DragFloat("Font Scale DPI", &globalStyle.FontScaleDpi, 0.02f, 0.5f, 4.0f);
+
+					ImGui::EndMenu();
+				}
+
 				ImGui::EndMenu();
 			}
 
@@ -522,6 +530,7 @@ namespace VulkanCore {
 		{
 			if (shiftKey)
 				m_EditorCamera.SetFly(true);
+
 			break;
 		}
 		default:

@@ -86,7 +86,6 @@ namespace VulkanCore {
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 
 		bool IsExtensionSupported(const char* extensionName) const;
-		bool IsInDebugMode() const;
 		VulkanCommandBuffer GetCommandBuffer(VulkanQueueType queueType = VulkanQueueType::Graphics) const;
 		void FlushCommandBuffer(VulkanCommandBuffer commandBuffer) const;
 

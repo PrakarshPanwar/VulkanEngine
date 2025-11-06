@@ -63,7 +63,6 @@ project "VulkanCore"
 
 	filter "system:windows"
 		systemversion "latest"
-		defines { "VK_PLATFORM_WINDOWS" }
 
 	filter "configurations:Debug"
 		defines { "VK_DEBUG" }

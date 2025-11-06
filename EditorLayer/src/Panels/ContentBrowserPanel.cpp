@@ -1,4 +1,5 @@
 #include <vector>
+#include <list>
 #include <memory>
 #include <filesystem>
 #include <map>
@@ -281,7 +282,7 @@ namespace VulkanCore {
 			if (ImGui::Button("OK"))
 			{
 				std::string pathStr = { buffer };
-#if defined(_WIN32)
+#ifdef VK_PLATFORM_WINDOWS
 				std::replace(pathStr.begin(), pathStr.end(), '/', '\\');
 #endif
 				std::filesystem::path filepath = pathStr;
@@ -385,7 +386,7 @@ namespace VulkanCore {
 			if (ImGui::Button("OK"))
 			{
 				std::string pathStr = { buffer };
-#if defined(_WIN32)
+#ifdef VK_PLATFORM_WINDOWS
 				std::replace(pathStr.begin(), pathStr.end(), '/', '\\');
 #endif
 				std::filesystem::path filepath = pathStr;

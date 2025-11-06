@@ -10,6 +10,7 @@ namespace VulkanCore {
 		void EndCommandBufferLabel(VkCommandBuffer cmdBuffer);
 		void SetQueueLabel(VkQueue queue, const char* labelName, const float labelColor[]);
 		void EndQueueLabel(VkQueue queue);
+		bool IsInCaptureMode();
 	}
 
 	VkResult CreateDebugUtilsEXT(VkInstance instance);

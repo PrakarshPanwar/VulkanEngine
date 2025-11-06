@@ -10,6 +10,7 @@
 #include <regex>
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
+#include <spirv_cross/spirv_glsl.hpp>
 
 namespace VulkanCore {
 
@@ -130,8 +131,8 @@ namespace VulkanCore {
 					continue;
 
 				uint32_t binding = spvCompiler.get_decoration(sampledImgResource.id, spv::DecorationBinding);
-				uint32_t arrayCount = spvCompiler.get_type(sampledImgResource.type_id).array.size() > 0
-					? spvCompiler.get_type(sampledImgResource.type_id).array[0] : 1;
+				uint32_t arrayCount = spvCompiler.get_type(sampledImgResource.type_id).array.empty() ? 1 :
+					spvCompiler.get_type(sampledImgResource.type_id).array[0];
 
 				descriptorSetLayoutBuilder.AddBinding(
 					binding,
@@ -147,8 +148,8 @@ namespace VulkanCore {
 					continue;
 
 				uint32_t binding = spvCompiler.get_decoration(storageImgResource.id, spv::DecorationBinding);
-				uint32_t arrayCount = spvCompiler.get_type(storageImgResource.type_id).array.size() > 0
-					? spvCompiler.get_type(storageImgResource.type_id).array[0] : 1;
+				uint32_t arrayCount = spvCompiler.get_type(storageImgResource.type_id).array.empty() ? 1 :
+					spvCompiler.get_type(storageImgResource.type_id).array[0];
 
 				descriptorSetLayoutBuilder.AddBinding(
 					binding,
@@ -386,7 +387,7 @@ namespace VulkanCore {
 		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
 		options.SetTargetSpirv(shaderc_spirv_version_1_4);
 
-		const bool optimize = !device->IsInDebugMode();
+		const bool optimize = !VKUtils::IsInCaptureMode();
 		if (optimize)
 			options.SetOptimizationLevel(shaderc_optimization_level_performance);
 		else
@@ -416,7 +417,7 @@ namespace VulkanCore {
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
 
 			std::scoped_lock ShaderMutexLock(MapMutexLock);
-			shaderData[(uint32_t)stage] = std::vector<uint32_t>(module.cbegin(), module.cend());
+			shaderData[(uint32_t)stage] = std::vector(module.cbegin(), module.cend());
 
 			std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
 			if (out.is_open())
@@ -442,7 +443,7 @@ namespace VulkanCore {
 				auto& source = shaderSources[(uint32_t)stage];
 
 				std::filesystem::path shaderFilePath = std::get<0>(source);
-				ShaderType shaderType = (ShaderType)stage;
+				ShaderType shaderType = stage;
 
 				m_Futures.push_back(std::async(std::launch::async, CreateShader, shaderFilePath, std::get<1>(source), shaderType));
 
@@ -507,7 +508,7 @@ namespace VulkanCore {
 		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
 		options.SetTargetSpirv(shaderc_spirv_version_1_4);
 
-		const bool optimize = !device->IsInDebugMode();
+		const bool optimize = !VKUtils::IsInCaptureMode();
 		if (optimize)
 		{
 			options.SetOptimizationLevel(shaderc_optimization_level_performance);
@@ -542,7 +543,7 @@ namespace VulkanCore {
 			std::filesystem::path cachedPath = cacheDirectory / (shaderFilePath.stem().string() + Utils::GLShaderStageCachedVulkanFileExtension(stage));
 
 			std::scoped_lock ShaderMutexLock(MapMutexLock);
-			shaderData[(uint32_t)stage] = std::vector<uint32_t>(module.cbegin(), module.cend());
+			shaderData[(uint32_t)stage] = std::vector(module.cbegin(), module.cend());
 
 			std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
 			if (out.is_open())
@@ -621,11 +622,6 @@ namespace VulkanCore {
 				VK_CORE_TRACE("\t  Members = {0}", memberCount);
 			}
 		}
-	}
-
-	void VulkanShader::InvalidateDescriptors()
-	{
-
 	}
 
 }

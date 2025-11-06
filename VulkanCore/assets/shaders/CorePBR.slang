@@ -70,7 +70,7 @@ void VSMain(in VertexInput vertexInput, out VertexStageOutput output)
     output.Position = mul(mul(worldPosition, c_Camera.View), c_Camera.Projection);
     output.vertexOutput.Normal = mul(vertexInput.Normal, float3x3(transform));
     output.vertexOutput.WorldPosition = worldPosition.xyz;
-    output.vertexOutput.ViewPosition = mul(worldPosition, c_Camera.InverseView).xyz;
+    output.vertexOutput.ViewPosition = mul(worldPosition, c_Camera.View).xyz;
 
     float3 T = normalize(mul(vertexInput.Tangent, float3x3(transform)));
     float3 N = normalize(output.vertexOutput.Normal);
@@ -106,7 +106,6 @@ struct PBRParams
     float Occlusion;
     float Metallic;
     float Roughness;
-    float ShadowCoefficient;
 };
 
 static PBRParams m_Params; // Thread-Local variable
@@ -235,7 +234,7 @@ float3 Lighting(float3 F0)
         // have no diffuse light).
         kD *= 1.0f - m_Params.Metallic;
         // Add to Outgoing Radiance Lo
-        Lo += (kD * m_Params.Albedo / PI + specular) * radiance * NdotL * m_Params.ShadowCoefficient;
+        Lo += (kD * m_Params.Albedo / PI + specular) * radiance * NdotL;
     }
 
     return Lo;
@@ -368,12 +367,12 @@ void FSMain(VertexOutput vertexOutput : VERTEX_OUT,
     float3 F0 = lerp(Fdielectric, m_Params.Albedo, m_Params.Metallic);
 
     // Shadow
-    m_Params.ShadowCoefficient = CalculateShadow();
+    float shadow = CalculateShadow();
 
     float3 lightingContribution = Lighting(F0);
     float3 iblContribution = IBL(F0, Lr);
     o_LightsDataTexture = float4(lightingContribution, 1.0f); // Lights Data Texture
 
-    float3 color = iblContribution + lightingContribution;
+    float3 color = iblContribution + lightingContribution * shadow;
     o_Color = float4(color, 1.0f); // Final Color
 } // End of Fragment Stage

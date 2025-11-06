@@ -95,6 +95,8 @@ namespace VulkanCore {
 
 	VkResult VulkanSwapChain::AcquireNextImage(uint32_t* imageIndex)
 	{
+		VK_CORE_PROFILE_FN("VulkanSwapChain::AcquireNextImage", TracyZoneLabelColor::Purple);
+
 		const auto device = VulkanContext::GetCurrentDevice();
 		vkWaitForFences(device->GetVulkanDevice(), 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
@@ -171,7 +173,7 @@ namespace VulkanCore {
 	bool VulkanSwapChain::CompareSwapFormats(const VulkanSwapChain& swapChain) const
 	{
 		return swapChain.m_SCImageFormat == m_SCImageFormat &&
-			   swapChain.m_SCDepthFormat == m_SCDepthFormat;
+			swapChain.m_SCDepthFormat == m_SCDepthFormat;
 	}
 
 	void VulkanSwapChain::Init()
@@ -233,16 +235,15 @@ namespace VulkanCore {
 
 		VK_CHECK_RESULT(vkCreateSwapchainKHR(device->GetVulkanDevice(), &createInfo, nullptr, &m_SwapChain), "Failed to Create Swap Chain!");
 
-		// We only specified a minimum number of Images in the SwapChain, so the implementation is
-		// allowed to create a SwapChain with more. That's why we'll first query the final number of
-		// images with vkGetSwapchainImagesKHR, then resize the container and finally call it again to
-		// retrieve the handles.
+		// We only specified a minimum number of Images in the SwapChain, so the implementation is allowed
+		// to create a SwapChain with more. That's why we'll first query the final number of images with
+		// vkGetSwapchainImagesKHR, then resize the container and finally call it again to retrieve the handles.
 		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, nullptr);
 		m_SCImages.resize(imageCount);
 		vkGetSwapchainImagesKHR(device->GetVulkanDevice(), m_SwapChain, &imageCount, m_SCImages.data());
 
 		m_SCImageFormat = surfaceFormat.format;
-		m_SCExtent = { std::max(extent.width, 1u), std::max(extent.height, 1u) };
+		m_SCExtent = extent;
 	}
 
 	void VulkanSwapChain::CreateImageViews()
@@ -427,7 +428,7 @@ namespace VulkanCore {
 		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-		std::array<VkAttachmentDescription, 3> attachments = { colorAttachment, depthAttachment, colorAttachmentResolve };
+		std::array attachments = { colorAttachment, depthAttachment, colorAttachmentResolve };
 		VkRenderPassCreateInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -449,7 +450,7 @@ namespace VulkanCore {
 
 		for (size_t i = 0; i < GetImageCount(); ++i)
 		{
-			std::array<VkImageView, 3> attachments = { m_ColorImageViews[i], m_DepthImageViews[i], m_SCImageViews[i] };
+			std::array attachments = { m_ColorImageViews[i], m_DepthImageViews[i], m_SCImageViews[i] };
 
 			VkFramebufferCreateInfo framebufferInfo = {};
 			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

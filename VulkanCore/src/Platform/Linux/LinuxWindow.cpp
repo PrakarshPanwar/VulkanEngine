@@ -1,5 +1,5 @@
 #include "vulkanpch.h"
-#include "WindowsWindow.h"
+#include "LinuxWindow.h"
 
 #include "VulkanCore/Core/Core.h"
 #include "VulkanCore/Core/Application.h"
@@ -8,72 +8,47 @@
 #include "VulkanCore/Events/MouseEvent.h"
 #include "VulkanCore/Events/KeyEvent.h"
 
-#ifdef VK_PLATFORM_WINDOWS
-#include <Windows.h>
-#include <CommCtrl.h>
-#include <dwmapi.h>
-
-typedef HRESULT(WINAPI* pFnDwmSetWindowAttribute)(HWND hwnd, DWORD dwAttribute, LPCVOID pvAttribute, DWORD cbAttribute);
-
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
-#endif
-
 namespace VulkanCore {
 
-	WindowsWindow::WindowsWindow(const WindowSpecs& specs)
+	namespace Utils {
+
+		static const char* LinuxWSIPlatform(uint32_t platform)
+		{
+			switch (platform)
+			{
+			case GLFW_PLATFORM_X11:		return "X11";
+			case GLFW_PLATFORM_WAYLAND: return "Wayland";
+			default:
+				VK_CORE_ASSERT(false, "Unsupported Linux WSI");
+				return "Unknown";
+			}
+		}
+
+	}
+
+	LinuxWindow::LinuxWindow(const WindowSpecs &specs)
 	{
 		Init(specs);
 	}
 
-	WindowsWindow::~WindowsWindow()
+	LinuxWindow::~LinuxWindow()
 	{
 		Shutdown();
 	}
 
-	void WindowsWindow::OnUpdate()
+	void LinuxWindow::OnUpdate()
 	{
 		VK_CORE_PROFILE();
 		glfwPollEvents();
 	}
 
-	void WindowsWindow::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
+	void LinuxWindow::Init(const WindowSpecs &specs)
 	{
-		auto windowData = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		auto& appSpec = Application::Get()->GetSpecification();
 
-		windowData->Width = width;
-		windowData->Height = height;
-		windowData->FramebufferResize = true;
-	}
-
-	void WindowsWindow::SetWindowTitleDarkMode()
-	{
-#ifdef VK_PLATFORM_WINDOWS
-		// Get Windows Handle
-		HWND hwnd = glfwGetWin32Window(m_Window);
-
-		// Load DWM Library
-		HMODULE dwmmod = LoadLibrary(L"dwmapi.dll");
-		if (dwmmod)
-		{
-			pFnDwmSetWindowAttribute DwmSetWindowAttribute;
-			DwmSetWindowAttribute = (pFnDwmSetWindowAttribute)GetProcAddress(dwmmod, "DwmSetWindowAttribute");
-
-			// Title Color
-			BOOL useDarkMode = TRUE;
-
-			HRESULT hr = DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
-			if (hr != S_OK)
-				VK_CORE_WARN("Failed to Set Windows Window Title Bar Color!");
-		}
-#endif
-	}
-
-	void WindowsWindow::Init(const WindowSpecs& specs)
-	{
 		m_Data.Title = specs.Name;
-		m_Data.Width = specs.Width;
-		m_Data.Height = specs.Height;
+		m_Data.WindowWidth = specs.Width;
+		m_Data.WindowHeight = specs.Height;
 
 		int status = glfwInit();
 		VK_CORE_ASSERT(status, "Failed to Initialize GLFW!");
@@ -81,13 +56,13 @@ namespace VulkanCore {
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-		if (Application::Get()->GetSpecification().Fullscreen)
+		if (appSpec.Fullscreen) // Maximized one
 		{
 			GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 			const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
-			m_Data.Width = mode->width;
-			m_Data.Height = mode->height;
+			m_Data.WindowWidth = mode->width;
+			m_Data.WindowHeight = mode->height;
 
 			glfwWindowHint(GLFW_RED_BITS, mode->redBits);
 			glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
@@ -95,29 +70,37 @@ namespace VulkanCore {
 			glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 			glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
-			m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title.c_str(), nullptr, nullptr);
+			m_Window = glfwCreateWindow(m_Data.WindowWidth, m_Data.WindowHeight, m_Data.Title.c_str(), nullptr, nullptr);
 		}
 		else
-			m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title.c_str(), nullptr, nullptr);
+			m_Window = glfwCreateWindow(m_Data.WindowWidth, m_Data.WindowHeight, m_Data.Title.c_str(), nullptr, nullptr);
 
-		VK_CORE_INFO("Creating Windows Window '{0}' ({1}, {2})", m_Data.Title, m_Data.Width, m_Data.Height);
+		VK_CORE_INFO("Creating Linux {0} Window '{1}' ({2}, {3})", Utils::LinuxWSIPlatform(glfwGetPlatform()), m_Data.Title, m_Data.WindowWidth, m_Data.WindowHeight);
 		glfwMakeContextCurrent(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
-		glfwSetFramebufferSizeCallback(m_Window, FramebufferResizeCallback);
 
 		// Get Framebuffer Size
-		glfwGetFramebufferSize(m_Window, &m_Data.Width, &m_Data.Height);
+		glfwGetFramebufferSize(m_Window, &m_Data.FramebufferWidth, &m_Data.FramebufferHeight);
 
 		// Set GLFW Callbacks
 		glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
 		{
 			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-			data.Width = width;
-			data.Height = height;
+			data.WindowWidth = width;
+			data.WindowHeight = height;
 
 			WindowResizeEvent event(width, height);
 			data.EventCallback(event);
+		});
+
+		glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
+		{
+			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+
+			data.FramebufferWidth = width;
+			data.FramebufferHeight = height;
+			data.FramebufferResize = true;
 		});
 
 		glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window)
@@ -191,11 +174,9 @@ namespace VulkanCore {
 			MouseMovedEvent event((float)xPos, (float)yPos);
 			data.EventCallback(event);
 		});
-
-		SetWindowTitleDarkMode();
 	}
 
-	void WindowsWindow::Shutdown()
+	void LinuxWindow::Shutdown() const
 	{
 		glfwDestroyWindow(m_Window);
 		glfwTerminate();

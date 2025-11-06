@@ -1,6 +1,8 @@
 #include "vulkanpch.h"
 #include "LayerStack.h"
 
+#include <algorithm>
+
 namespace VulkanCore {
 
 	LayerStack::LayerStack()

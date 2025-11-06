@@ -33,7 +33,7 @@ namespace VulkanCore {
 			pushConstantRange.offset = 0;
 			pushConstantRange.size = (uint32_t)pushConstantSize;
 
-			std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ descriptorLayout.GetVulkanDescriptorSetLayout() };
+			std::vector descriptorSetLayouts{ descriptorLayout.GetVulkanDescriptorSetLayout() };
 
 			VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 			pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

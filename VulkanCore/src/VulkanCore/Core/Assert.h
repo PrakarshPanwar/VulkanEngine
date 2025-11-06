@@ -1,5 +1,13 @@
 #pragma once
 
+#if defined(_WIN32) || defined(_WIN64)
+#define VK_PLATFORM_WINDOWS
+#elif defined(__linux__)
+#define VK_PLATFORM_LINUX
+#else
+#error "Unsupported Platform!"
+#endif
+
 #if defined(_MSC_VER)
 #define DEBUG_BREAK __debugbreak()
 #elif defined(__GNUC__)

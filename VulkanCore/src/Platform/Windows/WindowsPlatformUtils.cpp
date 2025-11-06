@@ -4,10 +4,9 @@
 
 #include <GLFW/glfw3.h>
 
-#ifdef _WIN64
+#ifdef VK_PLATFORM_WINDOWS
 #include <Windows.h>
 #include <commdlg.h>
-#endif
 
 namespace VulkanCore {
 
@@ -64,3 +63,4 @@ namespace VulkanCore {
 	}
 
 }
+#endif

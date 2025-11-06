@@ -30,8 +30,8 @@ namespace VulkanCore {
 		std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>> ParseShaders();
 		std::string ParsePreprocessIncludes(std::stringstream& sourceCode);
 		void CompileOrGetVulkanBinaries(std::unordered_map<uint32_t, std::tuple<std::filesystem::path, std::string>>& shaderSources);
+	protected:
 		void ReflectShaderData();
-		void InvalidateDescriptors();
 	protected:
 		std::string m_ShaderName;
 		std::map<uint32_t, std::vector<uint32_t>> m_VulkanSPIRV;

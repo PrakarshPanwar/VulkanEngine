@@ -1,5 +1,4 @@
 #pragma once
-#include "VulkanCore/Renderer/Renderer.h"
 #include "VulkanCore/Renderer/EditorCamera.h"
 #include "VulkanCore/Renderer/ComputePipeline.h"
 #include "VulkanCore/Renderer/UniformBuffer.h"

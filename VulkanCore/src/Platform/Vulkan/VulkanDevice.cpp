@@ -143,23 +143,6 @@ namespace VulkanCore {
 		return false;
 	}
 
-	bool VulkanDevice::IsInDebugMode() const
-	{
-		uint32_t layerCount = 0;
-		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-		std::vector<VkLayerProperties> layers(layerCount);
-		vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
-
-		for (const auto& layer : layers)
-		{
-			if (strcmp(layer.layerName, "VK_LAYER_RENDERDOC_Capture") == 0)
-				return true; // RenderDoc layer is active
-		}
-
-		return false; // RenderDoc layer not found
-	}
-
 	VkPhysicalDeviceType VulkanDevice::VulkanPhysicalDeviceType(VulkanDeviceType deviceType) const
 	{
 		switch (deviceType)
@@ -249,6 +232,7 @@ namespace VulkanCore {
 	void VulkanDevice::PickPhysicalDevice(VulkanDeviceType deviceType)
 	{
 		auto context = VulkanContext::GetCurrentContext();
+		auto physicalDeviceType = VulkanPhysicalDeviceType(deviceType);
 
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(context->m_VulkanInstance, &deviceCount, nullptr);
@@ -261,8 +245,7 @@ namespace VulkanCore {
 		for (const auto& device : devices)
 		{
 			vkGetPhysicalDeviceProperties(device, &m_DeviceProperties);
-
-			if (m_DeviceProperties.deviceType == VulkanPhysicalDeviceType(deviceType) && context->IsDeviceSuitable(device))
+			if (m_DeviceProperties.deviceType == physicalDeviceType && context->IsDeviceSuitable(device))
 			{
 				m_PhysicalDevice = device;
 				break;
