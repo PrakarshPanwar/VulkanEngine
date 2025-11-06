@@ -5,7 +5,6 @@
 #include "VulkanCore/Core/Application.h"
 #include "VulkanCore/Core/Timer.h"
 #include "VulkanCore/Renderer/Renderer.h"
-#include "Platform/Vulkan/VulkanSwapChain.h"
 #include "Platform/Vulkan/VulkanDescriptor.h"
 
 #include <regex>

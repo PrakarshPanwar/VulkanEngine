@@ -148,8 +148,9 @@ namespace VulkanCore {
 		switch (deviceType)
 		{
 		case VulkanDeviceType::IntegratedGPU: return VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
-		case VulkanDeviceType::DiscreteGPU:	  return VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-		case VulkanDeviceType::CPU:			  return VK_PHYSICAL_DEVICE_TYPE_CPU;
+		case VulkanDeviceType::DiscreteGPU:   return VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+		case VulkanDeviceType::VirtualGPU:    return VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU;
+		case VulkanDeviceType::CPU:           return VK_PHYSICAL_DEVICE_TYPE_CPU;
 		default:
 			VK_CORE_ASSERT(false, "Invalid Physical Device Type!");
 			return VK_PHYSICAL_DEVICE_TYPE_OTHER;

@@ -8,10 +8,20 @@
 #include "VulkanCore/Events/MouseEvent.h"
 #include "VulkanCore/Events/KeyEvent.h"
 
+#ifdef VK_PLATFORM_WINDOWS
+#include <Windows.h>
+#include <CommCtrl.h>
+#include <dwmapi.h>
+
+typedef HRESULT(WINAPI* pFnDwmSetWindowAttribute)(HWND hwnd, DWORD dwAttribute, LPCVOID pvAttribute, DWORD cbAttribute);
+
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#endif
+
 namespace VulkanCore {
 
 	WindowsWindow::WindowsWindow(const WindowSpecs& specs)
-		: m_WindowSpecs(specs)
 	{
 		Init(specs);
 	}
@@ -29,11 +39,34 @@ namespace VulkanCore {
 
 	void WindowsWindow::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
 	{
-		auto vkWindow = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
+		auto windowData = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
 
-		vkWindow->FramebufferResize = true;
-		vkWindow->Width = width;
-		vkWindow->Height = height;
+		windowData->Width = width;
+		windowData->Height = height;
+		windowData->FramebufferResize = true;
+	}
+
+	void WindowsWindow::SetWindowTitleDarkMode()
+	{
+#ifdef VK_PLATFORM_WINDOWS
+		// Get Windows Handle
+		HWND hwnd = glfwGetWin32Window(m_Window);
+
+		// Load DWM Library
+		HMODULE dwmmod = LoadLibrary(L"dwmapi.dll");
+		if (dwmmod)
+		{
+			pFnDwmSetWindowAttribute DwmSetWindowAttribute;
+			DwmSetWindowAttribute = (pFnDwmSetWindowAttribute)GetProcAddress(dwmmod, "DwmSetWindowAttribute");
+
+			// Title Color
+			BOOL useDarkMode = TRUE;
+
+			HRESULT hr = DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
+			if (hr != S_OK)
+				VK_CORE_WARN("Failed to Set Windows Window Title Bar Color!");
+		}
+#endif
 	}
 
 	void WindowsWindow::Init(const WindowSpecs& specs)
@@ -55,8 +88,6 @@ namespace VulkanCore {
 
 			m_Data.Width = mode->width;
 			m_Data.Height = mode->height;
-			m_WindowSpecs.Width = mode->width;
-			m_WindowSpecs.Height = mode->height;
 
 			glfwWindowHint(GLFW_RED_BITS, mode->redBits);
 			glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
@@ -64,16 +95,19 @@ namespace VulkanCore {
 			glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 			glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
-			m_Window = glfwCreateWindow(m_WindowSpecs.Width, m_WindowSpecs.Height, m_WindowSpecs.Name.c_str(), nullptr, nullptr);
+			m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title.c_str(), nullptr, nullptr);
 		}
 		else
-			m_Window = glfwCreateWindow(m_WindowSpecs.Width, m_WindowSpecs.Height, m_WindowSpecs.Name.c_str(), nullptr, nullptr);
+			m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title.c_str(), nullptr, nullptr);
 
-		VK_CORE_INFO("Creating Windows Window '{0}' ({1}, {2})", m_WindowSpecs.Name, m_WindowSpecs.Width, m_WindowSpecs.Height);
+		VK_CORE_INFO("Creating Windows Window '{0}' ({1}, {2})", m_Data.Title, m_Data.Width, m_Data.Height);
 		glfwMakeContextCurrent(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 		glfwSetFramebufferSizeCallback(m_Window, FramebufferResizeCallback);
+
+		// Get Framebuffer Size
+		glfwGetFramebufferSize(m_Window, &m_Data.Width, &m_Data.Height);
 
 		// Set GLFW Callbacks
 		glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
@@ -157,6 +191,8 @@ namespace VulkanCore {
 			MouseMovedEvent event((float)xPos, (float)yPos);
 			data.EventCallback(event);
 		});
+
+		SetWindowTitleDarkMode();
 	}
 
 	void WindowsWindow::Shutdown()
