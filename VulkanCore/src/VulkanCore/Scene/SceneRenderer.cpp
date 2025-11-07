@@ -856,7 +856,7 @@ namespace VulkanCore {
 		m_BloomMipSize = (glm::uvec2(m_ViewportSize.x, m_ViewportSize.y) + 1u) / 2u;
 		m_BloomMipSize += 16u - m_BloomMipSize % 16u;
 
-		m_BloomTextures.reserve(framesInFlight);
+		m_BloomTextures.reserve(3);
 		m_AOTextures.reserve(framesInFlight);
 		m_SceneRenderTextures.reserve(framesInFlight);
 #if VK_FEATURE_GTAO
@@ -865,16 +865,8 @@ namespace VulkanCore {
 
 		VulkanCommandBuffer barrierCmd = device->GetCommandBuffer();
 
-		for (uint32_t i = 0; i < framesInFlight; ++i)
+		for (uint32_t i = 0; i < m_BloomTextures.capacity(); ++i)
 		{
-			// Uniform Buffers
-			m_UBCamera.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBCamera)));
-			m_UBPointLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBPointLights)));
-			m_UBSpotLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBSpotLights)));
-			m_UBDirectionalLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBDirectionalLights)));
-			m_UBCascadeLightMatrices.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(CascadeMapData)));
-			m_ImageBuffer.emplace_back(std::make_shared<VulkanIndexBuffer>(1920 * 1200 * sizeof(int)));
-
 			// Bloom Compute Textures
 			ImageSpecification bloomRTSpec{};
 			bloomRTSpec.DebugName = std::format("Bloom Compute Texture {}", i);
@@ -886,6 +878,17 @@ namespace VulkanCore {
 
 			auto BloomTexture = std::static_pointer_cast<VulkanImage>(m_BloomTextures.emplace_back(std::make_shared<VulkanImage>(bloomRTSpec)));
 			BloomTexture->Invalidate();
+		}
+
+		for (uint32_t i = 0; i < framesInFlight; ++i)
+		{
+			// Uniform Buffers
+			m_UBCamera.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBCamera)));
+			m_UBPointLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBPointLights)));
+			m_UBSpotLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBSpotLights)));
+			m_UBDirectionalLight.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(UBDirectionalLights)));
+			m_UBCascadeLightMatrices.emplace_back(std::make_shared<VulkanUniformBuffer>(sizeof(CascadeMapData)));
+			m_ImageBuffer.emplace_back(std::make_shared<VulkanIndexBuffer>(1920 * 1200 * sizeof(int)));
 
 			// AO Textures
 			ImageSpecification aoTexSpec{};
@@ -1010,10 +1013,12 @@ namespace VulkanCore {
 
 			VulkanCommandBuffer barrierCmd = device->GetCommandBuffer();
 
+			for (auto& bloomTexture : m_BloomTextures)
+				bloomTexture->Resize(m_BloomMipSize.x, m_BloomMipSize.y, Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2);
+
 			for (uint32_t i = 0; i < framesInFlight; ++i)
 			{
 				// General Textures
-				m_BloomTextures[i]->Resize(m_BloomMipSize.x, m_BloomMipSize.y, Utils::CalculateMipCount(m_BloomMipSize.x, m_BloomMipSize.y) - 2);
 				m_AOTextures[i]->Resize(m_ViewportSize.x, m_ViewportSize.y);
 
 				auto vulkanSceneTexture = std::dynamic_pointer_cast<VulkanImage>(m_SceneRenderTextures[i]);

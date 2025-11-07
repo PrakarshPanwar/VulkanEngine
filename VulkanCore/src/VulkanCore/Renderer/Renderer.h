@@ -30,7 +30,7 @@ namespace VulkanCore {
 
 	struct RendererConfig
 	{
-		static constexpr uint32_t FramesInFlight = 3;
+		static constexpr uint32_t FramesInFlight = FRAMES_IN_FLIGHT;
 	};
 
 	class Renderer

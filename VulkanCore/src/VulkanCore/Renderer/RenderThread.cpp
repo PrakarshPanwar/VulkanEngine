@@ -63,7 +63,7 @@ namespace VulkanCore {
 	{
 		auto nextFrame = []
 		{
-			m_ThreadFrameIndex = (m_ThreadFrameIndex + 1) % 3;
+			m_ThreadFrameIndex = (m_ThreadFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
 		};
 
 		SubmitToThread(nextFrame);
