@@ -158,9 +158,9 @@ namespace VulkanCore {
 		}
 	}
 
-	void Scene::DrawPhysicsBodies(std::shared_ptr<PhysicsDebugRenderer> debugRenderer)
+	void Scene::DrawPhysicsBodies()
 	{
-		m_PhysicsWorld->DrawPhysicsBodies(debugRenderer);
+		m_PhysicsWorld->DrawPhysicsBodies();
 	}
 
 	void Scene::OnUpdateLights(std::vector<glm::vec4>& pointLightPositions, std::vector<glm::vec4>& spotLightPositions, std::vector<uint32_t>& lightHandles)

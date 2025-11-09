@@ -27,6 +27,22 @@ namespace VulkanCore {
 		}
 	};
 
+#define MAX_LINES_VERTICES 800
+#define MAX_QUADS_VERTICES 800
+
+	struct LineVertex
+	{
+		glm::vec3 Position;
+		glm::vec4 Color;
+	};
+
+	struct TextVertex
+	{
+		glm::vec3 Position;
+		glm::vec4 Color;
+		glm::vec2 TexCoord;
+	};
+
 	struct MeshNode
 	{
 		std::string Name;

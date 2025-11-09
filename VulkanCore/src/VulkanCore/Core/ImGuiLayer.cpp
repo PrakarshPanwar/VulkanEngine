@@ -111,7 +111,6 @@ namespace VulkanCore {
 	{
 		VK_CORE_PROFILE();
 
-		auto swapChain = VulkanSwapChain::GetSwapChain();
 		auto cmdBuffer = VulkanRenderer::Get()->GetRendererCommandBuffer();
 		VkCommandBuffer vulkanCmdBuffer = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
 

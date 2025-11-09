@@ -215,7 +215,7 @@ namespace VulkanCore {
 			PipelineSpecification textPipelineSpec{};
 			textPipelineSpec.DebugName = "Text Pipeline";
 			textPipelineSpec.pShader = Renderer::GetShader("Text2D");
-			textPipelineSpec.pRenderPass = m_GeometryPipeline->GetSpecification().pRenderPass;
+			textPipelineSpec.pRenderPass = m_GeometryTransparentPipeline->GetSpecification().pRenderPass;
 			textPipelineSpec.Layout = {
 				{ ShaderDataType::Float3, "a_Position" },
 				{ ShaderDataType::Float4, "a_Color" },
@@ -494,29 +494,27 @@ namespace VulkanCore {
 			m_SkyboxMaterial->SetTexture(1, m_CubemapTexture);
 			m_SkyboxMaterial->PrepareShaderMaterial();
 		}
+
+		// Physics Debug Material Asset
+		{
+			MaterialData materialData{};
+			materialData.Albedo = { 0.2f, 0.3f, 0.8f, 1.0f };
+			materialData.Metallic = 0.5f;
+			materialData.Roughness = 0.5f;
+
+			m_PhysicsDebugData.DebugMeshMaterial = std::make_shared<MaterialAsset>(Material::Create("Default Material"));
+			m_PhysicsDebugData.DebugMeshMaterial->GetMaterial()->SetMaterialData(materialData);
+		}
 	}
 
 	void SceneRenderer::RecreateMaterials()
 	{
-		// Geometry Material
-		{
-			m_GeometryMaterial->SetBuffers(4, m_UBCascadeLightMatrices);
-			m_GeometryMaterial->SetImages(9, m_ShadowMapPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer->GetDepthAttachment());
-			m_GeometryMaterial->PrepareShaderMaterial();
-		}
-
 		// Geometry OIT(Composite) Material
 		{
 			const auto geomFB = m_GeometryTransparentPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer;
 			m_GeometryCompositeMaterial->SetImages(0, geomFB->GetAttachment(0)); // Accumulation
 			m_GeometryCompositeMaterial->SetImages(1, geomFB->GetAttachment(1)); // Revealage
 			m_GeometryCompositeMaterial->PrepareShaderMaterial();
-		}
-
-		// Shadow Map Material
-		{
-			m_ShadowMapMaterial->SetBuffers(1, m_UBCascadeLightMatrices);
-			m_ShadowMapMaterial->PrepareShaderMaterial();
 		}
 
 		// Bloom Materials
@@ -961,8 +959,15 @@ namespace VulkanCore {
 		m_SpotLightTextureIcon = TextureImporter::LoadTexture2D("../../EditorLayer/Resources/Icons/SpotLightIcon.png");
 
 		// Load Font Data
-		m_Font = std::make_shared<Font>("fonts/opensans/OpenSans-Bold.ttf");
+		m_Font = std::make_shared<Font>("fonts/opensans/OpenSans-Regular.ttf");
 		m_FontTextureID = ImGuiLayer::AddTexture(*std::dynamic_pointer_cast<VulkanTexture>(m_Font->GetAtlasTexture()));
+
+		// Create 2D Buffers
+		m_TextVBData = std::make_shared<VulkanVertexBuffer>(sizeof(TextVertex) * MAX_QUADS_VERTICES);
+		m_PhysicsDebugData.LinesVBData = std::make_shared<VulkanVertexBuffer>(sizeof(LineVertex) * MAX_LINES_VERTICES);
+
+		m_TextBuffer.reserve(MAX_QUADS_VERTICES);
+		m_PhysicsDebugData.LinesBuffer.reserve(MAX_LINES_VERTICES);
 
 		// Wait for Pipelines and Framebuffers to finish
 		Renderer::WaitAndExecute();
@@ -971,9 +976,6 @@ namespace VulkanCore {
 		auto geomFramebuffer = m_GeometryPipeline->GetSpecification().pRenderPass->GetSpecification().TargetFramebuffer;
 		m_GeometryTransparentPipeline->GetSpecification().pRenderPass->SetDepthAttachment(geomFramebuffer->GetDepthAttachment(false));
 		m_GeometryCompositePipeline->GetSpecification().pRenderPass->SetColorAttachment(0, geomFramebuffer->GetAttachment(0, false));
-
-		// Create Physics Debug Renderer
-		m_PhysicsDebugRenderer = PhysicsDebugRenderer::Create();
 
 		// ImGui Images
 		for (uint32_t i = 0; i < framesInFlight; ++i)
@@ -1223,6 +1225,11 @@ namespace VulkanCore {
 		Renderer::SubmitAndPresent(); // Submits all Render Calls and Presents image to SwapChain
 	}
 
+	void SceneRenderer::RenderText()
+	{
+		Renderer::BindPipeline(m_SceneCommandBuffer, m_TextPipeline, m_TextMaterial);
+	}
+
 	void SceneRenderer::RenderLights()
 	{ 
 		Renderer::BindPipeline(m_SceneCommandBuffer, m_LightPipeline, m_PointLightShaderMaterial);
@@ -1370,11 +1377,11 @@ namespace VulkanCore {
 		}
 	}
 
-	void SceneRenderer::SubmitPhysicsMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform)
+	void SceneRenderer::SubmitPhysicsMesh(const std::shared_ptr<Mesh>& mesh, const glm::mat4& transform)
 	{
 		VK_CORE_PROFILE();
 
-		if (!mesh || !materialAsset)
+		if (!mesh)
 			return;
 
 		auto meshSource = mesh->GetMeshSource();
@@ -1386,24 +1393,30 @@ namespace VulkanCore {
 
 		for (uint32_t submeshIndex : mesh->GetSubmeshes())
 		{
-			int materialIndex = submeshData[submeshIndex].MaterialIndex;
-			uint64_t materialHandle = materialAsset->Handle;
+			uint64_t materialHandle = m_PhysicsDebugData.DebugMeshMaterial->Handle;
 
 			MeshKey meshKey = { meshHandle, materialHandle, submeshIndex };
-			auto& transformBuffer = m_PhysicsDebugMeshTransformMap[meshKey].Transforms.emplace_back();
+			auto& transformBuffer = m_PhysicsDebugData.MeshTransformMap[meshKey].Transforms.emplace_back();
 
 			glm::mat4 submeshTransform = transform * submeshData[submeshIndex].LocalTransform;
 			transformBuffer.MRow[0] = { submeshTransform[0][0], submeshTransform[1][0], submeshTransform[2][0], submeshTransform[3][0] };
 			transformBuffer.MRow[1] = { submeshTransform[0][1], submeshTransform[1][1], submeshTransform[2][1], submeshTransform[3][1] };
 			transformBuffer.MRow[2] = { submeshTransform[0][2], submeshTransform[1][2], submeshTransform[2][2], submeshTransform[3][2] };
 
-			auto& dc = m_PhysicsDebugMeshDrawList[meshKey];
+			auto& dc = m_PhysicsDebugData.MeshDrawList[meshKey];
 			dc.MeshInstance = mesh;
-			dc.MaterialInstance = materialAsset->GetMaterial();
+			dc.MaterialInstance = m_PhysicsDebugData.DebugMeshMaterial->GetMaterial();
 			dc.SubmeshIndex = submeshIndex;
-			dc.TransformBuffer = m_PhysicsDebugMeshTransformMap[meshKey].TransformBuffer;
+			dc.TransformBuffer = m_PhysicsDebugData.MeshTransformMap[meshKey].TransformBuffer;
 			dc.InstanceCount++;
 		}
+	}
+
+	void SceneRenderer::SubmitLines(const LineVertex &l0, const LineVertex &l1)
+	{
+		// Push Line Data into Buffer
+		m_PhysicsDebugData.LinesBuffer.emplace_back(l0);
+		m_PhysicsDebugData.LinesBuffer.emplace_back(l1);
 	}
 
 	void SceneRenderer::UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialTable> materialTable)
@@ -1487,8 +1500,8 @@ namespace VulkanCore {
 		// Then Submit and Flush to Vertex Buffers
 		if (m_SceneEditorData.ShowPhysicsCollider)
 		{
-			m_Scene->DrawPhysicsBodies(m_PhysicsDebugRenderer);
-			m_PhysicsDebugRenderer->FlushData();
+			m_Scene->DrawPhysicsBodies();
+			m_PhysicsDebugData.LinesVBData->WriteData(m_PhysicsDebugData.LinesBuffer.data(), 0);
 		}
 
 		Renderer::BeginRenderPass(m_SceneCommandBuffer, m_ShadowMapPipeline->GetSpecification().pRenderPass);
@@ -1511,7 +1524,9 @@ namespace VulkanCore {
 		if (m_SceneEditorData.ShowPhysicsCollider)
 		{
 			Renderer::BindPipeline(m_SceneCommandBuffer, m_LinesPipeline, m_LinesMaterial);
-			m_PhysicsDebugRenderer->Draw(m_SceneCommandBuffer);
+
+			// Draw Lines
+			Renderer::RenderLines(m_SceneCommandBuffer, m_PhysicsDebugData.LinesVBData, m_PhysicsDebugData.LinesBuffer.size());
 		}
 
 		// Rendering Skybox
@@ -1524,8 +1539,8 @@ namespace VulkanCore {
 
 		if (m_SceneEditorData.ShowPhysicsCollider) // Physics Debug Geometry
 		{
-			for (auto& [mk, dc] : m_PhysicsDebugMeshDrawList)
-				Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_PhysicsDebugMeshTransformMap[mk].Transforms, dc.InstanceCount);
+			for (auto& [mk, dc] : m_PhysicsDebugData.MeshDrawList)
+				Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryPipeline, dc.TransformBuffer, m_PhysicsDebugData.MeshTransformMap[mk].Transforms, dc.InstanceCount);
 		}
 		else // Static Geometry
 		{
@@ -1560,6 +1575,9 @@ namespace VulkanCore {
 
 		for (auto& [mk, dc] : m_MeshTransparentDrawList)
 			Renderer::RenderMesh(m_SceneCommandBuffer, dc.MeshInstance, dc.MaterialInstance, dc.SubmeshIndex, m_GeometryTransparentPipeline, dc.TransformBuffer, m_MeshTransparentTransformMap[mk].Transforms, dc.InstanceCount);
+
+		// Render Text
+		//RenderText();
 
 		Renderer::EndRenderPass(m_SceneCommandBuffer, m_GeometryTransparentPipeline->GetSpecification().pRenderPass); // End Transparent Geometry Pass
 		Renderer::EndGPUPerfMarker(m_SceneCommandBuffer);
@@ -1756,15 +1774,13 @@ namespace VulkanCore {
 			dc.InstanceCount = 0;
 		}
 
-		for (auto& [mk, dc] : m_PhysicsDebugMeshDrawList)
+		for (auto& [mk, dc] : m_PhysicsDebugData.MeshDrawList)
 		{
-			m_PhysicsDebugMeshTransformMap[mk].Transforms.clear();
+			m_PhysicsDebugData.MeshTransformMap[mk].Transforms.clear();
 			dc.InstanceCount = 0;
 		}
 
-		if (m_SceneEditorData.ShowPhysicsCollider)
-			m_PhysicsDebugRenderer->ClearData();
-
+		m_PhysicsDebugData.LinesBuffer.clear();
 		m_PointLightPositions.clear();
 		m_SpotLightPositions.clear();
 		m_LightHandles.clear();

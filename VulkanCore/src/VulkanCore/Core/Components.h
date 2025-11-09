@@ -80,6 +80,16 @@ namespace VulkanCore {
 			: Tag(tag) {}
 	};
 
+	struct TextComponent
+	{
+		AssetHandle FontHandle = 0;
+		std::string TextData{};
+		glm::vec4 Color{ 1.0f };
+
+		TextComponent() = default;
+		TextComponent(const TextComponent&) = default;
+	};
+
 	class Mesh;
 	class MaterialAsset;
 

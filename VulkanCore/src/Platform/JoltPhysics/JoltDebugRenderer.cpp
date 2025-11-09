@@ -4,17 +4,12 @@
 
 #include "VulkanCore/Scene/SceneRenderer.h"
 #include "VulkanCore/Renderer/Renderer.h"
-#include "Platform/Vulkan/VulkanVertexBuffer.h"
-
-#define MAX_VERTICES 800
 
 namespace VulkanCore {
 
 	JoltDebugRenderer::JoltDebugRenderer()
 	{
 		Initialize();
-		CreateResources();
-		CreateMaterials();
 	}
 
 	JoltDebugRenderer::~JoltDebugRenderer()
@@ -23,15 +18,17 @@ namespace VulkanCore {
 
 	void JoltDebugRenderer::DrawLine(JPH::RVec3 c0, JPH::RVec3 c1, JPH::Color lineColor)
 	{
+		auto sceneRenderer = SceneRenderer::GetSceneRenderer();
+
 		LineVertex line0{}, line1{};
 		line0.Position = { c0.GetX(), c0.GetY(), c0.GetZ() };
 		line1.Position = { c1.GetX(), c1.GetY(), c1.GetZ() };
 
-		line0.Color = { 0.0f, 0.8f, 0.0f, 1.0f };
-		line1.Color = { 0.0f, 0.8f, 0.0f, 1.0f };
+		JPH::Vec4 color = lineColor.ToVec4();
+		line0.Color = { color.GetX(), color.GetY(), color.GetZ(), 1.0f };
+		line1.Color = { color.GetX(), color.GetY(), color.GetZ(), 1.0f };
 
-		m_LinesBuffer.emplace_back(line0);
-		m_LinesBuffer.emplace_back(line1);
+		sceneRenderer->SubmitLines(line0, line1);
 	}
 
 	void JoltDebugRenderer::DrawTriangle(JPH::RVec3 v0, JPH::RVec3 v1, JPH::RVec3 v2, JPH::Color triColor, ECastShadow castShadow)
@@ -62,7 +59,7 @@ namespace VulkanCore {
 
 		// Extract Jolt Mesh
 		const JoltMesh* joltMesh = static_cast<const JoltMesh*>(lod->mTriangleBatch.GetPtr());
-		sceneRenderer->SubmitPhysicsMesh(joltMesh->GetMesh(), m_DefaultPhysicsMaterialAsset, transform);
+		sceneRenderer->SubmitPhysicsMesh(joltMesh->GetMesh(), transform);
 	}
 
 	void JoltDebugRenderer::DrawText3D(JPH::RVec3 inPosition, const JPH::string_view& inString, JPH::Color inColor, float inHeight)
@@ -80,38 +77,6 @@ namespace VulkanCore {
 	{
 		JoltMesh* joltMesh = new JoltMesh(verticesPtr, vertexCount, indicesPtr, indexCount);
 		return joltMesh;
-	}
-
-	void JoltDebugRenderer::FlushData()
-	{
-		m_LinesVertexBuffer->WriteData(m_LinesBuffer.data(), m_LinesBuffer.size() * sizeof(LineVertex));
-	}
-
-	void JoltDebugRenderer::ClearData()
-	{
-		m_LinesBuffer.clear();
-	}
-
-	void JoltDebugRenderer::Draw(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer)
-	{
-		// Draw Lines
-		Renderer::RenderLines(cmdBuffer, m_LinesVertexBuffer, m_LinesBuffer.size());
-	}
-
-	void JoltDebugRenderer::CreateResources()
-	{
-		m_LinesVertexBuffer = std::make_shared<VulkanVertexBuffer>(MAX_VERTICES * sizeof(LineVertex));
-	}
-
-	void JoltDebugRenderer::CreateMaterials()
-	{
-		MaterialData materialData{};
-		materialData.Albedo = { 0.2f, 0.3f, 0.8f, 1.0f };
-		materialData.Metallic = 0.5f;
-		materialData.Roughness = 0.5f;
-
-		m_DefaultPhysicsMaterialAsset = std::make_shared<MaterialAsset>(Material::Create("Default Material"));
-		m_DefaultPhysicsMaterialAsset->GetMaterial()->SetMaterialData(materialData);
 	}
 
 }

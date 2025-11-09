@@ -16,7 +16,7 @@ namespace VulkanCore {
 
 		void CreateBodies(Scene* scene) override;
 		void RemoveAndDestroyBodies(Scene* scene) override;
-		void DrawPhysicsBodies(std::shared_ptr<PhysicsDebugRenderer> debugRenderer) override;
+		void DrawPhysicsBodies() override;
 
 		bool IsValid() override;
 	//protected:
@@ -26,6 +26,7 @@ namespace VulkanCore {
 		JPH::PhysicsSystem* m_PhysicsSystem = nullptr;
 		JPH::TempAllocator* m_TempAllocator = nullptr;
 		JPH::JobSystemThreadPool* m_JobSystem = nullptr;
+		JPH::DebugRenderer* m_DebugRenderer = nullptr;
 
 		// Create mapping table from object layer to broadphase layer
 		// Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!

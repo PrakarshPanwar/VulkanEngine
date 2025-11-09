@@ -63,19 +63,23 @@ namespace VulkanCore {
 
 		// Initialize Atlas Data and load charset
 		m_MSDFData = new MSDFAtlasData();
-		m_MSDFData->FontGeometry->loadCharset(font, 1.0f, msdf_atlas::Charset::ASCII);
+		m_MSDFData->FontGeometry->loadCharset(font, 1.0, msdf_atlas::Charset::ASCII);
 
 		// Apply MSDF Edge Coloring
-		const double maxCornerAngle = 3.0;
 		for (msdf_atlas::GlyphGeometry& glyph : m_MSDFData->Glyphs)
+		{
+			constexpr double maxCornerAngle = 3.0;
+
+			glyph.wrapBox(32.0, 4 / 32.0, 1.0);
 			glyph.edgeColoring(&msdfgen::edgeColoringInkTrap, maxCornerAngle, 0);
+		}
 
 		// Class to compute atlas dimensions
 		msdf_atlas::TightAtlasPacker atlasPacker{};
 		atlasPacker.setDimensionsConstraint(msdf_atlas::DimensionsConstraint::SQUARE);
-		atlasPacker.setMinimumScale(24.0f);
-		atlasPacker.setPixelRange(2.0f);
-		atlasPacker.setMiterLimit(1.0f);
+		atlasPacker.setMinimumScale(24.0);
+		atlasPacker.setPixelRange(2.0);
+		atlasPacker.setMiterLimit(1.0);
 
 		// Compute atlas layout
 		atlasPacker.pack(m_MSDFData->Glyphs.data(), m_MSDFData->Glyphs.size());

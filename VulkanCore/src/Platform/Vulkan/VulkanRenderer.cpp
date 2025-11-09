@@ -700,9 +700,22 @@ namespace VulkanCore {
 		});
 	}
 
-	void VulkanRenderer::RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
+	void VulkanRenderer::RenderQuads(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<VertexBuffer>& quadsData, uint32_t drawCount)
 	{
+		Renderer::Submit([cmdBuffer, quadsData, drawCount]
+		{
+			VK_CORE_PROFILE_FN("VulkanRenderer::RenderQuads", TracyZoneLabelColor::Cyan);
 
+			auto drawCmd = std::static_pointer_cast<VulkanRenderCommandBuffer>(cmdBuffer)->RT_GetActiveCommandBuffer();
+
+			// TODO: Use Index Buffer
+			auto vulkanQuadsVB = std::static_pointer_cast<VulkanVertexBuffer>(quadsData);
+			VkBuffer buffers[] = { vulkanQuadsVB->GetVulkanBuffer() };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(drawCmd, 0, 1, buffers, offsets);
+
+			vkCmdDraw(drawCmd, drawCount, 1, 0, 0);
+		});
 	}
 
 	void VulkanRenderer::RenderLight(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const LightSelectData& lightData)

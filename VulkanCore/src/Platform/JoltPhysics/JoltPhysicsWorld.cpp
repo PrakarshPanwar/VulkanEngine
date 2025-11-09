@@ -56,6 +56,9 @@ namespace VulkanCore {
 		// Typically you would implement the JobSystem interface yourself and let Jolt Physics run on top
 		// of your own job scheduler. JobSystemThreadPool is an example implementation.
 		m_JobSystem = new JPH::JobSystemThreadPool(2048, 8, 2);
+
+		// Allocate Jolt Debug Renderer
+		m_DebugRenderer = new JoltDebugRenderer();
 	}
 
 	JoltPhysicsWorld::~JoltPhysicsWorld()
@@ -66,6 +69,12 @@ namespace VulkanCore {
 		// Destroy Factory
 		delete JPH::Factory::sInstance;
 		JPH::Factory::sInstance = nullptr;
+
+		if (m_DebugRenderer)
+		{
+			delete m_DebugRenderer;
+			m_DebugRenderer = nullptr;
+		}
 
 		if (m_JobSystem)
 		{
@@ -318,17 +327,15 @@ namespace VulkanCore {
 		}
 	}
 
-	void JoltPhysicsWorld::DrawPhysicsBodies(std::shared_ptr<PhysicsDebugRenderer> debugRenderer)
+	void JoltPhysicsWorld::DrawPhysicsBodies()
 	{
-		auto joltDebugRenderer = std::dynamic_pointer_cast<JPH::DebugRenderer>(debugRenderer);
-
 		JPH::BodyManager::DrawSettings drawSettings{};
 		drawSettings.mDrawShape = true;
 		drawSettings.mDrawShapeWireframe = true;
 		drawSettings.mDrawBoundingBox = true;
 		drawSettings.mDrawVelocity = true;
 
-		m_PhysicsSystem->DrawBodies(drawSettings, joltDebugRenderer.get());
+		m_PhysicsSystem->DrawBodies(drawSettings, m_DebugRenderer);
 	}
 
 	bool JoltPhysicsWorld::IsValid()

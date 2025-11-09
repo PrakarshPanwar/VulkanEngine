@@ -1,23 +1,15 @@
 #pragma once
 #include "Jolt/Jolt.h"
-#include "Jolt/Renderer/DebugRenderer.h"
 #include "Jolt/Core/Mutex.h"
+#include "Jolt/Renderer/DebugRenderer.h"
 
-#include "VulkanCore/Renderer/VertexBuffer.h"
-#include "VulkanCore/Scene/PhysicsDebugRenderer.h"
 #include "VulkanCore/Asset/MaterialAsset.h"
 
 #include <glm/glm.hpp>
 
 namespace VulkanCore {
 
-	struct LineVertex
-	{
-		glm::vec3 Position;
-		glm::vec4 Color;
-	};
-
-	class JoltDebugRenderer : virtual public JPH::DebugRenderer, virtual public PhysicsDebugRenderer
+	class JoltDebugRenderer : public JPH::DebugRenderer
 	{
 	public:
 		JoltDebugRenderer();
@@ -30,21 +22,8 @@ namespace VulkanCore {
 		void DrawText3D(JPH::RVec3 inPosition, const JPH::string_view& inString, JPH::Color inColor = JPH::Color::sWhite, float inHeight = 0.5f) override;
 		Batch CreateTriangleBatch(const Triangle* trianglesPtr, int triangleCount) override;
 		Batch CreateTriangleBatch(const Vertex* verticesPtr, int vertexCount, const JPH::uint32* indicesPtr, int indexCount) override;
-
-		// These will be called from VulkanCore
-		void FlushData() override;
-		void ClearData() override;
-		void Draw(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer) override;
 	private:
-		void CreateResources();
-		void CreateMaterials();
-	private:
-		std::shared_ptr<MaterialAsset> m_DefaultPhysicsMaterialAsset;
-
 		JPH::Mutex m_PrimitivesMutex;
-
-		std::vector<LineVertex> m_LinesBuffer;
-		std::shared_ptr<VertexBuffer> m_LinesVertexBuffer;
 	};
 
 }

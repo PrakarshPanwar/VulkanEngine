@@ -5,10 +5,9 @@
 #include "VulkanCore/Renderer/StorageBuffer.h"
 #include "VulkanCore/Renderer/RenderCommandBuffer.h"
 #include "VulkanCore/Renderer/Font.h"
+#include "Scene.h"
 
 #include <glm/glm.hpp>
-#include "Scene.h"
-#include "PhysicsDebugRenderer.h"
 
 namespace VulkanCore {
 
@@ -26,12 +25,14 @@ namespace VulkanCore {
 		void SetActiveScene(std::shared_ptr<Scene> scene);
 		void SetViewportSize(uint32_t width, uint32_t height);
 		void RenderScene();
+		void RenderText();
 		void RenderLights();
 		void SelectionPass();
 		void SubmitMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialTable>& materialTable, const glm::mat4& transform);
 		void SubmitSelectedMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialTable>& materialTable , const glm::mat4& transform, uint32_t entityID);
 		void SubmitTransparentMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialTable>& materialTable, const glm::mat4& transform);
-		void SubmitPhysicsMesh(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<MaterialAsset>& materialAsset, const glm::mat4& transform);
+		void SubmitPhysicsMesh(const std::shared_ptr<Mesh>& mesh, const glm::mat4& transform);
+		void SubmitLines(const LineVertex& l0, const LineVertex& l1);
 		void UpdateMeshInstanceData(std::shared_ptr<Mesh> mesh, std::shared_ptr<MaterialTable> materialTable);
 		void UpdateSkybox(AssetHandle skyTextureHandle);
 
@@ -178,6 +179,15 @@ namespace VulkanCore {
 			uint32_t MapSize = 4096;
 			int CascadeOffset = 0;
 		} m_CSMSettings;
+
+		struct PhysicsDebugData
+		{
+			std::vector<LineVertex> LinesBuffer;
+			std::shared_ptr<VertexBuffer> LinesVBData;
+			std::shared_ptr<MaterialAsset> DebugMeshMaterial;
+			std::map<MeshKey, DrawCommand> MeshDrawList;
+			std::map<MeshKey, MeshTransform> MeshTransformMap;
+		} m_PhysicsDebugData;
 	private:
 		std::shared_ptr<Scene> m_Scene;
 
@@ -185,7 +195,6 @@ namespace VulkanCore {
 		std::shared_ptr<Framebuffer> m_SceneFramebuffer;
 		std::vector<VkDescriptorSet> m_SceneImages;
 		std::array<std::vector<VkDescriptorSet>, SHADOW_MAP_CASCADE_COUNT> m_ShadowDepthPassImages;
-		std::shared_ptr<PhysicsDebugRenderer> m_PhysicsDebugRenderer;
 		std::shared_ptr<Font> m_Font;
 
 		// Pipelines
@@ -233,6 +242,10 @@ namespace VulkanCore {
 		std::vector<std::shared_ptr<UniformBuffer>> m_UBCamera, m_UBCascadeLightMatrices,
 			m_UBPointLight, m_UBSpotLight, m_UBDirectionalLight; // Light UBs
 
+		// 2D Buffers
+		std::vector<TextVertex> m_TextBuffer;
+		std::shared_ptr<VertexBuffer> m_TextVBData;
+
 		std::vector<std::shared_ptr<IndexBuffer>> m_ImageBuffer; // For Selecting Entities
 		std::vector<glm::vec4> m_PointLightPositions, m_SpotLightPositions;
 		std::vector<uint32_t> m_LightHandles;
@@ -254,14 +267,12 @@ namespace VulkanCore {
 		std::map<MeshKey, DrawCommand> m_MeshDrawList,
 			m_MeshTransparentDrawList,
 			m_MeshTessellatedDrawList,
-			m_ShadowMeshDrawList,
-			m_PhysicsDebugMeshDrawList;
+			m_ShadowMeshDrawList;
 
 		std::map<MeshKey, MeshTransform> m_MeshTransformMap,
 			m_MeshTransparentTransformMap,
 			m_MeshTessellatedTransformMap,
-			m_ShadowMeshTransformMap,
-			m_PhysicsDebugMeshTransformMap;
+			m_ShadowMeshTransformMap;
 
 		std::map<MeshKey, DrawSelectCommand> m_SelectedMeshDrawList;
 		std::map<MeshKey, MeshSelectTransform> m_SelectedMeshTransformMap;
@@ -274,24 +285,6 @@ namespace VulkanCore {
 
 		// TODO: Could be multiple instances but for now only one is required
 		static SceneRenderer* s_Instance;
-	};
-
-}
-
-namespace std {
-
-	template<>
-	struct hash<VulkanCore::SceneRenderer::MeshKey>
-	{
-		size_t operator()(const VulkanCore::SceneRenderer::MeshKey& other)
-		{
-			hash<uint64_t> h{};
-			size_t hashVal = 0;
-			hashVal ^= h(other.MeshHandle) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
-			hashVal ^= h(other.SubmeshIndex) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
-
-			return hashVal;
-		}
 	};
 
 }

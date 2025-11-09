@@ -131,11 +131,6 @@ namespace VulkanCore {
 		s_Renderer->RenderSelectedMesh(cmdBuffer, mesh, submeshIndex, transformBuffer, transformData, instanceCount);
 	}
 
-	void Renderer::RenderTransparentMesh(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, uint32_t submeshIndex, const std::shared_ptr<Pipeline>& pipeline, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
-	{
-		s_Renderer->RenderTransparentMesh(cmdBuffer, mesh, material, submeshIndex, pipeline, transformBuffer, transformData, instanceCount);
-	}
-
 	void Renderer::RenderMeshWithoutMaterial(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Mesh>& mesh, uint32_t submeshIndex, const std::shared_ptr<VertexBuffer>& transformBuffer, const std::vector<TransformData>& transformData, uint32_t instanceCount)
 	{
 		s_Renderer->RenderMeshWithoutMaterial(cmdBuffer, mesh, submeshIndex, transformBuffer, transformData, instanceCount);
@@ -144,6 +139,11 @@ namespace VulkanCore {
 	void Renderer::RenderLines(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<VertexBuffer>& linesData, uint32_t drawCount)
 	{
 		s_Renderer->RenderLines(cmdBuffer, linesData, drawCount);
+	}
+
+	void Renderer::RenderQuads(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, std::shared_ptr<VertexBuffer>& quadsData, uint32_t drawCount)
+	{
+		s_Renderer->RenderQuads(cmdBuffer, quadsData, drawCount);
 	}
 
 	void Renderer::RenderLight(const std::shared_ptr<RenderCommandBuffer>& cmdBuffer, const std::shared_ptr<Pipeline>& pipeline, const LightSelectData& lightData)

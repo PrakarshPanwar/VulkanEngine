@@ -1,7 +1,6 @@
 #pragma once
 #include "VulkanCore/Core/Timestep.h"
 #include "VulkanCore/Core/Components.h"
-#include "PhysicsDebugRenderer.h"
 
 namespace VulkanCore {
 
@@ -19,9 +18,9 @@ namespace VulkanCore {
 
 		virtual void CreateBodies(Scene* scene) = 0;
 		virtual void RemoveAndDestroyBodies(Scene* scene) = 0;
-		virtual void DrawPhysicsBodies(std::shared_ptr<PhysicsDebugRenderer> debugRenderer) = 0;
+		virtual void DrawPhysicsBodies() = 0;
 
-		//	To check if System is initialized
+		// To check if System is initialized
 		virtual bool IsValid() = 0;
 
 		static std::unique_ptr<PhysicsWorld> Create();
